@@ -1,0 +1,22 @@
+server:
+  port : 80
+
+jwt:
+  secret: dnflXla2dhks1000AjtWY00QJsgh5bono
+  expiration-seconds: 3600
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 40MB
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/bono_db
+    username: bono_user
+    password: 123456
+
+  mybatis:
+    configuration:
+      map-underscore-to-camel_case: true
