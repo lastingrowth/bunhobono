@@ -1,5 +1,5 @@
 server:
-  port : 80
+  port: 80
 
 jwt:
   secret: dnflXla2dhks1000AjtWY00QJsgh5bono
@@ -17,6 +17,6 @@ spring:
     username: bono_user
     password: 123456
 
-  mybatis:
-    configuration:
-      map-underscore-to-camel_case: true
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
