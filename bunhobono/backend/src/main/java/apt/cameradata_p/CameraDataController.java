@@ -1,0 +1,10 @@
+package apt.cameradata_p;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/cameraD")
+public class CameraDataController {
+
+}
