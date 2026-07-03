@@ -11,7 +11,7 @@ CameraDataDTO {
     int cameraDataNo, cameraNo, vehicleNo;
     String carNo;
     Timestamp captureTime;
-    Path imagePath;
+    String imagePath;
     Boolean recognitionState;
     Double confidenceScore;
 }
