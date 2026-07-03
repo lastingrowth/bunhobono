@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/components/login/LoginView.vue'
 import AdminView from '@/components/login/AdminView.vue'
+import memRouter from './routes/memRouter'
 
 
 
@@ -16,7 +17,7 @@ const router = createRouter({
   { path: '/login', name: 'login', component: LoginView},
   { path: '/admin', component: AdminView, meta: { requiresRole: 'admin' }},
   
-  
+  ...memRouter,
   ]
 })
 
