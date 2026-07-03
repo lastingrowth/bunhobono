@@ -1,5 +1,6 @@
 package apt.parking_p;
 
+import apt.a_security_config.LoginDTO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
@@ -7,24 +8,26 @@ import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/parking")
+@RequestMapping("/parkings")
 public class ParkingController {
 
 
     @Resource
     ParkingService parkingService;
 
-    @GetMapping("/list")
+    @GetMapping("")
     public List<ParkingDTO> list(ParkingDTO dto){
         List<ParkingDTO> list = parkingService.listservice(dto);
-        System.out.println("조회된 데이터 확인: " + list);
+        System.out.println("주차장정보 확인: " + list);
         System.out.println(parkingService);
         return list;
     }
 
+    @PostMapping("/signUp")
+    public int sighUp(@RequestBody ParkingDTO dto){ return parkingService.signUp(dto); }
 
-    @GetMapping("/main")
-    public String list(){
-        return "11";
+    @GetMapping("/{parkingNo}")
+    public ParkingDTO getParking(@PathVariable int parkingNo) {
+        return parkingService.getParking(parkingNo);
     }
 }

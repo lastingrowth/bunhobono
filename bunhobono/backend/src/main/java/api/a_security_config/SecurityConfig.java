@@ -37,8 +37,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+<<<<<<< HEAD:bunhobono/backend/src/main/java/api/a_security_config/SecurityConfig.java
                                 .requestMatchers("/login").permitAll()
                                 .requestMatchers("/carlog/**", "/vehicle/**").permitAll()
+=======
+                                .requestMatchers("/login","/**").permitAll()
+                                .requestMatchers("/api/cameras/**").hasRole("ADMIN")   // ADMIN만 접근
+                                .requestMatchers("/api/gates/**").hasAnyRole("ADMIN","MANAGER") // ADMIN, MANAGER 접근
+                                .requestMatchers("/api/parkings/**").authenticated()   // 로그인만 필요
+>>>>>>> origin/KimGwangSu:bunhobono/backend/src/main/java/apt/a_security_config/SecurityConfig.java
                                 .anyRequest().authenticated()
                 );
 
