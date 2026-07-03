@@ -37,7 +37,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                .requestMatchers("/login").permitAll()
+                                .requestMatchers("/login","/**").permitAll()
+                                .requestMatchers("/api/cameras/**").hasRole("ADMIN")   // ADMIN만 접근
+                                .requestMatchers("/api/gates/**").hasAnyRole("ADMIN","MANAGER") // ADMIN, MANAGER 접근
+                                .requestMatchers("/api/parkings/**").authenticated()   // 로그인만 필요
                                 .anyRequest().authenticated()
                 );
 
