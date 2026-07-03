@@ -1,6 +1,11 @@
 <template>
     <h2>회원상세</h2>
 
+    <div>
+        <router-link to="/members">목록</router-link>
+        <router-link :to="`/members/detail/${member.memberNo}/modify`">수정</router-link>
+    </div>
+
     <table border="">
         <tbody>
             <tr>
