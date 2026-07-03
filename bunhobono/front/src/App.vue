@@ -12,6 +12,8 @@ import HelloWorld from './components/HelloWorld.vue'
 
       <nav>
         <RouterLink to="/test">Test</RouterLink>
+        <RouterLink to="/members">회원 목록 조회</RouterLink>
+        <RouterLink to="/members/signup" >회원 등록</RouterLink>
       </nav>
     </div>
   </header>
