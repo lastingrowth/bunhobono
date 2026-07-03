@@ -39,7 +39,7 @@ CREATE TABLE member (
     member_no SERIAL PRIMARY KEY,   -- member 고유 아이디
 
     login_id VARCHAR(30),          -- member 로그인 아이디
-    login_pwd VARCHAR(30),         -- member 로그인 비밀번호
+    login_pwd VARCHAR(255),         -- member 로그인 비밀번호
    
     mem_dong INT,                  -- 동 (관리실: 1 , 경비실 : 0)
     mem_ho INT,                     -- 호수(관리실, 경비실: 0)

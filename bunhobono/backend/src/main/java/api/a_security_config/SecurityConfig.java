@@ -38,6 +38,7 @@ public class SecurityConfig {
                         auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/login").permitAll()
+                                .requestMatchers("/carlog/**", "/vehicle/**").permitAll()
                                 .anyRequest().authenticated()
                 );
 
