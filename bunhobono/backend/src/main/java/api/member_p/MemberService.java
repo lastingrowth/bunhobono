@@ -23,5 +23,20 @@ public class MemberService {
     public MemberDTO detail(int memberNo){
         return mapper.detail(memberNo);
     }
+    public List<MemberDTO> search(String type, String keyword, Integer dong, Integer ho){
+        return mapper.search(type, keyword, dong, ho);
+    }
+    public List<MemberDTO> searchByName(String keyword){
+        return mapper.searchByName(keyword);
+    }
+
+    public List<MemberDTO> searchByRole(String keyword){
+        return mapper.searchByRole(keyword);
+    }
+
+    public List<MemberDTO> searchByDongHo(Integer dong, Integer ho){
+        return mapper.searchByDongHo(dong, ho);
+    }
+
 
 }
