@@ -2,6 +2,8 @@
   <header>
     header쪽 뷰
     <router-link to="/main">회원가입</router-link>&nbsp;
+    <RouterLink to="/members">회원 목록 조회</RouterLink>
+    <RouterLink to="/members/signup" >회원 등록</RouterLink>
 
     <router-link v-if="!jwtStore.token" to="/login">로그인</router-link>
     <button v-else @click="jwtStore.logout()">로그아웃</button>

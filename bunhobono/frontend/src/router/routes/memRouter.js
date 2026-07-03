@@ -1,6 +1,7 @@
-import MemList from "@/views/member/MemList.vue";
-import MemListDetail from "@/views/member/MemListDetail.vue";
-import MemSignup from "@/views/member/MemSignup.vue";
+import MemList from "@/components/member/MemList.vue";
+import MemListDetail from "@/components/member/MemListDetail.vue";
+import MemSignup from "@/components/member/MemSignup.vue";
+
 
 const memRouter = [
     {
