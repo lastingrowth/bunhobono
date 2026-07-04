@@ -1,4 +1,4 @@
-package apt.gate_p;
+package api.gate_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,5 @@
-package apt.parking_p;
+package api.parking_p;
 
-import apt.a_security_config.LoginDTO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 

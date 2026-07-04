@@ -1,8 +1,5 @@
-package apt.cameradata_p;
+package api.cameradata_p;
 
-import apt.camera_p.CameraDTO;
-import apt.gate_p.GateDTO;
-import apt.gate_p.GateService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 

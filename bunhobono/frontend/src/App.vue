@@ -3,9 +3,7 @@
 </template>
 <script setup>
 import { onMounted } from 'vue';
-import { useJwtStore } from './stores/jwtStore';
-
-
+import { useJwtStore } from './features/login/jwtStore';
 
 const jwtStore = useJwtStore()
 

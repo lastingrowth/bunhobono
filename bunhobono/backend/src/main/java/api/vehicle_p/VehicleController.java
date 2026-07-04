@@ -1,4 +1,4 @@
-package apt.vehicle_p;
+package api.vehicle_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.CrossOrigin;

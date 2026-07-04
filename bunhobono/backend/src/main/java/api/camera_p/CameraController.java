@@ -1,4 +1,4 @@
-package apt.camera_p;
+package api.camera_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;

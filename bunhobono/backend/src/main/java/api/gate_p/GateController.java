@@ -1,6 +1,5 @@
-package apt.gate_p;
+package api.gate_p;
 
-import apt.parking_p.ParkingDTO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 

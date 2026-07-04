@@ -1,4 +1,4 @@
-package apt.carlog_p;
+package api.carlog_p;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;

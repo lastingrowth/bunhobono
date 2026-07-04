@@ -1,4 +1,4 @@
-package apt.gate_p;
+package api.gate_p;
 
 import lombok.Data;
 

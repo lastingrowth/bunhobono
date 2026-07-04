@@ -39,7 +39,7 @@ CREATE TABLE member (
     member_no SERIAL PRIMARY KEY,   -- member 고유 아이디
 
     login_id VARCHAR(30),          -- member 로그인 아이디
-    login_pwd VARCHAR(255),         -- member 로그인 비밀번호
+    login_pwd VARCHAR(100),         -- member 로그인 비밀번호
    
     mem_dong INT,                  -- 동 (관리실: 1 , 경비실 : 0)
     mem_ho INT,                     -- 호수(관리실, 경비실: 0)
@@ -214,12 +214,18 @@ CREATE TABLE notice (
 CREATE TABLE wrong_car (
     wrong_car_no   SERIAL          PRIMARY KEY,                          -- 블랙리스트 고유번호
     plate_no       VARCHAR(50)     NOT NULL UNIQUE,                      -- 블랙리스트 차량 번호
+	car_log_no     INT   		   NOT NULL,
     reason_type    VARCHAR(30)     NOT NULL 
                                    CHECK (reason_type IN ('Unpaid', 'Unregistered', 'Suspicious', 'Other')), -- 등록 사유 구분
     description    TEXT,                                                 -- 상세 사유 비고란
     created_at     TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,   -- 블랙리스트 등록 일시
     updated_at     TIMESTAMP,                                            -- 수정 일시
-    is_active      BOOLEAN         NOT NULL DEFAULT TRUE                 -- 차단 활성화 여부
+    is_active      BOOLEAN         NOT NULL DEFAULT TRUE,                 -- 차단 활성화 여부
+
+	CONSTRAINT fk_wrong_car_car_log		
+        FOREIGN KEY (car_log_no)
+        REFERENCES car_log(car_log_no)
+        ON DELETE CASCADE
 );
 
 

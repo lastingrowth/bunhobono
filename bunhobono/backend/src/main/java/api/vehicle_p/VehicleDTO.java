@@ -1,4 +1,4 @@
-package apt.vehicle_p;
+package api.vehicle_p;
 
 import lombok.Data;
 import java.time.LocalDateTime;

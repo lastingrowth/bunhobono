@@ -1,4 +1,4 @@
-package apt.parking_p;
+package api.parking_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;

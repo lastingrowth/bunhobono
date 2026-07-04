@@ -1,4 +1,4 @@
-package apt.vehicle_p;
+package api.vehicle_p;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;

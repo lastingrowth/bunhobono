@@ -1,4 +1,4 @@
-package apt.camera_p;
+package api.camera_p;
 
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
