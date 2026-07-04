@@ -58,7 +58,7 @@ public class Jwtfilter extends OncePerRequestFilter {
                 String memStatus = jwtUtil.getMemStatus(token);
 
                 List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority(role),
+                        new SimpleGrantedAuthority("ROLE_" + role),
                         new SimpleGrantedAuthority(memStatus)
                 );
 
