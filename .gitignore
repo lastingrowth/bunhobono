@@ -4,12 +4,18 @@
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
-frontend/.cache/
 
 # Environment
 frontend/.env
 frontend/.env.*
 !frontend/.env.example
+
+# Package Manager
+frontend/.npm/
+frontend/.pnpm-store/
+
+# Cache
+frontend/.eslintcache
 
 # Logs
 frontend/npm-debug.log*
@@ -27,10 +33,6 @@ backend/target/
 # Generated packages
 backend/*.jar
 backend/*.war
-
-# Logs
-backend/logs/
-backend/*.log
 
 # ==========================================================
 # IntelliJ IDEA
@@ -92,6 +94,11 @@ logs/
 # ==========================================================
 coverage/
 *.lcov
+
+# ==========================================================
+# Java
+# ==========================================================
+*.class
 
 # ==========================================================
 # Misc

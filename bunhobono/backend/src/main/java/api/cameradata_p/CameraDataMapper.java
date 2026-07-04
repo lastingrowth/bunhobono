@@ -1,4 +1,4 @@
-package apt.cameradata_p;
+package api.cameradata_p;
 
 
 import org.apache.ibatis.annotations.Insert;

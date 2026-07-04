@@ -1,6 +1,6 @@
-package apt.a_security_config;
+package api.a_security_config;
 
-import apt.a_filter.JwtUtil;
+import api.a_filter.JwtUtil;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,9 +24,12 @@ public class LoginController {
 
 
 
-    @PostMapping("/login")
+    @PostMapping("/api/login")
     public Object login(@RequestBody LoginDTO dto) {
         System.out.println("로그인 진입: loginId=" + dto.getLoginId());
+
+        System.out.println("DTO ID = " + dto.getLoginId());
+        System.out.println("DTO PWD = " + dto.getLoginPwd());
 
         // DB에서 유저 정보 조회
         LoginDTO userInfo = authService.getUserInfo(dto.getLoginId());

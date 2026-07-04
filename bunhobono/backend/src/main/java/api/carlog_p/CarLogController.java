@@ -1,4 +1,4 @@
-package apt.carlog_p;
+package api.carlog_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;

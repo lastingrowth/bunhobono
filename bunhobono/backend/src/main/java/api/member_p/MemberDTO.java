@@ -1,4 +1,4 @@
-package apt.member_p;
+package api.member_p;
 
 import lombok.Data;
 

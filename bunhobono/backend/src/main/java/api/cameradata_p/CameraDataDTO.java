@@ -1,4 +1,4 @@
-package apt.cameradata_p;
+package api.cameradata_p;
 
 import lombok.Data;
 

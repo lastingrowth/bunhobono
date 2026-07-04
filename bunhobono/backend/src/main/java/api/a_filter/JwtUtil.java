@@ -1,7 +1,7 @@
-package apt.a_filter;
+package api.a_filter;
 
 
-import apt.a_security_config.AuthService;
+import api.a_security_config.AuthService;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

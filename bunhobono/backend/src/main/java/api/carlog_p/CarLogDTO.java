@@ -1,4 +1,4 @@
-package apt.carlog_p;
+package api.carlog_p;
 
 import lombok.Data;
 import java.time.LocalDateTime;

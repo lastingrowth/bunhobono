@@ -1,8 +1,8 @@
-package apt.a_security_config;
+package api.a_security_config;
 
 
-import apt.a_filter.JwtUtil;
-import apt.a_filter.Jwtfilter;
+import api.a_filter.JwtUtil;
+import api.a_filter.Jwtfilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -31,23 +31,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtUtil jwtUtil) {
 
+        System.out.println("🔥 SecurityConfig loaded");
+        System.out.println("비번 : "+ passwordEncoder().encode("1234"));
+
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> {
                 })
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-<<<<<<< HEAD:bunhobono/backend/src/main/java/api/a_security_config/SecurityConfig.java
-                                .requestMatchers("/login").permitAll()
-                                .requestMatchers("/carlog/**", "/vehicle/**").permitAll()
-=======
-                                .requestMatchers("/login","/**").permitAll()
+                                .requestMatchers("/api/carlog/**", "/api/vehicle/**").permitAll()
+
+                                .requestMatchers("/api/login", "/api/joinus").permitAll()
                                 .requestMatchers("/api/cameras/**").hasRole("ADMIN")   // ADMIN만 접근
                                 .requestMatchers("/api/gates/**").hasAnyRole("ADMIN","MANAGER") // ADMIN, MANAGER 접근
                                 .requestMatchers("/api/parkings/**").authenticated()   // 로그인만 필요
->>>>>>> origin/KimGwangSu:bunhobono/backend/src/main/java/apt/a_security_config/SecurityConfig.java
                                 .anyRequest().authenticated()
                 );
+
+        System.out.println("🔥 Security rules applied");
 
         //JWT 필터 등록
         http.addFilterBefore(new Jwtfilter(jwtUtil),

@@ -1,4 +1,4 @@
-package apt.parking_p;
+package api.parking_p;
 
 import lombok.Data;
 

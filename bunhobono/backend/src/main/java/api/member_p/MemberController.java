@@ -1,4 +1,4 @@
-package apt.member_p;
+package api.member_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Controller;
