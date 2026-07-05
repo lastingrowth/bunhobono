@@ -72,7 +72,7 @@ api.interceptors.request.use(
         JWT 토큰 자동 추가 (로그인 기능 만들면 필수)
         --------------------------------------------------------
         */
-        const token = localStorage.getItem("accessToken");
+        const token = localStorage.getItem("token");
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;

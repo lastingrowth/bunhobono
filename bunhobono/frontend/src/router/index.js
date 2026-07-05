@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import authRouter from './routes/authRouter'
 import LayoutView from '@/views/common/LayoutView.vue'
-import commonRouter from './routes/commonRouter'
+
 import residentRouter from './routes/residentRouter'
 import adminRouter from './routes/adminRouter'
 import { useJwtStore } from '@/features/login/jwtStore'

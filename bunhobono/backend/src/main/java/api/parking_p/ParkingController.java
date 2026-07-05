@@ -1,13 +1,14 @@
 package api.parking_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/parkings")
+@RequestMapping("/api/parkings")
 public class ParkingController {
 
 
@@ -23,10 +24,25 @@ public class ParkingController {
     }
 
     @PostMapping("/signUp")
-    public int sighUp(@RequestBody ParkingDTO dto){ return parkingService.signUp(dto); }
+    public int sighUp(@RequestBody ParkingDTO dto){
+        return parkingService.signUp(dto);
+    }
 
     @GetMapping("/{parkingNo}")
     public ParkingDTO getParking(@PathVariable int parkingNo) {
         return parkingService.getParking(parkingNo);
     }
+
+    @DeleteMapping("/{parkingNo}/delete")
+    public int deleteParking(@PathVariable int parkingNo) {
+        return parkingService.delete(parkingNo);
+    }
+
+    @PutMapping("/{parkingNo}/edit")
+    public int updateParking(@PathVariable int parkingNo,
+                             @RequestBody ParkingDTO dto) {
+        dto.setParkingNo(parkingNo);
+        return parkingService.updateParking(dto);
+    }
+
 }
