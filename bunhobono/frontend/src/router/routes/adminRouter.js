@@ -5,14 +5,11 @@ import GateDetail from "@/features/gates/GateDetail.vue";
 import GateList from "@/features/gates/GateList.vue";
 import MemList from "@/features/member/MemList.vue";
 import MemListDetail from "@/features/member/MemListDetail.vue";
-<<<<<<< HEAD
 import PolicyListView from "@/features/policy/PolicyListView.vue";
 import VehicleView from "@/features/vehicle/VehicleView.vue";
-=======
 import ParkingsEdit from "@/features/parking/ParkingsEdit.vue";
 import ParkingsList2 from "@/features/parking/ParkingsList2.vue";
 import ParkingsSignup from "@/features/parking/ParkingsSignup.vue";
->>>>>>> origin/KimGwangSuHome
 import AdminView from "@/views/admin/AdminView.vue";
 
 const adminMeta = {
