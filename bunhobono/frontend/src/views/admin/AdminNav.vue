@@ -1,7 +1,8 @@
 <template>
     관리자 nav <br/>
-    <router-link to="/admin/carlog">CarlogView</router-link> |
+    <RouterLink to="/admin/carlog">CarlogView</RouterLink> |
     <RouterLink to="/vehicle">VehicleView</RouterLink> |
+    <RouterLink to="/admin/fee-policy">요금 정책</RouterLink> |
 </template>
 <script setup>
 </script>

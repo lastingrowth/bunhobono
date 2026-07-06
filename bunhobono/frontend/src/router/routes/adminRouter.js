@@ -1,6 +1,8 @@
 import CarlogView from "@/features/carlog/CarlogView.vue";
 import MemList from "@/features/member/MemList.vue";
 import MemListDetail from "@/features/member/MemListDetail.vue";
+import PolicyListView from "@/features/policy/PolicyListView.vue";
+import VehicleView from "@/features/vehicle/VehicleView.vue";
 import AdminView from "@/views/admin/AdminView.vue";
 
 const adminMeta = {
@@ -36,7 +38,23 @@ const adminRouter = [
         name : 'carlogList',
         component : CarlogView,
         meta : adminMeta
-    }
+    },
+
+    // 차량 정보
+    {
+        path : 'vehicle',
+        name : 'vehicle',
+        component : VehicleView,
+        meta : adminMeta
+    },
+
+    // 요금 정보
+    {
+        path : 'admin/fee-policy',
+        name : 'feePolicyList',
+        component : PolicyListView,
+        meta : adminMeta
+    },
 ]
 
 export default adminRouter
