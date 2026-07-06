@@ -40,7 +40,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                .requestMatchers("/api/carlog/**", "/api/vehicle/**").permitAll()
+                                .requestMatchers(
+                                        "/api/carlog/**",
+                                        "/api/vehicle/**",
+                                        "/api/notice/**").permitAll()
 
                                 .requestMatchers("/api/login", "/api/joinus").permitAll()
                                 .requestMatchers("/api/cameras/**").hasRole("ADMIN")   // ADMIN만 접근
