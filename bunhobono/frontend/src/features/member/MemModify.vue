@@ -81,7 +81,7 @@ const goDetail = () => {
 };
 
 const update = async () => {
-    await store.update(memberNo, member);
+    await store.editMember(memberNo, member);
     alert("수정되었습니다.");
     router.push(`/admin/members/${memberNo}`);
 };

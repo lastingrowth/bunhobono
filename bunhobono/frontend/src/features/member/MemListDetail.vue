@@ -84,7 +84,7 @@ const goDelete = async () => {
         return;
     }
 
-    await store.remove(memberNo);
+    await store.removeMember(memberNo);
     alert("삭제되었습니다.");
     router.push("/admin/members");
 };

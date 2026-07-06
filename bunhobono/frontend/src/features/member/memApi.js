@@ -22,7 +22,7 @@ export const updateMember = (memberNo, data) => {
 
 // 회원 삭제
 export const deleteMember = (memberNo) => {
-    return api.delete(`/members/${memberNo}`);
+    return api.delete(`/members/${memberNo}/delete`);
 };
 
 // 회원 등록
