@@ -23,7 +23,7 @@ public class CarLogService {
         return logs;
     }
 
-    // 조회된 로그의 상태 코드 세팅
+    // 주차상태와 차량종류 코드를 세팅
     private void setLogState(CarLogDTO log) {
         if (log.getOutTime() == null) {
             log.setParkingState("PARKING");

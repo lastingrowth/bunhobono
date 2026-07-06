@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 public class VehicleDTO {
 
     // vehicle_car 기본 컬럼
-    private Integer vehicleCarNo, approvedNo;
+    private Integer vehicleCarNo, registeredNo,  approvedNo;
 
     private String carNo, vehicleType, vehicleStatus;
 
