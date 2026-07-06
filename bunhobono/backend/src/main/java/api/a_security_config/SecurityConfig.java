@@ -38,15 +38,15 @@ public class SecurityConfig {
                 .cors(cors -> {
                 })
                 .authorizeHttpRequests(auth ->
-                        auth
-                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                .requestMatchers("/api/**").permitAll()
+                                auth
+                                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                        .requestMatchers("/api/**").permitAll()
 
 //                                .requestMatchers("/api/login", "/api/**").permitAll()
 //                                .requestMatchers("/api/cameras/**").hasRole("ADMIN")   // ADMIN만 접근
 //                                .requestMatchers("/api/gates/**").hasAnyRole("ADMIN","MANAGER") // ADMIN, MANAGER 접근
 //                                .requestMatchers("/api/parkings/**").authenticated()   // 로그인만 필요
-                                .anyRequest().authenticated()
+                                        .anyRequest().authenticated()
                 );
 
         System.out.println("🔥 Security rules applied");

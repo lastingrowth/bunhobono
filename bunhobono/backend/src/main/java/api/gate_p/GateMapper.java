@@ -1,9 +1,7 @@
 package api.gate_p;
 
 
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -18,9 +16,6 @@ public interface GateMapper {
 //    @Options(useGeneratedKeys = true, keyProperty = "gateNo")  //시리얼자동증가값 필요하면 쓸것
     int insert(GateDTO dto);
 
-    @Select("SELECT * FROM gate WHERE gate_no = #{gateNo}")
-    GateDTO findById(int gateNo);
-
     @Select("SELECT g.gate_no, g.gate_name, g.gate_type, " +
             "       g.parking_no, p.parking_name, p.parking_location " +
             "FROM gate g " +
@@ -28,7 +23,16 @@ public interface GateMapper {
             "WHERE g.gate_no = #{gateNo}")
     GateDTO Detail(int gateNo);
 
+    @Delete("DELETE FROM gate WHERE gate_no = #{gateNo}")
+    int delete(int gateNo);
 
+    //수정
+    @Update("UPDATE gate " +
+            "SET parking_no = #{parkingNo}, " +
+            "    gate_name = #{gateName}, " +
+            "    gate_type = #{gateType} " +
+            "WHERE gate_no = #{gateNo}")
+    int update(GateDTO dto);
 }
 
 
