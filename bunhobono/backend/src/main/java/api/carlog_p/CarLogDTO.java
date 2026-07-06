@@ -11,40 +11,41 @@ public class CarLogDTO {
     private Integer vehicleCarNo;
     private Integer inGateNo;
     private Integer outGateNo;
-    private Integer freeTime;
 
     private LocalDateTime inTime;
     private LocalDateTime outTime;
 
-    // vehicle_car 조인 정보
+    // vehicle_car 조인 컬럼
     private String carNo;
-    private String vehicleType;      // normal, visit
-    private String vehicleStatus;    // WAITING, APPROVED, EXPIRED, UNKNOWN
+    private String vehicleType;
+    private String vehicleStatus;
 
-    // 입차 게이트 정보
+    // 입차 게이트 조인 컬럼
     private String inGateName;
 
-    // 출차 게이트 정보
+    // 출차 게이트 조인 컬럼
     private String outGateName;
 
-    // parking 조인 정보
+    // parking 조인 컬럼
     private Integer parkingNo;
     private String parkingName;
 
-    // 화면 표시용 가공 상태
-    private String parkingState;     // PARKING, OUT
-    private String carKind;          // REGISTERED, VISIT, UNKNOWN
-
-    // 검색 조건용
-    private Integer gateNo;
-    private String sort;             // latest, oldest
-    private Integer dong;
-    private Integer ho;
-
-    // 화면출력용
-    private String inTimeText, outTimeText, parkingStateText, carKindText,
-            inGateText, outGateText, feeText;
+    // 요금/결제 조인 컬럼
     private Integer fee;
-    // 주차 시간 계산
-    private String parkingTimeText;
+    private String chargeStatus;
+    private String paymentStatus;
+
+    // 위반 조인 컬럼
+    private Integer wrongCarNo;
+    private String wrongReasonType;
+    private String wrongDescription;
+
+    // 검색 조건
+    private Integer gateNo;
+    private Integer parkingNoSearch;
+
+    private String parkingState;
+    private String carKind;
+    private String carNoSearch;
+    private String sort;
 }
