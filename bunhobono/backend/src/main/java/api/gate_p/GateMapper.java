@@ -20,6 +20,15 @@ public interface GateMapper {
 
     @Select("SELECT * FROM gate WHERE gate_no = #{gateNo}")
     GateDTO findById(int gateNo);
+
+    @Select("SELECT g.gate_no, g.gate_name, g.gate_type, " +
+            "       g.parking_no, p.parking_name, p.parking_location " +
+            "FROM gate g " +
+            "JOIN parking p ON g.parking_no = p.parking_no " +
+            "WHERE g.gate_no = #{gateNo}")
+    GateDTO Detail(int gateNo);
+
+
 }
 
 

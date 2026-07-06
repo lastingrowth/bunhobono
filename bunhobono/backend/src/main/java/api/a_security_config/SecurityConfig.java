@@ -40,12 +40,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                .requestMatchers("/api/carlog/**", "/api/vehicle/**").hasRole("ADMIN")
+                                .requestMatchers("/api/**").permitAll()
 
-                                .requestMatchers("/api/login", "/api/joinus").permitAll()
-                                .requestMatchers("/api/cameras/**").hasRole("ADMIN")   // ADMIN만 접근
-                                .requestMatchers("/api/gates/**").hasAnyRole("ADMIN","MANAGER") // ADMIN, MANAGER 접근
-                                .requestMatchers("/api/parkings/**").authenticated()   // 로그인만 필요
+//                                .requestMatchers("/api/login", "/api/**").permitAll()
+//                                .requestMatchers("/api/cameras/**").hasRole("ADMIN")   // ADMIN만 접근
+//                                .requestMatchers("/api/gates/**").hasAnyRole("ADMIN","MANAGER") // ADMIN, MANAGER 접근
+//                                .requestMatchers("/api/parkings/**").authenticated()   // 로그인만 필요
                                 .anyRequest().authenticated()
                 );
 

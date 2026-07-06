@@ -1,19 +1,20 @@
 package api.gate_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/gate")
+@RequestMapping("/api/gates")
 public class GateController {
 
 
     @Resource
     GateService gateService;
-
+    //목록
     @GetMapping("")
     public List<GateDTO> list(GateDTO dto){
         List<GateDTO> list = gateService.listservice(dto);
@@ -21,14 +22,15 @@ public class GateController {
         System.out.println(gateService);
         return list;
     }
-
+    //생성
     @PostMapping("/signUp")
     public int sighUp(@RequestBody GateDTO dto){
         return gateService.signUp(dto);
     }
 
-    @GetMapping("/{gateNo}")
-    public GateDTO getGate(@PathVariable int gateNo) {
-        return gateService.getGate(gateNo);
+    // 게이트 상세 조회
+    @GetMapping("/{gateNo}/detail")
+    public ResponseEntity<GateDTO> getGateDetail(@PathVariable int gateNo) {
+        return ResponseEntity.ok(gateService.getGateDetail(gateNo));
     }
 }

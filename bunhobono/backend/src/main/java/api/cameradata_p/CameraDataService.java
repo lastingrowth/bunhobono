@@ -22,5 +22,10 @@ public class CameraDataService {
     public CameraDataDTO getCameraData(int cameraDataNo) {
         return cameraDataMapper.detail(cameraDataNo);
     }
+
+    public List<CameraDataDTO> searchByCarNo(String keyword) {
+        return cameraDataMapper.searchByCarNo(keyword);
+    }
+
 }
 
