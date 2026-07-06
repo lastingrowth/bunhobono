@@ -10,6 +10,8 @@ import VehicleView from "@/features/vehicle/VehicleView.vue";
 import ParkingsEdit from "@/features/parking/ParkingsEdit.vue";
 import ParkingsList2 from "@/features/parking/ParkingsList2.vue";
 import ParkingsSignup from "@/features/parking/ParkingsSignup.vue";
+import NoteList from "@/features/notice/NoteList.vue";
+import NoteDetail from "@/features/notice/NoteDetail.vue";
 import AdminView from "@/views/admin/AdminView.vue";
 
 const adminMeta = {
@@ -125,6 +127,27 @@ const adminRouter = [
       },
     ],
   },
+
+  {
+        path : 'admin/carlog',
+        name : 'carlogList',
+        component : CarlogView,
+        meta : adminMeta
+  },
+  
+  {
+      path : 'admin/notice',
+      name : 'noticeList',
+      component : NoteList,
+      meta : adminMeta
+  },
+
+  {
+      path : 'admin/notice/:noticeNo',
+      name : 'noticeDetail',
+      component : NoteDetail,
+      meta : adminMeta
+  }
 ];
 
 export default adminRouter;
