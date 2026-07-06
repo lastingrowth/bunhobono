@@ -11,10 +11,6 @@ public interface MemberMapper {
             "(#{loginId},#{loginPwd},#{memDong}, #{memHo},#{memName},#{memPhone},#{role},#{memStatus})")
     int signup (MemberDTO dto);
 
-    // 로그인
-    @Select("select * from member where (login_id, login_pwd) = (#{loginId}, #{loginPwd})")
-    MemberDTO login (MemberDTO dto);
-
     // 회원목록
     @Select("select * from member")
     List<MemberDTO> list();
@@ -59,11 +55,23 @@ public interface MemberMapper {
     @Select("select * from member where mem_dong = #{dong} and mem_ho = #{ho}")
     List<MemberDTO> searchByDongHo(@Param("dong") Integer dong, @Param("ho") Integer ho);
 
-    @Update("UPDATE member SET role = #{role}, mem_name = #{memName}, mem_dong = #{memDong}, mem_ho = #{memHo}, mem_phone = #{memPhone}, login_id = #{loginId}, mem_status = #{memStatus} WHERE member_no = #{memberNo}")
+    @Update("UPDATE member SET role = #{role}, mem_name = #{memName}, mem_dong = #{memDong}, mem_ho = #{memHo}, mem_phone = #{memPhone}, login_id = #{loginId}, login_pwd = #{loginPwd}, mem_status = #{memStatus} WHERE member_no = #{memberNo}")
     void update(MemberDTO dto);
 
     @Delete(" Delete FROM member WHERE member_no = #{memberNo}")
     void delete(int memberNo);
+
+    // 입주민 마이페이지
+    @Select("SELECT * FROM member WHERE login_id = #{loginId}")
+    MemberDTO residentMypage(String loginId);
+
+    // 입주민이 마이페이지 직접 수정
+    @Update("UPDATE member SET role = #{role}, mem_name = #{memName}, mem_dong = #{memDong}, mem_ho = #{memHo}, mem_phone = #{memPhone}, login_id = #{loginId}, login_pwd = #{loginPwd}, mem_status = #{memStatus} WHERE login_id = #{loginId}")
+    void residentMypageEdit(MemberDTO dto);
+
+    // 입주민이 직접 회원 탈퇴
+    @Delete("DELETE FROM member WHERE login_id = #{loginId}")
+    int residentDelete(String loginId);
 
 
 }
