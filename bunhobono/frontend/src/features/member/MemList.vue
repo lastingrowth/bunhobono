@@ -24,7 +24,7 @@
 
         <button @click="searchGo">검색</button>
     </div>
-
+    
     <table border="">
         <thead>
             <tr>

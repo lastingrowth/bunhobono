@@ -1,5 +1,6 @@
 package api.carlog_p;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import java.util.List;
@@ -179,4 +180,22 @@ public interface CarLogMapper {
             </script>
             """)
     List<CarLogDTO> list(CarLogDTO dto);
+
+
+    @Delete("""
+        DELETE FROM car_log cl
+        WHERE cl.out_time IS NOT NULL  -- 출차가 완료된 로그만 삭제 대상
+          AND cl.out_time < NOW() - INTERVAL '15 days'  -- 출차시간 기준 15일이 지난 로그만 삭제
+          AND NOT EXISTS ( SELECT 1 FROM wrong_car wc WHERE wc.car_log_no = cl.car_log_no )  -- 위반 기록이 없는 로그만 삭제
+          AND (NOT EXISTS( SELECT 1 FROM parking_charge pc WHERE pc.car_log_no = cl.car_log_no )  -- 요금 기록이 없으면 삭제 허용
+              OR
+              EXISTS (   -- 요금 기록이 있으면 결제 성공한 로그만 삭제 허용
+                  SELECT 1
+                  FROM parking_charge pc
+                  JOIN parking_payment pp
+                    ON pc.charge_no = pp.charge_no
+                  WHERE pc.car_log_no = cl.car_log_no
+                    AND pp.payment_status = 'SUCCESS' ))
+    """)
+    void deleteOldLogs();
 }
