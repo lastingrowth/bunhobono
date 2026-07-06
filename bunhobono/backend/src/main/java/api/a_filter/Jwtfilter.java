@@ -51,24 +51,24 @@ public class Jwtfilter extends OncePerRequestFilter {
 
         if (auth != null && auth.startsWith("Bearer ")) {
 
-                String token = auth.substring(7);
+            String token = auth.substring(7);
 
-                String loginId = jwtUtil.getLoginId(token);
-                String role = jwtUtil.getRole(token);
-                String memStatus = jwtUtil.getMemStatus(token);
+            String loginId = jwtUtil.getLoginId(token);
+            String role = jwtUtil.getRole(token);
+            String memStatus = jwtUtil.getMemStatus(token);
 
-                List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_" + role),
-                        new SimpleGrantedAuthority(memStatus)
-                );
+            List<SimpleGrantedAuthority> authorities = List.of(
+                    new SimpleGrantedAuthority(role),
+                    new SimpleGrantedAuthority(memStatus)
+            );
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                loginId,
-                                null,
-                                authorities);
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            loginId,
+                            null,
+                            authorities);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
 
         }

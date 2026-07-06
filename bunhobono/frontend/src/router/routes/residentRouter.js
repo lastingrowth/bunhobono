@@ -1,4 +1,3 @@
-import CameraList from "@/features/camera/CameraList.vue";
 import ParkingsList from "@/features/parking/ParkingsList.vue";
 import ResidentView from "@/views/resident/ResidentView.vue";
 
@@ -15,10 +14,6 @@ const residentRouter = [
         component : ResidentView,
         meta : residentMeta
     },
-
-    
-    
-
     {
         path: "/parkings",
         children: [
@@ -29,17 +24,7 @@ const residentRouter = [
           },
         ],
     },
-
-    {
-        path: "/camera",
-        children: [
-          {
-            path: "list",      
-            name: "cameralist",
-            component: CameraList,
-          },
-        ],
-    },
+    
 
     
 ]

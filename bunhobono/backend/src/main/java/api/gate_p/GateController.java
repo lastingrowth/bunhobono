@@ -33,4 +33,14 @@ public class GateController {
     public ResponseEntity<GateDTO> getGateDetail(@PathVariable int gateNo) {
         return ResponseEntity.ok(gateService.getGateDetail(gateNo));
     }
+
+    @DeleteMapping("/{gateNo}/delete")
+    public int deleteGate(@PathVariable int gateNo) {
+        return gateService.delete(gateNo);
+    }
+
+    @PutMapping("/{gateNo}/edit")
+    public int updateGate(@RequestBody GateDTO dto) {
+        return gateService.updateGate(dto);
+    }
 }
