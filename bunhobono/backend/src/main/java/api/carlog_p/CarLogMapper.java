@@ -28,15 +28,7 @@ public interface CarLogMapper {
             og.gate_name AS out_gate_name,
 
             p.parking_no,
-            p.parking_name,
-
-            pc.amount AS fee,
-            pc.status AS charge_status,
-            pp.payment_status,
-
-            wc.wrong_car_no,
-            wc.reason_type AS wrong_reason_type,
-            wc.description AS wrong_description
+            p.parking_name
 
         FROM car_log cl
 
@@ -51,15 +43,6 @@ public interface CarLogMapper {
 
         LEFT JOIN parking p
             ON ig.parking_no = p.parking_no
-
-        LEFT JOIN parking_charge pc
-            ON cl.car_log_no = pc.car_log_no
-
-        LEFT JOIN parking_payment pp
-            ON pc.charge_no = pp.charge_no
-
-        LEFT JOIN wrong_car wc
-            ON cl.car_log_no = wc.car_log_no
 
         WHERE 1 = 1
 
@@ -114,30 +97,9 @@ public interface CarLogMapper {
 
     // 출차 완료 후 15일 지난 로그 자동삭제
     @Delete("""
-        DELETE FROM car_log cl
-        WHERE cl.out_time IS NOT NULL
-          AND cl.out_time < NOW() - INTERVAL '15 days'
-          AND NOT EXISTS (
-              SELECT 1
-              FROM wrong_car wc
-              WHERE wc.car_log_no = cl.car_log_no
-          )
-          AND (
-              NOT EXISTS (
-                  SELECT 1
-                  FROM parking_charge pc
-                  WHERE pc.car_log_no = cl.car_log_no
-              )
-              OR
-              EXISTS (
-                  SELECT 1
-                  FROM parking_charge pc
-                  JOIN parking_payment pp
-                    ON pc.charge_no = pp.charge_no
-                  WHERE pc.car_log_no = cl.car_log_no
-                    AND pp.payment_status = 'SUCCESS'
-              )
-          )
+        DELETE FROM car_log
+        WHERE out_time IS NOT NULL
+          AND out_time < NOW() - INTERVAL '15 days'
     """)
     void deleteOldLogs();
 }

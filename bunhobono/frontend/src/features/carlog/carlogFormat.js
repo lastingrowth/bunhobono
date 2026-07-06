@@ -8,7 +8,6 @@ export function toCarLogView(log) {
         parkingTimeText: parkingTimeText(log.inTime, log.outTime),
         inGateText: gateText(log.inGateName),
         outGateText: gateText(log.outGateName),
-        feeText: feeText(log.fee),
     };
 }
 
@@ -97,10 +96,3 @@ function gateText(value) {
     return value;
 }
 
-function feeText(value) {
-    if (value == null) {
-        return "0원";
-    }
-
-    return `${Number(value).toLocaleString()}원`;
-}

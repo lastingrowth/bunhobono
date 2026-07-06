@@ -12,35 +12,20 @@ export const searchMember = (params) => {
 
 // 회원 상세 조회
 export const getMemberDetail = (memberNo) => {
-    return api.get(`/members/${memberNo}/detail`);
+    return api.get(`/member/${memberNo}`);
 }
 
 // 회원 수정
 export const updateMember = (memberNo, data) => {
-    return api.put(`/members/${memberNo}/edit`, data);
+    return api.put(`/members/${memberNo}`, data);
 };
 
 // 회원 삭제
 export const deleteMember = (memberNo) => {
-    return api.delete(`/members/${memberNo}/delete`);
+    return api.delete(`/members/${memberNo}`);
 };
 
 // 회원 등록
 export const signupMember = (member) => {
     return api.post("/members", member);
-};
-
-// 입주민 로그인 시, 마이페이지
-export const residentMypage = (loginId) => {
-    return api.get(`/resident/${loginId}/mypage`);
-};
-
-// 입주민 로그인 시, 직접 회원 정보 수정
-export const residentEdit = (data) => {
-    return api.put(`/resident/mypage/edit`, data);
-};
-
-// 입주민 로그인 시, 직접 회원 정보 삭제
-export const residentDelete = () => {
-    return api.delete(`/resident/mypage/delete`);
 };

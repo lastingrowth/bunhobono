@@ -1,7 +1,6 @@
 <template>
   <div>
     <h2>게이트 목록</h2>
-    <button @click="goSignUp">게이트 등록</button> 
     <table border="1">
       <thead>
         <tr>
@@ -19,8 +18,6 @@
           <td>{{ g.gateType }}</td>
           <td>
             <button @click="goDetail(g.gateNo)">상세보기</button>
-            <button @click="goEdit(g.gateNo)">수정</button>
-            <button @click="gStore.remove(g.gateNo)">삭제</button> 
           </td>
         </tr>
       </tbody>
@@ -41,13 +38,5 @@ onMounted(() => {
 
 const goDetail = (gateNo) => {
   router.push(`/gates/${gateNo}/detail`);
-};
-
-const goSignUp = () => {
-  router.push("/gates/signUp"); 
-};
-
-const goEdit = (gateNo) => {
-  router.push(`/gates/${gateNo}/edit`);
 };
 </script>

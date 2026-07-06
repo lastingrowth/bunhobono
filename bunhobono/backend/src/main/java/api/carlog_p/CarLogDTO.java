@@ -11,7 +11,6 @@ public class CarLogDTO {
     private Integer vehicleCarNo;
     private Integer inGateNo;
     private Integer outGateNo;
-
     private LocalDateTime inTime;
     private LocalDateTime outTime;
 
@@ -20,32 +19,17 @@ public class CarLogDTO {
     private String vehicleType;
     private String vehicleStatus;
 
-    // 입차 게이트 조인 컬럼
+    // gate 조인 컬럼
     private String inGateName;
-
-    // 출차 게이트 조인 컬럼
     private String outGateName;
 
     // parking 조인 컬럼
     private Integer parkingNo;
     private String parkingName;
 
-    // 요금/결제 조인 컬럼
-    private Integer fee;
-    private String chargeStatus;
-    private String paymentStatus;
-
-    // 위반 조인 컬럼
-    private Integer wrongCarNo;
-    private String wrongReasonType;
-    private String wrongDescription;
-
     // 검색 조건
     private Integer gateNo;
-    private Integer parkingNoSearch;
-
     private String parkingState;
     private String carKind;
-    private String carNoSearch;
     private String sort;
 }
