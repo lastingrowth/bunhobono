@@ -1,0 +1,47 @@
+import api from "@/shared/api/apiClient"
+
+// 차량 목록
+export const getVehicleList = () => {
+    return api.get("/vehicles");
+};
+
+// 차량 검색 (vehicleNo)
+export const getVehicleByNo = (vehicleNo) => {
+    return api.get(`/vehicles/${vehicleNo}`);
+};
+
+// 차량 상세 
+export const getVehicleDetail = (vehicleNo) => {
+    return api.get(`/vehicles/${vehicleNo}/detail`);
+};
+
+// 차량 등록
+export const createVehicle = (data) => {
+    return api.post("/vehicles/insert", data);
+};
+
+// 차량 수정
+export const updateVehicle = (vehicleNo, data) => {
+    return api.put(`/vehicles/${vehicleNo}/edit`, data);
+};
+
+// 차량 삭제
+export const deleteVehicle = (vehicleNo) => {
+    return api.delete(`/vehicles/${vehicleNo}/delete`);
+};
+
+
+// 승인 대기 목록
+export const getVehicleApproveList = () => {
+    return api.get("/vehicles/approve");
+};
+
+// 승인 대기 상세
+export const getVehicleApproveDetail = (vehicleNo) => {
+    return api.get(`/vehicles/approve/${vehicleNo}`);
+};
+
+// 승인 상태 처리
+export const updateVehicleApproveStatus = (vehicleNo, data) => {
+    return api.put(`/vehicles/approve/${vehicleNo}/status`, data);
+};

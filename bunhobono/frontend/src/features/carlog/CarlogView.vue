@@ -1,87 +1,52 @@
 <template>
-    <section class="carlog-page">
-        <header class="page-head">
-            <h2>Car-log</h2>
-            <button @click="carlogStore.loadCarLogs">새로고침</button>
-        </header>
+  <section>
+    <header>
+      <h2>Car-log</h2>
+    </header>
 
-        <div class="summary">
-            <div class="summary-box">전체 {{ carlogStore.totalCount }}</div>
-            <div class="summary-box">주차중 {{ carlogStore.parkingCount }}</div>
-            <div class="summary-box">출차완료 {{ carlogStore.outCount }}</div>
-            <div class="summary-box">방문차량 {{ carlogStore.visitCount }}</div>
-            </div>
+    <CarlogStats />
 
-            <div class="filter-bar">
-            <select v-model="carlogStore.search.parkingState" @change="carlogStore.loadCarLogs">
-                <option value="">전체상태</option>
-                <option value="PARKING">주차중</option>
-                <option value="OUT">출차완료</option>
-            </select>
+    <CarlogFilter />
 
-            <select v-model="carlogStore.search.carKind" @change="carlogStore.loadCarLogs">
-                <option value="">전체차량</option>
-                <option value="REGISTERED">등록차량</option>
-                <option value="VISIT">방문차량</option>
-                <option value="UNKNOWN">미등록차량</option>
-            </select>
+    <div>
+      <button @click="changeViewMode('simple')">기본 로그</button>
+      <button @click="changeViewMode('detail')">상세 로그</button>
+    </div>
 
-            <select v-model="carlogStore.search.sort" @change="carlogStore.loadCarLogs">
-                <option value="latest">최신순</option>
-                <option value="oldest">오래된순</option>
-            </select>
+    <CarlogSimple v-if="viewMode === 'simple'" :logs="carlogStore.carLogs" />
+    <CarlogDetail v-if="viewMode === 'detail'" :logs="carlogStore.carLogs" />
 
-            <input
-                v-model="carlogStore.search.carNo"
-                placeholder="차량번호 검색"
-                @keyup.enter="carlogStore.loadCarLogs"
-            >
-
-            <button @click="carlogStore.loadCarLogs">검색</button>
-            <button @click="carlogStore.resetSearch">초기화</button>
-        </div>
-
-        <table class="log-table">
-            <thead>
-                <tr>
-                <th>번호</th>
-                <th>입차게이트</th>
-                <th>차량번호</th>
-                <th>차량구분</th>
-                <th>승인상태</th>
-                <th>입차시간</th>
-                <th>출차시간</th>
-                <th>주차장</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <tr v-for="log in carlogStore.carLogs" :key="log.carLogNo">
-                <td>{{ log.carLogNo }}</td>
-                <td>{{ log.inGateName || log.inGateNo }}</td>
-                <td>{{ log.carNo || '미인식' }}</td>
-                <td>
-                    <span :class="['badge', log.carKind]">
-                    {{ log.carKind }}
-                    </span>
-                </td>
-                <td>{{ log.vehicleStatus || '-' }}</td>
-                <td>{{ log.inTime }}</td>
-                <td>{{ log.outTime || '주차중' }}</td>
-                <td>{{ log.parkingName || '-' }}</td>
-                </tr>
-            </tbody>
-        </table>
   </section>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
-import { useCarlogStore } from './carlogStore';
+import { onMounted, onUnmounted, ref } from 'vue'
+import { useCarlogStore } from './carlogStore'
+import CarlogStats from './components/CarlogStats.vue'
+import CarlogFilter from './components/CarlogFilter.vue'
+import CarlogSimple from './components/CarlogSimple.vue'
+import CarlogDetail from './components/CarlogDetail.vue'
 
-const carlogStore = useCarlogStore();
+const carlogStore = useCarlogStore()
+
+const viewMode = ref(localStorage.getItem('carlogViewMode') || 'simple')
+
+let timer = null
+
+function changeViewMode(mode) {
+  viewMode.value = mode
+  localStorage.setItem('carlogViewMode', mode)
+}
 
 onMounted(() => {
-    carlogStore.loadCarLogs();
-});
+  carlogStore.loadCarLogs()
+
+  timer = setInterval(() => {
+    carlogStore.loadCarLogs()
+  }, 5000)
+})
+
+onUnmounted(() => {
+  clearInterval(timer)
+})
 </script>

@@ -40,4 +40,11 @@ public class CarLogDTO {
     private String sort;             // latest, oldest
     private Integer dong;
     private Integer ho;
+
+    // 화면출력용
+    private String inTimeText, outTimeText, parkingStateText, carKindText,
+            inGateText, outGateText, feeText;
+    private Integer fee;
+    // 주차 시간 계산
+    private String parkingTimeText;
 }

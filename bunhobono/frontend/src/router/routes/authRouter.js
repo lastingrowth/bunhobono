@@ -12,6 +12,8 @@ const authRouter = [
         path : '/signup',
         component : MemSignup,
     },
+   
+
 ] 
 
 export default authRouter
