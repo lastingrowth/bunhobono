@@ -8,7 +8,7 @@ import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/cameras")
+@RequestMapping("/api/cameras")
 public class CameraController {
 
     @Resource

@@ -1,5 +1,5 @@
 <template>
-    기본 화면
+    기본화면
 </template>
 
 <script setup> 

@@ -26,12 +26,12 @@ export const useMemStore =  defineStore("member", () => {
   };
 
   // 수정
-  const update = async (memberNo, data) => {
+  const editMember = async (memberNo, data) => {
     await updateMember(memberNo, data);
   };
 
   // 삭제
-  const remove = async (memberNo) => {
+  const removeMember = async (memberNo) => {
     await deleteMember(memberNo);
   };
 
@@ -48,8 +48,8 @@ export const useMemStore =  defineStore("member", () => {
     loadmemberList,
     search,
     loadMember,
-    update,
-    remove,
+    editMember,
+    removeMember,
     signup,
   };
 
