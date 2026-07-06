@@ -64,7 +64,7 @@ CREATE TABLE member (
 CREATE TABLE parking (
     parking_no     SERIAL          PRIMARY KEY,       -- 주차장 고유번호
     parking_name   VARCHAR(100),                      -- 이름
-    parking_spaces VARCHAR(50),                       -- 총 주차 가능수
+    parking_spaces INT,                               -- 총 주차 가능수
     parking_Location       VARCHAR(255)               -- 위치 비고란
 );
 
@@ -290,7 +290,7 @@ CREATE TABLE member (
 CREATE TABLE parking (
     parking_no     SERIAL          PRIMARY KEY,       -- 주차장 고유번호
     parking_name   VARCHAR(100),                      -- 이름
-    parking_spaces VARCHAR(50),                       -- 총 주차 가능수
+    parking_spaces INT,                               -- 총 주차 가능수
     parking_Location       VARCHAR(255)               -- 위치 비고란
 );
 
@@ -448,5 +448,8 @@ CREATE TABLE notice (
         ON DELETE CASCADE -- 주차 구역이 시스템에서 삭제되면 관련 알림 내역도 함께 삭제
 );
 
+-- 권한 부여
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bono_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO bono_user;
 
 COMMIT;
