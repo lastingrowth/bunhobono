@@ -7,7 +7,7 @@ import java.util.Date;
 @Data
 public class
 CameraDTO {
-    int cameraNo,parkingNo,gateNo;
-    String cameraName, cameraType;
-    Date installDate;
+    private int cameraNo,parkingNo,gateNo;
+    private String cameraName, cameraType;
+    private Date installDate;
 }

@@ -11,7 +11,7 @@ import java.util.List;
 @Mapper
 public interface CameraDataMapper {
 
-    @Select("select * from Camera_data order by camera_data_no")
+    @Select("SELECT ROW_NUMBER() OVER (ORDER BY camera_data_no) AS display_no,camera_data_no, car_no, capture_time FROM camera_data ")
     List<CameraDataDTO> list(CameraDataDTO dto);
 
     @Insert("INSERT INTO camera_data (camera_no, vehicle_no, car_no, capture_time, image_path, recognition_state, confidence_score) " +
@@ -21,5 +21,11 @@ public interface CameraDataMapper {
 
     @Select("SELECT * FROM camera_data WHERE camera_data_no = #{cameraDataNo}")
     CameraDataDTO detail(int cameraDataNo);
+
+    @Select("SELECT camera_data_no, camera_no, vehicle_no, car_no, capture_time, image_path, recognition_state, confidence_score " +
+            "FROM camera_data " +
+            "WHERE car_no LIKE CONCAT('%', #{keyword}, '%') " +
+            "ORDER BY camera_data_no")
+    List<CameraDataDTO> searchByCarNo(String keyword);
 }
 

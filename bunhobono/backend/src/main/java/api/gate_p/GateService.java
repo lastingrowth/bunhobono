@@ -21,9 +21,9 @@ public class GateService {
         return gateMapper.insert(dto);
     }
 
-    public GateDTO getGate(int gateNo) {
-        return gateMapper.findById(gateNo);
+    //상세
+    public GateDTO getGateDetail(int gateNo) {
+        return gateMapper.Detail(gateNo);
     }
-
 
 }

@@ -7,7 +7,7 @@ import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/camera-data")
+@RequestMapping("/api/camera-data")
 public class CameraDataController {
 
     @Resource
@@ -28,10 +28,15 @@ public class CameraDataController {
     }
 
 
-    @GetMapping("/{cameraDataNo}")
+    @GetMapping("/{cameraDataNo}/detail")
     public CameraDataDTO getCameraData(@PathVariable int cameraDataNo) {
         return cameraDataService.getCameraData(cameraDataNo);
     }
 
+    // 차량번호 검색 API
+    @GetMapping("/search")
+    public List<CameraDataDTO> search(@RequestParam String carNo) {
+        return cameraDataService.searchByCarNo(carNo);
+    }
 
 }
