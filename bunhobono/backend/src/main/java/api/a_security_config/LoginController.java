@@ -40,6 +40,8 @@ public class LoginController {
                     .body(Map.of("error", "아이디 또는 비밀번호가 올바르지 않습니다."));
         }
 
+        System.out.println("DB ROLE = " + userInfo.getRole());
+
         // BCrypt 검증
         if (!passwordEncoder.matches(dto.getLoginPwd(), userInfo.getLoginPwd())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -51,6 +53,12 @@ public class LoginController {
                 userInfo.getRole(),
                 userInfo.getMemStatus()
         );
+
+        System.out.println("LOGIN SUCCESS");
+        System.out.println("userId = " + userInfo.getLoginId());
+        System.out.println("role = " + userInfo.getRole());
+        System.out.println("memStatus = " + userInfo.getMemStatus());
+        System.out.println("token = " + token);
 
         return Map.of("token", token, "userId", userInfo.getLoginId());
     }
