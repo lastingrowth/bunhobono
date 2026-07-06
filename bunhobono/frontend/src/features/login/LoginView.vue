@@ -2,7 +2,7 @@
   <h1>로그인</h1>
   
   아이디 : <input v-model="loginId" type="text"><br/>
-  비밀번호 : <input v-model="pw" type="password"><br/>
+  비밀번호 : <input v-model="loginPwd" type="password"><br/>
   
   <button @click="loginGo">로그인</button>
   
@@ -15,9 +15,9 @@ import { ref } from 'vue'
 
 const jwtStore = useJwtStore()
 const loginId = ref('')
-const pw = ref('')
+const loginPwd  = ref('')
 
 async function loginGo() {
-  await jwtStore.loginGo(loginId.value, pw.value)
+  await jwtStore.loginGo(loginId.value, loginPwd.value)
 }
 </script>

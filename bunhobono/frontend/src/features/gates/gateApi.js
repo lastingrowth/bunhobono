@@ -14,3 +14,13 @@ export const signUpGate = (gateData) => {
 export const getGateDetail = (gateNo) => {
   return api.get(`/gates/${gateNo}/detail`);
 };
+
+//  게이트 삭제
+export const deleteGate = (gateNo) => {
+  return api.delete(`/gates/${gateNo}/delete`);
+};
+
+// 게이트 수정
+export const updateGate = (gateNo, data) => {
+  return api.put(`/gates/${gateNo}/edit`, data);
+};

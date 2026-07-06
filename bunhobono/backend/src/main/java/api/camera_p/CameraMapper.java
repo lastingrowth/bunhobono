@@ -1,9 +1,7 @@
 package api.camera_p;
 
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Select;
+import api.parking_p.ParkingDTO;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -18,6 +16,17 @@ public interface CameraMapper {
     @Options(useGeneratedKeys = true, keyProperty = "cameraNo")
     int insert(CameraDTO dto);
 
-    @Select("SELECT * FROM camera WHERE camera_no = #{cameraNo}")
-    CameraDTO detail(int cameraNo);
+    @Delete("DELETE FROM camera WHERE camera_no = #{cameraNo}")
+    int delete(int cameraNo);
+
+    @Update("UPDATE camera " +
+            "SET parking_no = #{parkingNo}, " +
+            "    gate_no = #{gateNo}, " +
+            "    camera_name = #{cameraName}, " +
+            "    camera_type = #{cameraType}, " +
+            "    install_date = #{installDate} " +
+            "WHERE camera_no = #{cameraNo}")
+    int update(CameraDTO dto);
 }
+
+

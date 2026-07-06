@@ -47,6 +47,16 @@ export const useParkingsStore = defineStore("parkings", () => {
     }
   };
 
+  // 주차장 목록 불러오기
+  const loadParkings = async () => {
+    try {
+      const res = await getParkingsList();
+      list.value = res.data;
+    } catch (err) {
+      console.error("주차장 목록 불러오기 실패:", err);
+    }
+  };
+
   return {
     list,
     statusList,
@@ -54,5 +64,6 @@ export const useParkingsStore = defineStore("parkings", () => {
     signup,
     remove,
     update,
+    loadParkings
   };
 });
