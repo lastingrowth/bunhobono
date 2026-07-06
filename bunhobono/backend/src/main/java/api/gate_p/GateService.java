@@ -26,4 +26,12 @@ public class GateService {
         return gateMapper.Detail(gateNo);
     }
 
+    //Delete
+    public int delete(int gateNo) {
+        return gateMapper.delete(gateNo);
+    }
+    //수정
+    public int updateGate(GateDTO dto) {
+        return gateMapper.update(dto);
+    }
 }

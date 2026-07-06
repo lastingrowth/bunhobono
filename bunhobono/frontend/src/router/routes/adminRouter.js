@@ -14,6 +14,11 @@ import ParkingsSignup from "@/features/parking/ParkingsSignup.vue";
 import NoteList from "@/features/notice/NoteList.vue";
 import NoteDetail from "@/features/notice/NoteDetail.vue";
 import AdminView from "@/views/admin/AdminView.vue";
+import GateSignup from "@/features/gates/GateSignup.vue";
+import GateEdit from "@/features/gates/GateEdit.vue";
+import CameraEdit from "@/features/camera/CameraEdit.vue";
+import CameraList from "@/features/camera/CameraList.vue";
+import CameraSignup from "@/features/camera/CameraSignup.vue";
 
 const adminMeta = {
   requireAuth: true,
@@ -93,6 +98,16 @@ const adminRouter = [
         name: "gatedetail",
         component: GateDetail,
       },
+      {
+        path: "signUp", 
+        name: "gatesignUp",
+        component: GateSignup,
+      },
+      {
+        path: ":gateNo/edit", 
+        name: "gateEdit",
+        component: GateEdit,
+      },
      
     ],
   },
@@ -156,7 +171,28 @@ const adminRouter = [
       name : 'noticeDetail',
       component : NoteDetail,
       meta : adminMeta
-  }
+  },
+
+  {
+        path: "/cameras",
+        children: [
+          {
+            path: "list",      
+            name: "cameralist",
+            component: CameraList,
+          },
+          {
+            path: ":cameraNo/edit",      
+            name: "cameraEdit",
+            component: CameraEdit,
+          },
+          {
+            path: "signup",      
+            name: "cameraSignup",
+            component: CameraSignup,
+          },
+        ],
+    },
 ];
 
 export default adminRouter;

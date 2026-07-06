@@ -1,5 +1,6 @@
 package api.camera_p;
 
+import api.parking_p.ParkingDTO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,9 +28,13 @@ public class CameraController {
         return cameraService.signUp(dto);
     }
 
-    @GetMapping("/{cameraNo}")
-    public CameraDTO getCamera(@PathVariable int cameraNo) {
-        return cameraService.getCamera(cameraNo);
+    @DeleteMapping("/{cameraNo}/delete")
+    public int deleteCamera(@PathVariable int cameraNo) {
+        return cameraService.delete(cameraNo);
     }
 
+    @PutMapping("/{cameraNo}/edit")
+    public int updateCamera(@RequestBody CameraDTO dto) {
+        return cameraService.update(dto);
+    }
 }
