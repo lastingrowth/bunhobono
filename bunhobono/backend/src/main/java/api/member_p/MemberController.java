@@ -22,21 +22,23 @@ public class MemberController {
 
     // 회원가입
     @ResponseBody
-    @RequestMapping("/members")
     @PostMapping("/members")
     public void signup(@RequestBody  MemberDTO dto ) {
         service.signup(dto);
 
     }
 
-    // 로그인 (url 연결확인만)
+    // 회원 수정
     @ResponseBody
-    @GetMapping("/login")
-    public String login(MemberDTO dto) {
+    @PutMapping("/members/{memberNo}")
+    public void update(@PathVariable int memberNo,
+                       @RequestBody MemberDTO dto) {
 
-        service.signup(dto);
+        System.out.println("수정 API 진입");
+        System.out.println("memberNo = " + memberNo);
 
-        return "로그인 성공";
+        dto.setMemberNo(memberNo);
+        service.update(dto);
     }
 
     // 회원 리스트
@@ -48,7 +50,7 @@ public class MemberController {
 
     // 회원 상세내용
     @ResponseBody
-    @GetMapping("/members/detail/{memberNo}")
+    @GetMapping("/members/{memberNo}")
     public MemberDTO detail(@PathVariable int memberNo){
         return service.detail(memberNo);
     }
@@ -73,6 +75,12 @@ public class MemberController {
         }
 
         return service.list();
+    }
+    // 삭제
+    @ResponseBody
+    @DeleteMapping("/members/{memberNo}/delete")
+    public void delete(@PathVariable int memberNo) {
+        service.delete(memberNo);
     }
 
 }

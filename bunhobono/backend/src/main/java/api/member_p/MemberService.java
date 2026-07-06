@@ -38,5 +38,14 @@ public class MemberService {
         return mapper.searchByDongHo(dong, ho);
     }
 
+    // 수정
+    public void update(MemberDTO dto) {
+        mapper.update(dto);
+    }
+
+    // 삭제
+    public void delete(int memberNo) {
+        mapper.delete(memberNo);
+    }
 
 }

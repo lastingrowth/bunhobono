@@ -8,7 +8,7 @@ import java.time.LocalDate;
 public class MemberDTO {
 
     private  long memberNo;
-    private  String memLoginId, memLoginPwd, memName, memPhone, memRole, memStatus;
+    private  String loginId, loginPwd, memName, memPhone, role, memStatus;
     private int memDong, memHo;
     private LocalDate memCreateAt, memDeleteAt;
 }

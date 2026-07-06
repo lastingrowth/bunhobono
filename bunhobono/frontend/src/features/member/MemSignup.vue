@@ -32,11 +32,11 @@
             </tr>
             <tr>
                 <th>아이디</th>
-                <td><input type="text" v-model="member.memLoginId"></td>
+                <td><input type="text" v-model="member.LoginId"></td>
             </tr>
             <tr>
                 <th>비밀번호</th>
-                <td><input type="password" v-model="member.memLoginPwd"></td>
+                <td><input type="password" v-model="member.LoginPwd"></td>
             </tr>
             <tr>
                 <th>상태</th>
@@ -69,13 +69,13 @@ const router = useRouter();
 const store = useMemStore();
 
 const member = ref({
-    memRole: "",
+    role: "",
     memName: "",
     memDong: "",
     memHo: "",
     memPhone: "",
-    memLoginId: "",
-    memLoginPwd: "",
+    loginId: "",
+    loginPwd: "",
     memStatus: "",
 });
 
