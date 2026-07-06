@@ -1,6 +1,7 @@
 import CarlogView from "@/features/carlog/CarlogView.vue";
 import MemList from "@/features/member/MemList.vue";
 import MemListDetail from "@/features/member/MemListDetail.vue";
+import MemModify from "@/features/member/MemModify.vue";
 import AdminView from "@/views/admin/AdminView.vue";
 
 const adminMeta = {
@@ -28,6 +29,13 @@ const adminRouter = [
         path : 'admin/members/:memberNo',
         name : 'memberDetail',
         component : MemListDetail,
+        meta : adminMeta
+    },
+
+    {
+        path : 'admin/members/:memberNo/modify',
+        name : 'memberModify',
+        component : MemModify,
         meta : adminMeta
     },
 

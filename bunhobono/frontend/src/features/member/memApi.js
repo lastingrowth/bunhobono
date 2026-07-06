@@ -12,17 +12,17 @@ export const searchMember = (params) => {
 
 // 회원 상세 조회
 export const getMemberDetail = (memberNo) => {
-    return api.get(`/member/${memberNo}`);
+    return api.get(`/members/${memberNo}`);
 }
 
 // 회원 수정
 export const updateMember = (memberNo, data) => {
-    return api.put(`/members/${memberNo}`, data);
+    return api.put(`members/${memberNo}`, data);
 };
 
 // 회원 삭제
 export const deleteMember = (memberNo) => {
-    return api.delete(`/member/${memberNo}`);
+    return api.delete(`/members/${memberNo}/delete`);
 };
 
 // 회원 등록
