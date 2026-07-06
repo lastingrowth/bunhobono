@@ -1,9 +1,8 @@
 <template>
-    <h2>회원 수정</h2>
+    <h2>회원 정보 수정</h2>
 
     <div>
-        <button @click="goList">목록</button>
-        <button @click="goDetail">상세</button>
+        <button @click="goHome">홈</button>
         <button @click="update">수정완료</button>
     </div>
 
@@ -47,16 +46,18 @@
 
 <script setup>
 import { onMounted, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
+import { useJwtStore } from "../login/jwtStore";
 
-const route = useRoute();
 const router = useRouter();
 const store = useMemStore();
+const jwtStore = useJwtStore();
 
-const memberNo = route.params.memberNo;
+const loginId = jwtStore.userId;
 
 const member = reactive({
+    memberNo:"",
     role: "",
     memName: "",
     memDong: "",
@@ -68,22 +69,17 @@ const member = reactive({
 });
 
 onMounted(async () => {
-    await store.loadMember(memberNo);
+    await store.loadMypage(loginId);
     Object.assign(member, store.member);
 });
 
-const goList = () => {
-    router.push("/admin/members");
-};
-
-const goDetail = () => {
-    router.push(`/admin/members/${memberNo}`);
+const goHome = () => {
+    router.push("/resident");
 };
 
 const update = async () => {
-    console.log(member);
-    await store.editMember(memberNo, member);
+    await store.editResident(member);
     alert("수정되었습니다.");
-    router.push(`/admin/members/${memberNo}`);
+    router.push("/resident/mypage");
 };
 </script>

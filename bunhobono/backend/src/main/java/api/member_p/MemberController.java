@@ -13,30 +13,18 @@ public class MemberController {
     @Resource
     MemberService service;
 
-    // 테스트용
-    @ResponseBody
-    @GetMapping("/home")
-    public String home(){
-        return "home server";
-    }
-
     // 회원가입
     @ResponseBody
     @PostMapping("/members")
     public void signup(@RequestBody  MemberDTO dto ) {
         service.signup(dto);
-
     }
 
     // 회원 수정
     @ResponseBody
-    @PutMapping("/members/{memberNo}")
+    @PutMapping("/members/{memberNo}/edit")
     public void update(@PathVariable int memberNo,
                        @RequestBody MemberDTO dto) {
-
-        System.out.println("수정 API 진입");
-        System.out.println("memberNo = " + memberNo);
-
         dto.setMemberNo(memberNo);
         service.update(dto);
     }
@@ -50,7 +38,7 @@ public class MemberController {
 
     // 회원 상세내용
     @ResponseBody
-    @GetMapping("/members/{memberNo}")
+    @GetMapping("/members/{memberNo}/detail")
     public MemberDTO detail(@PathVariable int memberNo){
         return service.detail(memberNo);
     }
@@ -81,6 +69,21 @@ public class MemberController {
     @DeleteMapping("/members/{memberNo}/delete")
     public void delete(@PathVariable int memberNo) {
         service.delete(memberNo);
+    }
+
+    // 입주민 마이페이지
+    @ResponseBody
+    @GetMapping("/resident/{loginId}/mypage")
+    public MemberDTO residentMypage(@PathVariable String loginId) {
+        return service.residentMypage(loginId);
+    }
+
+    // 입주민이 마이페이지에 로그인했을 때, 본인 정보 수정
+    @ResponseBody
+    @PutMapping("/resident/{loginId}/edit")
+    public void residentMypageEdit(@PathVariable String loginId, @RequestBody MemberDTO dto){
+        dto.setLoginId(loginId);
+        service.residentMypageEdit(dto);
     }
 
 }

@@ -3,6 +3,8 @@
     입주민 nav
     <router-link to="/">home</router-link>
     <router-link to="/parkings/list">주차장정보보기</router-link>
+    <router-link to="/resident/mypage">마이페이지</router-link>
+    
   </div>
 </template>
 
