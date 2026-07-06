@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { getCarLogs } from "./carlogApi";
+import { toCarLogView } from "./carlogFormat";
 
 export const useCarlogStore = defineStore("carlog", () => {
 
@@ -17,15 +18,15 @@ export const useCarlogStore = defineStore("carlog", () => {
 
     const totalCount = computed(() => carLogs.value.length);
 
-    const parkingCount = computed(() => 
+    const parkingCount = computed(() =>
         carLogs.value.filter(log => log.parkingState === "PARKING").length
     );
 
-    const outCount = computed(() => 
+    const outCount = computed(() =>
         carLogs.value.filter(log => log.parkingState === "OUT").length
     );
 
-    const visitCount = computed(() => 
+    const visitCount = computed(() =>
         carLogs.value.filter(log => log.carKind === "VISIT").length
     );
 
@@ -33,7 +34,7 @@ export const useCarlogStore = defineStore("carlog", () => {
     const loadCarLogs = async () => {
         try {
             const res = await getCarLogs(search.value);
-            carLogs.value = res.data;
+            carLogs.value = res.data.map(toCarLogView);
         } catch (e) {
             console.error("차량 목록 조회 실패", e);
         }
@@ -49,7 +50,7 @@ export const useCarlogStore = defineStore("carlog", () => {
             carNo: "",
             sort: "latest",
         };
-        
+
         await loadCarLogs();
     };
 

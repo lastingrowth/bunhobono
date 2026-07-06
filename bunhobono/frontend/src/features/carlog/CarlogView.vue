@@ -1,7 +1,7 @@
 <template>
   <section>
     <header>
-      <h2>Car-log</h2>
+      <h2>로그데이터</h2>
     </header>
 
     <CarlogStats />
