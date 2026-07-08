@@ -1,6 +1,7 @@
 package api.camera_p;
 
 
+import api.parking_p.ParkingDTO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -18,11 +19,14 @@ public class CameraService {
     public int signUp(CameraDTO dto) {
         return cameraMapper.insert(dto);
     }
-
-    public CameraDTO getCamera(int cameraNo) {
-        return cameraMapper.detail(cameraNo);
+    //Delete
+    public int delete(int cameraNo) {
+        return cameraMapper.delete(cameraNo);
     }
 
+    public int update(CameraDTO dto) {
+        return cameraMapper.update(dto);
+    }
 
 }
 

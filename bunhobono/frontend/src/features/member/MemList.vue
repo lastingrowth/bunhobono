@@ -5,7 +5,7 @@
     <div>
         <select v-model="searchType">
             <option value="all">전체출력</option>
-            <option value="role">권한</option>
+            <option value="role">가입유형</option>
             <option value="name">이름</option>
             <option value="dongHo">동호수</option>
         </select>
@@ -44,17 +44,17 @@
         <tbody>
 
             <tr v-for="mem in memberList" :key="mem.memberNo">
-                <td>{{ mem.role }}</td>
+                <td>{{ mem.memRole }}</td>
                 <td>
-                    <router-link :to="`/admin/members/${mem.memberNo}`">
+                    <router-link :to="`/members/detail/${mem.memberNo}`">
                         {{ mem.memName }}
                     </router-link>
                 </td>
                 <td>{{ mem.memDong }}</td>
                 <td>{{ mem.memHo }}</td>
                 <td>{{ mem.memPhone }}</td>
-                <td>{{ mem.loginId }}</td>
-                <td>{{ mem.loginPwd }}</td>
+                <td>{{ mem.memLoginId }}</td>
+                <td>{{ mem.memLoginPwd }}</td>
                 <td>{{ mem.memCreateAt }}</td>
                 <td>{{ mem.memDeleteAt }}</td>
                 <td>{{ mem.memStatus }}</td>
@@ -64,12 +64,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useMemStore } from './memStore';
 
 const store = useMemStore();
-
-const memberList = computed(()=>store.memberList);
 
 const searchType = ref("all");
 const searchKeyword = ref("");

@@ -1,10 +1,7 @@
 package api.cameradata_p;
 
 
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -27,5 +24,9 @@ public interface CameraDataMapper {
             "WHERE car_no LIKE CONCAT('%', #{keyword}, '%') " +
             "ORDER BY camera_data_no")
     List<CameraDataDTO> searchByCarNo(String keyword);
+
+    //  특정 날짜 이전 데이터 삭제
+    @Delete("DELETE FROM camera_data WHERE capture_time::date < #{cutoffDate}")
+    void deleteOlderThanDate(java.time.LocalDate cutoffDate);
 }
 
