@@ -26,3 +26,6 @@ mybatis:
 jwt:
   secret: kkkkkkkkkgggggggggggssssssssskkkkkkgggggggssssss
   expiration-seconds: 3600
+
+file:
+  camera-data: /Users/baesoyeong/mbc_202603-main/KDT/APT/보노보노/bunhobono/bunhobono/backend/src/main/resources/camera-data

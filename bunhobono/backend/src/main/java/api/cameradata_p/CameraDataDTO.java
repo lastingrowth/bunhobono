@@ -2,13 +2,13 @@ package api.cameradata_p;
 
 import lombok.Data;
 
-import java.nio.file.Path;
 import java.sql.Timestamp;
 
 @Data
 public class
 CameraDataDTO {
-    int cameraDataNo, cameraNo, vehicleNo;
+    Integer  vehicleNo;
+    int cameraDataNo, cameraNo;
     String carNo;
     Timestamp captureTime;
     String imagePath;
