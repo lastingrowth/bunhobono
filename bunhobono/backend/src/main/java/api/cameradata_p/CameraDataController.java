@@ -1,13 +1,14 @@
 package api.cameradata_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/camera-data")
+@RequestMapping("/api/camera-data")
 public class CameraDataController {
 
     @Resource
@@ -22,16 +23,19 @@ public class CameraDataController {
     }
 
     // 카메라 장치가 호출하는 API  이거 하드웨어도 post로 api처리한다고 함
-    @PostMapping("/signUp")
-    public int signUp(@RequestBody CameraDataDTO dto) {
-        return cameraDataService.signUp(dto);
+    @PostMapping("/ocr")
+    public int ocr(@RequestParam("cameraNo") int cameraNo,
+                   @RequestParam("carNo") String carNo,
+                   @RequestParam("file") MultipartFile file) {
+
+        return cameraDataService.ocr(cameraNo, carNo, file);
     }
+
 
 
     @GetMapping("/{cameraDataNo}")
     public CameraDataDTO getCameraData(@PathVariable int cameraDataNo) {
         return cameraDataService.getCameraData(cameraDataNo);
     }
-
 
 }
