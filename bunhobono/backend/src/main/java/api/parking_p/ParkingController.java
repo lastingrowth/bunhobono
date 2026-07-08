@@ -39,10 +39,9 @@ public class ParkingController {
     }
 
     @PutMapping("/{parkingNo}/edit")
-    public int updateParking(@PathVariable int parkingNo,
-                             @RequestBody ParkingDTO dto) {
-        dto.setParkingNo(parkingNo);
+    public int updateParking(@RequestBody ParkingDTO dto) {
         return parkingService.updateParking(dto);
     }
+
 
 }

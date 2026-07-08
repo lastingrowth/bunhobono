@@ -6,11 +6,11 @@
             <tr>
                 <th>가입유형</th>
                 <td>
-                    <select v-model="member.role">
+                    <select v-model="member.memRole">
                         <option value="" disabled>선택하세요</option>
-                        <option value="RESIDENT">입주민</option>
-                        <option value="ADMIN">경비실</option>
-                        <option value="ADMIN">관리실</option>
+                        <option value="resident">입주민</option>
+                        <option value="guard">경비실</option>
+                        <option value="office">관리실</option>
                     </select>
                 </td>
             </tr>
@@ -36,7 +36,7 @@
             </tr>
             <tr>
                 <th>비밀번호</th>
-                <td><input type="password" v-model="member.loginPwd"></td>
+                <td><input type="password" v-model="member.memLoginPwd"></td>
             </tr>
             <tr>
                 <th>상태</th>
@@ -65,21 +65,17 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
 
-import { useJwtStore } from "../login/jwtStore";
-
 const router = useRouter();
 const store = useMemStore();
 
-const jwtStore = useJwtStore();
-
 const member = ref({
-    role: "",
+    memRole: "",
     memName: "",
     memDong: "",
     memHo: "",
     memPhone: "",
-    loginId: "",
-    loginPwd: "",
+    memLoginId: "",
+    memLoginPwd: "",
     memStatus: "",
 });
 const idChecked = ref(false);
@@ -129,22 +125,11 @@ const signupGo = async () => {
     }
 
     try {
-
-        // 1. 회원등록
         await store.signup(member.value);
-
-        // 2. 방금 등록한 아이디/비번으로 로그인
-        await jwtStore.loginGo(member.value.loginId, member.value.loginPwd);
 
         alert("회원등록 성공");
 
-        // 권한에 따라 페이지 이동
-        if (member.value.role === "ADMIN") {
-            router.push("/admin");
-        } else if (member.value.role === "RESIDENT") {
-            router.push("/resident");
-        }
-
+        router.push("/members");
     } catch (e) {
         console.error(e);
         alert("회원등록 실패");

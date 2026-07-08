@@ -17,12 +17,12 @@ export const getMemberDetail = (memberNo) => {
 
 // 회원 수정
 export const updateMember = (memberNo, data) => {
-    return api.put(`/members/${memberNo}/edit`, data);
+    return api.put(`/members/${memberNo}`, data);
 };
 
 // 회원 삭제
 export const deleteMember = (memberNo) => {
-    return api.delete(`/members/${memberNo}/delete`);
+    return api.delete(`/members/${memberNo}`);
 };
 
 // 회원 등록

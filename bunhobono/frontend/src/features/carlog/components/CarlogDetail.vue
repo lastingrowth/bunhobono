@@ -3,16 +3,14 @@
     <thead>
       <tr>
         <th>상태</th>
-        <th>차량번호</th>
-        <th>차량구분</th>
-        <th>입차시간</th>
+        <th>차량번호</th> 
+        <th>차량구분</th> 
+        <th>입차시간</th> 
         <th>출차시간</th>
         <th>주차시간</th>
         <th>입차게이트</th>
         <th>출차게이트</th>
-        <th>주차장</th>
-        <th>요금</th>
-        
+        <th>주차장</th>        
       </tr>
     </thead>
 
@@ -27,7 +25,6 @@
         <td>{{ log.inGateText }}</td>
         <td>{{ log.outGateText }}</td>
         <td>{{ log.parkingName || '-' }}</td>
-        <td>{{ log.feeText }}</td>
       </tr>
     </tbody>
   </table>

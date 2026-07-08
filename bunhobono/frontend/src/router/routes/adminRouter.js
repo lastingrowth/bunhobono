@@ -5,7 +5,6 @@ import GateDetail from "@/features/gates/GateDetail.vue";
 import GateList from "@/features/gates/GateList.vue";
 import MemList from "@/features/member/MemList.vue";
 import MemListDetail from "@/features/member/MemListDetail.vue";
-import MemModify from "@/features/member/MemModify.vue";
 import PolicyListView from "@/features/policy/PolicyListView.vue";
 import VehicleView from "@/features/vehicle/VehicleView.vue";
 import ParkingsEdit from "@/features/parking/ParkingsEdit.vue";
@@ -49,14 +48,6 @@ const adminRouter = [
     meta: adminMeta,
   },
 
-  {
-      path : 'admin/members/:memberNo/modify',
-      name : 'memberModify',
-      component : MemModify,
-      meta : adminMeta
-  },
-
-    
   {
       path : 'admin/carlog',
       name : 'carlogList',
