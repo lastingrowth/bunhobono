@@ -13,7 +13,7 @@ export const searchMember = (params) => {
 // 회원 상세 조회
 export const getMemberDetail = (memberNo) => {
     return api.get(`/members/${memberNo}/detail`);
-}
+};
 
 // 회원 수정
 export const updateMember = (memberNo, data) => {
@@ -43,4 +43,11 @@ export const residentEdit = (data) => {
 // 입주민 로그인 시, 직접 회원 정보 삭제
 export const residentDelete = () => {
     return api.delete(`/resident/mypage/delete`);
+};
+
+// 아이디 중복확인
+export const idCheckMember = (loginId) =>{
+    return api.get("/signup/check-id",{
+        params : {loginId}
+    });
 };
