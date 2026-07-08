@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { deleteMember, getMemberDetail, getMemberList, searchMember, signupMember, updateMember, residentMypage, residentEdit, residentDelete } from "./memApi";
+import { deleteMember, getMemberDetail, getMemberList, searchMember, signupMember, updateMember, residentMypage, residentEdit, residentDelete, idCheckMember } from "./memApi";
 
 export const useMemStore =  defineStore("member", () => {
 
@@ -57,6 +57,12 @@ export const useMemStore =  defineStore("member", () => {
     await residentDelete();
   };
 
+  // 아이디 중복확인
+  const idCheck = async (loginId) => {
+    const res = await idCheckMember(loginId)
+    return res.data;
+  }
+  
   return {
     memberList,
     member,
@@ -70,6 +76,7 @@ export const useMemStore =  defineStore("member", () => {
     loadMypage,
     editResident,
     removeResident,
+    idCheck,
   };
 
 });

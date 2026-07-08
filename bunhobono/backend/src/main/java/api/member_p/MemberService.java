@@ -76,4 +76,11 @@ public class MemberService {
         mapper.residentDelete(loginId);
     }
 
+    // 아이디 중복확인
+    public boolean checkLoginId(String loginId){
+        // exists = true(아이디 있다) 가 되면 사용 거부
+        // exists = false(아이디 없다) 가 되면 사용 가능
+        return  mapper.checkLoginId(loginId);
+    }
+
 }
