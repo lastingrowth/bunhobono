@@ -17,12 +17,12 @@ export const getMemberDetail = (memberNo) => {
 
 // 회원 수정
 export const updateMember = (memberNo, data) => {
-    return api.put(`/members/${memberNo}`, data);
+    return api.put(`/members/${memberNo}/edit`, data);
 };
 
 // 회원 삭제
 export const deleteMember = (memberNo) => {
-    return api.delete(`/members/${memberNo}`);
+    return api.delete(`/members/${memberNo}/delete`);
 };
 
 // 회원 등록
@@ -31,8 +31,8 @@ export const signupMember = (member) => {
 };
 
 // 입주민 로그인 시, 마이페이지
-export const residentMypage = (loginId) => {
-    return api.get(`/resident/${loginId}/mypage`);
+export const residentMypage = () => {
+    return api.get(`/resident/mypage`);
 };
 
 // 입주민 로그인 시, 직접 회원 정보 수정
@@ -41,8 +41,12 @@ export const residentEdit = (data) => {
 };
 
 // 입주민 로그인 시, 직접 회원 정보 삭제
-export const residentDelete = () => {
-    return api.delete(`/resident/mypage/delete`);
+export const residentDelete = (loginId) => {
+    return api.delete("/resident/mypage/delete", {
+        data: {
+            loginId: loginId
+        }
+    });
 };
 
 // 아이디 중복확인

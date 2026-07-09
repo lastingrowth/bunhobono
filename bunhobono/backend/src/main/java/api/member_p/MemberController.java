@@ -1,6 +1,7 @@
 package api.member_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,16 +66,28 @@ public class MemberController {
     }
 
     // 입주민 마이페이지
-    @GetMapping("/resident/{loginId}/mypage")
-    public MemberDTO residentMypage(@PathVariable String loginId) {
+    @GetMapping("/resident/mypage")
+    public MemberDTO residentMypage(Authentication authentication) {
+
+        String loginId = authentication.getName();
+
         return service.residentMypage(loginId);
     }
 
     // 입주민이 마이페이지에 로그인했을 때, 본인 정보 수정
-    @PutMapping("/resident/{loginId}/edit")
-    public void residentMypageEdit(@PathVariable String loginId, @RequestBody MemberDTO dto){
+    @PutMapping("/resident/mypage/edit")
+    public void residentMypageEdit(Authentication authentication, @RequestBody MemberDTO dto){
+
+        String loginId = authentication.getName();
+
         dto.setLoginId(loginId);
         service.residentMypageEdit(dto);
+    }
+
+    // 입주민 본인 회원 탈퇴
+    @DeleteMapping("/resident/mypage/delete")
+    public void residentDelete(@RequestBody MemberDTO dto) {
+        service.residentDelete(dto.getLoginId());
     }
 
     // 아이디 중복 확인

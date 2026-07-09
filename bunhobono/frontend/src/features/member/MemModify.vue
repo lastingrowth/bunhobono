@@ -84,6 +84,6 @@ const update = async () => {
     console.log(member);
     await store.editMember(memberNo, member);
     alert("수정되었습니다.");
-    router.push(`/admin/members/${memberNo}`);
+    router.push(`/admin/members/${memberNo}/detail`);
 };
 </script>

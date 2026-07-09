@@ -54,7 +54,7 @@ export const useMemStore =  defineStore("member", () => {
   
     // 입주민 로그인 시, 입주민 본인이 직접 회원 탈퇴
   const removeResident = async () => {
-    await residentDelete();
+    await residentDelete(member.value.loginId);
   };
 
   // 아이디 중복확인
