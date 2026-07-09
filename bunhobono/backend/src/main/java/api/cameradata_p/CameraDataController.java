@@ -1,6 +1,7 @@
 package api.cameradata_p;
 
 import jakarta.annotation.Resource;
+import org.apache.ibatis.annotations.Delete;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,8 +31,6 @@ public class CameraDataController {
 
         return cameraDataService.ocr(cameraNo, carNo, file);
     }
-
-
 
     @GetMapping("/{cameraDataNo}")
     public CameraDataDTO getCameraData(@PathVariable int cameraDataNo) {

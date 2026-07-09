@@ -41,11 +41,7 @@ public class SecurityConfig {
                         auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers(
-                                        //api연동 테스트로 임시로 열어둔 api
-                                        "/api/camera-data/ocr",
-                                        "/api/carlog/**",
-                                        "/api/vehicle/**",
-                                        "/api/notice/**").permitAll()
+                                        "/api/**").permitAll()
 
                                 .requestMatchers("/api/login", "/api/joinus").permitAll()
                                 .requestMatchers("/api/cameras/**").hasRole("ADMIN")   // ADMIN만 접근
