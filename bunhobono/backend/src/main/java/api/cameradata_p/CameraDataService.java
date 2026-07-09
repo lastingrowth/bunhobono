@@ -1,6 +1,7 @@
 package api.cameradata_p;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -90,5 +91,34 @@ public class CameraDataService {
     }
 
 
+    public int deleteData() {
+        List<CameraDataDTO> deleteList = cameraDataMapper.deleteTarget();
+
+        int deleteCount = 0;
+
+        for (CameraDataDTO dto : deleteList) {
+            try {
+                if (dto.getImagePath() != null && !dto.getImagePath().isBlank()) {
+                    Path imagePath = Paths.get(dto.getImagePath());
+
+                    Files.deleteIfExists(imagePath);
+                }
+                deleteCount += cameraDataMapper.delete(dto.getCameraDataNo());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return deleteCount;
+    }
+
+    @Scheduled (cron = "0 */1 * * * *")
+    public void autoDelete() {
+        System.out.println("스케쥴러 삭제 실행");
+
+        int count = deleteData();
+
+        System.out.println("자동 삭제된 카메라 데이터 수 : " + count);
+    }
 }
 

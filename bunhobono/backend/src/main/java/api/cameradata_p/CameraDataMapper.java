@@ -1,10 +1,7 @@
 package api.cameradata_p;
 
 
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -24,5 +21,11 @@ public interface CameraDataMapper {
 
     @Select("SELECT * FROM camera_data WHERE camera_data_no = #{cameraDataNo}")
     CameraDataDTO detail(int cameraDataNo);
+
+    @Select("select * from camera_data where capture_time < NOW() - INTERVAL '3 months'")
+    List<CameraDataDTO>deleteTarget();
+
+    @Delete("delete from camera_data where camera_data_no = #{cameraDataNo}")
+    int delete(int cameraDataNo);
 }
 
