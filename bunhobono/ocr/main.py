@@ -1,37 +1,28 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, UploadFile, File, Form
 import httpx
-import os
-
-SPRING_URL = os.getenv(
-    "SPRING_URL",
-    "http://localhost:80/api/camera-data/ocr"
-)
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    timeout = httpx.Timeout(10.0, connect=3.0)
-    
-    app.state.spring_client = httpx.AsyncClient(
-        timeout=timeout
-    )
-    
-    yield
-    await app.state.spring_client.aclose()
-
 app = FastAPI(
-    title = "Parking API test",
-    lifespan=lifespan
+    title = "Parking API test"
 )
+
+SPRING_URL ="http://localhost:80/api/camera-data/ocr"
 
 @app.get("/")
 def home():
     return{
-        "msg" : "Fast Api",
-        "spring_url": SPRING_URL
+        "msg" : "Fast Api"
     }
     
+@app.post ("/upload-test")
+async def upload_test(file: UploadFile = File(...)):
+    contents = await file.read()
+    
+    return {
+        "msg" : "사진 파일 받기 성공",
+        "filename" : file.filename,
+        "content_type" : file.content_type,
+        "file_size": len(contents)
+    }
+
 # t  
 @app.post("/ocr")
 async def ocr(
@@ -39,7 +30,7 @@ async def ocr(
     cameraNo: int = Form(...)
 ):
     #1. 사진 읽기
-    img = await file.read()
+    contents = await file.read()
     
     #2. 여기에서 OCR 처리
     # 아직 OCR 모델이 없으니까 임시 번호판 문자열로 테스트 
@@ -49,7 +40,7 @@ async def ocr(
     files = {
         "file": (
             file.filename,
-            img,
+            contents,
             file.content_type
         )
     }
@@ -60,13 +51,12 @@ async def ocr(
     }
     
     #4. Spring API 호출
-    client = app.state.spring_client
-   
-    response = await client.post(
-       SPRING_URL,
-       data=data,
-       files=files
-    )
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            SPRING_URL,
+            data=data,
+            files=files
+        )
     
     return {
         "msg": "OCR 처리 후 Spring 전송 완료",
