@@ -22,14 +22,10 @@ public interface CameraDataMapper {
     @Select("SELECT * FROM camera_data WHERE camera_data_no = #{cameraDataNo}")
     CameraDataDTO detail(int cameraDataNo);
 
-    @Select("SELECT camera_data_no, camera_no, vehicle_no, car_no, capture_time, image_path, recognition_state, confidence_score " +
-            "FROM camera_data " +
-            "WHERE car_no LIKE CONCAT('%', #{keyword}, '%') " +
-            "ORDER BY camera_data_no")
-    List<CameraDataDTO> searchByCarNo(String keyword);
+    @Select("select * from camera_data where capture_time < NOW() - INTERVAL '3 months'")
+    List<CameraDataDTO>deleteTarget();
 
-    //  특정 날짜 이전 데이터 삭제
-    @Delete("DELETE FROM camera_data WHERE capture_time::date < #{cutoffDate}")
-    void deleteOlderThanDate(java.time.LocalDate cutoffDate);
+    @Delete("delete from camera_data where camera_data_no = #{cameraDataNo}")
+    int delete(int cameraDataNo);
 }
 
