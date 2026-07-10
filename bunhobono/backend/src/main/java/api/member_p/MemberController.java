@@ -1,27 +1,25 @@
 package api.member_p;
 
 import jakarta.annotation.Resource;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RequestMapping("/api")
-@Controller
+@RestController
 public class MemberController {
 
     @Resource
     MemberService service;
 
     // 회원가입
-    @ResponseBody
     @PostMapping("/members")
     public void signup(@RequestBody  MemberDTO dto ) {
         service.signup(dto);
     }
 
     // 회원 수정
-    @ResponseBody
     @PutMapping("/members/{memberNo}/edit")
     public void update(@PathVariable int memberNo,
                        @RequestBody MemberDTO dto) {
@@ -30,21 +28,18 @@ public class MemberController {
     }
 
     // 회원 리스트
-    @ResponseBody
     @GetMapping("/members")
     public List<MemberDTO> list(){
         return service.list();
     }
 
     // 회원 상세내용
-    @ResponseBody
     @GetMapping("/members/{memberNo}/detail")
     public MemberDTO detail(@PathVariable int memberNo){
         return service.detail(memberNo);
     }
 
     // 회원 검색
-    @ResponseBody
     @GetMapping("/members/search")
     public List<MemberDTO> search(
             @RequestParam String type,
@@ -65,28 +60,41 @@ public class MemberController {
         return service.list();
     }
     // 삭제
-    @ResponseBody
     @DeleteMapping("/members/{memberNo}/delete")
     public void delete(@PathVariable int memberNo) {
         service.delete(memberNo);
     }
 
     // 입주민 마이페이지
-    @ResponseBody
-    @GetMapping("/resident/{loginId}/mypage")
-    public MemberDTO residentMypage(@PathVariable String loginId) {
+    @GetMapping("/resident/mypage")
+    public MemberDTO residentMypage(Authentication authentication) {
+
+        String loginId = authentication.getName();
+
         return service.residentMypage(loginId);
     }
 
     // 입주민이 마이페이지에 로그인했을 때, 본인 정보 수정
-    @ResponseBody
-    @PutMapping("/resident/{loginId}/edit")
-    public void residentMypageEdit(@PathVariable String loginId, @RequestBody MemberDTO dto){
+    @PutMapping("/resident/mypage/edit")
+    public void residentMypageEdit(Authentication authentication, @RequestBody MemberDTO dto){
+
+        String loginId = authentication.getName();
+
         dto.setLoginId(loginId);
         service.residentMypageEdit(dto);
     }
 
+    // 입주민 본인 회원 탈퇴
+    @DeleteMapping("/resident/mypage/delete")
+    public void residentDelete(@RequestBody MemberDTO dto) {
+        service.residentDelete(dto.getLoginId());
+    }
+
+    // 아이디 중복 확인
+    @GetMapping("/signup/check-id")
+    public boolean checkLoginId(@RequestParam String loginId){
+        return service.checkLoginId(loginId);
+    }
+
+
 }
-
-
-// @ResponseBody : return 값 서버에서 바로 표시

@@ -32,7 +32,7 @@
             </tr>
             <tr>
                 <th>아이디</th>
-                <td><input type="text" v-model="member.memLoginId"></td>
+                <td><input type="text" v-model="member.loginId"><button @click="idCheck">아이디중복확인</button></td>
             </tr>
             <tr>
                 <th>비밀번호</th>
@@ -78,8 +78,51 @@ const member = ref({
     memLoginPwd: "",
     memStatus: "",
 });
+const idChecked = ref(false);
+const checkedLoginId = ref("");
+
+// 아이디 중복확인
+const idCheck = async () => {
+    if (member.value.loginId === ""){
+        alert("아이디를 입력하세요");
+        return;
+    }
+
+    const exists = await store.idCheck(member.value.loginId);
+
+    if (exists) {
+        // true = 이미 존재
+        idChecked.value = false;
+        checkedLoginId.value = "";
+        alert("이미 사용중인 아이디입니다.");
+    } else {
+        // false = 사용 가능
+        idChecked.value = true;
+        checkedLoginId.value = member.value.loginId;
+        alert("사용 가능한 아이디입니다.");
+    }
+    
+}
+
 
 const signupGo = async () => {
+
+    // 가입유형 선택 여부
+    if (member.value.role === "") {
+        alert("가입유형을 선택하세요.");
+        return;
+    }
+
+    // 상태 선택 여부
+    if (member.value.memStatus === "") {
+        alert("상태를 선택하세요.");
+        return;
+    }
+
+    if(!idChecked.value||checkedLoginId.value !== member.value.loginId){
+        alert("아이디 중복확인을 해주세요")
+        return;
+    }
 
     try {
         await store.signup(member.value);

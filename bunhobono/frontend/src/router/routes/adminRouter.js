@@ -13,6 +13,7 @@ import ParkingsSignup from "@/features/parking/ParkingsSignup.vue";
 import NoteList from "@/features/notice/NoteList.vue";
 import NoteDetail from "@/features/notice/NoteDetail.vue";
 import AdminView from "@/views/admin/AdminView.vue";
+import MemModify from "@/features/member/MemModify.vue";
 
 const adminMeta = {
   requireAuth: true,
@@ -28,16 +29,23 @@ const adminRouter = [
   },
 
   {
-    path: "admin/members",
+    path: "/admin/members",
     name: "memberList",
     component: MemList,
     meta: adminMeta,
   },
 
   {
-    path: "admin/members/:memberNo",
+    path: "/admin/members/:memberNo/detail",
     name: "memberDetail",
     component: MemListDetail,
+    meta: adminMeta,
+  },
+
+  {
+    path: "/admin/members/:memberNo/edit",
+    name: "memberModify",
+    component: MemModify,
     meta: adminMeta,
   },
 

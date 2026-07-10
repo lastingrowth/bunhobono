@@ -73,6 +73,10 @@ public interface MemberMapper {
     @Delete("DELETE FROM member WHERE login_id = #{loginId}")
     int residentDelete(String loginId);
 
+    // 아이디 중복확인
+    @Select("SELECT EXISTS (SELECT 1 FROM member WHERE login_id = #{loginId})" )
+    boolean checkLoginId(String LoginId);
+
 
 }
 
