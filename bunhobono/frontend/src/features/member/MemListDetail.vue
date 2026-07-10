@@ -1,11 +1,15 @@
 <template>
     <h2>회원상세</h2>
 
+    <div>
+        <button @click="goEdit">수정</button>
+        <button @click="goDelte">삭제</button>
+    </div>
     <table border="">
         <tbody>
             <tr>
                 <th>가입유형</th>
-                <td>{{ store.member.memRole }}</td>
+                <td>{{ store.member.role }}</td>
             </tr>
             <tr>
                 <th>이름</th>
@@ -25,11 +29,11 @@
             </tr>
             <tr>
                 <th>아이디</th>
-                <td>{{ store.member.memLoginId }}</td>
+                <td>{{ store.member.loginId }}</td>
             </tr>
             <tr>
                 <th>비밀번호</th>
-                <td>{{ store.member.memLoginPwd }}</td>
+                <td>{{ store.member.loginPwd }}</td>
             </tr>
             <tr>
                 <th>가입일</th>
@@ -48,15 +52,32 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useMemStore } from './memStore';
 import { onMounted } from 'vue';
 
 const route = useRoute();
+const router = useRouter();
 const store = useMemStore();
 
+const memberNo = route.params.memberNo;
+
+function goEdit(){
+    router.push(`/admin/members/${memberNo}/edit`);
+}
+
+async function goDelte(){
+    const ok = confirm("정말 삭제하시겠습니까?");
+    if (!ok) return;
+
+    await store.removeMember(memberNo);
+
+    alert("삭제되었습니다.");
+    router.push("/admin/members");
+}
+
 onMounted(() => {
-    store.loadMember(route.params.memberNo);
+    store.loadMember(memberNo);
 });
 
 </script>

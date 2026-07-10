@@ -44,17 +44,17 @@
         <tbody>
 
             <tr v-for="mem in memberList" :key="mem.memberNo">
-                <td>{{ mem.memRole }}</td>
+                <td>{{ mem.role }}</td>
                 <td>
-                    <router-link :to="`/members/detail/${mem.memberNo}`">
+                    <router-link :to="`/admin/members/${mem.memberNo}/detail`">
                         {{ mem.memName }}
                     </router-link>
                 </td>
                 <td>{{ mem.memDong }}</td>
                 <td>{{ mem.memHo }}</td>
                 <td>{{ mem.memPhone }}</td>
-                <td>{{ mem.memLoginId }}</td>
-                <td>{{ mem.memLoginPwd }}</td>
+                <td>{{ mem.loginId }}</td>
+                <td>{{ mem.loginPwd }}</td>
                 <td>{{ mem.memCreateAt }}</td>
                 <td>{{ mem.memDeleteAt }}</td>
                 <td>{{ mem.memStatus }}</td>
@@ -66,8 +66,10 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useMemStore } from './memStore';
+import { storeToRefs } from 'pinia';
 
 const store = useMemStore();
+const { memberList } = storeToRefs(store);
 
 const searchType = ref("all");
 const searchKeyword = ref("");

@@ -8,6 +8,7 @@
     <router-link to="/cameraData/list">카메라데이터정보조회</router-link>
     <router-link to="/parkings/list2">주차장정보보기</router-link>
     <router-link to="/admin/notice">알림목록</router-link>
+    <router-link to="/admin/members">회원조회</router-link>
   </div>
 </template>
 

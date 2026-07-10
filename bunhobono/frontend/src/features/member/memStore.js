@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { deleteMember, getMemberDetail, getMemberList, searchMember, signupMember, updateMember } from "./memApi";
+import { deleteMember, getMemberDetail, getMemberList, searchMember, signupMember, updateMember, residentMypage, residentEdit, residentDelete, idCheckMember } from "./memApi";
 
 export const useMemStore =  defineStore("member", () => {
 
@@ -41,6 +41,28 @@ export const useMemStore =  defineStore("member", () => {
     return res.data;
   };
 
+    // 입주민 로그인 시, 마이페이지
+  const loadMypage = async (loginId) => {
+    const res = await residentMypage(loginId);
+    member.value = res.data;
+  };
+
+    // 입주민 로그인 시, 입주민 본인이 회원 정보 수정
+  const editResident = async (data) => {
+    await residentEdit(data);
+  };
+  
+    // 입주민 로그인 시, 입주민 본인이 직접 회원 탈퇴
+  const removeResident = async () => {
+    await residentDelete(member.value.loginId);
+  };
+
+  // 아이디 중복확인
+  const idCheck = async (loginId) => {
+    const res = await idCheckMember(loginId)
+    return res.data;
+  }
+  
   return {
     memberList,
     member,
@@ -51,6 +73,10 @@ export const useMemStore =  defineStore("member", () => {
     editMember,
     removeMember,
     signup,
+    loadMypage,
+    editResident,
+    removeResident,
+    idCheck,
   };
 
 });
