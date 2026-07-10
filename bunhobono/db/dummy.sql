@@ -255,115 +255,115 @@ VALUES
 
 -- =====================================================
 INSERT INTO car_log
-    (vehicle_car_no, in_gate_no, in_time, out_gate_no, out_time)
+    (camera_data_no, vehicle_car_no, in_gate_no, in_time, out_gate_no, out_time)
 VALUES
 
 -- A주차장  1번 게이트
     -- 일반 등록 차량: 현재 주차 중
-    (1, 1, '2026-07-12 08:10:00', NULL, NULL),
-    (2, 1, '2026-07-12 08:25:00', NULL, NULL),
-    (3, 1, '2026-07-12 08:40:00', NULL, NULL),
-    (4, 1, '2026-07-12 08:55:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 1 AND direction = 'IN' LIMIT 1), 1, 1, '2026-07-12 08:10:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 2 AND direction = 'IN' LIMIT 1), 2, 1, '2026-07-12 08:25:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 3 AND direction = 'IN' LIMIT 1), 3, 1, '2026-07-12 08:40:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 4 AND direction = 'IN' LIMIT 1), 4, 1, '2026-07-12 08:55:00', NULL, NULL),
 
     -- 일반 등록 차량: 출차 완료
-    (5, 1, '2026-07-12 09:10:00', 2, '2026-07-12 11:20:00'),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 5 AND direction = 'IN' LIMIT 1), 5, 1, '2026-07-12 09:10:00', 2, '2026-07-12 11:20:00'),
 
     -- 방문 등록 차량: 현재 주차 중
-    (14, 1, '2026-07-06 10:05:00', NULL, NULL),
-    (15, 1, '2026-07-06 10:15:00', NULL, NULL),
-    (16, 1, '2026-07-06 10:25:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 14 AND direction = 'IN' LIMIT 1), 14, 1, '2026-07-06 10:05:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 15 AND direction = 'IN' LIMIT 1), 15, 1, '2026-07-06 10:15:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 16 AND direction = 'IN' LIMIT 1), 16, 1, '2026-07-06 10:25:00', NULL, NULL),
 
     -- 방문 등록 차량: 출차 완료
-    (17, 1, '2026-07-02 10:40:00', 2, '2026-07-02 12:10:00'),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 17 AND direction = 'IN' LIMIT 1), 17, 1, '2026-07-02 10:40:00', 2, '2026-07-02 12:10:00'),
 
 -- =====================================================
 
 -- B주차장 3번 게이트
     -- 일반 등록 차량: 현재 주차 중
-    (6, 3, '2026-07-12 09:00:00', NULL, NULL),
-    (7, 3, '2026-07-12 09:15:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 6 AND direction = 'IN' LIMIT 1), 6, 3, '2026-07-12 09:00:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 7 AND direction = 'IN' LIMIT 1), 7, 3, '2026-07-12 09:15:00', NULL, NULL),
 
-    -- 일반 등록 차량: 출차 완료
-    (8, 3, '2026-07-12 09:30:00', 4, '2026-07-12 13:00:00'),
+    -- 일반 등록 차량: 입차 후 출차
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 8 AND direction = 'IN' LIMIT 1), 8, 3, '2026-07-12 09:30:00', 4, '2026-07-12 13:00:00'),
 
     -- 방문 등록 차량: 현재 주차 중
-    (18, 3, '2026-07-06 11:05:00', NULL, NULL),
-    (19, 3, '2026-07-06 11:15:00', NULL, NULL),
-    (20, 3, '2026-07-06 11:25:00', NULL, NULL),
-    (21, 3, '2026-07-06 11:35:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 18 AND direction = 'IN' LIMIT 1), 18, 3, '2026-07-06 11:05:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 19 AND direction = 'IN' LIMIT 1), 19, 3, '2026-07-06 11:15:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 20 AND direction = 'IN' LIMIT 1), 20, 3, '2026-07-06 11:25:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 21 AND direction = 'IN' LIMIT 1), 21, 3, '2026-07-06 11:35:00', NULL, NULL),
 
     -- 방문 등록 차량: 출차 완료
-    (22, 3, '2026-07-02 11:45:00', 4, '2026-07-02 14:20:00'),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 22 AND direction = 'IN' LIMIT 1), 22, 3, '2026-07-02 11:45:00', 4, '2026-07-02 14:20:00'),
 
 -- =====================================================
 
 -- C주차장 5번 게이트
     -- 일반 등록 차량: 현재 주차 중
-    (9, 5, '2026-07-12 10:00:00', NULL, NULL),
-    (10, 5, '2026-07-12 10:15:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 9 AND direction = 'IN' LIMIT 1), 9, 5, '2026-07-12 10:00:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 10 AND direction = 'IN' LIMIT 1), 10, 5, '2026-07-12 10:15:00', NULL, NULL),
 
-    -- 일반 등록 차량: 출차 완료
-    (11, 5, '2026-07-12 10:30:00', 6, '2026-07-12 15:10:00'),
+    -- 일반 등록 차량: 입차 후 출차
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 11 AND direction = 'IN' LIMIT 1), 11, 5, '2026-07-12 10:30:00', 6, '2026-07-12 15:10:00'),
 
     -- 방문 등록 차량: 현재 주차 중
-    (23, 5, '2026-07-06 12:05:00', NULL, NULL),
-    (24, 5, '2026-07-06 12:15:00', NULL, NULL),
-    (25, 5, '2026-07-06 12:25:00', NULL, NULL),
-    (26, 5, '2026-07-06 12:35:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 23 AND direction = 'IN' LIMIT 1), 23, 5, '2026-07-06 12:05:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 24 AND direction = 'IN' LIMIT 1), 24, 5, '2026-07-06 12:15:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 25 AND direction = 'IN' LIMIT 1), 25, 5, '2026-07-06 12:25:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 26 AND direction = 'IN' LIMIT 1), 26, 5, '2026-07-06 12:35:00', NULL, NULL),
 
     -- 방문 등록 차량: 출차 완료
-    (27, 5, '2026-07-02 12:45:00', 6, '2026-07-02 16:00:00'),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 27 AND direction = 'IN' LIMIT 1), 27, 5, '2026-07-02 12:45:00', 6, '2026-07-02 16:00:00'),
 
 -- =====================================================
 
 -- D 지상주차장 7번 게이트
     -- 일반 등록 차량: 현재 주차 중
-    (12, 7, '2026-07-12 11:00:00', NULL, NULL),
-    (13, 7, '2026-07-12 11:15:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 12 AND direction = 'IN' LIMIT 1), 12, 7, '2026-07-12 11:00:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 13 AND direction = 'IN' LIMIT 1), 13, 7, '2026-07-12 11:15:00', NULL, NULL),
 
     -- 방문 등록 차량: 현재 주차 중
-    (28, 7, '2026-07-06 13:05:00', NULL, NULL),
-    (29, 7, '2026-07-06 13:15:00', NULL, NULL),
-    (30, 7, '2026-07-06 13:25:00', NULL, NULL),
-    (31, 7, '2026-07-06 13:35:00', NULL, NULL),
-    (32, 7, '2026-07-06 13:45:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 28 AND direction = 'IN' LIMIT 1), 28, 7, '2026-07-06 13:05:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 29 AND direction = 'IN' LIMIT 1), 29, 7, '2026-07-06 13:15:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 30 AND direction = 'IN' LIMIT 1), 30, 7, '2026-07-06 13:25:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 31 AND direction = 'IN' LIMIT 1), 31, 7, '2026-07-06 13:35:00', NULL, NULL),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 32 AND direction = 'IN' LIMIT 1), 32, 7, '2026-07-06 13:45:00', NULL, NULL),
 
     -- 방문 등록 차량: 출차 완료
-    (33, 7, '2026-07-02 13:55:00', 7, '2026-07-02 17:30:00'),
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 33 AND direction = 'IN' LIMIT 1), 33, 7, '2026-07-02 13:55:00', 7, '2026-07-02 17:30:00'),
 
 -- =====================================================
 --[알림용 로그 더미데이터]
     -- 방문 차량: 만료 후 5~8일 경과
-    (34, 1, '2026-06-25 09:10:00', NULL, NULL), -- A-IN
-    (35, 3, '2026-06-26 10:10:00', NULL, NULL), -- B-IN
-    (36, 5, '2026-06-28 11:10:00', NULL, NULL), -- C-IN
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 34 AND direction = 'IN' LIMIT 1), 34, 1, '2026-06-25 09:10:00', NULL, NULL), -- A-IN
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 35 AND direction = 'IN' LIMIT 1), 35, 3, '2026-06-26 10:10:00', NULL, NULL), -- B-IN
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 36 AND direction = 'IN' LIMIT 1), 36, 5, '2026-06-28 11:10:00', NULL, NULL), -- C-IN
 
     -- 방문 차량: 만료 후 2~3일 경과
-    (37, 3, '2026-06-30 12:10:00', NULL, NULL), -- B-IN
-    (38, 7, '2026-07-01 13:10:00', NULL, NULL), -- D-BOTH
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 37 AND direction = 'IN' LIMIT 1), 37, 3, '2026-06-30 12:10:00', NULL, NULL), -- B-IN
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 38 AND direction = 'IN' LIMIT 1), 38, 7, '2026-07-01 13:10:00', NULL, NULL), -- D-BOTH
 
     -- 일반 입주민 차량: 만료 후 약 7일 경과
-    (39, 1, '2026-06-30 08:30:00', NULL, NULL), -- A-IN
-    (40, 5, '2026-06-30 09:00:00', NULL, NULL); -- C-IN
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 39 AND direction = 'IN' LIMIT 1), 39, 1, '2026-06-30 08:30:00', NULL, NULL), -- A-IN
+    ((SELECT camera_data_no FROM camera_data WHERE vehicle_no = 40 AND direction = 'IN' LIMIT 1), 40, 5, '2026-06-30 09:00:00', NULL, NULL); -- C-IN
 
 
 -- =====================================================
 -- 8. NOTICE
 -- =====================================================
-INSERT INTO notice (parking_no, plate_no, entry_at, stay_days, alert_stat)
+INSERT INTO notice (parking_no, car_log_no, entry_at, stay_days, alert_stat)
 VALUES
 -- 방문 차량: 만료 후 5~8일 경과
-(1, '501하5001', '2026-06-25 09:10:00', 8, 'Unresolved'),
-(2, '502허5002', '2026-06-26 10:10:00', 7, 'Unresolved'),
-(3, '503호5003', '2026-06-28 11:10:00', 5, 'Unresolved'),
+(1, (SELECT car_log_no FROM car_log WHERE vehicle_car_no = 34 AND out_time IS NULL LIMIT 1), '2026-06-25 09:10:00', 8, 'Unresolved'),
+(2, (SELECT car_log_no FROM car_log WHERE vehicle_car_no = 35 AND out_time IS NULL LIMIT 1), '2026-06-26 10:10:00', 7, 'Unresolved'),
+(3, (SELECT car_log_no FROM car_log WHERE vehicle_car_no = 36 AND out_time IS NULL LIMIT 1), '2026-06-28 11:10:00', 5, 'Unresolved'),
 
 -- 방문 차량: 만료 후 2~3일 경과
-(2, '504하5004', '2026-06-30 12:10:00', 3, 'Unresolved'),
-(4, '505허5005', '2026-07-01 13:10:00', 2, 'Unresolved'),
+(2, (SELECT car_log_no FROM car_log WHERE vehicle_car_no = 37 AND out_time IS NULL LIMIT 1), '2026-06-30 12:10:00', 3, 'Unresolved'),
+(4, (SELECT car_log_no FROM car_log WHERE vehicle_car_no = 38 AND out_time IS NULL LIMIT 1), '2026-07-01 13:10:00', 2, 'Unresolved'),
 
 -- 일반 입주민 차량: 만료 후 약 7일 경과
-(1, '601가6001', '2026-06-30 08:30:00', 7, 'Unresolved'),
-(3, '602나6002', '2026-06-30 09:00:00', 7, 'Unresolved');
+(1, (SELECT car_log_no FROM car_log WHERE vehicle_car_no = 39 AND out_time IS NULL LIMIT 1), '2026-06-30 08:30:00', 7, 'Unresolved'),
+(3, (SELECT car_log_no FROM car_log WHERE vehicle_car_no = 40 AND out_time IS NULL LIMIT 1), '2026-06-30 09:00:00', 7, 'Unresolved');
 
 
 COMMIT;
