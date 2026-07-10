@@ -95,11 +95,6 @@ public class CameraDataService {
     public List<CameraDataDTO> searchByCarNo(String keyword) {
         return cameraDataMapper.searchByCarNo(keyword);
     }
-    //  3개월 지난 데이터 삭제
-    public void deleteOlderThanMonths(int months) {
-        LocalDate cutoffDate = LocalDate.now().minusMonths(months);
-        cameraDataMapper.deleteOlderThanDate(cutoffDate);
-        }
 
     public int deleteData() {
         List<CameraDataDTO> deleteList = cameraDataMapper.deleteTarget();
