@@ -170,9 +170,9 @@ CREATE TABLE camera_data (
 
 CREATE TABLE car_log (
     car_log_no      SERIAL PRIMARY KEY,  -- 로그 고유번호
-
-    vehicle_car_no  INT,                 -- 등록 차량 고유번호 (FK)
-    in_gate_no      INT,                 -- 입차 게이트 번호 (FK)
+    camera_data_no  INT,                 -- 연결된 카메라 데이터 고유번호 (FK)
+    vehicle_car_no  INT,                 -- 연결된 등록 차량 고유번호 (FK)
+    in_gate_no      INT,                 -- 연결된 입차 게이트 번호 (FK)
     in_time         TIMESTAMP,           -- 입차 시각
     out_gate_no     INT,                 -- 출차 게이트 번호 (FK)
     out_time        TIMESTAMP,           -- 출차 시각
@@ -191,6 +191,11 @@ CREATE TABLE car_log (
     -- [외래키 설정 3] 출차 게이트 참조 (gate 테이블의 gate_no)
     CONSTRAINT fk_log_out_gate 
         FOREIGN KEY (out_gate_no) REFERENCES gate(gate_no) 
+        ON DELETE SET NULL,
+
+    -- [외래키 설정 4] 카메라 데이터 참조 (camera_data 테이블의 camera_data_no)
+    CONSTRAINT fk_log_camera_data
+        FOREIGN KEY (camera_data_no) REFERENCES camera_data (camera_data_no)
         ON DELETE SET NULL
 
 );
@@ -209,17 +214,22 @@ CREATE TABLE car_log (
 CREATE TABLE notice (
     notice_no   SERIAL          PRIMARY KEY,                          -- 알림 고유번호
     parking_no  INT             NOT NULL,                             -- 연결된 주차장 고유번호 (FK)
-    plate_no    VARCHAR(50)     NOT NULL,                             -- 차량 번호
+    car_log_no  INT             NOT NULL,                             -- 연결된 로그 고유번호 (FK)
     entry_at    TIMESTAMP       NOT NULL,                             -- 입차 일시
     detect_at   TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,            -- 장기주차 감지 일시
     stay_days   INT             NOT NULL,                             -- 체류/주차 일수 (예: 5일, 7일 등)
     alert_stat  VARCHAR(20)     DEFAULT 'Unresolved'                  -- 알림 상태 (예: 미확인, 확인, 조치완료)
                                 CHECK (alert_stat IN ('Unresolved', 'Checked', 'Resolved')), 
                         
-    --  [외래키 설정] parking 테이블의 parking_no 컬럼 참조
+    -- [외래키 설정] parking 테이블의 parking_no 컬럼 참조
     CONSTRAINT fk_notice_parking 
         FOREIGN KEY (parking_no) REFERENCES parking(parking_no)
-        ON DELETE CASCADE -- 주차 구역이 시스템에서 삭제되면 관련 알림 내역도 함께 삭제
+        ON DELETE CASCADE, -- 주차 구역이 시스템에서 삭제되면 관련 알림 내역도 함께 삭제
+
+    -- [외래키 설정] car_log 테이블의 car_log_no 컬럼 참조 
+    CONSTRAINT fk_notice_car_log
+        FOREIGN KEY (car_log_no) REFERENCES car_log(car_log_no)
+        ON DELETE CASCADE
 );
 
 
