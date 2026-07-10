@@ -27,6 +27,7 @@ public interface CameraDataMapper {
             "WHERE car_no LIKE CONCAT('%', #{keyword}, '%') " +
             "ORDER BY camera_data_no")
     List<CameraDataDTO> searchByCarNo(String keyword);
+
     @Select("select * from camera_data where capture_time < NOW() - INTERVAL '3 months'")
     List<CameraDataDTO>deleteTarget();
 
