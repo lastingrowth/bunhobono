@@ -1,7 +1,6 @@
 package api.camera_p;
 
 
-import api.parking_p.ParkingDTO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 

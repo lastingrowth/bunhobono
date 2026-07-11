@@ -1,6 +1,5 @@
 package api.camera_p;
 
-import api.parking_p.ParkingDTO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +33,9 @@ public class CameraController {
     }
 
     @PutMapping("/{cameraNo}/edit")
-    public int updateCamera(@RequestBody CameraDTO dto) {
+    public int updateCamera(@PathVariable int cameraNo,
+                            @RequestBody CameraDTO dto) {
+        dto.setCameraNo(cameraNo);
         return cameraService.update(dto);
     }
 }
