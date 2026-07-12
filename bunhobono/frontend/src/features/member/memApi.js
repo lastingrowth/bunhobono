@@ -50,7 +50,7 @@ export const residentDelete = (loginId) => {
 };
 
 // 아이디 중복확인
-export const idCheckMember = (loginId) =>{
+export const idCheckMember = (loginId) => {
     return api.get("/signup/check-id",{
         params : {loginId}
     });

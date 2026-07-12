@@ -19,7 +19,7 @@
 
       <div class="form-actions">
         <button type="submit">수정하기</button>
-        <button type="button" @click="router.push('/parkings/list2')">취소</button>
+        <button type="button" @click="router.push('/admin/parkings')">취소</button>
       </div>
     </form>
   </div>
