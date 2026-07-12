@@ -45,8 +45,8 @@ public interface NoticeMapper {
         UPDATE notice
         SET alert_stat = #{alertStat},
             handled_by_member_no = CASE
-                WHEN #{alertStat} = 'Unresolved' THEN NULL
-                ELSE #{handledByMemberNo}
+                WHEN #{alertStat} = 'Unresolved' THEN NULL::integer
+                ELSE CAST(#{handledByMemberNo,jdbcType=INTEGER} AS INTEGER)
             END,
             handled_at = CASE
                 WHEN #{alertStat} = 'Unresolved' THEN NULL

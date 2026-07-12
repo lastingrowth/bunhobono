@@ -32,11 +32,7 @@
                 <th>이름</th>
                 <th>동</th>
                 <th>호수</th>
-                <th>연락처</th>
                 <th>아이디</th>
-                <th>비밀번호</th>
-                <th>가입일</th>
-                <th>탈퇴일</th>
                 <th>상태</th>
             </tr>
         </thead>
@@ -52,11 +48,7 @@
                 </td>
                 <td>{{ mem.memDong }}</td>
                 <td>{{ mem.memHo }}</td>
-                <td>{{ mem.memPhone }}</td>
                 <td>{{ mem.loginId }}</td>
-                <td>{{ mem.loginPwd }}</td>
-                <td>{{ mem.memCreateAt }}</td>
-                <td>{{ mem.memDeleteAt }}</td>
                 <td>{{ mem.memStatus }}</td>
             </tr>
         </tbody>

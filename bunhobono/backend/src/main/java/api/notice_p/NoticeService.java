@@ -16,6 +16,13 @@ public class NoticeService {
         return noticeMapper.list();
     }
 
+    public NoticeDTO detail(int noticeNo){
+        return noticeMapper.list().stream()
+                .filter(notice -> notice.getNoticeNo() == noticeNo)
+                .findFirst()
+                .orElse(null);
+    }
+
     public int status(NoticeDTO dto) {
         return noticeMapper.status(dto);
     }

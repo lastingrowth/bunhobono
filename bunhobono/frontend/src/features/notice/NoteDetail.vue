@@ -45,30 +45,12 @@
       </table>
 
       <section class="status-panel">
-        <label for="alert-status">
-          처리 상태 변경
-        </label>
-
-        <select
-          id="alert-status"
-          v-model="statusDraft"
-          :disabled="saving"
-        >
-          <option
-            v-for="option in statusSelectOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-
         <button
           type="button"
-          :disabled="!canSaveStatus"
-          @click="saveStatus"
+          :disabled="!canResolveNotice"
+          @click="resolveNotice"
         >
-          {{ saving ? "저장 중" : "저장" }}
+          {{ saving ? "처리 중" : "처리 완료" }}
         </button>
       </section>
     </template>
@@ -95,19 +77,12 @@ const { notice, notices: noticeList } = storeToRefs(noticeStore);
 const loading = ref(false);
 const saving = ref(false);
 const errorMessage = ref("");
-const statusDraft = ref("Unresolved");
 
 const statusOptions = {
   Unresolved: "미확인",
   Checked: "확인",
   Resolved: "처리 완료",
 };
-
-const statusSelectOptions = [
-  { value: "Unresolved", label: "미확인" },
-  { value: "Checked", label: "확인" },
-  { value: "Resolved", label: "처리 완료" },
-];
 
 const noticeNo = computed(() => {
   return route.params.noticeNo;
@@ -144,9 +119,8 @@ const nextNotice = computed(() => {
   return noticeList.value[currentIndex.value + 1];
 });
 
-// 알림이 있고 저장 중이 아닐 때만 상태 변경 가능
-const canSaveStatus = computed(() => {
-  return Boolean(notice.value) && !saving.value;
+const canResolveNotice = computed(() => {
+  return Boolean(notice.value) && notice.value.alertStat !== "Resolved" && !saving.value;
 });
 
 // 날짜 표시 형식
@@ -225,13 +199,14 @@ const loadDetail = async () => {
       return;
     }
 
-    // 미확인 알림을 열면 확인 상태로 변경
     if (notice.value.alertStat === "Unresolved") {
-      await updateNoticeStatus(notice.value.noticeNo, "Checked");
-      notice.value.alertStat = "Checked";
+      try {
+        await updateNoticeStatus(notice.value.noticeNo, "Checked");
+        notice.value.alertStat = "Checked";
+      } catch (error) {
+        console.error(error);
+      }
     }
-
-    statusDraft.value = notice.value.alertStat ?? "Checked";
   } catch (error) {
     console.error(error);
     errorMessage.value = "알림 상세 정보를 불러오지 못했습니다.";
@@ -262,9 +237,8 @@ const moveNotice = (targetNotice) => {
   router.push(`/admin/notice/${targetNoticeNo}`);
 };
 
-// 선택한 처리 상태 저장
-const saveStatus = async () => {
-  if (!canSaveStatus.value) {
+const resolveNotice = async () => {
+  if (!canResolveNotice.value) {
     return;
   }
 
@@ -272,19 +246,21 @@ const saveStatus = async () => {
   errorMessage.value = "";
 
   try {
-    await updateNoticeStatus(notice.value.noticeNo, statusDraft.value);
-    notice.value.alertStat = statusDraft.value;
+    await updateNoticeStatus(notice.value.noticeNo, "Resolved");
+    notice.value.alertStat = "Resolved";
 
-    if (statusDraft.value === "Resolved") {
-      alert("처리 완료되었습니다.");
-    } else if (statusDraft.value === "Unresolved") {
-      alert("미확인 상태로 변경되었습니다.");
-    } else {
-      alert("확인 상태로 변경되었습니다.");
+    const target = noticeList.value.find((item) => {
+      const itemNo = item.noticeNo ?? item.notice_no;
+
+      return Number(itemNo) === Number(notice.value.noticeNo);
+    });
+
+    if (target) {
+      target.alertStat = "Resolved";
     }
   } catch (error) {
     console.error(error);
-    errorMessage.value = "처리 상태 변경에 실패했습니다.";
+    errorMessage.value = "처리 완료 변경에 실패했습니다.";
   } finally {
     saving.value = false;
   }
