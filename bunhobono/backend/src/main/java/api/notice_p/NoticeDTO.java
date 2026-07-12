@@ -9,7 +9,9 @@ public class NoticeDTO {
     private Integer displayNo;
     private Integer noticeNo;
     private Integer carLogNo;
-    private String carNo;
+    private String registeredCarNo;
+    private String capturedCarNo;
+    private String carKind;
     private LocalDateTime detectAt;
     private Integer stayDays;
     private String alertStat;
