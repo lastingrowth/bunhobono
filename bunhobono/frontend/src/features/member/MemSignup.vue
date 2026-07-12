@@ -129,7 +129,7 @@ const signupGo = async () => {
 
         alert("회원등록 성공");
 
-        router.push("/members");
+        router.push("/login");
     } catch (e) {
         console.error(e);
         alert("회원등록 실패");
