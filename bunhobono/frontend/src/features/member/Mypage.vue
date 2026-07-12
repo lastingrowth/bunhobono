@@ -34,10 +34,6 @@
                 <td>{{ store.member.loginId }}</td>
             </tr>
             <tr>
-                <th>비밀번호</th>
-                <td>{{ store.member.loginPwd }}</td>
-            </tr>
-            <tr>
                 <th>가입일</th>
                 <td>{{ store.member.memCreateAt }}</td>
             </tr>
