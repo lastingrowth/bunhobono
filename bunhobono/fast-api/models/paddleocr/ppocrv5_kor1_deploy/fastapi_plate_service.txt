@@ -1,0 +1,17 @@
+fastapi_plate_service/
+├─ main.py
+├─ ocr_reader.py
+└─ models/
+   └─ ppocrv5_kor1_deploy/
+      └─ inference/
+         ├─ inference.json
+         ├─ inference.pdiparams
+         └─ inference.yml
+
+
+
+모델 안에 폴더 넣고
+메인 파이썬에서 불러오면 됩니다.
+
+OCR_MODEL_DIR = BASE_DIR / "models" / "ppocrv5_kor1_deploy" / "inference"
+

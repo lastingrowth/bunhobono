@@ -1,9 +1,7 @@
 from contextlib import asynccontextmanager
 import os
-
 from fastapi import FastAPI, UploadFile, File, Form
 import httpx
-
 from yolo_detect import PlateDetector
 from plate_ocr import PlateOCR
 
@@ -146,6 +144,7 @@ async def ocr(
         "confidenceScore": str(ocr_result["score"])
     }
     
+
     files = {
         "file": (
             file.filename,
@@ -154,7 +153,6 @@ async def ocr(
         )
     }
 
-    # 5. Spring API 호출
     client = app.state.spring_client
 
     response = await client.post(
@@ -173,4 +171,5 @@ async def ocr(
         "ocr": ocr_result,
         "spring_status": response.status_code,
         "spring_result": response.text
+
     }
