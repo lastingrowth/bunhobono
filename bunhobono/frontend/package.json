@@ -1,5 +1,5 @@
 {
-  "name": "bonoprj",
+  "name": "proto",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,7 +16,9 @@
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
     "@vitejs/plugin-vue": "^6.0.7",
+    "tailwindcss": "^4.3.2",
     "vite": "^8.0.16",
     "vite-plugin-vue-devtools": "^8.1.2"
   },

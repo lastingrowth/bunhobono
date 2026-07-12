@@ -5,44 +5,22 @@ export const getVehicleList = () => {
     return api.get("/vehicles");
 };
 
-// 차량번호 검색
-export const searchVehicleByCarNo = (carNo) => {
-    return api.get("/vehicles/search", {
-        params: { carNo },
-    });
-};
-
-// 차량 상세
-export const getVehicleDetail = (vehicleNo) => {
-    return api.get(`/vehicles/${vehicleNo}`);
-};
-
 // 차량 등록
 export const createVehicle = (data) => {
-    return api.post("/vehicles/insert", data);
+    return api.post("/vehicles/signUp", data);
 };
 
 // 차량 수정
-export const updateVehicle = (vehicleNo, data) => {
-    return api.put(`/vehicles/${vehicleNo}/edit`, data);
+export const updateVehicle = (vehicleCarNo, data) => {
+    return api.put(`/vehicles/${vehicleCarNo}/edit`, data);
 };
 
 // 차량 삭제
-export const deleteVehicle = (vehicleNo) => {
-    return api.delete(`/vehicles/${vehicleNo}/delete`);
+export const deleteVehicle = (vehicleCarNo) => {
+    return api.delete(`/vehicles/${vehicleCarNo}/delete`);
 };
 
-// 승인 대기 목록
-export const getVehicleApproveList = () => {
-    return api.get("/vehicles/approve");
-};
-
-// 승인 대기 상세
-export const getVehicleApproveDetail = (vehicleNo) => {
-    return api.get(`/vehicles/approve/${vehicleNo}`);
-};
-
-// 승인 상태 처리
-export const updateVehicleApproveStatus = (vehicleNo, data) => {
-    return api.put(`/vehicles/approve/${vehicleNo}/status`, data);
+// 차량 승인 상태 변경
+export const updateVehicleStatus = (vehicleCarNo, data) => {
+    return api.patch(`/vehicles/${vehicleCarNo}/status`, data);
 };
