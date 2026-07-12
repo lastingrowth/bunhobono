@@ -16,7 +16,12 @@ public interface NoticeMapper {
             ROW_NUMBER() OVER (ORDER BY n.detect_at DESC) AS display_no,
             n.notice_no,
             n.car_log_no,
-            COALESCE(vc.car_no, cd.car_no) AS car_no,
+            vc.car_no AS registered_car_no,
+            cd.car_no AS captured_car_no,
+            CASE
+                WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
+                ELSE 'REGISTERED'
+            END AS car_kind,
             n.detect_at,
             n.stay_days,
             n.alert_stat,
