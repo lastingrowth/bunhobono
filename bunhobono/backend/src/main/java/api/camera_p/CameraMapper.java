@@ -1,6 +1,5 @@
 package api.camera_p;
 
-import api.parking_p.ParkingDTO;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
@@ -8,11 +7,13 @@ import java.util.List;
 @Mapper
 public interface CameraMapper {
 
-    @Select("select * from Camera order by camera_no")
+    @Select("SELECT ROW_NUMBER() OVER (ORDER BY camera_no) AS display_no, " +
+            "camera_no, gate_no, camera_name, camera_type, install_date " +
+            "FROM camera ORDER BY camera_no")
     List<CameraDTO> list(CameraDTO dto);
 
-    @Insert("INSERT INTO camera (parking_no, gate_no, camera_name, camera_type, install_date) " +
-            "VALUES (#{parkingNo}, #{gateNo}, #{cameraName}, #{cameraType}, #{installDate})")
+    @Insert("INSERT INTO camera (gate_no, camera_name, camera_type, install_date) " +
+            "VALUES (#{gateNo}, #{cameraName}, #{cameraType}, #{installDate})")
     @Options(useGeneratedKeys = true, keyProperty = "cameraNo")
     int insert(CameraDTO dto);
 
@@ -20,8 +21,7 @@ public interface CameraMapper {
     int delete(int cameraNo);
 
     @Update("UPDATE camera " +
-            "SET parking_no = #{parkingNo}, " +
-            "    gate_no = #{gateNo}, " +
+            "SET gate_no = #{gateNo}, " +
             "    camera_name = #{cameraName}, " +
             "    camera_type = #{cameraType}, " +
             "    install_date = #{installDate} " +

@@ -21,11 +21,6 @@ public class ParkingService {
         return parkingMapper.insert(dto);
     }
 
-    //detail
-    public ParkingDTO getParking(int parkingNo) {
-        return parkingMapper.detail(parkingNo);
-    }
-
     //Delete
     public int delete(int parkingNo) {
         return parkingMapper.delete(parkingNo);
