@@ -33,6 +33,15 @@ public class Jwtfilter extends OncePerRequestFilter {
         // 로그인 화면은 JWT 검사 제외
         String uri = request.getRequestURI();
 
+        //-------------------------------------------------------------------
+        //FastAPI OCR 서버에서 들어오는 카메라 데이터 저장 요청은 JWT 검사 제외
+        if (uri.equals("/api/camera-data/signUp")) {
+            System.out.println("👉 OCR 카메라 데이터 요청 감지 → JWT 검사 스킵");
+            filterChain.doFilter(request, response);
+            return;
+        }
+        //------------------------------------------------------------------
+
         if (uri.startsWith("/api/login") || uri.startsWith("/api/joinus")) {
             System.out.println("👉 LOGIN 요청 감지 → JWT 검사 스킵");
             filterChain.doFilter(request,response);
