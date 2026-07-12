@@ -1,8 +1,8 @@
 package api.notice_p;
 
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -13,130 +13,76 @@ public interface NoticeMapper {
 
     @Select("""
         SELECT
-            notice.notice_no,
-            notice.plate_no,
-            notice.entry_at,
-            notice.detect_at,
-            notice.stay_days,
-            notice.alert_stat,
-            CASE
-                WHEN vehicle_car.vehicle_status = 'EXPIRED' THEN '만료'
-                WHEN vehicle_car.vehicle_status IS NULL THEN '미등록'
-                ELSE '만료아님'
-            END expire_status
-        FROM notice
-        LEFT JOIN vehicle_car
-            ON notice.plate_no = vehicle_car.car_no
-        ORDER BY notice.notice_no DESC
+            ROW_NUMBER() OVER (ORDER BY n.detect_at DESC) AS display_no,
+            n.notice_no,
+            n.car_log_no,
+            COALESCE(vc.car_no, cd.car_no) AS car_no,
+            n.detect_at,
+            n.stay_days,
+            n.alert_stat,
+            n.handled_by_member_no,
+            m.mem_name AS handled_by_member_name,
+            n.handled_at,
+            cl.in_time,
+            p.parking_name
+        FROM notice n
+        JOIN car_log cl ON n.car_log_no = cl.car_log_no
+        LEFT JOIN vehicle_car vc ON cl.vehicle_car_no = vc.vehicle_car_no
+        LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no
+        LEFT JOIN gate g ON cl.in_gate_no = g.gate_no
+        LEFT JOIN parking p ON g.parking_no = p.parking_no
+        LEFT JOIN member m ON n.handled_by_member_no = m.member_no
+        ORDER BY n.detect_at DESC
     """)
-    List<NoticeDTO> list(NoticeDTO dto);
-
-    @Select("""
-        SELECT
-            notice.notice_no,
-            notice.parking_no,
-            notice.plate_no,
-            notice.entry_at,
-            notice.detect_at,
-            notice.stay_days,
-            notice.alert_stat,
-
-            vehicle_car.vehicle_type,
-            vehicle_car.vehicle_status,
-            CASE
-                WHEN vehicle_car.vehicle_status = 'EXPIRED' THEN '만료'
-                WHEN vehicle_car.vehicle_status IS NULL THEN '미등록'
-                ELSE '만료아님'
-            END expire_status,
-            vehicle_car.start_date,
-            vehicle_car.end_date,
-
-            parking_charge.amount,
-            parking_charge.status charge_status,
-
-            parking_payment.payment_status,
-            parking_payment.paid_at
-        FROM notice
-        LEFT JOIN car_log
-            ON notice.plate_no = car_log.car_no
-            AND notice.entry_at = car_log.in_time
-        LEFT JOIN vehicle_car
-            ON car_log.vehicle_car_no = vehicle_car.vehicle_car_no
-        LEFT JOIN parking_charge
-            ON car_log.car_log_no = parking_charge.car_log_no
-        LEFT JOIN parking_payment
-            ON parking_charge.charge_no = parking_payment.charge_no
-        WHERE notice.notice_no = #{noticeNo}
-    """)
-    NoticeDTO detail(int noticeNo);
+    List<NoticeDTO> list();
 
     @Update("""
         UPDATE notice
-        SET alert_stat = #{alertStat}
+        SET alert_stat = #{alertStat},
+            handled_by_member_no = CASE
+                WHEN #{alertStat} = 'Unresolved' THEN NULL
+                ELSE #{handledByMemberNo}
+            END,
+            handled_at = CASE
+                WHEN #{alertStat} = 'Unresolved' THEN NULL
+                ELSE CURRENT_TIMESTAMP
+            END
         WHERE notice_no = #{noticeNo}
-          AND (
-              #{alertStat} != 'Resolved'
-              OR EXISTS (
-                  SELECT 1
-                  FROM car_log
-                  JOIN parking_charge
-                      ON car_log.car_log_no = parking_charge.car_log_no
-                  JOIN parking_payment
-                      ON parking_charge.charge_no = parking_payment.charge_no
-                  WHERE car_log.car_no = notice.plate_no
-                    AND car_log.in_time = notice.entry_at
-                    AND parking_payment.payment_status = 'SUCCESS'
-              )
-          )
     """)
-    void status(NoticeDTO dto);
+    int status(NoticeDTO dto);
 
     @Delete("""
         DELETE FROM notice
         WHERE alert_stat = 'Resolved'
           AND detect_at < NOW() - INTERVAL '1 year'
     """)
-    int aftAYearDelete();
+    int deleteResolvedNoticesAfterOneYear();
 
     @Insert("""
-        INSERT INTO notice (
-            parking_no,
-            plate_no,
-            entry_at,
-            detect_at,
-            stay_days,
-            alert_stat
-        )
+        INSERT INTO notice (car_log_no, detect_at, stay_days, alert_stat)
         SELECT
-            parking.parking_no,
-            COALESCE(car_log.car_no, vehicle_car.car_no),
-            car_log.in_time,
+            cl.car_log_no,
             NOW(),
-            GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - car_log.in_time)) / 86400)::INT),
+            GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - cl.in_time)) / 86400)::INT),
             'Unresolved'
-        FROM car_log
-        JOIN gate
-            ON car_log.in_gate_no = gate.gate_no
-        JOIN parking
-            ON gate.parking_no = parking.parking_no
-        LEFT JOIN vehicle_car
-            ON car_log.vehicle_car_no = vehicle_car.vehicle_car_no
-        WHERE car_log.out_time IS NULL
-          AND COALESCE(car_log.car_no, vehicle_car.car_no) IS NOT NULL
-          AND COALESCE(car_log.car_no, vehicle_car.car_no) != ''
+        FROM car_log cl
+        LEFT JOIN vehicle_car vc ON cl.vehicle_car_no = vc.vehicle_car_no
+        LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no
+        WHERE cl.out_time IS NULL
+          AND COALESCE(vc.car_no, cd.car_no) IS NOT NULL
+          AND COALESCE(vc.car_no, cd.car_no) != ''
           AND (
-              car_log.vehicle_car_no IS NULL
-              OR (
-                  vehicle_car.vehicle_status = 'EXPIRED'
-                  AND car_log.in_time <= NOW() - INTERVAL '1 day'
-              )
+                cl.vehicle_car_no IS NULL
+                OR (
+                    vc.vehicle_status = 'EXPIRED'
+                    AND cl.in_time <= NOW() - INTERVAL '1 day'
+                )
           )
           AND NOT EXISTS (
               SELECT 1
-              FROM notice
-              WHERE notice.plate_no = COALESCE(car_log.car_no, vehicle_car.car_no)
-                AND notice.entry_at = car_log.in_time
+              FROM notice n
+              WHERE n.car_log_no = cl.car_log_no
           )
     """)
-    int createNoticeFromCarLog();
+    int createNoticesFromCarLog();
 }

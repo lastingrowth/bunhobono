@@ -1,5 +1,6 @@
 package api.carlog_p;
 
+import api.cameradata_p.CameraDataDTO;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -10,41 +11,40 @@ import java.util.List;
 public class CarLogService {
 
     @Resource
-    CarLogMapper carLogMapper;
+    private CarLogMapper carLogMapper;
 
-    // 차량 입출차 로그 목록 조회
     public List<CarLogDTO> list(CarLogDTO dto) {
-        List<CarLogDTO> logs = carLogMapper.list(dto);
-
-        for (CarLogDTO log : logs) {
-            setLogState(log);
-        }
-
-        return logs;
+        return carLogMapper.list(dto);
     }
 
-    // 주차상태와 차량종류 코드를 세팅
-    private void setLogState(CarLogDTO log) {
-        if (log.getOutTime() == null) {
-            log.setParkingState("PARKING");
-        } else {
-            log.setParkingState("OUT");
-        }
+    public int delete(int carLogNo) {
+        return carLogMapper.delete(carLogNo);
+    }
 
-        if (log.getVehicleCarNo() == null) {
-            log.setCarKind("UNKNOWN");
+    // camera_data 저장 직후 호출: 게이트 유형에 따라 입차 생성 또는 출차 처리
+    public void processCameraData(CameraDataDTO cameraData) {
+        if (cameraData.getCarNo() == null || cameraData.getCarNo().isBlank()) {
             return;
         }
 
-        if ("visit".equals(log.getVehicleType())) {
-            log.setCarKind("VISIT");
-            return;
+        CarLogDTO gate = carLogMapper.findGateByCameraNo(cameraData.getCameraNo());
+        if (gate == null) {
+            throw new IllegalArgumentException("카메라에 연결된 게이트를 찾을 수 없습니다.");
         }
 
-        log.setCarKind("REGISTERED");
+        if ("In".equalsIgnoreCase(gate.getGateType())) {
+            if (!carLogMapper.existsOpenLog(cameraData)) {
+                carLogMapper.insertEntry(cameraData, gate.getGateNo());
+            }
+        } else if ("Out".equalsIgnoreCase(gate.getGateType())) {
+            carLogMapper.completeExit(cameraData, gate.getGateNo());
+        }
+        // Both 게이트는 방향 정보가 없으므로 자동 입·출차 처리하지 않음
     }
 
-    // 오래된 차량 로그 자동삭제
+
+    // 시연용: 매분 실행
+// @Scheduled(cron = "0 * * * * *")
     @Scheduled(cron = "0 0 3 * * *")
     public void deleteOldLogs() {
         carLogMapper.deleteOldLogs();

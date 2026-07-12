@@ -17,23 +17,16 @@ import java.util.List;
 public class NoticeController {
 
     @Resource
-    NoticeService noticeService;
+    private NoticeService noticeService;
 
     @GetMapping("")
-    public List<NoticeDTO> list(NoticeDTO dto) {
-        List<NoticeDTO> list = noticeService.listservice(dto);
-        System.out.println("알림정보확인: "+list);
-        return list;
-    }
-
-    @GetMapping("/{noticeNo}")
-    public NoticeDTO detail(@PathVariable int noticeNo) {
-        return noticeService.detail(noticeNo);
+    public List<NoticeDTO> list() {
+        return noticeService.list();
     }
 
     @PutMapping("/{noticeNo}/status")
-    public void status(@PathVariable int noticeNo, @RequestBody NoticeDTO dto) {
+    public int status(@PathVariable int noticeNo, @RequestBody NoticeDTO dto) {
         dto.setNoticeNo(noticeNo);
-        noticeService.status(dto);
+        return noticeService.status(dto);
     }
 }
