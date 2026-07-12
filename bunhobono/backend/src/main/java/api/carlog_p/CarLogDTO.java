@@ -1,35 +1,42 @@
 package api.carlog_p;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @Data
 public class CarLogDTO {
 
-    // car_log 기본 컬럼
+    // 목록 응답 순서
+    private Integer displayNo;
     private Integer carLogNo;
-    private Integer vehicleCarNo;
-    private Integer inGateNo;
-    private Integer outGateNo;
-    private LocalDateTime inTime;
-    private LocalDateTime outTime;
-
-    // vehicle_car 조인 컬럼
     private String carNo;
+    private String carKind;
+    private String parkingState;
+
+    private Integer vehicleCarNo;
     private String vehicleType;
     private String vehicleStatus;
 
-    // gate 조인 컬럼
-    private String inGateName;
-    private String outGateName;
-
-    // parking 조인 컬럼
     private Integer parkingNo;
     private String parkingName;
 
-    // 검색 조건
+    private Integer cameraDataNo;
+    private Integer inGateNo;
+    private String inGateName;
+    private LocalDateTime inTime;
+
+    private Integer outGateNo;
+    private String outGateName;
+    private LocalDateTime outTime;
+
+    // 목록 검색 조건
+    @JsonIgnore
     private Integer gateNo;
-    private String parkingState;
-    private String carKind;
     private String sort;
+
+    // camera_data 자동 처리용 게이트 정보
+    @JsonIgnore
+    private String gateType;
 }

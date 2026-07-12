@@ -40,7 +40,9 @@ public class GateController {
     }
 
     @PutMapping("/{gateNo}/edit")
-    public int updateGate(@RequestBody GateDTO dto) {
+    public int updateGate(@PathVariable int gateNo,
+                          @RequestBody GateDTO dto) {
+        dto.setGateNo(gateNo);
         return gateService.updateGate(dto);
     }
 }

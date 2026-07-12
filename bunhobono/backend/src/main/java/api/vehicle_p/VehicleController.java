@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/vehicles")
 public class VehicleController {
@@ -12,65 +13,38 @@ public class VehicleController {
     @Resource
     VehicleService vehicleService;
 
-    // 차량 전체 목록
-    @GetMapping
+    // 등록 차량 목록 조회
+    @GetMapping("")
     public List<VehicleDTO> list() {
-        return vehicleService.list();
-    }
-
-    // 차량번호 검색
-    @GetMapping("/search")
-    public List<VehicleDTO> search(@RequestParam String carNo) {
-        return vehicleService.search(carNo);
-    }
-
-    // 차량 상세
-    @GetMapping("/{vehicleNo}")
-    public VehicleDTO detail(@PathVariable Integer vehicleNo) {
-        return vehicleService.detail(vehicleNo);
+        return vehicleService.listservice();
     }
 
     // 차량 등록
-    @PostMapping("/insert")
-    public int insert(@RequestBody VehicleDTO dto) {
-        return vehicleService.insert(dto);
-    }
-
-    // 차량 수정
-    @PutMapping("/{vehicleNo}/edit")
-    public int update(
-            @PathVariable Integer vehicleNo,
-            @RequestBody VehicleDTO dto
-    ) {
-        dto.setVehicleCarNo(vehicleNo);
-        return vehicleService.update(dto);
+    @PostMapping("/signUp")
+    public int signUp(@RequestBody VehicleDTO dto) {
+        return vehicleService.signUp(dto);
     }
 
     // 차량 삭제
-    @DeleteMapping("/{vehicleNo}/delete")
-    public int delete(@PathVariable Integer vehicleNo) {
-        return vehicleService.delete(vehicleNo);
+    @DeleteMapping("/{vehicleCarNo}/delete")
+    public int deleteVehicle(@PathVariable int vehicleCarNo) {
+        return vehicleService.delete(vehicleCarNo);
     }
 
-    // 승인 대기 목록
-    @GetMapping("/approve")
-    public List<VehicleDTO> approveList() {
-        return vehicleService.approveList();
+    // 차량 기본 정보 수정
+    @PutMapping("/{vehicleCarNo}/edit")
+    public int updateVehicle(@PathVariable int vehicleCarNo,
+                             @RequestBody VehicleDTO dto) {
+        dto.setVehicleCarNo(vehicleCarNo);
+        return vehicleService.update(dto);
     }
 
-    // 승인 대기 상세
-    @GetMapping("/approve/{vehicleNo}")
-    public VehicleDTO approveDetail(@PathVariable Integer vehicleNo) {
-        return vehicleService.detail(vehicleNo);
+    // 관리자 차량 상태 변경
+    @PatchMapping("/{vehicleCarNo}/status")
+    public int updateVehicleStatus(@PathVariable int vehicleCarNo,
+                                   @RequestBody VehicleDTO dto) {
+        dto.setVehicleCarNo(vehicleCarNo);
+        return vehicleService.updateStatus(dto);
     }
 
-    // 승인 상태 변경
-    @PutMapping("/approve/{vehicleNo}/status")
-    public int changeStatus(
-            @PathVariable Integer vehicleNo,
-            @RequestBody VehicleDTO dto
-    ) {
-        dto.setVehicleCarNo(vehicleNo);
-        return vehicleService.changeStatus(dto);
-    }
 }

@@ -25,9 +25,6 @@ public interface ParkingMapper {
             "VALUES (#{parkingName}, #{parkingSpaces}, #{parkingLocation})")
     int insert(ParkingDTO dto);
 
-    @Select("SELECT * FROM parking WHERE parking_no = #{parkingNo}")
-    ParkingDTO detail(int parkingNo);
-
     @Delete("DELETE FROM parking WHERE parking_no = #{parkingNo}")
     int delete(int parkingNo);
 

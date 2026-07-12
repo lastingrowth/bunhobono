@@ -23,7 +23,7 @@ public class GateService {
 
     //상세
     public GateDTO getGateDetail(int gateNo) {
-        return gateMapper.Detail(gateNo);
+        return gateMapper.detail(gateNo);
     }
 
     //Delete
