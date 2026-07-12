@@ -1,0 +1,47 @@
+export const adminMenu = [
+  {
+    title: '대시보드',
+    path: '/admin/dashboard',
+    icon: '▦'
+  },
+  {
+    title: '회원관리',
+    path: '/admin/members',
+    icon: '👥'
+  },
+  {
+    title: '카메라',
+    path: '/admin/cameras',
+    icon: '📷'
+  },
+  {
+    title: '게이트',
+    path: '/admin/gates',
+    icon: '🚧'
+  }
+
+];
+
+
+export const residentMenu = [
+{
+    title: '대시보드',
+    path: '/resident/dashboard',
+    icon: '▦'
+  },
+  {
+    title: '내 차량',
+    path: '/resident/vehicles',
+    icon: '🚙'
+  },
+  {
+    title: '주차현황',
+    path: '/resident/parkings',
+    icon: '🅿'
+  },
+  {
+    title: '마이페이지',
+    path: '/resident/mypage',
+    icon: '👤'
+  }
+]

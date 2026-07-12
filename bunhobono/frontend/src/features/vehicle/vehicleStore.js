@@ -1,19 +1,9 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import {
-    getVehicleList,
-    searchVehicleByCarNo,
-    getVehicleDetail,
-    createVehicle,
-    updateVehicle,
-    deleteVehicle,
-    getVehicleApproveList,
-    getVehicleApproveDetail,
-    updateVehicleApproveStatus,
-} from "./vehicleApi";
 
 import { toVehicleView } from "./vehicleFormat";
+import { createVehicle, deleteVehicle, getVehicleList, updateVehicle, updateVehicleStatus } from "./vehicleApi";
 
 export const useVehicleStore = defineStore("vehicle", () => {
 
@@ -29,49 +19,71 @@ export const useVehicleStore = defineStore("vehicle", () => {
 
     // 차량번호 검색
     const searchVehicle = async (carNo) => {
-        const res = await searchVehicleByCarNo(carNo);
-        vehicleList.value = res.data.map(toVehicleView);
+        const res = await getVehicleList();
+        vehicleList.value = res.data.filter((item) => {
+            return item.carNo?.includes(carNo.trim());
+        }).map(toVehicleView);
     };
 
     // 차량 상세
-    const loadVehicle = async (vehicleNo) => {
-        const res = await getVehicleDetail(vehicleNo);
-        vehicle.value = toVehicleView(res.data);
+    const loadVehicle = async (vehicleCarNo) => {
+        if (vehicleList.value.length === 0) {
+            await loadVehicleList();
+        }
+
+        vehicle.value = vehicleList.value.find((item) => {
+            return Number(item.vehicleCarNo) === Number(vehicleCarNo);
+        }) ?? {};
     };
 
     // 차량 등록
     const addVehicle = async (data) => {
         const res = await createVehicle(data);
+        
+        await loadVehicleList();
+
         return res.data;
     };
 
     // 차량 수정
-    const editVehicle = async (vehicleNo, data) => {
-        await updateVehicle(vehicleNo, data);
+    const editVehicle = async (vehicleCarNo, data) => {
+        await updateVehicle(vehicleCarNo, data);
         await loadVehicleList();
     };
 
     // 차량 삭제
-    const removeVehicle = async (vehicleNo) => {
-        await deleteVehicle(vehicleNo);
+    const removeVehicle = async (vehicleCarNo) => {
+        await deleteVehicle(vehicleCarNo);
         await loadVehicleList();
     };
 
-    // 승인 대기 목록
+    // 승인 대기 차량 목록
     const loadVehicleApproveList = async () => {
-        const res = await getVehicleApproveList();
-        approveList.value = res.data.map(toVehicleView);
+        const res = await getVehicleList();
+
+        approveList.value = res.data
+            .filter((item) => {
+                return item.vehicleStatus === "WAITING";
+            })
+            .map(toVehicleView);
     };
 
-    // 승인 대기 상세
-    const loadVehicleApproveDetail = async (vehicleNo) => {
-        const res = await getVehicleApproveDetail(vehicleNo);
-        vehicle.value = toVehicleView(res.data);
+    // 승인 대기 차량 상세
+    const loadVehicleApproveDetail = async (vehicleCarNo) => {
+        if (approveList.value.length === 0) {
+            await loadVehicleApproveList();
+        }
+
+        vehicle.value = approveList.value.find((item) => {
+            return Number(item.vehicleCarNo) === Number(vehicleCarNo);
+        }) ?? {};
     };
 
     // 승인 상태 변경
-    const changeVehicleApproveStatus = async (vehicleNo, data) => {
-        await updateVehicleApproveStatus(vehicleNo, data);
+    const changeVehicleApproveStatus = async (vehicleCarNo, data) => {
+        await updateVehicleStatus(vehicleCarNo, data);
+
+        await loadVehicleList();
         await loadVehicleApproveList();
     };
 

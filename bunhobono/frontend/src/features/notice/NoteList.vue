@@ -1,5 +1,3 @@
-
-
 <template>
   <main class="notice-page">
     <div class="notice-header">
@@ -27,7 +25,7 @@
           <option value="asc">오래된순</option>
         </select>
 
-        <button type="button" @click="loadNotices">새로고침</button>
+        <button type="button" @click="handleLoadNotices">새로고침</button>
       </div>
     </div>
 
@@ -80,13 +78,18 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { getNoteList } from "@/features/notice/noticeApi";
+import { useNoticeStore } from "./noticeStore";
+import { storeToRefs } from "pinia";
 
-const notices = ref([]);
+const router = useRouter();
+const noticeStore = useNoticeStore();
+
+const { notices } = storeToRefs(noticeStore);
+
 const loading = ref(false);
 const errorMessage = ref("");
 const sortOrder = ref("desc");
-const router = useRouter();
+const selectedStatus = ref("Unresolved");
 
 const statusOptions = [
   { value: "Unresolved", label: "미확인" },
@@ -94,19 +97,21 @@ const statusOptions = [
   { value: "Resolved", label: "처리완료" },
 ];
 
-const selectedStatus = ref("Unresolved");
-
 const columns = [
   { key: "noticeNo", fallbackKey: "notice_no", label: "번호", className: "col-xs" },
-  { key: "plateNo", fallbackKey: "plate_no", label: "차량번호", className: "col-sm" },
-  { key: "detectAt", fallbackKey: "detect_at", label: "감지", className: "col-date", type: "date" },
-  { key: "stayDays", fallbackKey: "stay_days", label: "일수", className: "col-xs" },
-  { key: "alertStat", fallbackKey: "alert_stat", label: "처리", className: "col-status" },
-  { key: "expireStatus", fallbackKey: "expire_status", label: "만료", className: "col-xs" },
+  { key: "registeredCarNo", fallbackKey: "registered_car_no", label: "등록 차량번호", className: "col-sm" },
+  { key: "capturedCarNo", fallbackKey: "captured_car_no", label: "촬영 차량번호", className: "col-sm" },
+  { key: "detectAt", fallbackKey: "detect_at", label: "감지 일시", className: "col-date", type: "date" },
+  { key: "stayDays", fallbackKey: "stay_days", label: "주차 일수", className: "col-xs" },
+  { key: "alertStat", fallbackKey: "alert_stat", label: "처리 상태", className: "col-status" },
 ];
 
 const getValue = (notice, column) => {
   return notice[column.key] ?? notice[column.fallbackKey];
+};
+
+const getAlertStat = (notice) => {
+  return notice.alertStat ?? notice.alert_stat ?? "Unresolved";
 };
 
 const filteredNotices = computed(() => {
@@ -159,21 +164,18 @@ const getNoticeNo = (notice) => {
   return notice.noticeNo ?? notice.notice_no;
 };
 
-const getAlertStat = (notice) => {
-  return notice.alertStat ?? notice.alert_stat ?? "Unresolved";
-};
-
 const getStatusLabel = (value) => {
   return statusOptions.find((option) => option.value === value)?.label ?? value ?? "-";
 };
 
-const loadNotices = async () => {
+// 화면에서 목록 조회를 처리하는 함수
+const handleLoadNotices = async () => {
   loading.value = true;
   errorMessage.value = "";
 
   try {
-    const response = await getNoteList();
-    notices.value = Array.isArray(response.data) ? response.data : [];
+    // Store의 목록 조회 함수 호출
+    await noticeStore.loadNotices();
   } catch (error) {
     console.error(error);
     errorMessage.value = "알림 목록을 불러오지 못했습니다.";
@@ -192,5 +194,5 @@ const goDetail = (notice) => {
   router.push(`/admin/notice/${noticeNo}`);
 };
 
-onMounted(loadNotices);
+onMounted(handleLoadNotices);
 </script>
