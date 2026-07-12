@@ -13,16 +13,6 @@
         <option value="visit">방문차량</option>
       </select>
 
-      <input
-        type="date"
-        v-model="approvedDate"
-      >
-
-      <input
-        type="time"
-        v-model="approvedTime"
-      >
-
       <button @click="add">등록</button>
       <button @click="reset">초기화</button>
     </div>
@@ -37,8 +27,6 @@ const vehicleStore = useVehicleStore()
 
 const carNo = ref('')
 const vehicleType = ref('normal')
-const approvedDate = ref('')
-const approvedTime = ref('')
 
 async function add() {
   if (carNo.value.trim() === '') {
@@ -46,30 +34,28 @@ async function add() {
     return
   }
 
-  if (approvedDate.value === '' || approvedTime.value === '') {
-    alert('승인 날짜와 시간을 입력하세요')
-    return
+  try {
+    await vehicleStore.addVehicle({
+      carNo: carNo.value.trim(),
+      vehicleType: vehicleType.value,
+      vehicleStatus: 'WAITING'
+    })
+
+    alert('차량이 등록되었습니다')
+    reset()
+    await vehicleStore.loadVehicleApproveList()
+  } catch (error) {
+    if (error.response?.status === 409) {
+      alert(error.response.data?.message || '이미 등록 또는 승인 대기 중인 차량번호입니다.')
+      return
+    }
+
+    alert('차량 등록 중 오류가 발생했습니다.')
   }
-
-  await vehicleStore.addVehicle({
-    carNo: carNo.value,
-    vehicleType: vehicleType.value,
-    vehicleStatus: 'WAITING',
-    approvedAt: `${approvedDate.value}T${approvedTime.value}:00`
-  })
-
-  alert('차량이 등록되었습니다')
-
-  reset()
-
-  await vehicleStore.loadVehicleList()
-  await vehicleStore.loadVehicleApproveList()
 }
 
 function reset() {
   carNo.value = ''
   vehicleType.value = 'normal'
-  approvedDate.value = ''
-  approvedTime.value = ''
 }
 </script>
