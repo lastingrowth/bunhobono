@@ -33,10 +33,6 @@
                 <td><input type="text" v-model="member.loginId" /></td>
             </tr>
             <tr>
-                <th>비밀번호</th>
-                <td><input type="text" v-model="member.loginPwd" /></td>
-            </tr>
-            <tr>
                 <th>상태</th>
                 <td><input type="text" v-model="member.memStatus" /></td>
             </tr>

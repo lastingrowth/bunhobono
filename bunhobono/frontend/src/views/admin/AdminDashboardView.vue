@@ -58,7 +58,7 @@
         @click="router.push('/admin/vehicles')"
       >
         <div class="card-heading">
-          <span class="card-icon">🚙</span>
+          <span class="card-icon">🚗</span>
           <span>차량 현황</span>
         </div>
 
@@ -79,7 +79,7 @@
         @click="router.push('/admin/parkings')"
       >
         <div class="card-heading">
-          <span class="card-icon">🅿</span>
+          <span class="card-icon">🅿️</span>
           <span>주차장 현황</span>
         </div>
 
@@ -120,13 +120,14 @@
         @click="router.push('/admin/carlogs')"
       >
         <div class="card-heading">
-          <span class="card-icon">↕</span>
+          <span class="card-icon">🚙</span>
           <span>입출차 현황</span>
         </div>
 
         <div class="carlog-summary">
           <div>
             <span>입차</span>
+
             <strong>
               {{ carlogStore.parkingCount }}건
             </strong>
@@ -134,6 +135,7 @@
 
           <div>
             <span>출차</span>
+
             <strong>
               {{ carlogStore.outCount }}건
             </strong>
@@ -213,6 +215,7 @@
             <td>{{ log.carNo || '미인식' }}</td>
             <td>{{ log.carKind || '-' }}</td>
             <td>{{ log.parkingState || '-' }}</td>
+
             <td>
               {{
                 log.entryAt
@@ -255,38 +258,43 @@ const cameraDataStore = useCameraDataStore()
 const loading = ref(false)
 const errorMessage = ref('')
 
+// 미처리 알림 수
 const unresolvedNoticeCount = computed(() => {
   return noticeStore.notices.filter(notice => {
-    const status =
-      notice.alertStat ?? notice.alert_stat
+    const status = notice.alertStat ?? notice.alert_stat
 
     return status === 'Unresolved'
   }).length
 })
 
+// 전체 등록 차량 수
 const registeredVehicleCount = computed(() => {
   return vehicleStore.vehicleList.length
 })
 
+// 전체 주차면 수
 const totalParkingCount = computed(() => {
-  return parkingStore.list.length
+  return parkingStore.list.reduce((total, parking) => {
+    return total + Number(parking.parkingSpaces ?? 0)
+  }, 0)
 })
 
-const occupiedParkingCount = computed(() => {
-  return Math.min(
-    carlogStore.parkingCount,
-    totalParkingCount.value
-  )
-})
-
+// 주차 가능한 면 수
 const availableParkingCount = computed(() => {
+  return parkingStore.list.reduce((total, parking) => {
+    return total + Number(parking.availableSpaces ?? 0)
+  }, 0)
+})
+
+// 현재 사용 중인 주차면 수
+const occupiedParkingCount = computed(() => {
   return Math.max(
-    totalParkingCount.value
-      - occupiedParkingCount.value,
+    totalParkingCount.value - availableParkingCount.value,
     0
   )
 })
 
+// 전체 주차면 대비 사용률
 const parkingUsageRate = computed(() => {
   if (totalParkingCount.value === 0) {
     return 0
@@ -299,15 +307,15 @@ const parkingUsageRate = computed(() => {
   )
 })
 
+// 전체 OCR 데이터 수
 const ocrTotalCount = computed(() => {
   return cameraDataStore.list.length
 })
 
+// OCR 성공 수
 const ocrSuccessCount = computed(() => {
   return cameraDataStore.list.filter(data => {
-    if (
-      typeof data.recognitionState === 'boolean'
-    ) {
+    if (typeof data.recognitionState === 'boolean') {
       return data.recognitionState
     }
 
@@ -315,13 +323,12 @@ const ocrSuccessCount = computed(() => {
   }).length
 })
 
+// OCR 실패 수
 const ocrFailCount = computed(() => {
-  return (
-    ocrTotalCount.value
-    - ocrSuccessCount.value
-  )
+  return ocrTotalCount.value - ocrSuccessCount.value
 })
 
+// OCR 성공률
 const ocrSuccessRate = computed(() => {
   if (ocrTotalCount.value === 0) {
     return 0
@@ -334,11 +341,13 @@ const ocrSuccessRate = computed(() => {
   )
 })
 
+// 최근 입출차 기록 5건
 const recentCarlogs = computed(() => {
   return carlogStore.carLogs.slice(0, 5)
 })
 
-async function loadDashboard() {
+// 대시보드 데이터 조회
+const loadDashboard = async () => {
   loading.value = true
   errorMessage.value = ''
 
@@ -355,8 +364,7 @@ async function loadDashboard() {
   })
 
   if (failed) {
-    errorMessage.value =
-      '일부 현황을 불러오지 못했습니다.'
+    errorMessage.value = '일부 현황을 불러오지 못했습니다.'
   }
 
   loading.value = false

@@ -4,16 +4,15 @@
     <table border="1">
       <thead>
         <tr>
-          <th>Gate No</th>
-          <th>Parking No</th>
-          <th>Gate Name</th>
-          <th>Gate Type</th>
+          <th>게이트 번호</th>
+          <th>게이트 이름</th>
+          <th>게이트 분류</th>
+          <th>상세</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="g in gStore.list" :key="g.gateNo">
           <td>{{ g.gateNo }}</td>
-          <td>{{ g.parkingNo }}</td>
           <td>{{ g.gateName }}</td>
           <td>{{ g.gateType }}</td>
           <td>
@@ -37,6 +36,6 @@ onMounted(() => {
 })
 
 const goDetail = (gateNo) => {
-  router.push(`/gates/${gateNo}/detail`);
+  router.push(`/admin/gates/${gateNo}/detail`);
 };
 </script>

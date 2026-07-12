@@ -9,9 +9,10 @@
     <table border="1">
       <thead>
         <tr>
-          <th>display No</th>
-          <th>Car No</th>
-          <th>Capture Time</th>
+          <th>기록 번호</th>
+          <th>차량 번호</th>
+          <th>촬영 시각</th>
+          <th>상세보기</th>
         </tr>
       </thead>
       <tbody>
@@ -20,7 +21,7 @@
           <td>{{ d.carNo }}</td>
           <td>{{ d.captureTime }}</td>
           <td>
-            <router-link :to="{ name: 'cameraDatadetail', params: { id: d.cameraDataNo } }">
+            <router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo : d.cameraDataNo } }">
             <button>상세보기</button>
             </router-link>
           </td>
