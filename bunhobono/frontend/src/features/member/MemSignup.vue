@@ -6,7 +6,7 @@
             <tr>
                 <th>가입유형</th>
                 <td>
-                    <select v-model="member.memRole">
+                    <select v-model="member.role">
                         <option value="" disabled>선택하세요</option>
                         <option value="resident">입주민</option>
                         <option value="guard">경비실</option>
@@ -36,7 +36,7 @@
             </tr>
             <tr>
                 <th>비밀번호</th>
-                <td><input type="password" v-model="member.memLoginPwd"></td>
+                <td><input type="password" v-model="member.loginPwd"></td>
             </tr>
             <tr>
                 <th>상태</th>
@@ -69,13 +69,13 @@ const router = useRouter();
 const store = useMemStore();
 
 const member = ref({
-    memRole: "",
+    role: "",
     memName: "",
     memDong: "",
     memHo: "",
     memPhone: "",
-    memLoginId: "",
-    memLoginPwd: "",
+    loginId: "",
+    loginPwd: "",
     memStatus: "",
 });
 const idChecked = ref(false);
