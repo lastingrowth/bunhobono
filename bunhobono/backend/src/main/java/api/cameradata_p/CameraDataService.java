@@ -1,4 +1,5 @@
 package api.cameradata_p;
+import api.carlog_p.CarLogService;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,16 +25,22 @@ public class CameraDataService {
     @Resource
     CameraDataMapper cameraDataMapper;
 
+    @Resource
+    CarLogService carLogService;
+
     @Value("${file.camera-data}")
     private String uploadDir;
 
+    //list
     public List<CameraDataDTO> listservice(CameraDataDTO dto) {
         return cameraDataMapper.list(dto);
     }
 
-
+    //ocr
+    @Transactional
     public int ocr(int cameraNo,
                    String carNo,
+                   Double confidenceScore,
                    MultipartFile file) {
         try{
             //1. 저장 폴더 없으면 생성
@@ -43,7 +50,7 @@ public class CameraDataService {
             LocalDateTime now = LocalDateTime.now();
 
             String timeText = now.format(
-                    DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+                    DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS")
             );
 
             // 3. 원본 파일 확장자 추출
@@ -73,20 +80,28 @@ public class CameraDataService {
             dto.setCaptureTime(Timestamp.valueOf(now));
             dto.setImagePath(savePath.toString());
             dto.setRecognitionState(carNo != null && !carNo.isBlank());
-            dto.setConfidenceScore(null);
+            dto.setConfidenceScore(confidenceScore);
 
             // vehicleNo는 나중에 차량 테이블 조회 후 넣으면 됨
-            dto.setVehicleNo(null);
+            //dto.setVehicleCarNo(null);
 
-            // 9. DB insert
-            return cameraDataMapper.insert(dto);
+            // OCR로 읽은 차량번호가 등록 차량 테이블에 있으면 vehicle_car_no를 찾아서 저장
+            //
+            Integer vehicleCarNo = cameraDataMapper.findVehicleCarNo(carNo);
+            dto.setVehicleCarNo(vehicleCarNo);
+
+            // 9. camera_data 저장 후 입·출차 로그 자동 처리
+            int insertCount = cameraDataMapper.insert(dto);
+            if (insertCount == 1) {
+                carLogService.processCameraData(dto);
+            }
+            return insertCount;
 
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("카메라 OCR 이미지 저장 실패", e);
         }
     }
-
 
     public CameraDataDTO getCameraData(int cameraDataNo) {
         return cameraDataMapper.detail(cameraDataNo);
