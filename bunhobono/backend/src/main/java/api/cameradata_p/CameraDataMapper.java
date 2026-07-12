@@ -11,25 +11,27 @@ public interface CameraDataMapper {
     @Select("SELECT ROW_NUMBER() OVER (ORDER BY camera_data_no) AS display_no,camera_data_no, car_no, capture_time FROM camera_data ")
     List<CameraDataDTO> list(CameraDataDTO dto);
 
-    @Select("select vehicle_no from vehicle_car where car_no = #{carNo} limit 1")
-    Integer findVehicleNo(String carNo);
+    @Select("select vehicle_car_no from vehicle_car where car_no = #{carNo} limit 1")
+    Integer findVehicleCarNo(String carNo);
 
-    @Insert("INSERT INTO camera_data (camera_no, vehicle_no, car_no, capture_time, image_path, recognition_state, confidence_score) " +
-                "VALUES (#{cameraNo}, #{vehicleNo}, #{carNo}, #{captureTime}, #{imagePath}, #{recognitionState}, #{confidenceScore})")
-//    @Options(useGeneratedKeys = true, keyProperty = "cameraDataNo")
+    @Insert("INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, capture_time, image_path, recognition_state, confidence_score) " +
+            "VALUES (#{cameraNo}, #{vehicleCarNo}, #{carNo}, #{captureTime}, #{imagePath}, #{recognitionState}, #{confidenceScore})")
+    @Options(useGeneratedKeys = true, keyProperty = "cameraDataNo")
     int insert(CameraDataDTO dto);
 
     @Select("SELECT * FROM camera_data WHERE camera_data_no = #{cameraDataNo}")
     CameraDataDTO detail(int cameraDataNo);
 
-    @Select("SELECT camera_data_no, camera_no, vehicle_no, car_no, capture_time, image_path, recognition_state, confidence_score " +
+    @Select("SELECT camera_data_no, camera_no, vehicle_car_no, car_no, capture_time, image_path, recognition_state, confidence_score " +
             "FROM camera_data " +
             "WHERE car_no LIKE CONCAT('%', #{keyword}, '%') " +
             "ORDER BY camera_data_no")
     List<CameraDataDTO> searchByCarNo(String keyword);
 
-    //  특정 날짜 이전 데이터 삭제
-    @Delete("DELETE FROM camera_data WHERE capture_time::date < #{cutoffDate}")
-    void deleteOlderThanDate(java.time.LocalDate cutoffDate);
+    @Select("select * from camera_data where capture_time < NOW() - INTERVAL '3 months'")
+    List<CameraDataDTO>deleteTarget();
+
+    @Delete("delete from camera_data where camera_data_no = #{cameraDataNo}")
+    int delete(int cameraDataNo);
 }
 

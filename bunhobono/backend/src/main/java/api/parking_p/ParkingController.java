@@ -1,7 +1,6 @@
 package api.parking_p;
 
 import jakarta.annotation.Resource;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +14,7 @@ public class ParkingController {
     @Resource
     ParkingService parkingService;
 
+    //list
     @GetMapping("")
     public List<ParkingDTO> list(ParkingDTO dto){
         List<ParkingDTO> list = parkingService.listservice(dto);
@@ -22,24 +22,22 @@ public class ParkingController {
         System.out.println(parkingService);
         return list;
     }
-
+    //추가
     @PostMapping("/signUp")
     public int sighUp(@RequestBody ParkingDTO dto){
         return parkingService.signUp(dto);
     }
 
-    @GetMapping("/{parkingNo}")
-    public ParkingDTO getParking(@PathVariable int parkingNo) {
-        return parkingService.getParking(parkingNo);
-    }
-
+    //삭제
     @DeleteMapping("/{parkingNo}/delete")
     public int deleteParking(@PathVariable int parkingNo) {
         return parkingService.delete(parkingNo);
     }
-
+    //수정
     @PutMapping("/{parkingNo}/edit")
-    public int updateParking(@RequestBody ParkingDTO dto) {
+    public int updateParking(@PathVariable int parkingNo,
+                             @RequestBody ParkingDTO dto) {
+        dto.setParkingNo(parkingNo);
         return parkingService.updateParking(dto);
     }
 

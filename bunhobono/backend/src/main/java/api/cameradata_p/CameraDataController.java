@@ -1,6 +1,7 @@
 package api.cameradata_p;
 
 import jakarta.annotation.Resource;
+import org.apache.ibatis.annotations.Delete;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,9 +27,10 @@ public class CameraDataController {
     @PostMapping("/ocr")
     public int ocr(@RequestParam("cameraNo") int cameraNo,
                    @RequestParam("carNo") String carNo,
+                   @RequestParam("confidenceScore") Double confidenceScore,
                    @RequestParam("file") MultipartFile file) {
 
-        return cameraDataService.ocr(cameraNo, carNo, file);
+        return cameraDataService.ocr(cameraNo, carNo,confidenceScore, file);
     }
 
 

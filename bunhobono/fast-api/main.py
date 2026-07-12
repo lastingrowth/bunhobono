@@ -1,67 +1,176 @@
+from contextlib import asynccontextmanager
+import os
+
 from fastapi import FastAPI, UploadFile, File, Form
 import httpx
-app = FastAPI(
-    title = "Parking API test"
+
+from yolo_detect import PlateDetector
+from plate_ocr import PlateOCR
+
+
+SPRING_URL = os.getenv(
+    "SPRING_URL",
+    "http://localhost:80/api/camera-data/ocr"
 )
 
-SPRING_URL ="http://localhost:80/api/camera-data/ocr"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    timeout = httpx.Timeout(10.0, connect=3.0)
+
+    app.state.spring_client = httpx.AsyncClient(
+        timeout=timeout
+    )
+
+    app.state.plate_detector = PlateDetector()
+
+    # 제출/테스트는 CPU 기준
+    app.state.plate_ocr = PlateOCR(device="cpu")
+
+    yield
+
+    await app.state.spring_client.aclose()
+
+
+app = FastAPI(
+    title="Parking API test",
+    lifespan=lifespan
+)
+
 
 @app.get("/")
 def home():
-    return{
-        "msg" : "Fast Api"
-    }
-    
-@app.post ("/upload-test")
-async def upload_test(file: UploadFile = File(...)):
-    contents = await file.read()
-    
     return {
-        "msg" : "사진 파일 받기 성공",
-        "filename" : file.filename,
-        "content_type" : file.content_type,
-        "file_size": len(contents)
+        "msg": "Fast Api",
+        "spring_url": SPRING_URL
     }
 
-# t  
+
+@app.post("/detect-test")
+async def detect_test(
+    file: UploadFile = File(...)
+):
+    # 차량 이미지 업로드
+    img = await file.read()
+
+    # YOLO 번호판 검출 + crop 저장
+    detector = app.state.plate_detector
+
+    result = detector.detect_and_crop(
+        image_bytes=img,
+        filename=file.filename
+    )
+
+    return result
+
+
+@app.post("/ocr-test")
+async def ocr_test(
+    file: UploadFile = File(...)
+):
+    # 1. 차량 이미지 업로드
+    img = await file.read()
+
+    # 2. YOLO 번호판 검출 + crop 저장
+    detector = app.state.plate_detector
+
+    detect_result = detector.detect_and_crop(
+        image_bytes=img,
+        filename=file.filename
+    )
+
+    if not detect_result["success"]:
+        return {
+            "success": False,
+            "message": "번호판 검출 실패",
+            "detect": detect_result,
+            "ocr": None
+        }
+
+    # 3. crop 이미지 OCR
+    ocr_reader = app.state.plate_ocr
+
+    ocr_result = ocr_reader.read(
+        detect_result["crop_path"]
+    )
+
+    return {
+        "success": True,
+        "message": "번호판 검출 + OCR 성공",
+        "carNo": ocr_result["text"],
+        "ocr_score": ocr_result["score"],
+        "detect": detect_result,
+        "ocr": ocr_result
+    }
+
+
 @app.post("/ocr")
 async def ocr(
     file: UploadFile = File(...),
     cameraNo: int = Form(...)
 ):
-    #1. 사진 읽기
-    contents = await file.read()
+    # 1. 차량 이미지 업로드
+    img = await file.read()
+
+    # 2. YOLO 번호판 검출 + crop 저장
+    detector = app.state.plate_detector
+
+    detect_result = detector.detect_and_crop(
+        image_bytes=img,
+        filename=file.filename
+    )
+
+    if not detect_result["success"]:
+        return {
+            "success": False,
+            "message": "번호판 검출 실패",
+            "cameraNo": cameraNo,
+            "detect": detect_result
+        }
+
+    # 3. OCR 처리
+    ocr_reader = app.state.plate_ocr
+
+    ocr_result = ocr_reader.read(
+        detect_result["crop_path"]
+    )
+
+    carNo = ocr_result["text"]
+
+    # 4. Spring /api/camera-data/ocr 로 보낼 multipart/form-data 구성
+    # Spring 쪽 CameraDataController.ocr()는 @RequestParam + MultipartFile 구조다.
+    # 원본 이미지는 Spring이 저장하고, FastAPI의 crop 이미지는 OCR용 임시 파일로만 사용한다.
+    data = {
+        "cameraNo": str(cameraNo),
+        "carNo": carNo,
+        "confidenceScore": str(ocr_result["score"])
+    }
     
-    #2. 여기에서 OCR 처리
-    # 아직 OCR 모델이 없으니까 임시 번호판 문자열로 테스트 
-    carNo = "12가3456"
-    
-    #3. Spring으로 보낼 multipart/form-data 구성
     files = {
         "file": (
             file.filename,
-            contents,
-            file.content_type
+            img,
+            file.content_type or "application/octet-stream"
         )
     }
-    
-    data = {
-        "cameraNo": str(cameraNo),
-        "carNo": carNo
-    }
-    
-    #4. Spring API 호출
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            SPRING_URL,
-            data=data,
-            files=files
-        )
-    
+
+    # 5. Spring API 호출
+    client = app.state.spring_client
+
+    response = await client.post(
+        SPRING_URL,
+        data=data,
+        files=files
+    )
+
     return {
-        "msg": "OCR 처리 후 Spring 전송 완료",
-        "cameraNo" : cameraNo,
-        "carNo" : carNo,
-        "spring_status" : response.status_code,
-        "spring_result" : response.text
+        "success": True,
+        "msg": "YOLO + OCR 처리 후 Spring OCR 전송 완료",
+        "cameraNo": cameraNo,
+        "carNo": carNo,
+        "ocr_score": ocr_result["score"],
+        "detect": detect_result,
+        "ocr": ocr_result,
+        "spring_status": response.status_code,
+        "spring_result": response.text
     }

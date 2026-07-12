@@ -6,16 +6,20 @@ import java.time.LocalDateTime;
 
 @Data
 public class NoticeDTO {
+    private Integer displayNo;
+    private Integer noticeNo;
+    private Integer carLogNo;
+    private String registeredCarNo;
+    private String capturedCarNo;
+    private String carKind;
+    private LocalDateTime detectAt;
+    private Integer stayDays;
+    private String alertStat;
 
-    String plateNo, alertStat;
-    int noticeNo,parkingNo, stayDays;
-    LocalDateTime entryAt,detectAt;
+    private Integer handledByMemberNo;
+    private String handledByMemberName;
+    private LocalDateTime handledAt;
 
-    String vehicleType, vehicleStatus, expireStatus; //vehicle_car 테이블 참조용
-    LocalDateTime startDate, endDate;
-
-    String chargeStatus, paymentStatus;//parking_charge, parking_payment 두 테이블 참조용
-    int amount;
-    LocalDateTime paidAt;
-
+    private LocalDateTime inTime;
+    private String parkingName;
 }

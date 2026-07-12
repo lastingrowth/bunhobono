@@ -7,10 +7,13 @@ import java.sql.Timestamp;
 @Data
 public class
 CameraDataDTO {
-    Integer  vehicleNo;
-    private int cameraDataNo, cameraNo, displayNo;
+    private Integer vehicleCarNo;
+    private int cameraDataNo, displayNo;
     private String carNo, imagePath;
     private Timestamp captureTime;
     private Boolean recognitionState;
     private Double confidenceScore;
+
+    //외래키
+    private int cameraNo;
 }
