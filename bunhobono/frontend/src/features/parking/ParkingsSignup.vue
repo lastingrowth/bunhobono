@@ -42,7 +42,7 @@ const signupGo = async () => {
   try {
     await store.signup(parking.value);
     alert("주차장 등록 성공");
-    router.push("/parkings/list2");
+    router.push("/admin/parkings");
   } catch (e) {
     console.error(e);
     alert("주차장 등록 실패");

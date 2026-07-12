@@ -103,7 +103,7 @@ export const useJwtStore = defineStore('jwtStore', {
       localStorage.removeItem('userId')
       localStorage.removeItem('memStatus')
 
-      router.push("/")
+      router.push("/login")
     },
 
     /*

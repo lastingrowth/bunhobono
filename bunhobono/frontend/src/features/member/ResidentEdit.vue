@@ -48,7 +48,8 @@
 import { onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
-import { useJwtStore } from "../login/jwtStore";
+import { useJwtStore } from "@/features/login/jwtStore";
+
 
 const router = useRouter();
 const store = useMemStore();

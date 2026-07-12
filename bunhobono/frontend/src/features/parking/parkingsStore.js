@@ -37,11 +37,14 @@ export const useParkingsStore = defineStore("parkings", () => {
     }
   };
 
+  // 수정
   const update = async (parkingNo, data, router) => {
     const res = await updateParking(parkingNo, data);
     if (res.data === 1) {
       alert("수정 완료");
-      router.push("/parkings/list2"); // 성공 시 화면 이동
+
+      await loadList();
+      router.push("/admin/parkings"); // 성공 시 화면 이동
     } else {
       alert("잘못된 정보 입력");
     }

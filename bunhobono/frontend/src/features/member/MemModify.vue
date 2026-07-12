@@ -77,7 +77,7 @@ const goList = () => {
 };
 
 const goDetail = () => {
-    router.push(`/admin/members/${memberNo}`);
+    router.push(`/admin/members/${memberNo}/detail`);
 };
 
 const update = async () => {

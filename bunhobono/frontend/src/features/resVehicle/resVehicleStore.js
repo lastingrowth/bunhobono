@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+
 import {
     getResVehicleMemberInfo,
     getResVehicleList,
-    getResVehicleDetail,
     createResVehicle,
     updateResVehicle,
-    deleteResVehicle,
+    deleteResVehicle
 } from "./resVehicleApi";
 
 import { toVehicleView } from "../vehicle/vehicleFormat";
@@ -17,45 +17,69 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
     const vehicleList = ref([]);
     const vehicle = ref({});
 
-    // 로그인한 입주민 정보 조회
+    // 로그인한 입주민 정보
     const loadMyInfo = async () => {
         const res = await getResVehicleMemberInfo();
+
         member.value = res.data;
     };
 
-    // 입주민 본인 차량 목록 조회
+    // 입주민 본인 차량 목록
     const loadVehicleList = async () => {
+        if (!member.value.memberNo) {
+            await loadMyInfo();
+        }
+
         const res = await getResVehicleList();
 
-        vehicleList.value = res.data.map(vehicle => toVehicleView(vehicle));
+        vehicleList.value = res.data
+            .filter((item) => {
+                return Number(item.memberNo) === Number(member.value.memberNo);
+            })
+            .map(toVehicleView);
     };
 
-    // 입주민 본인 차량 상세 조회
-    const loadVehicle = async (vehicleNo) => {
-        const res = await getResVehicleDetail(vehicleNo);
+    // 입주민 본인 차량 상세
+    const loadVehicle = async (vehicleCarNo) => {
+        if (vehicleList.value.length === 0) {
+            await loadVehicleList();
+        }
 
-        vehicle.value = toVehicleView(res.data);
+        vehicle.value = vehicleList.value.find((item) => {
+            return Number(item.vehicleCarNo) === Number(vehicleCarNo);
+        }) ?? {};
     };
 
-    // 입주민 차량 등록 신청
+    // 입주민 차량 등록
     const addVehicle = async (data) => {
-        await createResVehicle(data);
+        if (!member.value.memberNo) {
+            await loadMyInfo();
+        }
+
+        const vehicleData = {
+            ...data,
+            memberNo: member.value.memberNo
+        };
+
+        await createResVehicle(vehicleData);
 
         await loadVehicleList();
     };
 
-    // 입주민 차량 수정 신청
-    const editVehicle = async (vehicleNo, data) => {
-        await updateResVehicle(vehicleNo, data);
+    // 입주민 차량 수정
+    const editVehicle = async (vehicleCarNo, data) => {
+        await updateResVehicle(vehicleCarNo, data);
 
         await loadVehicleList();
     };
 
     // 입주민 차량 삭제
-    const removeVehicle = async (vehicleNo) => {
-        await deleteResVehicle(vehicleNo);
+    const removeVehicle = async (vehicleCarNo) => {
+        await deleteResVehicle(vehicleCarNo);
 
-        await loadVehicleList();
+        vehicleList.value = vehicleList.value.filter((item) => {
+            return item.vehicleCarNo !== vehicleCarNo;
+        });
     };
 
     return {
@@ -68,6 +92,7 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         loadVehicle,
         addVehicle,
         editVehicle,
-        removeVehicle,
+        removeVehicle
     };
+
 });
