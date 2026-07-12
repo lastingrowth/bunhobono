@@ -34,6 +34,7 @@ public class CameraDataService {
 
     public int ocr(int cameraNo,
                    String carNo,
+                   Double confidenceScore,
                    MultipartFile file) {
         try{
             //1. 저장 폴더 없으면 생성
@@ -73,10 +74,15 @@ public class CameraDataService {
             dto.setCaptureTime(Timestamp.valueOf(now));
             dto.setImagePath(savePath.toString());
             dto.setRecognitionState(carNo != null && !carNo.isBlank());
-            dto.setConfidenceScore(null);
+            dto.setConfidenceScore(confidenceScore);
 
             // vehicleNo는 나중에 차량 테이블 조회 후 넣으면 됨
-            dto.setVehicleNo(null);
+            //dto.setVehicleCarNo(null);
+
+            // OCR로 읽은 차량번호가 등록 차량 테이블에 있으면 vehicle_car_no를 찾아서 저장
+            //
+            Integer vehicleCarNo = cameraDataMapper.findVehicleCarNo(carNo);
+            dto.setVehicleCarNo(vehicleCarNo);
 
             // 9. DB insert
             return cameraDataMapper.insert(dto);
