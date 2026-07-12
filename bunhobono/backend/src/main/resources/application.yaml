@@ -27,5 +27,8 @@ jwt:
   secret: kkkkkkkkkgggggggggggssssssssskkkkkkgggggggssssss
   expiration-seconds: 3600
 
+#file:
+#  camera-data: /Users/baesoyeong/mbc_202603-main/KDT/APT/보노보노/bunhobono/bunhobono/backend/src/main/resources/camera-data
+
 file:
-  camera-data: /Users/baesoyeong/mbc_202603-main/KDT/APT/보노보노/bunhobono/bunhobono/backend/src/main/resources/camera-data
+  camera-data: C:/kwon/mbc_a_java21/java_17/backend/runtime/camera-data

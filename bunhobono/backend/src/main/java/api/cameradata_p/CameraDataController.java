@@ -27,9 +27,10 @@ public class CameraDataController {
     @PostMapping("/ocr")
     public int ocr(@RequestParam("cameraNo") int cameraNo,
                    @RequestParam("carNo") String carNo,
+                   @RequestParam("confidenceScore") Double confidenceScore,
                    @RequestParam("file") MultipartFile file) {
 
-        return cameraDataService.ocr(cameraNo, carNo, file);
+        return cameraDataService.ocr(cameraNo, carNo,confidenceScore, file);
     }
 
 
