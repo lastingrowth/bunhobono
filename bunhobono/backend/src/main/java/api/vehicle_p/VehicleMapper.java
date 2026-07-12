@@ -26,6 +26,13 @@ public interface VehicleMapper {
     @Insert("INSERT INTO vehicle_car (vehicle_type, car_no, start_date, end_date) " +
             "VALUES (#{vehicleType}, #{carNo}, #{startDate}, #{endDate})")
     int insert(VehicleDTO dto);
+
+    // 승인 대기·승인 상태이며 아직 만료되지 않은 같은 차량번호가 있는지 확인
+    @Select("SELECT COUNT(*) FROM vehicle_car " +
+            "WHERE car_no = #{carNo} " +
+            "AND vehicle_status IN ('WAITING', 'APPROVED') " +
+            "AND (end_date IS NULL OR end_date > CURRENT_TIMESTAMP)")
+    int countActiveByCarNo(String carNo);
     //삭제
     @Delete("DELETE FROM vehicle_car WHERE vehicle_car_no = #{vehicleCarNo}")
     int delete(int vehicleCarNo);
@@ -41,8 +48,10 @@ public interface VehicleMapper {
     // 관리자 차량 상태 변경
     @Update("UPDATE vehicle_car " +
             "SET vehicle_status = #{vehicleStatus}, " +
-            "    member_no = #{memberNo}, " +
-            "    approved_at = CURRENT_TIMESTAMP " +
+            "    member_no = COALESCE(#{memberNo}, member_no), " +
+            "    start_date = #{startDate}, " +
+            "    end_date = #{endDate}, " +
+            "    approved_at = CASE WHEN #{vehicleStatus} = 'APPROVED' THEN CURRENT_TIMESTAMP ELSE approved_at END " +
             "WHERE vehicle_car_no = #{vehicleCarNo}")
     int updateStatus(VehicleDTO dto);
 }

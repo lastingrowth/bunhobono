@@ -35,6 +35,28 @@
           <span v-if="dStore.detail.confidenceScore !== null">%</span>
         </dd>
       </div>
+
+      <div>
+        <dt>차량 구분</dt>
+        <dd>{{ dStore.detail.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</dd>
+      </div>
+
+      <template v-if="dStore.detail.vehicleCarNo">
+        <div>
+          <dt>등록 기간</dt>
+          <dd>{{ registrationPeriod }}</dd>
+        </div>
+
+        <div>
+          <dt>만료일</dt>
+          <dd>{{ formatDate(dStore.detail.endDate) }}</dd>
+        </div>
+
+        <div>
+          <dt>남은 시간</dt>
+          <dd>{{ remainingTime }}</dd>
+        </div>
+      </template>
     </dl>
 
     <div class="info-detail-actions">
@@ -48,7 +70,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCameraDataStore } from './cameraDataStore'
 
@@ -69,6 +91,26 @@ const formatDate = value => {
 
   return date.toLocaleString('ko-KR')
 }
+
+const registrationPeriod = computed(() => {
+  const { startDate, endDate } = dStore.detail || {};
+  if (!startDate && !endDate) return '-';
+  if (!endDate) return '기간 제한 없음';
+  return `${formatDate(startDate)} ~ ${formatDate(endDate)}`;
+});
+
+const remainingTime = computed(() => {
+  const endDate = dStore.detail?.endDate;
+  if (!endDate) return '기간 제한 없음';
+
+  const minutes = Math.floor((new Date(endDate) - new Date()) / 60000);
+  if (minutes <= 0) return '만료됨';
+
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const remainMinutes = minutes % 60;
+  return days > 0 ? `${days}일 ${hours}시간` : `${hours}시간 ${remainMinutes}분`;
+});
 
 onMounted(async () => {
   const cameraDataNo = route.params.cameraDataNo
