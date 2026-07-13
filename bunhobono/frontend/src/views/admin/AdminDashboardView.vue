@@ -9,26 +9,23 @@
       <button
         type="button"
         class="dashboard-refresh"
-        @click="loadDashboard"
-      >
+        @click="loadDashboard">
         새로고침
       </button>
     </div>
 
-    <p
-      v-if="loading"
-      class="dashboard-message"
-    >
+    <!-- 데이터 조회 상태 -->
+    <p v-if="loading"
+      class="dashboard-message">
       현황을 불러오는 중입니다.
     </p>
 
-    <p
-      v-else-if="errorMessage"
-      class="dashboard-error"
-    >
+    <p v-else-if="errorMessage"
+      class="dashboard-error" >
       {{ errorMessage }}
     </p>
 
+    <!-- 상단 현황 카드 -->
     <div class="dashboard-grid">
       <!-- 미처리 알림 -->
       <button
@@ -72,79 +69,52 @@
         </span>
       </button>
 
-      <!-- 주차장 현황 -->
+      <!-- 주차장별 현황 -->
       <button
         type="button"
-        class="dashboard-card parking-card"
-        @click="router.push('/admin/parkings')"
-      >
+        class="dashboard-card parking-overview-card"
+        @click="router.push('/admin/parkings')" >
         <div class="card-heading">
           <span class="card-icon">🅿️</span>
           <span>주차장 현황</span>
         </div>
 
-        <div class="parking-content">
+        <div
+          v-if="parkingStatusList.length > 0"
+          class="parking-zone-grid">
+          
           <div
-            class="parking-donut"
-            :style="{
-              '--parking-rate': `${parkingUsageRate}%`
-            }"
+            v-for="parking in parkingStatusList"
+            :key="parking.parkingNo"
+            class="parking-zone"
           >
-            <strong>{{ parkingUsageRate }}%</strong>
-            <span>사용률</span>
-          </div>
-
-          <div class="parking-detail">
-            <span>
-              전체
-              <strong>{{ totalParkingCount }}면</strong>
-            </span>
-
-            <span>
-              사용
-              <strong>{{ occupiedParkingCount }}면</strong>
-            </span>
-
-            <span>
-              가능
-              <strong>{{ availableParkingCount }}면</strong>
-            </span>
-          </div>
-        </div>
-      </button>
-
-      <!-- 입출차 현황 -->
-      <button
-        type="button"
-        class="dashboard-card"
-        @click="router.push('/admin/carlogs')"
-      >
-        <div class="card-heading">
-          <span class="card-icon">🚙</span>
-          <span>입출차 현황</span>
-        </div>
-
-        <div class="carlog-summary">
-          <div>
-            <span>입차</span>
-
-            <strong>
-              {{ carlogStore.parkingCount }}건
+            <strong class="parking-zone-name">
+              {{ parking.parkingName }}
             </strong>
-          </div>
 
-          <div>
-            <span>출차</span>
+            <div
+              class="parking-zone-donut"
+              :style="{
+                '--parking-rate': `${parking.usageRate}%`
+              }"
+            >
+              <strong>{{ parking.usageRate }}%</strong>
+            </div>
 
-            <strong>
-              {{ carlogStore.outCount }}건
-            </strong>
+            <span class="parking-zone-count">
+              {{ parking.occupied }} / {{ parking.total }}면
+            </span>
+
+            <span class="parking-zone-available">
+              주차 가능 {{ parking.available }}면
+            </span>
           </div>
         </div>
 
-        <span class="card-description">
-          전체 기록 {{ carlogStore.totalCount }}건
-        </span>
+        <p v-else
+          class="parking-empty" >
+          등록된 주차장이 없습니다.
+        </p>
       </button>
 
       <!-- OCR 성공률 -->
@@ -184,191 +154,180 @@
       </article>
     </div>
 
-    <!-- 최근 입출차 기록 -->
+    <!-- 주간 입차 그래프와 입출차 목록 -->
     <article class="recent-carlogs">
       <div class="section-heading">
-        <h3>최근 입출차 기록</h3>
+        <h3>입출차 현황</h3>
 
         <button
           type="button"
-          @click="router.push('/admin/carlogs')"
-        >
+          @click="router.push('/admin/carlogs')" >
           전체보기
         </button>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>차량번호</th>
-            <th>차량종류</th>
-            <th>주차상태</th>
-            <th>입출차시간</th>
-          </tr>
-        </thead>
+      <div class="carlog-dashboard-content">
+        <!-- 최근 7일 입차 막대그래프 -->
+        <section class="weekly-entry-panel">
+          <h4 class="weekly-entry-title">
+            최근 7일 입차 기록
+          </h4>
 
-        <tbody>
-          <tr
-            v-for="log in recentCarlogs"
-            :key="log.carlogNo ?? log.carLogNo"
-          >
-            <td>{{ log.carNo || '미인식' }}</td>
-            <td>{{ log.carKind || '-' }}</td>
-            <td>{{ log.parkingState || '-' }}</td>
+          <div class="weekly-entry-chart">
+            <div
+              v-for="day in weeklyEntryStats"
+              :key="day.dateKey"
+              class="weekly-entry-item"
+            >
+              <span class="weekly-entry-count">
+                {{ day.count }}건
+              </span>
 
-            <td>
-              {{
-                log.entryAt
-                || log.exitAt
-                || log.createdAt
-                || '-'
-              }}
-            </td>
-          </tr>
+              <div class="weekly-entry-track">
+                <div
+                  class="weekly-entry-bar"
+                  :style="{
+                    '--bar-height': `${day.barHeight}%`
+                  }" />
+              </div>
 
-          <tr v-if="recentCarlogs.length === 0">
-            <td colspan="4">
-              조회된 입출차 기록이 없습니다.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <span class="weekly-entry-date">
+                {{ day.dateLabel }}
+              </span>
+
+              <span class="weekly-entry-day">
+                {{ day.dayLabel }}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 페이지네이션 입출차 목록 -->
+        <section class="carlog-list-panel">
+          <div class="carlog-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>차량번호</th>
+                  <th>차량종류</th>
+                  <th>주차상태</th>
+                  <th>입차시간</th>
+                  <th>출차시간</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  v-for="log in paginatedCarlogs"
+                  :key="log.carLogNo ?? log.displayNo"
+                >
+                  <td>{{ log.carNo || '미인식' }}</td>
+
+                  <td>
+                    {{ log.carKindText || log.carKind || '-' }}
+                  </td>
+
+                  <td>
+                    {{
+                      log.parkingStateText
+                      || log.parkingState
+                      || '-'
+                    }}
+                  </td>
+
+                  <td>
+                    {{ log.inTimeText || log.inTime || '-' }}
+                  </td>
+
+                  <td>
+                    {{ log.outTimeText || log.outTime || '-' }}
+                  </td>
+                </tr>
+
+                <tr v-if="paginatedCarlogs.length === 0">
+                  <td colspan="5">
+                    조회된 입출차 기록이 없습니다.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 페이지 번호 -->
+          <div class="carlog-pagination">
+            <button
+              type="button"
+              :disabled="currentCarlogPage === 1"
+              @click="setCarlogPage(currentCarlogPage - 1)"
+            >
+              이전
+            </button>
+
+            <button
+              v-for="page in carlogPageNumbers"
+              :key="page"
+              type="button"
+              :class="{
+                active: currentCarlogPage === page
+              }"
+              @click="setCarlogPage(page)"
+            >
+              {{ page }}
+            </button>
+
+            <button
+              type="button"
+              :disabled="
+                currentCarlogPage === carlogTotalPages
+              "
+              @click="setCarlogPage(currentCarlogPage + 1)"
+            >
+              다음
+            </button>
+          </div>
+        </section>
+      </div>
     </article>
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { useAdminDashboardStore } from '@/stores/adminDashboard'
+import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useNoticeStore } from '@/features/notice/noticeStore'
-import { useVehicleStore } from '@/features/vehicle/vehicleStore'
-import { useParkingsStore } from '@/features/parking/parkingsStore'
-import { useCarlogStore } from '@/features/carlog/carlogStore'
-import { useCameraDataStore } from '@/features/camera-data/cameraDataStore'
-
 const router = useRouter()
+const dashboardStore = useAdminDashboardStore()
 
-const noticeStore = useNoticeStore()
-const vehicleStore = useVehicleStore()
-const parkingStore = useParkingsStore()
-const carlogStore = useCarlogStore()
-const cameraDataStore = useCameraDataStore()
+// store의 상태와 계산 결과를 반응성을 유지한 상태로 사용
+const {
+  loading,
+  errorMessage,
+  unresolvedNoticeCount,
+  registeredVehicleCount,
+  parkingStatusList,
+  ocrTotalCount,
+  ocrSuccessCount,
+  ocrFailCount,
+  ocrSuccessRate,
+  weeklyEntryStats,
+  currentCarlogPage,
+  carlogTotalPages,
+  carlogPageNumbers,
+  paginatedCarlogs
+} = storeToRefs(dashboardStore)
 
-const loading = ref(false)
-const errorMessage = ref('')
-
-// 미처리 알림 수
-const unresolvedNoticeCount = computed(() => {
-  return noticeStore.notices.filter(notice => {
-    const status = notice.alertStat ?? notice.alert_stat
-
-    return status === 'Unresolved'
-  }).length
-})
-
-// 전체 등록 차량 수
-const registeredVehicleCount = computed(() => {
-  return vehicleStore.vehicleList.length
-})
-
-// 전체 주차면 수
-const totalParkingCount = computed(() => {
-  return parkingStore.list.reduce((total, parking) => {
-    return total + Number(parking.parkingSpaces ?? 0)
-  }, 0)
-})
-
-// 주차 가능한 면 수
-const availableParkingCount = computed(() => {
-  return parkingStore.list.reduce((total, parking) => {
-    return total + Number(parking.availableSpaces ?? 0)
-  }, 0)
-})
-
-// 현재 사용 중인 주차면 수
-const occupiedParkingCount = computed(() => {
-  return Math.max(
-    totalParkingCount.value - availableParkingCount.value,
-    0
-  )
-})
-
-// 전체 주차면 대비 사용률
-const parkingUsageRate = computed(() => {
-  if (totalParkingCount.value === 0) {
-    return 0
-  }
-
-  return Math.round(
-    occupiedParkingCount.value
-      / totalParkingCount.value
-      * 100
-  )
-})
-
-// 전체 OCR 데이터 수
-const ocrTotalCount = computed(() => {
-  return cameraDataStore.list.length
-})
-
-// OCR 성공 수
-const ocrSuccessCount = computed(() => {
-  return cameraDataStore.list.filter(data => {
-    if (typeof data.recognitionState === 'boolean') {
-      return data.recognitionState
-    }
-
-    return Boolean(data.carNo)
-  }).length
-})
-
-// OCR 실패 수
-const ocrFailCount = computed(() => {
-  return ocrTotalCount.value - ocrSuccessCount.value
-})
-
-// OCR 성공률
-const ocrSuccessRate = computed(() => {
-  if (ocrTotalCount.value === 0) {
-    return 0
-  }
-
-  return Math.round(
-    ocrSuccessCount.value
-      / ocrTotalCount.value
-      * 100
-  )
-})
-
-// 최근 입출차 기록 5건
-const recentCarlogs = computed(() => {
-  return carlogStore.carLogs.slice(0, 5)
-})
-
-// 대시보드 데이터 조회
+// 새로고침 버튼과 최초 화면 진입 시 사용
 const loadDashboard = async () => {
-  loading.value = true
-  errorMessage.value = ''
-
-  const results = await Promise.allSettled([
-    noticeStore.loadNotices(),
-    vehicleStore.loadVehicleList(),
-    parkingStore.loadList(),
-    carlogStore.loadCarLogs(),
-    cameraDataStore.loadList()
-  ])
-
-  const failed = results.some(result => {
-    return result.status === 'rejected'
-  })
-
-  if (failed) {
-    errorMessage.value = '일부 현황을 불러오지 못했습니다.'
-  }
-
-  loading.value = false
+  await dashboardStore.loadDashboard()
 }
 
+// 입출차 목록 페이지 변경
+const setCarlogPage = (page) => {
+  dashboardStore.setCarlogPage(page)
+}
+
+// 화면에 처음 들어왔을 때 대시보드 데이터 조회
 onMounted(loadDashboard)
 </script>

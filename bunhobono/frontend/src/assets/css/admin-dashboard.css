@@ -1,14 +1,16 @@
-/* 관리자 대시보드 */
+/* 관리자 대시보드 전체 영역 */
 .admin-dashboard {
   width: 100%;
   max-width: 1600px;
-  height: calc(100vh - var(--header-height) - 48px);
+  min-height: calc(100vh - var(--header-height) - 48px);
+  height: auto;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
+/* 대시보드 제목과 새로고침 버튼 */
 .dashboard-header {
   margin-bottom: 14px;
   display: flex;
@@ -45,6 +47,7 @@
   background: var(--primary-hover);
 }
 
+/* 조회 상태 메시지 */
 .dashboard-message,
 .dashboard-error {
   margin: 0 0 12px;
@@ -63,11 +66,11 @@
   background: #fee2e2;
 }
 
-/* 대시보드 카드 */
+/* 상단 현황 카드 배치 */
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: 190px 140px;
+  grid-template-rows: 220px 130px;
   gap: 12px;
   flex-shrink: 0;
 }
@@ -140,6 +143,7 @@ button.dashboard-card:hover {
   color: var(--text-muted);
 }
 
+/* 미처리 알림 카드 */
 .notice-card .card-icon {
   background: #fee2e2;
 }
@@ -148,29 +152,54 @@ button.dashboard-card:hover {
   color: #dc2626;
 }
 
-/* 주차장 현황 */
-.parking-content {
-  margin: auto 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 18px;
+/* 주차장별 현황 카드 */
+.parking-overview-card {
+  grid-column: span 2;
 }
 
-.parking-donut {
-  width: 105px;
-  height: 105px;
+.parking-zone-grid {
+  min-height: 0;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  flex: 1;
+}
+
+.parking-zone {
+  min-width: 0;
+  padding: 10px 8px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-main);
+}
+
+.parking-zone-name {
+  max-width: 100%;
+  margin-bottom: 6px;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--text-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parking-zone-donut {
+  width: 68px;
+  height: 68px;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
   flex-shrink: 0;
   border-radius: 50%;
   background:
     radial-gradient(
       circle,
-      var(--bg-header) 57%,
-      transparent 59%
+      var(--bg-main) 56%,
+      transparent 58%
     ),
     conic-gradient(
       var(--primary) var(--parking-rate),
@@ -178,74 +207,35 @@ button.dashboard-card:hover {
     );
 }
 
-.parking-donut strong {
-  font-size: 23px;
+.parking-zone-donut strong {
+  font-size: 17px;
   color: var(--text-color);
 }
 
-.parking-donut span {
+.parking-zone-count {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.parking-zone-available {
   margin-top: 2px;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
 }
 
-.parking-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.parking-detail span {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
+.parking-empty {
+  margin: auto;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
-.parking-detail strong {
-  color: var(--text-color);
-}
-
-/* 입출차 현황 */
-.carlog-summary {
-  margin: auto 0;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.carlog-summary > div {
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-radius: 10px;
-  text-align: center;
-  background: var(--bg-main);
-}
-
-.carlog-summary > div:first-child {
-  border-top: 4px solid var(--primary);
-}
-
-.carlog-summary > div:last-child {
-  border-top: 4px solid #22c55e;
-}
-
-.carlog-summary span {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.carlog-summary strong {
-  font-size: 22px;
-  color: var(--text-color);
-}
-
-/* OCR 성공률 */
+/* OCR 성공률 카드 */
 .ocr-card {
   grid-column: 1 / -1;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
 
 .ocr-content {
@@ -256,8 +246,8 @@ button.dashboard-card:hover {
 }
 
 .ocr-circle {
-  width: 90px;
-  height: 90px;
+  width: 64px;
+  height: 64px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -276,35 +266,37 @@ button.dashboard-card:hover {
 }
 
 .ocr-circle strong {
-  font-size: 22px;
+  font-size: 18px;
   color: var(--text-color);
 }
 
 .ocr-detail {
   display: flex;
   gap: 28px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
 .ocr-detail span {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .ocr-detail strong {
-  font-size: 18px;
+  font-size: 17px;
   color: var(--text-color);
 }
 
-/* 최근 입출차 기록 */
+/* 주간 입차 그래프와 입출차 목록 영역 */
 .recent-carlogs {
-  min-height: 0;
+  min-height: 380px;
   margin-top: 12px;
   padding: 14px 18px;
-  flex: 1;
-  overflow: hidden;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  overflow: visible;
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--bg-header);
@@ -312,10 +304,11 @@ button.dashboard-card:hover {
 }
 
 .section-heading {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .section-heading h3 {
@@ -329,15 +322,158 @@ button.dashboard-card:hover {
   font-size: 12px;
 }
 
+.carlog-dashboard-content {
+  min-height: 300px;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(520px, 1.2fr);
+  gap: 18px;
+  flex: 1;
+}
+
+/* 최근 7일 입차 막대그래프 */
+.weekly-entry-panel {
+  min-width: 0;
+  min-height: 270px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-main);
+}
+
+.weekly-entry-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.weekly-entry-chart {
+  min-height: 130px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+  flex: 1;
+  align-items: end;
+}
+
+.weekly-entry-item {
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.weekly-entry-count {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.weekly-entry-track {
+  width: 100%;
+  max-width: 34px;
+  min-height: 78px;
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 7px 7px 3px 3px;
+  background: #e5e7eb;
+}
+
+.weekly-entry-bar {
+  width: 100%;
+  height: var(--bar-height);
+  min-height: 0;
+  border-radius: 7px 7px 3px 3px;
+  background: linear-gradient(
+    180deg,
+    #38bdf8 0%,
+    var(--primary) 100%
+  );
+  transition: height 0.3s ease;
+}
+
+.weekly-entry-date {
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.weekly-entry-day {
+  margin-top: 1px;
+  font-size: 10px;
+  color: var(--text-color);
+}
+
+/* 페이지네이션이 적용되는 입출차 목록 */
+.carlog-list-panel {
+  min-width: 0;
+  min-height: 270px;
+  display: flex;
+  flex-direction: column;
+}
+
+.carlog-table-wrap {
+  min-height: 0;
+  overflow-x: auto;
+  flex: 1;
+}
+
 .recent-carlogs table {
+  width: 100%;
   border-radius: 8px;
   box-shadow: none;
 }
 
 .recent-carlogs th,
 .recent-carlogs td {
-  padding: 7px 12px;
+  padding: 7px 10px;
   font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 입출차 목록 페이지 버튼 */
+.carlog-pagination {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.carlog-pagination button {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-color);
+  background: var(--bg-header);
+}
+
+.carlog-pagination button:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.carlog-pagination button.active {
+  border-color: var(--primary);
+  color: var(--text-white);
+  background: var(--primary);
+}
+
+.carlog-pagination button:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 /* 태블릿 */
@@ -350,15 +486,30 @@ button.dashboard-card:hover {
   .dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: none;
-    grid-auto-rows: 190px;
+    grid-auto-rows: auto;
+  }
+
+  .dashboard-card {
+    min-height: 190px;
+  }
+
+  .parking-overview-card {
+    grid-column: 1 / -1;
+    min-height: 220px;
   }
 
   .ocr-card {
     grid-column: 1 / -1;
+    min-height: 130px;
   }
 
   .recent-carlogs {
-    overflow-x: auto;
+    min-height: 360px;
+    overflow: visible;
+  }
+
+  .carlog-dashboard-content {
+    grid-template-columns: minmax(270px, 0.8fr) minmax(460px, 1.2fr);
   }
 }
 
@@ -373,11 +524,36 @@ button.dashboard-card:hover {
     grid-template-columns: 1fr;
   }
 
+  .parking-overview-card,
   .ocr-card {
     grid-column: auto;
   }
 
+  .parking-overview-card {
+    height: auto;
+  }
+
+  .parking-zone-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .ocr-detail {
     gap: 14px;
+  }
+
+  .recent-carlogs {
+    padding: 12px;
+  }
+
+  .carlog-dashboard-content {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-entry-panel {
+    min-height: 210px;
+  }
+
+  .carlog-list-panel {
+    overflow-x: auto;
   }
 }
