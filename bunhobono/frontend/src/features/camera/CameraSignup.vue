@@ -4,17 +4,6 @@
     <form @submit.prevent="signupGo">
 
       <div class="form-group">
-        <label for="parkingNo">주차장 선택</label>
-        <select id="parkingNo" v-model="camera.parkingNo" required>
-          <option disabled value="">-- 주차장 선택 --</option>
-          <option v-for="p in pStore.list" :key="p.parkingNo" :value="p.parkingNo">
-            {{ p.parkingName }} (번호: {{ p.parkingNo }})
-          </option>
-        </select>
-      </div>
-
-
-      <div class="form-group">
         <label for="gateNo">게이트 선택</label>
         <select id="gateNo" v-model="camera.gateNo" required>
           <option disabled value="">-- 게이트 선택 --</option>
@@ -36,6 +25,7 @@
         <select id="cameraType" v-model="camera.cameraType">
           <option value="In">In</option>
           <option value="Out">Out</option>
+          <option value="Both">Both</option>
         </select>
       </div>
 
@@ -54,16 +44,13 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useCameraStore } from "./cameraStore";
-import { useParkingsStore } from "@/features/parking/parkingsStore";
 import { useGateStore } from "@/features/gates/gateStore";
 
 const router = useRouter();
 const cStore = useCameraStore();
-const pStore = useParkingsStore();
 const gStore = useGateStore();
 
 const camera = ref({
-  parkingNo: "",
   gateNo: "",
   cameraName: "",
   cameraType: "In",
@@ -71,8 +58,7 @@ const camera = ref({
 });
 
 onMounted(() => {
-  pStore.loadParkings();
-  gStore.loadGates();
+  gStore.loadList();
 });
 
 const signupGo = async () => {
