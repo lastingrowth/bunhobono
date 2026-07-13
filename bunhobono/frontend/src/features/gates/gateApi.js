@@ -10,11 +10,6 @@ export const signUpGate = (data) => {
   return api.post("/gates/signUp", data);
 };
 
-// 게이트 상세 조회
-export const getGateDetail = (gateNo) => {
-  return api.get(`/gates/${gateNo}/detail`);
-};
-
 // 게이트 수정
 export const updateGate = (gateNo, data) => {
   return api.put(`/gates/${gateNo}/edit`, data);

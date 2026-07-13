@@ -1,11 +1,10 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { deleteGate, getGateDetail, getList, signUpGate, updateGate } from "./gateApi";
+import { deleteGate, getList, signUpGate, updateGate } from "./gateApi";
 
 export const useGateStore =  defineStore("gate", () => {
 
   const list = ref ([]);
-  const detail = ref(null);
 
   // 게이트 목록
   const loadList = async () => {
@@ -21,16 +20,14 @@ export const useGateStore =  defineStore("gate", () => {
       alert("게이트 등록 완료");
 
       await loadList();
-      router.push("/admin/gates");
+      if (router) {
+        router.push("/admin/gates");
+      }
+      return true;
     } else {
       alert("게이트 등록 실패");
+      return false;
     }
-  };
-
-  // 게이트 상세
-  const loadDetail = async (gateNo) => {
-    const res = await getGateDetail(gateNo);
-    detail.value = res.data;
   };
 
   // 게이트 수정
@@ -72,11 +69,9 @@ export const useGateStore =  defineStore("gate", () => {
 
   return {
     list,
-    detail,
 
     loadList,
     signup,
-    loadDetail,
     update,
     remove
   };
