@@ -7,9 +7,20 @@ import java.util.List;
 @Mapper
 public interface CameraMapper {
 
-    @Select("SELECT ROW_NUMBER() OVER (ORDER BY camera_no) AS display_no, " +
-            "camera_no, gate_no, camera_name, camera_type, install_date " +
-            "FROM camera ORDER BY camera_no")
+    @Select(
+            "SELECT ROW_NUMBER() OVER (ORDER BY c.camera_no) AS display_no, " +
+                    "c.camera_no, " +
+                    "c.gate_no, " +
+                    "g.gate_name, " +
+                    "c.camera_name, " +
+                    "c.camera_type, " +
+                    "c.install_date, " +
+                    "p.parking_name " +
+                    "FROM camera c " +
+                    "LEFT JOIN gate g ON c.gate_no = g.gate_no " +
+                    "LEFT JOIN parking p ON g.parking_no = p.parking_no " +
+                    "ORDER BY c.camera_no"
+    )
     List<CameraDTO> list(CameraDTO dto);
 
     @Insert("INSERT INTO camera (gate_no, camera_name, camera_type, install_date) " +

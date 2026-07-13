@@ -1,16 +1,30 @@
 # yolo_detect.py
 
 from pathlib import Path
+import os
+
+
+BASE_DIR = Path(__file__).resolve().parent
+RUNTIME_DIR = BASE_DIR / "runtime"
+ULTRALYTICS_CONFIG_DIR = RUNTIME_DIR / "ultralytics"
+MATPLOTLIB_CONFIG_DIR = RUNTIME_DIR / "matplotlib"
+ULTRALYTICS_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+MATPLOTLIB_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+# 사용자 홈 경로 대신 프로젝트 내부에 Ultralytics 설정을 저장한다.
+os.environ.setdefault(
+    "YOLO_CONFIG_DIR",
+    str(ULTRALYTICS_CONFIG_DIR)
+)
+os.environ.setdefault("MPLCONFIGDIR", str(MATPLOTLIB_CONFIG_DIR))
+
 import cv2
 import numpy as np
 from ultralytics import YOLO
 
 
-BASE_DIR = Path(__file__).resolve().parent
-
 YOLO_MODEL_PATH = BASE_DIR / "model" / "yolo11s_bono1199" / "best.pt"
 
-RUNTIME_DIR = BASE_DIR / "runtime"
 UPLOAD_DIR = RUNTIME_DIR / "uploads"
 CROP_DIR = RUNTIME_DIR / "crops"
 

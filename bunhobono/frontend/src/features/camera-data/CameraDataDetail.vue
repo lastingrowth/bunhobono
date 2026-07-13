@@ -23,9 +23,18 @@
         <dd>{{ formatDate(dStore.detail.captureTime) }}</dd>
       </div>
 
-      <div>
-        <dt>이미지 경로</dt>
-        <dd>{{ dStore.detail.imagePath || '-' }}</dd>
+      <div class="camera-image-row">
+        <dt>촬영 이미지</dt>
+        <dd class="camera-image-content">
+          <img
+            v-if="imageUrl"
+            :src="imageUrl"
+            class="capture-image"
+            alt="차량 촬영 이미지"
+          />
+          <span v-else-if="imageLoading">이미지를 불러오는 중...</span>
+          <span v-else class="image-error">이미지를 불러올 수 없습니다.</span>
+        </dd>
       </div>
 
       <div>
@@ -70,13 +79,16 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCameraDataStore } from './cameraDataStore'
+import { getCameraDataImage } from './cameraDataApi'
 
 const route = useRoute()
 const router = useRouter()
 const dStore = useCameraDataStore()
+const imageUrl = ref(null)
+const imageLoading = ref(false)
 
 const formatDate = value => {
   if (!value) {
@@ -115,9 +127,51 @@ const remainingTime = computed(() => {
 onMounted(async () => {
   const cameraDataNo = route.params.cameraDataNo
   await dStore.loadDetail(cameraDataNo)
+
+  imageLoading.value = true
+
+  try {
+    const response = await getCameraDataImage(cameraDataNo)
+    imageUrl.value = URL.createObjectURL(response.data)
+  } catch (error) {
+    console.error('카메라 이미지 조회 실패:', error)
+  } finally {
+    imageLoading.value = false
+  }
+})
+
+onBeforeUnmount(() => {
+  if (imageUrl.value) {
+    URL.revokeObjectURL(imageUrl.value)
+  }
 })
 
 
 
 
 </script>
+
+<style scoped>
+.camera-image-row {
+  display: block;
+}
+
+.camera-image-content {
+  margin-top: 12px;
+}
+
+.capture-image {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  max-height: 500px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f4f6f9;
+  box-shadow: 0 8px 24px rgba(28, 39, 60, 0.1);
+}
+
+.image-error {
+  color: #8a93a5;
+}
+</style>

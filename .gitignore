@@ -104,3 +104,12 @@ coverage/
 # Misc
 # ==========================================================
 .cache/
+
+# ==========================================================
+# FastAPI / Python
+# ==========================================================
+bunhobono/fast-api/.venv/
+bunhobono/fast-api/__pycache__/
+bunhobono/fast-api/runtime/
+bunhobono/fast-api/Ultralytics/
+*.py[cod]

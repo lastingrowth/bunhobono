@@ -12,4 +12,5 @@ CameraDTO {
     private Date installDate;
     //일련번호
     private int displayNo;
+    private String parkingName,gateName;
 }

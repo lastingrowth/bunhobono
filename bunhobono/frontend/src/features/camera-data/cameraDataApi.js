@@ -18,3 +18,10 @@ export const searchCameraDataByCarNo = (carNo) => {
 export const getCameraDataDetail = (cameraDataNo) => {
   return api.get(`/camera-data/${cameraDataNo}/detail`);
 };
+
+//이미지 추가 
+export const getCameraDataImage = (cameraDataNo) => {
+  return api.get(`/camera-data/${cameraDataNo}/image`, {
+    responseType: 'blob',
+  })
+}

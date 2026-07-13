@@ -21,9 +21,13 @@ export const useCameraStore =  defineStore("camera", () => {
       alert("카메라 등록 완료");
 
       await loadList();
-      router.push("/admin/cameras");
+      if (router) {
+        router.push("/admin/cameras");
+      }
+      return true;
     } else {
       alert("카메라 등록 실패");
+      return false;
     }
   };
 
