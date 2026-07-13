@@ -8,7 +8,8 @@
                 <td>
                     <select v-model="member.role">
                         <option value="" disabled>선택하세요</option>
-                        <option value="resident">입주민</option>
+                        <!-- 백엔드와 라우터가 사용하는 대문자 권한값으로 전송한다. -->
+                        <option value="RESIDENT">입주민</option>
                         <option value="guard">경비실</option>
                         <option value="office">관리실</option>
                     </select>
@@ -129,7 +130,8 @@ const signupGo = async () => {
 
         alert("회원등록 성공");
 
-        router.push("/members");
+        // 회원가입 후 자동 로그인하지 않고 로그인 화면으로 이동한다.
+        router.push("/login");
     } catch (e) {
         console.error(e);
         alert("회원등록 실패");
