@@ -110,7 +110,6 @@ public interface MemberMapper {
     @Select("SELECT EXISTS (SELECT 1 FROM member WHERE login_id = #{loginId})" )
     boolean checkLoginId(String LoginId);
 
-
 }
 
 

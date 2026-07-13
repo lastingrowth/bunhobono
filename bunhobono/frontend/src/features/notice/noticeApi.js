@@ -6,6 +6,6 @@ export const getNoteList = () =>{
 };
 
 // 알림 확인 상태 변경
-export const updateNoticeStatus = (noticeNo, alertStat) => {
-    return api.put(`/notice/${noticeNo}/status`, { alertStat });
+export const updateNoticeStatus = (noticeNo, alertStat, handledByMemberName) => {
+    return api.put(`/notice/${noticeNo}/status`, { alertStat, handledByMemberName });
 };
