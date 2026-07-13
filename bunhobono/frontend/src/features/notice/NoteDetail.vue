@@ -68,7 +68,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getNoteList, updateNoticeStatus } from '@/features/notice/noticeApi';
+import { getNoteList } from '@/features/notice/noticeApi';
 import { useNoticeStore } from './noticeStore';
 
 const route = useRoute();
@@ -178,8 +178,7 @@ const loadDetail = async () => {
 
         if (store.notice.alertStat === "Unresolved") {
             try {
-                await updateNoticeStatus(store.notice.noticeNo, "Checked");
-                store.notice.alertStat = "Checked";
+                await store.changeNoticeStatus(store.notice.noticeNo, "Checked");
             } catch (error) {
                 console.error(error);
             }
@@ -211,18 +210,7 @@ const resolveNotice = async () => {
     errorMessage.value = "";
 
     try {
-        await updateNoticeStatus(store.notice.noticeNo, "Resolved");
-        store.notice.alertStat = "Resolved";
-
-        const target = store.notices.find((item) => {
-            const itemNo = item.noticeNo ?? item.notice_no;
-
-            return Number(itemNo) === Number(store.notice.noticeNo);
-        });
-
-        if (target) {
-            target.alertStat = "Resolved";
-        }
+        await store.changeNoticeStatus(store.notice.noticeNo, "Resolved");
     } catch (error) {
         console.error(error);
         errorMessage.value = "처리 완료 변경에 실패했습니다.";

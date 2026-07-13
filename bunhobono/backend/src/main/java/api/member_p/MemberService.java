@@ -83,4 +83,5 @@ public class MemberService {
         return  mapper.checkLoginId(loginId);
     }
 
+
 }

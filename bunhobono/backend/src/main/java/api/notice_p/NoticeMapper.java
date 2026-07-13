@@ -46,7 +46,7 @@ public interface NoticeMapper {
         SET alert_stat = #{alertStat},
             handled_by_member_no = CASE
                 WHEN #{alertStat} = 'Unresolved' THEN NULL
-                ELSE #{handledByMemberNo}
+                ELSE ( SELECT member_no FROM member WHERE login_id = #{handledByMemberName} )
             END,
             handled_at = CASE
                 WHEN #{alertStat} = 'Unresolved' THEN NULL
