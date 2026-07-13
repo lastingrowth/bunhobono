@@ -20,6 +20,11 @@ export const adminMenu = [
     icon: "🖼️"
   },
   {
+    title: '입출차 기록',
+    path: '/admin/carlogs',
+    icon: '🚘'
+  },
+  {
     title: '게이트',
     path: '/admin/gates',
     icon: '🚧'
