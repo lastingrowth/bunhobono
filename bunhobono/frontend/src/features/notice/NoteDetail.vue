@@ -207,7 +207,6 @@ const detailRows = computed(() => {
     { label: "감지 일시", value: formatDate(notice.value.detectAt) },
     { label: "주차 일수", value: notice.value.stayDays },
     { label: "처리 상태", value: statusOptions[notice.value.alertStat] ?? notice.value.alertStat },
-    { label: "처리 관리자 번호", value: notice.value.handledByMemberNo },
     { label: "처리 관리자", value: notice.value.handledByMemberName },
     { label: "처리 일시", value: formatDate(notice.value.handledAt) },
   ];
