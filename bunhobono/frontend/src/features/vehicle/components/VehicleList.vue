@@ -42,6 +42,67 @@
         </tr>
       </tbody>
     </table>
+
+    <!-- 선택한 차량 상세 정보 -->
+    <div v-if="vehicleStore.vehicle.vehicleCarNo">
+      <div class="detail-header">
+        <h3>차량 상세</h3>
+        <button @click="closeDetail">닫기</button>
+      </div>
+
+      <table class="detail-table">
+        <tbody>
+          <tr>
+            <th>차량번호</th>
+            <td>{{ vehicleStore.vehicle.carNo || '-' }}</td>
+          </tr>
+
+          <tr>
+            <th>차량종류</th>
+            <td>
+              {{ vehicleStore.vehicle.vehicleTypeText || vehicleStore.vehicle.vehicleType || '-' }}
+            </td>
+          </tr>
+
+          <tr>
+            <th>승인상태</th>
+            <td>
+              {{ vehicleStore.vehicle.vehicleStatusText || vehicleStore.vehicle.vehicleStatus || '-' }}
+            </td>
+          </tr>
+
+          <tr>
+            <th>회원번호</th>
+            <td>{{ vehicleStore.vehicle.memberNo ?? '-' }}</td>
+          </tr>
+
+          <tr>
+            <th>승인 관리자</th>
+            <td>{{ vehicleStore.vehicle.approvedMemberName || '-' }}</td>
+          </tr>
+
+          <tr>
+            <th>승인일</th>
+            <td>{{ vehicleStore.vehicle.approvedAtText || '-' }}</td>
+          </tr>
+
+          <tr>
+            <th>등록기간</th>
+            <td>{{ vehicleStore.vehicle.periodText || '-' }}</td>
+          </tr>
+
+          <tr>
+            <th>만기일</th>
+            <td>{{ vehicleStore.vehicle.endDateText || '-' }}</td>
+          </tr>
+
+          <tr>
+            <th>남은기간</th>
+            <td>{{ vehicleStore.vehicle.remainingTimeText || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -66,7 +127,10 @@ const filteredVehicles = computed(() => {
 
 async function detail(vehicleNo) {
   await vehicleStore.loadVehicle(vehicleNo)
-  console.log(vehicleStore.vehicle)
+}
+
+function closeDetail() {
+  vehicleStore.vehicle = {}
 }
 
 async function remove(vehicleNo) {

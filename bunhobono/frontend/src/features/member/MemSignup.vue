@@ -130,7 +130,6 @@ const signupGo = async () => {
 
         alert("회원등록 성공");
 
-        // 회원가입 후 자동 로그인하지 않고 로그인 화면으로 이동한다.
         router.push("/login");
     } catch (e) {
         console.error(e);

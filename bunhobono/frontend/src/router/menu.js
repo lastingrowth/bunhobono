@@ -15,6 +15,11 @@ export const adminMenu = [
     icon: '📷'
   },
   {
+    title: "카메라 기록 관리",
+    path: "/admin/camera-data",
+    icon: "🖼️"
+  },
+  {
     title: '게이트',
     path: '/admin/gates',
     icon: '🚧'

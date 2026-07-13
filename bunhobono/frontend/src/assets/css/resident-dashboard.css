@@ -1,266 +1,220 @@
 /* 입주민 대시보드 */
 .resident-dashboard {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* 대시보드 상단 */
 .resident-dashboard-header {
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .resident-dashboard-header h2 {
-    margin: 0 0 6px;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text-color);
+  margin: 0 0 6px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-color);
 }
 
 .resident-dashboard-header p {
-    margin: 0;
-    font-size: 15px;
-    color: var(--text-muted);
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-muted);
 }
 
 .resident-dashboard-header button {
-    padding: 9px 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-white);
-    background: var(--primary);
+  padding: 9px 16px;
+  border: none;
+  color: var(--text-white);
+  background: var(--primary);
 }
 
 .resident-dashboard-header button:hover {
-    background: var(--primary-hover);
+  color: var(--text-white);
+  background: var(--primary-hover);
 }
 
-/* 본인 정보 카드 */
-.resident-member-card {
-    margin-bottom: 18px;
-    padding: 20px 24px;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--bg-header);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+/* 입주민 카드 */
+.resident-member-card,
+.resident-vehicle-card {
+  margin-bottom: 18px;
+  padding: 20px 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-header);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
-/* 카드 제목 영역 */
+.resident-visit-card {
+  margin-bottom: 0;
+}
+
 .resident-section-header {
-    margin-bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .resident-section-header h3 {
-    margin: 0;
-    font-size: 18px;
-    color: var(--text-color);
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-color);
 }
 
 .resident-section-header button {
-    padding: 8px 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--text-color);
-    background: var(--bg-header);
-}
-
-.resident-section-header button:hover {
-    border-color: var(--primary);
-    color: var(--primary);
+  padding: 8px 14px;
+  font-size: 13px;
 }
 
 /* 본인 정보 목록 */
 .resident-member-list {
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    list-style: none;
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
 }
 
 .resident-member-list li {
-    min-width: 0;
-    padding: 16px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    border-right: 1px solid var(--border-color);
+  min-width: 0;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-right: 1px solid var(--border-color);
+  background: #f8fafc;
 }
 
 .resident-member-list li:last-child {
-    border-right: none;
+  border-right: none;
 }
 
 .resident-member-list span {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .resident-member-list strong {
-    overflow: hidden;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-color);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 차량 수 요약 */
 .resident-summary {
-    margin-bottom: 18px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+  margin-bottom: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
 .resident-summary-card {
-    padding: 20px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--bg-header);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-header);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
 .resident-summary-card span {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .resident-summary-card strong {
-    font-size: 30px;
-    font-weight: 700;
-    color: var(--primary);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--primary);
 }
 
 .resident-summary-card:nth-child(2) strong {
-    color: #f59e0b;
+  color: #f59e0b;
 }
 
-/* 차량 목록 카드 */
+/* 입주민 차량 표 */
 .resident-vehicle-card {
-    margin-bottom: 18px;
-    padding: 20px 24px;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--bg-header);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  overflow-x: auto;
 }
 
-.resident-visit-card {
-    margin-bottom: 0;
-}
-
-/* 차량 목록 표 */
 .resident-vehicle-card table {
-    width: 100%;
-    border-collapse: collapse;
+  min-width: 650px;
+  border-radius: 8px;
+  box-shadow: none;
 }
 
 .resident-vehicle-card th,
 .resident-vehicle-card td {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border-color);
-    text-align: left;
-    font-size: 14px;
+  padding: 12px 14px;
 }
 
 .resident-vehicle-card th {
-    font-weight: 700;
-    color: var(--text-color);
-    background: var(--bg-main);
-}
-
-.resident-vehicle-card td {
-    color: var(--text-color);
-}
-
-.resident-vehicle-card tbody tr:hover {
-    background: rgba(14, 165, 233, 0.05);
-}
-
-.resident-vehicle-card tbody tr:last-child td {
-    border-bottom: none;
+  background: #f8fafc;
 }
 
 /* 태블릿 */
 @media (max-width: 900px) {
-    .resident-member-list {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .resident-member-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-    .resident-member-list li:nth-child(2) {
-        border-right: none;
-    }
+  .resident-member-list li:nth-child(2) {
+    border-right: none;
+  }
 
-    .resident-member-list li:nth-child(-n + 2) {
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .resident-summary {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .resident-vehicle-card {
-        overflow-x: auto;
-    }
-
-    .resident-vehicle-card table {
-        min-width: 650px;
-    }
+  .resident-member-list li:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border-color);
+  }
 }
 
 /* 모바일 */
 @media (max-width: 600px) {
-    .resident-dashboard-header {
-        align-items: flex-start;
-        gap: 16px;
-    }
+  .resident-dashboard-header {
+    align-items: flex-start;
+    gap: 16px;
+  }
 
-    .resident-dashboard-header h2 {
-        font-size: 24px;
-    }
+  .resident-dashboard-header h2 {
+    font-size: 24px;
+  }
 
-    .resident-member-card,
-    .resident-vehicle-card {
-        padding: 18px;
-    }
+  .resident-member-card,
+  .resident-vehicle-card {
+    padding: 18px;
+  }
 
-    .resident-member-list {
-        grid-template-columns: 1fr;
-    }
+  .resident-member-list {
+    grid-template-columns: 1fr;
+  }
 
-    .resident-member-list li {
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-    }
+  .resident-member-list li {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
 
-    .resident-member-list li:last-child {
-        border-bottom: none;
-    }
+  .resident-member-list li:last-child {
+    border-bottom: none;
+  }
 
-    .resident-summary {
-        grid-template-columns: 1fr;
-    }
+  .resident-summary {
+    grid-template-columns: 1fr;
+  }
 
-    .resident-summary-card {
-        padding: 18px 20px;
-    }
+  .resident-summary-card {
+    padding: 18px 20px;
+  }
 }

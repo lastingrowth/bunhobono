@@ -9,9 +9,14 @@
     <table border="1">
       <thead>
         <tr>
-          <th>display No</th>
-          <th>Car No</th>
-          <th>Capture Time</th>
+          <th>기록 번호</th>
+          <th>차량 번호</th>
+          <th>촬영 시각</th>
+          <th>등록 상태</th>
+          <th>등록 기간</th>
+          <th>만료일</th>
+          <th>남은 시간</th>
+          <th>상세보기</th>
         </tr>
       </thead>
       <tbody>
@@ -19,8 +24,12 @@
           <td>{{ d.displayNo }}</td>
           <td>{{ d.carNo }}</td>
           <td>{{ d.captureTime }}</td>
+          <td>{{ d.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</td>
+          <td>{{ registrationPeriod(d.startDate, d.endDate, d.vehicleCarNo) }}</td>
+          <td>{{ formatDate(d.endDate) }}</td>
+          <td>{{ remainingTime(d.endDate, d.vehicleCarNo) }}</td>
           <td>
-            <router-link :to="{ name: 'cameraDatadetail', params: { id: d.cameraDataNo } }">
+            <router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo : d.cameraDataNo } }">
             <button>상세보기</button>
             </router-link>
           </td>
@@ -50,6 +59,31 @@ const resetList = async () => {
 const displayList = computed(() =>
   dStore.searchResults.length > 0 ? dStore.searchResults : dStore.list
 );
+
+const formatDate = value => {
+  if (!value) return '-';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ko-KR');
+};
+
+const registrationPeriod = (startDate, endDate, vehicleCarNo) => {
+  if (!vehicleCarNo) return '-';
+  if (!endDate) return '기간 제한 없음';
+  return `${formatDate(startDate)} ~ ${formatDate(endDate)}`;
+};
+
+const remainingTime = (endDate, vehicleCarNo) => {
+  if (!vehicleCarNo) return '-';
+  if (!endDate) return '기간 제한 없음';
+
+  const minutes = Math.floor((new Date(endDate) - new Date()) / 60000);
+  if (minutes <= 0) return '만료됨';
+
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const remainMinutes = minutes % 60;
+  return days > 0 ? `${days}일 ${hours}시간` : `${hours}시간 ${remainMinutes}분`;
+};
 
 onMounted(() => {
   dStore.loadList();

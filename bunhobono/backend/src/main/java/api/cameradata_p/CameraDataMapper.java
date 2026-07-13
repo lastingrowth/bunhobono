@@ -8,10 +8,14 @@ import java.util.List;
 @Mapper
 public interface CameraDataMapper {
 
-    @Select("SELECT ROW_NUMBER() OVER (ORDER BY camera_data_no) AS display_no,camera_data_no, car_no, capture_time FROM camera_data ")
+    @Select("SELECT ROW_NUMBER() OVER (ORDER BY cd.camera_data_no DESC) AS display_no, " +
+            "cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
+            "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
+            "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
+            "ORDER BY cd.camera_data_no DESC")
     List<CameraDataDTO> list(CameraDataDTO dto);
 
-    @Select("select vehicle_car_no from vehicle_car where car_no = #{carNo} limit 1")
+    @Select("SELECT vehicle_car_no FROM vehicle_car WHERE car_no = #{carNo} ORDER BY vehicle_car_no DESC LIMIT 1")
     Integer findVehicleCarNo(String carNo);
 
     @Insert("INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, capture_time, image_path, recognition_state, confidence_score) " +
@@ -19,13 +23,19 @@ public interface CameraDataMapper {
     @Options(useGeneratedKeys = true, keyProperty = "cameraDataNo")
     int insert(CameraDataDTO dto);
 
-    @Select("SELECT * FROM camera_data WHERE camera_data_no = #{cameraDataNo}")
+    @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
+            "cd.image_path, cd.recognition_state, cd.confidence_score, " +
+            "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
+            "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
+            "WHERE cd.camera_data_no = #{cameraDataNo}")
     CameraDataDTO detail(int cameraDataNo);
 
-    @Select("SELECT camera_data_no, camera_no, vehicle_car_no, car_no, capture_time, image_path, recognition_state, confidence_score " +
-            "FROM camera_data " +
-            "WHERE car_no LIKE CONCAT('%', #{keyword}, '%') " +
-            "ORDER BY camera_data_no")
+    @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
+            "cd.image_path, cd.recognition_state, cd.confidence_score, " +
+            "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
+            "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
+            "WHERE cd.car_no LIKE CONCAT('%', #{keyword}, '%') " +
+            "ORDER BY cd.camera_data_no DESC")
     List<CameraDataDTO> searchByCarNo(String keyword);
 
     @Select("select * from camera_data where capture_time < NOW() - INTERVAL '3 months'")
