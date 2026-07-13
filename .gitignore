@@ -104,3 +104,33 @@ coverage/
 # Misc
 # ==========================================================
 .cache/
+
+
+# ==========================================================
+# FastAPI / Python
+# ==========================================================
+
+# Virtual environments
+bunhobono/fast-api/.venv/
+bunhobono/fast-api/venv/
+bunhobono/fast-api/env/
+
+# Python cache / compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test / tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Python environment variables
+bunhobono/fast-api/.env
+bunhobono/fast-api/.env.*
+!bunhobono/fast-api/.env.example
+
+# Runtime-generated uploads and crops
+bunhobono/fast-api/runtime/
