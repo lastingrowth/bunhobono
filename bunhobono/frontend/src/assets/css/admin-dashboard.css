@@ -1,0 +1,383 @@
+/* 관리자 대시보드 */
+.admin-dashboard {
+  width: 100%;
+  max-width: 1600px;
+  height: calc(100vh - var(--header-height) - 48px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-header {
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.dashboard-header h2 {
+  margin: 0 0 3px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.dashboard-header p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.dashboard-refresh {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-white);
+  background: var(--primary);
+}
+
+.dashboard-refresh:hover {
+  background: var(--primary-hover);
+}
+
+.dashboard-message,
+.dashboard-error {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.dashboard-message {
+  color: var(--primary);
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.dashboard-error {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+/* 대시보드 카드 */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: 190px 140px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.dashboard-card {
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: left;
+  color: var(--text-color);
+  background: var(--bg-header);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+button.dashboard-card {
+  cursor: pointer;
+}
+
+button.dashboard-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.12);
+  transform: translateY(-2px);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.card-icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 17px;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.card-value {
+  margin: auto 0 6px;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.card-value small {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.card-description {
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.notice-card .card-icon {
+  background: #fee2e2;
+}
+
+.notice-card .card-value {
+  color: #dc2626;
+}
+
+/* 주차장 현황 */
+.parking-content {
+  margin: auto 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+}
+
+.parking-donut {
+  width: 105px;
+  height: 105px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      var(--bg-header) 57%,
+      transparent 59%
+    ),
+    conic-gradient(
+      var(--primary) var(--parking-rate),
+      #e5e7eb 0
+    );
+}
+
+.parking-donut strong {
+  font-size: 23px;
+  color: var(--text-color);
+}
+
+.parking-donut span {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.parking-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.parking-detail span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.parking-detail strong {
+  color: var(--text-color);
+}
+
+/* 입출차 현황 */
+.carlog-summary {
+  margin: auto 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.carlog-summary > div {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 10px;
+  text-align: center;
+  background: var(--bg-main);
+}
+
+.carlog-summary > div:first-child {
+  border-top: 4px solid var(--primary);
+}
+
+.carlog-summary > div:last-child {
+  border-top: 4px solid #22c55e;
+}
+
+.carlog-summary span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.carlog-summary strong {
+  font-size: 22px;
+  color: var(--text-color);
+}
+
+/* OCR 성공률 */
+.ocr-card {
+  grid-column: 1 / -1;
+}
+
+.ocr-content {
+  margin: auto 0;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.ocr-circle {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      var(--bg-header) 57%,
+      transparent 59%
+    ),
+    conic-gradient(
+      #22c55e var(--ocr-rate),
+      #e5e7eb 0
+    );
+}
+
+.ocr-circle strong {
+  font-size: 22px;
+  color: var(--text-color);
+}
+
+.ocr-detail {
+  display: flex;
+  gap: 28px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.ocr-detail span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ocr-detail strong {
+  font-size: 18px;
+  color: var(--text-color);
+}
+
+/* 최근 입출차 기록 */
+.recent-carlogs {
+  min-height: 0;
+  margin-top: 12px;
+  padding: 14px 18px;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-header);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.section-heading {
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-heading h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-color);
+}
+
+.section-heading button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.recent-carlogs table {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.recent-carlogs th,
+.recent-carlogs td {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+/* 태블릿 */
+@media (max-width: 1200px) {
+  .admin-dashboard {
+    height: auto;
+    overflow: visible;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    grid-auto-rows: 190px;
+  }
+
+  .ocr-card {
+    grid-column: 1 / -1;
+  }
+
+  .recent-carlogs {
+    overflow-x: auto;
+  }
+}
+
+/* 모바일 */
+@media (max-width: 700px) {
+  .dashboard-header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ocr-card {
+    grid-column: auto;
+  }
+
+  .ocr-detail {
+    gap: 14px;
+  }
+}
