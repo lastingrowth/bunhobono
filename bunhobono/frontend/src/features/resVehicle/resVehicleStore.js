@@ -26,17 +26,10 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
 
     // 입주민 본인 차량 목록
     const loadVehicleList = async () => {
-        if (!member.value.memberNo) {
-            await loadMyInfo();
-        }
-
         const res = await getResVehicleList();
 
-        vehicleList.value = res.data
-            .filter((item) => {
-                return Number(item.memberNo) === Number(member.value.memberNo);
-            })
-            .map(toVehicleView);
+        // 서버가 로그인 ID로 필터링한 본인 차량만 반환한다.
+        vehicleList.value = res.data.map(toVehicleView);
     };
 
     // 입주민 본인 차량 상세
@@ -52,16 +45,8 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
 
     // 입주민 차량 등록
     const addVehicle = async (data) => {
-        if (!member.value.memberNo) {
-            await loadMyInfo();
-        }
-
-        const vehicleData = {
-            ...data,
-            memberNo: member.value.memberNo
-        };
-
-        await createResVehicle(vehicleData);
+        // 소유 관계는 서버가 로그인 ID로 저장하므로 memberNo를 Body에 넣지 않는다.
+        await createResVehicle(data);
 
         await loadVehicleList();
     };

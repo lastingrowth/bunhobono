@@ -8,7 +8,8 @@
                 <td>
                     <select v-model="member.role">
                         <option value="" disabled>선택하세요</option>
-                        <option value="resident">입주민</option>
+                        <!-- 백엔드와 라우터가 사용하는 대문자 권한값으로 전송한다. -->
+                        <option value="RESIDENT">입주민</option>
                         <option value="guard">경비실</option>
                         <option value="office">관리실</option>
                     </select>
