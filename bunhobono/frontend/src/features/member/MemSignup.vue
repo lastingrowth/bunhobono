@@ -1,30 +1,33 @@
 <template>
-    <h2>회원등록</h2>
+    <h2>입주민 회원가입</h2>
 
     <table border="">
         <tbody>
-            <tr>
-                <th>가입유형</th>
-                <td>
-                    <select v-model="member.role">
-                        <option value="" disabled>선택하세요</option>
-                        <option value="resident">입주민</option>
-                        <option value="guard">경비실</option>
-                        <option value="office">관리실</option>
-                    </select>
-                </td>
-            </tr>
             <tr>
                 <th>이름</th>
                 <td><input type="text" v-model="member.memName"></td>
             </tr>
             <tr>
                 <th>동</th>
-                <td><input type="text" v-model="member.memDong"></td>
+                <td>
+                    <!-- 입주민 회원가입에서 101~108동 셀렉트로 선택. -->
+                    <select v-model.number="member.memDong">
+                        <option disabled value="">동을 선택하세요</option>
+                        <option v-for="dong in dongOptions" :key="dong" :value="dong">{{ dong }}</option>
+                    </select>
+                </td>
             </tr>
             <tr>
                 <th>호수</th>
-                <td><input type="text" v-model="member.memHo"></td>
+                <td>
+                    <input
+                        type="text"
+                        inputmode="numeric"
+                        :value="member.memHo"
+                        placeholder="숫자만 입력하세요"
+                        @input="handleHoInput"
+                    >
+                </td>
             </tr>
             <tr>
                 <th>연락처</th>
@@ -37,19 +40,6 @@
             <tr>
                 <th>비밀번호</th>
                 <td><input type="password" v-model="member.loginPwd"></td>
-            </tr>
-            <tr>
-                <th>상태</th>
-                <td>
-                    <select v-model="member.memStatus">
-                        <option value="" disabled>선택하세요</option>
-                        <option value="거주">거주</option>
-                        <option value="전출">전출</option>
-                        <option value="근무">근무</option>
-                        <option value="휴직">휴직</option>
-                        <option value="퇴사">퇴사</option>
-                    </select>
-                </td>
             </tr>
             <tr>
                 <td colspan="2">
@@ -67,19 +57,33 @@ import { useMemStore } from "./memStore";
 
 const router = useRouter();
 const store = useMemStore();
+const dongOptions = [101, 102, 103, 104, 105, 106, 107, 108];
 
 const member = ref({
-    role: "",
+    // 공개 회원가입은 입주민 전용이므로 권한을 선택받지 않고 RESIDENT로 고정.
+    role: "RESIDENT",
     memName: "",
     memDong: "",
     memHo: "",
     memPhone: "",
     loginId: "",
     loginPwd: "",
-    memStatus: "",
+    // 공개 입주민 회원가입의 초기 상태는 항상 거주로 고정.
+    memStatus: "거주",
 });
 const idChecked = ref(false);
 const checkedLoginId = ref("");
+
+// 호수에 문자가 입력되면 제거하고 숫자 입력 안내를 표시.
+const handleHoInput = (event) => {
+    const inputValue = event.target.value;
+    const numericValue = inputValue.replace(/\D/g, "");
+    if (inputValue !== numericValue) {
+        alert("숫자만 입력하세요.");
+    }
+    event.target.value = numericValue;
+    member.value.memHo = numericValue === "" ? "" : Number(numericValue);
+};
 
 // 아이디 중복확인
 const idCheck = async () => {
@@ -106,18 +110,6 @@ const idCheck = async () => {
 
 
 const signupGo = async () => {
-
-    // 가입유형 선택 여부
-    if (member.value.role === "") {
-        alert("가입유형을 선택하세요.");
-        return;
-    }
-
-    // 상태 선택 여부
-    if (member.value.memStatus === "") {
-        alert("상태를 선택하세요.");
-        return;
-    }
 
     if(!idChecked.value||checkedLoginId.value !== member.value.loginId){
         alert("아이디 중복확인을 해주세요")

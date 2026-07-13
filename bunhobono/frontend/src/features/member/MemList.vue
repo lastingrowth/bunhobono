@@ -1,6 +1,69 @@
 <template>
+    <div class="list-header">
+        <h2>회원 목록 조회</h2>
+        <button type="button" @click="router.push('/admin/signup')">회원 추가</button>
+    </div>
 
-    <h2>회원 목록 조회</h2>
+    <!-- 체크한 여러 회원의 승인 상태를 한 번에 변경. -->
+    <div class="approval-actions">
+        <button type="button" @click="toggleSelectAll">{{ allVisibleSelected ? '전체해제' : '전체선택' }}</button>
+        <select v-model="bulkApprovalStatus">
+            <option value="PENDING">승인 대기</option>
+            <option value="APPROVED">승인 완료</option>
+            <option value="REJECTED">승인 거절</option>
+        </select>
+        <button type="button" @click="changeSelectedApprovalStatus">승인여부 변경</button>
+        <span>선택 {{ selectedMemberNos.length }}명</span>
+    </div>
+
+    <!-- 승인 대기 회원에 대해서 분리해서 확인. -->
+    <section class="pending-section">
+        <h3>승인 대기 회원 ({{ pendingMembers.length }}명)</h3>
+        <table border="">
+            <thead>
+                <tr>
+                    <th>선택</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th>
+                    <th>연락처</th><th>아이디</th><th>승인여부</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="mem in pendingMembers" :key="mem.memberNo">
+                    <td><input v-model="selectedMemberNos" type="checkbox" :value="mem.memberNo"></td>
+                    <td>{{ mem.role }}</td>
+                    <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
+                    <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td>
+                    <td>{{ mem.memPhone }}</td><td>{{ mem.loginId }}</td>
+                    <td>{{ approvalStatusText(mem.approvalStatus) }}</td>
+                </tr>
+                <tr v-if="pendingMembers.length === 0"><td colspan="8">승인 대기 회원이 없습니다.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Spring 스케줄러가 분류한 탈퇴 3일 경과 회원을 별도 알림으로 표시. -->
+    <section class="archive-alert-section">
+        <h3>탈퇴 후 3일 경과 회원 알림 ({{ memberArchiveAlerts.length }}명)</h3>
+        <table border="">
+            <thead>
+                <tr>
+                    <th>가입유형</th><th>이름</th><th>동</th><th>호수</th>
+                    <th>아이디</th><th>상태</th><th>탈퇴일</th><th>알림</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="mem in memberArchiveAlerts" :key="mem.memberNo">
+                    <td>{{ mem.role }}</td>
+                    <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
+                    <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.loginId }}</td>
+                    <td>{{ mem.memStatus }}</td><td>{{ mem.memDeleteAt }}</td>
+                    <td>보관 삭제 확인 필요</td>
+                </tr>
+                <tr v-if="memberArchiveAlerts.length === 0">
+                    <td colspan="8">탈퇴 후 3일이 지난 회원이 없습니다.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
 
     <div>
         <select v-model="searchType">
@@ -9,95 +72,116 @@
             <option value="name">이름</option>
             <option value="dongHo">동호수</option>
         </select>
-
         <div v-if="searchType === 'dongHo'">
             <input type="text" v-model="dong" placeholder="동">
             <input type="text" v-model="ho" placeholder="호수">
         </div>
-
-        <input
-            v-else-if="searchType !== 'all'"
-            type="text"
-            v-model="searchKeyword"
-            placeholder="검색어 입력"
-        />
-
+        <input v-else-if="searchType !== 'all'" type="text" v-model="searchKeyword" placeholder="검색어 입력" />
         <button @click="searchGo">검색</button>
     </div>
-    
+
+    <h3>승인된 회원 ({{ approvedMembers.length }}명)</h3>
     <table border="">
         <thead>
             <tr>
-                <th>가입유형</th>
-                <th>이름</th>
-                <th>동</th>
-                <th>호수</th>
-                <th>연락처</th>
-                <th>아이디</th>
-                <th>가입일</th>
-                <th>탈퇴일</th>
-                <th>상태</th>
+                <th>선택</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th><th>연락처</th>
+                <th>아이디</th><th>가입일</th><th>탈퇴일</th><th>상태</th><th>승인여부</th>
             </tr>
         </thead>
-
         <tbody>
-
-            <tr v-for="mem in memberList" :key="mem.memberNo">
+            <tr v-for="mem in approvedMembers" :key="mem.memberNo">
+                <td><input v-model="selectedMemberNos" type="checkbox" :value="mem.memberNo"></td>
                 <td>{{ mem.role }}</td>
-                <td>
-                    <router-link :to="`/admin/members/${mem.memberNo}/detail`">
-                        {{ mem.memName }}
-                    </router-link>
-                </td>
-                <td>{{ mem.memDong }}</td>
-                <td>{{ mem.memHo }}</td>
-                <td>{{ mem.memPhone }}</td>
-                <td>{{ mem.loginId }}</td>
-                <td>{{ mem.memCreateAt }}</td>
-                <td>{{ mem.memDeleteAt }}</td>
-                <td>{{ mem.memStatus }}</td>
+                <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
+                <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.memPhone }}</td>
+                <td>{{ mem.loginId }}</td><td>{{ mem.memCreateAt }}</td><td>{{ mem.memDeleteAt }}</td>
+                <td>{{ mem.memStatus }}</td><td>{{ approvalStatusText(mem.approvalStatus) }}</td>
             </tr>
         </tbody>
     </table>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useMemStore } from './memStore';
 import { storeToRefs } from 'pinia';
+import { useRouter } from 'vue-router';
 
 const store = useMemStore();
-const { memberList } = storeToRefs(store);
+const router = useRouter();
+const { memberList, memberArchiveAlerts } = storeToRefs(store);
+const searchType = ref('all');
+const searchKeyword = ref('');
+const dong = ref('');
+const ho = ref('');
+const selectedMemberNos = ref([]);
+const bulkApprovalStatus = ref('APPROVED');
 
-const searchType = ref("all");
-const searchKeyword = ref("");
+// 기존 데이터에 승인값이 없으면 안전하게 승인 대기로 분류한다.
+const pendingMembers = computed(() => memberList.value.filter(
+    (member) => !member.approvalStatus || member.approvalStatus === 'PENDING'
+));
 
-const dong = ref("");
-const ho = ref("");
+// 하단 회원 목록에는 승인 완료된 회원만 표시.
+const approvedMembers = computed(() => memberList.value.filter(
+    (member) => member.approvalStatus === 'APPROVED'
+        && !memberArchiveAlerts.value.some((alertMember) => alertMember.memberNo === member.memberNo)
+));
 
-const searchGo = async () => {
+// 전체선택은 현재 화면의 승인 대기 회원만 대상으로.
+const visibleMemberNos = computed(() =>
+    pendingMembers.value.map((member) => member.memberNo)
+);
 
-    if (searchType.value === "all") {
-        await store.loadmemberList();
+const allVisibleSelected = computed(() =>
+    visibleMemberNos.value.length > 0
+    && visibleMemberNos.value.every((memberNo) => selectedMemberNos.value.includes(memberNo))
+);
+
+const toggleSelectAll = () => {
+    if (allVisibleSelected.value) {
+        selectedMemberNos.value = [];
         return;
     }
-
-    if (searchType.value === "dongHo") {
-        await store.search({
-            type: "dongHo",
-            dong: dong.value,
-            ho: ho.value,
-        });
-    }
-    else {
-        await store.search({
-            type: searchType.value,
-            keyword: searchKeyword.value,
-        });
-    }
+    selectedMemberNos.value = [...visibleMemberNos.value];
 };
 
-onMounted(() => {
-    store.loadmemberList();
+const approvalStatusText = (status) => ({
+    PENDING: '승인 대기', APPROVED: '승인 완료', REJECTED: '승인 거절'
+}[status] ?? '승인 대기');
+
+const changeSelectedApprovalStatus = async () => {
+    if (selectedMemberNos.value.length === 0) {
+        alert('승인여부를 변경할 회원을 선택해 주세요.');
+        return;
+    }
+    await store.editApprovalStatus(selectedMemberNos.value, bulkApprovalStatus.value);
+    selectedMemberNos.value = [];
+    alert('선택한 회원의 승인여부가 변경되었습니다.');
+};
+
+const searchGo = async () => {
+    if (searchType.value === 'all') return store.loadmemberList();
+    if (searchType.value === 'dongHo') {
+        return store.search({ type: 'dongHo', dong: dong.value, ho: ho.value });
+    }
+    return store.search({ type: searchType.value, keyword: searchKeyword.value });
+};
+
+onMounted(async () => {
+    await Promise.all([
+        store.loadmemberList(),
+        store.loadMemberArchiveAlerts()
+    ]);
 });
 </script>
+
+<style scoped>
+.list-header { display: flex; align-items: center; justify-content: space-between; }
+.list-header h2 { margin: 0; }
+.pending-section { margin: 24px 0; padding: 16px; border: 1px solid #f0b8b8; background: #fff8f8; }
+.archive-alert-section { margin: 24px 0; padding: 16px; border: 1px solid #e6a23c; background: #fffaf0; }
+.approval-actions { display: flex; align-items: center; gap: 8px; margin: 16px 0; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 8px; text-align: center; }
+</style>

@@ -2,8 +2,10 @@ import { defineStore } from "pinia";
 
 import { ref } from "vue";
 import { getNoteList, updateNoticeStatus } from "./noticeApi";
+import { useJwtStore } from "../login/jwtStore";
 
 export const useNoticeStore = defineStore("notice", () => {
+    const jwtStore = useJwtStore();
     
     // 공지사항 목록
     const notices = ref([]);
@@ -33,21 +35,12 @@ export const useNoticeStore = defineStore("notice", () => {
 
     // 알림 상태 변경
     const changeNoticeStatus = async (noticeNo, alertStat) => {
-        await updateNoticeStatus(noticeNo, alertStat);
+        const handledByMemberName = alertStat === "Unresolved" ? null : jwtStore.userId;
 
-        const target = notices.value.find((item) => {
-            const itemNo = item.noticeNo ?? item.notice_no;
+        await updateNoticeStatus(noticeNo, alertStat, handledByMemberName);
 
-            return Number(itemNo) === Number(noticeNo); 
-        });
-
-        if (target) {
-            target.alertStat = alertStat;
-        }
-
-        if (notice.value) {
-            notice.value.alertStat = alertStat;
-        }
+        await loadNotices();
+        await loadNotice(noticeNo);
     };
 
     return {

@@ -1,10 +1,13 @@
 package api.member_p;
 
 import jakarta.annotation.Resource;
+import jakarta.annotation.PostConstruct;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class MemberService {
@@ -14,8 +17,31 @@ public class MemberService {
     @Resource
     PasswordEncoder passwordEncoder;
 
+    // 기존 회원 서비스에서 탈퇴 3일 경과 알림 목록을 함께 관리한다.
+    private volatile List<MemberDTO> archiveAlerts = List.of();
+
+    // 서버 시작 시 즉시 한 번 조회해 관리자 첫 화면부터 알림을 표시한다.
+    @PostConstruct
+    public void initializeArchiveAlerts() {
+        refreshArchiveAlerts();
+    }
+
+    // 프로젝트에 이미 활성화된 Spring 스케줄러를 사용해 매시간 목록을 갱신한다.
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    public void refreshArchiveAlerts() {
+        archiveAlerts = List.copyOf(mapper.archiveAlertList());
+    }
+
+    public List<MemberDTO> getArchiveAlerts() {
+        return archiveAlerts;
+    }
+
     // 회원가입
     public void signup(MemberDTO dto) {
+        // 프론트 입력값과 관계없이 DB 권한 형식을 대문자로 통일한다.
+        if (dto.getRole() != null) {
+            dto.setRole(dto.getRole().toUpperCase());
+        }
         // 비밀번호 암호화
         dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
         // DB 저장
@@ -53,7 +79,27 @@ public class MemberService {
 
     // 수정
     public void update(MemberDTO dto) {
+        MemberDTO savedMember = mapper.detail((int) dto.getMemberNo());
+        if (dto.getLoginPwd() == null || dto.getLoginPwd().isBlank()) {
+            // 비밀번호 입력이 없으면 기존 암호화 비밀번호를 그대로 유지한다.
+            dto.setLoginPwd(savedMember.getLoginPwd());
+        } else if (!dto.getLoginPwd().equals(savedMember.getLoginPwd())) {
+            // 초기화 또는 직접 변경한 새 비밀번호만 BCrypt로 암호화한다.
+            dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
+        }
         mapper.update(dto);
+    }
+
+    // 관리자 회원 목록에서 선택한 여러 회원의 승인 상태를 일괄 변경한다.
+    public void updateApprovalStatus(MemberApprovalRequest request) {
+        if (request.getMemberNos() == null || request.getMemberNos().isEmpty()) {
+            throw new IllegalArgumentException("승인 상태를 변경할 회원을 선택해 주세요.");
+        }
+        String status = request.getApprovalStatus();
+        if (!Set.of("PENDING", "APPROVED", "REJECTED").contains(status)) {
+            throw new IllegalArgumentException("올바르지 않은 승인 상태입니다.");
+        }
+        mapper.updateApprovalStatus(request.getMemberNos(), status);
     }
 
     // 삭제
@@ -63,11 +109,22 @@ public class MemberService {
 
     // 입주민 마이페이지
     public MemberDTO residentMypage(String loginId) {
-        return mapper.residentMypage(loginId);
+        MemberDTO member = mapper.residentMypage(loginId);
+        if (member != null) {
+            // 암호화된 비밀번호도 클라이언트에 노출하지 않는다.
+            member.setLoginPwd(null);
+        }
+        return member;
     }
 
     // 입주민 직접 마이페이지 수정
     public void residentMypageEdit(MemberDTO dto){
+        // 새 비밀번호를 입력한 경우에만 암호화하고, 빈 값이면 기존 비밀번호를 유지한다.
+        if (dto.getLoginPwd() != null && !dto.getLoginPwd().isBlank()) {
+            dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
+        } else {
+            dto.setLoginPwd(null);
+        }
         mapper.residentMypageEdit(dto);
     }
 

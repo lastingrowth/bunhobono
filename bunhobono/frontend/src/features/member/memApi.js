@@ -5,6 +5,11 @@ export const getMemberList = () => {
     return api.get("/members");
 };
 
+// 탈퇴 후 3일이 지나 보관 삭제 확인이 필요한 회원 알림을 조회한다.
+export const getMemberArchiveAlerts = () => {
+    return api.get('/members/archive-alerts');
+};
+
 // 회원 검색
 export const searchMember = (params) => {
     return api.get("/members/search", {params,});
@@ -18,6 +23,11 @@ export const getMemberDetail = (memberNo) => {
 // 회원 수정
 export const updateMember = (memberNo, data) => {
     return api.put(`/members/${memberNo}/edit`, data);
+};
+
+// 회원 목록에서 선택한 여러 회원의 승인 상태를 한 번에 변경한다.
+export const updateMemberApprovalStatus = (memberNos, approvalStatus) => {
+    return api.put('/members/approval-status', { memberNos, approvalStatus });
 };
 
 // 회원 삭제

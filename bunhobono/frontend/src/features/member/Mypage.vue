@@ -7,6 +7,7 @@
         <button @click="goDelete">회원탈퇴</button>
     </div>
 
+    <!-- 비밀번호는 조회 응답과 마이페이지 화면에 표시하지 않는다. -->
     <table border="">
         <tbody>
             <tr>

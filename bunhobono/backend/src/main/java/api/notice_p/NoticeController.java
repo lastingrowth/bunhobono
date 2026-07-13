@@ -1,6 +1,7 @@
 package api.notice_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,9 +25,15 @@ public class NoticeController {
         return noticeService.list();
     }
 
+    @GetMapping("/{noticeNo}")
+    public NoticeDTO detail(@PathVariable int noticeNo) {
+        return noticeService.detail(noticeNo);
+    }
+
     @PutMapping("/{noticeNo}/status")
     public int status(@PathVariable int noticeNo, @RequestBody NoticeDTO dto) {
         dto.setNoticeNo(noticeNo);
+
         return noticeService.status(dto);
     }
 }
