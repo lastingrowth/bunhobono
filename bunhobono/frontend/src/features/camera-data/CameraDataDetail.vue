@@ -116,4 +116,8 @@ onMounted(async () => {
   const cameraDataNo = route.params.cameraDataNo
   await dStore.loadDetail(cameraDataNo)
 })
+
+
+
+
 </script>
