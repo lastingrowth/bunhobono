@@ -39,9 +39,33 @@ class PlateDetector:
 
         encoded.tofile(str(path))
 
+    # 업로드 이미지 bytes를 받아 번호판 탐지 후 crop 저장
     def detect_and_crop(self, image_bytes: bytes, filename: str):
         img = self.read_image_from_bytes(image_bytes)
 
+        return self._detect_and_crop_image(
+            img=img,
+            filename=filename
+        )
+
+    # 영상에서 읽은 frame을 받아 번호판 탐지 후 crop 저장
+    def detect_and_crop_frame(self, frame, filename: str):
+        if frame is None:
+            return {
+                "success": False,
+                "message": "frame이 비어 있습니다.",
+                "crop_path": None,
+                "det_conf": 0.0,
+                "box": None
+            }
+
+        return self._detect_and_crop_image(
+            img=frame,
+            filename=filename
+        )
+
+    # 실제 YOLO 번호판 탐지와 crop 저장 공통 처리
+    def _detect_and_crop_image(self, img, filename: str):
         results = self.model.predict(
             source=img,
             conf=0.25,

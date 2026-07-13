@@ -143,7 +143,7 @@ async def ocr(
     data = {
         "cameraNo": str(cameraNo),
         "carNo": carNo,
-        "confidenceScore": str(ocr_result["score"])
+        "confidenceScore": str(ocr_result["score"]* 100)
     }
     
     files = {
@@ -174,3 +174,7 @@ async def ocr(
         "spring_status": response.status_code,
         "spring_result": response.text
     }
+
+    
+# cd C:\kwon\mbc_a_java21\java_17\fast-api
+# C:\Users\dkddp\.conda\envs\bono\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
