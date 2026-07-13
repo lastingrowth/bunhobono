@@ -134,6 +134,7 @@ bunhobono/fast-api/.env.*
 
 # Runtime-generated uploads and crops
 bunhobono/fast-api/runtime/
+bunhobono/fast-api/Ultralytics/
 
 # Archives
 *.zip

@@ -1,10 +1,15 @@
 package api.cameradata_p;
 
 import jakarta.annotation.Resource;
-import org.apache.ibatis.annotations.Delete;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
@@ -43,6 +48,27 @@ public class CameraDataController {
     @GetMapping("/search")
     public List<CameraDataDTO> search(@RequestParam String carNo) {
         return cameraDataService.searchByCarNo(carNo);
+    }
+
+    @GetMapping("/{cameraDataNo}/image")
+    public ResponseEntity<org.springframework.core.io.Resource> getImage(
+            @PathVariable int cameraDataNo) throws IOException {
+
+        Path path =
+                cameraDataService.getCameraImagePath(cameraDataNo);
+
+        org.springframework.core.io.Resource image =
+                new UrlResource(path.toUri());
+
+        String contentType = Files.probeContentType(path);
+
+        if (contentType == null) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(image);
     }
 
 }

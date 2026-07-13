@@ -136,6 +136,10 @@ async def ocr(
     )
 
     carNo = ocr_result["text"]
+    confidence_score = round(
+        float(ocr_result["score"]) * 100,
+        2
+    )
 
     # 4. Spring /api/camera-data/ocr 로 보낼 multipart/form-data 구성
     # Spring 쪽 CameraDataController.ocr()는 @RequestParam + MultipartFile 구조다.
@@ -143,7 +147,7 @@ async def ocr(
     data = {
         "cameraNo": str(cameraNo),
         "carNo": carNo,
-        "confidenceScore": str(ocr_result["score"])
+        "confidenceScore": str(confidence_score)
     }
     
     files = {
@@ -168,9 +172,15 @@ async def ocr(
         "msg": "YOLO + OCR 처리 후 Spring OCR 전송 완료",
         "cameraNo": cameraNo,
         "carNo": carNo,
-        "ocr_score": ocr_result["score"],
+        "ocr_score": confidence_score,
         "detect": detect_result,
         "ocr": ocr_result,
         "spring_status": response.status_code,
         "spring_result": response.text
     }
+
+#     cd C:\Users\503-22\Documents\bunhobono\bunhobono\fast-api
+# .\.venv\Scripts\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    
+# cd C:\kwon\mbc_a_java21\java_17\fast-api
+# C:\Users\dkddp\.conda\envs\bono\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000

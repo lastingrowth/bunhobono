@@ -43,5 +43,6 @@ public interface CameraDataMapper {
 
     @Delete("delete from camera_data where camera_data_no = #{cameraDataNo}")
     int delete(int cameraDataNo);
+
 }
 

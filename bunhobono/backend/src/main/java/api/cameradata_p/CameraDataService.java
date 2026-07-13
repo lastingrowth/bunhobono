@@ -3,13 +3,12 @@ import api.carlog_p.CarLogService;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -139,6 +138,29 @@ public class CameraDataService {
         int count = deleteData();
 
         System.out.println("자동 삭제된 카메라 데이터 수 : " + count);
+    }
+
+    public Path getCameraImagePath(int cameraDataNo) {
+        CameraDataDTO dto = cameraDataMapper.detail(cameraDataNo);
+
+        if (dto == null ||
+                dto.getImagePath() == null ||
+                dto.getImagePath().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "이미지 경로가 없습니다."
+            );
+        }
+
+        Path path = Paths.get(dto.getImagePath());
+
+        if (!Files.exists(path) || !Files.isReadable(path)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "이미지 파일이 없습니다."
+            );
+        }
+        return path;
     }
 }
 
