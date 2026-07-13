@@ -28,11 +28,11 @@ public class GateController {
         return gateService.signUp(dto);
     }
 
-    // 게이트 상세 조회
-    @GetMapping("/{gateNo}/detail")
-    public ResponseEntity<GateDTO> getGateDetail(@PathVariable int gateNo) {
-        return ResponseEntity.ok(gateService.getGateDetail(gateNo));
-    }
+//    // 게이트 상세 조회
+//    @GetMapping("/{gateNo}/detail")
+//    public ResponseEntity<GateDTO> getGateDetail(@PathVariable int gateNo) {
+//        return ResponseEntity.ok(gateService.getGateDetail(gateNo));
+//    }
 
     @DeleteMapping("/{gateNo}/delete")
     public int deleteGate(@PathVariable int gateNo) {
