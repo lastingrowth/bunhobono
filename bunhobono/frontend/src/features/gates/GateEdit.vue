@@ -1,6 +1,7 @@
 <template>
   <div class="gate-edit">
     <h2>게이트 수정</h2>
+
     <form @submit.prevent="updateGo">
       <div class="form-group">
         <label for="parkingNo">주차장 선택</label>
@@ -26,12 +27,13 @@
         <select id="gateType" v-model="gate.gateType">
           <option value="In">In</option>
           <option value="Out">Out</option>
+          <option value="Both">Both</option>
         </select>
       </div>
 
       <div class="form-actions">
         <button type="submit">수정하기</button>
-        <button type="button" @click="router.push('/gates/list')">취소</button>
+        <button type="button" @click="router.push('/admin/gates')">취소</button>
       </div>
     </form>
   </div>
@@ -55,8 +57,22 @@ const gate = ref({
   parkingNo: "",
 });
 
-onMounted(() => {
-  pStore.loadParkings();
+onMounted(async () => {
+  await pStore.loadList();
+  await gStore.loadDetail(route.params.gateNo);
+
+  if (!gStore.detail) {
+    alert("게이트 정보를 찾을 수 없습니다.");
+    router.push("/admin/gates");
+    return;
+  }
+
+  gate.value = {
+    gateNo: gStore.detail.gateNo,
+    gateName: gStore.detail.gateName,
+    gateType: gStore.detail.gateType,
+    parkingNo: gStore.detail.parkingNo,
+  };
 });
 
 const updateGo = async () => {

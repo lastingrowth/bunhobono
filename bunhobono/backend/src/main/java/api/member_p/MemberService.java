@@ -16,6 +16,10 @@ public class MemberService {
 
     // 회원가입
     public void signup(MemberDTO dto) {
+        // 프론트 입력값과 관계없이 DB 권한 형식을 대문자로 통일한다.
+        if (dto.getRole() != null) {
+            dto.setRole(dto.getRole().toUpperCase());
+        }
         // 비밀번호 암호화
         dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
         // DB 저장
@@ -63,11 +67,22 @@ public class MemberService {
 
     // 입주민 마이페이지
     public MemberDTO residentMypage(String loginId) {
-        return mapper.residentMypage(loginId);
+        MemberDTO member = mapper.residentMypage(loginId);
+        if (member != null) {
+            // 암호화된 비밀번호도 클라이언트에 노출하지 않는다.
+            member.setLoginPwd(null);
+        }
+        return member;
     }
 
     // 입주민 직접 마이페이지 수정
     public void residentMypageEdit(MemberDTO dto){
+        // 새 비밀번호를 입력한 경우에만 암호화하고, 빈 값이면 기존 비밀번호를 유지한다.
+        if (dto.getLoginPwd() != null && !dto.getLoginPwd().isBlank()) {
+            dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
+        } else {
+            dto.setLoginPwd(null);
+        }
         mapper.residentMypageEdit(dto);
     }
 
