@@ -1,38 +1,82 @@
 # ==========================================================
 # Frontend (Vue / Vite)
 # ==========================================================
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
+bunhobono/frontend/node_modules/
+bunhobono/frontend/dist/
+bunhobono/frontend/.vite/
 
 # Environment
-frontend/.env
-frontend/.env.*
-!frontend/.env.example
+bunhobono/frontend/.env
+bunhobono/frontend/.env.*
+!bunhobono/frontend/.env.example
 
 # Package Manager
-frontend/.npm/
-frontend/.pnpm-store/
+bunhobono/frontend/.npm/
+bunhobono/frontend/.pnpm-store/
 
 # Cache
-frontend/.eslintcache
+bunhobono/frontend/.eslintcache
 
 # Logs
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/pnpm-debug.log*
+bunhobono/frontend/npm-debug.log*
+bunhobono/frontend/yarn-debug.log*
+bunhobono/frontend/yarn-error.log*
+bunhobono/frontend/pnpm-debug.log*
 
 # ==========================================================
 # Backend (Spring Boot / Gradle)
 # ==========================================================
-backend/.gradle/
-backend/build/
-backend/target/
+bunhobono/backend/.gradle/
+bunhobono/backend/build/
+bunhobono/backend/target/
 
 # Generated packages
-backend/*.jar
-backend/*.war
+bunhobono/backend/*.jar
+bunhobono/backend/*.war
+
+# Backend environment / local configuration
+bunhobono/backend/.env
+bunhobono/backend/.env.*
+!bunhobono/backend/.env.example
+
+# ==========================================================
+# FastAPI / Python
+# ==========================================================
+
+# Virtual environments
+bunhobono/fast-api/.venv/
+bunhobono/fast-api/venv/
+bunhobono/fast-api/env/
+
+# Python cache / compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test / tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+
+# Python packaging
+*.egg-info/
+pip-wheel-metadata/
+
+# Python environment variables
+bunhobono/fast-api/.env
+bunhobono/fast-api/.env.*
+!bunhobono/fast-api/.env.example
+
+# Runtime-generated files
+bunhobono/fast-api/runtime/
+
+# Locally installed or generated external tools
+bunhobono/fast-api/Ultralytics/
 
 # ==========================================================
 # IntelliJ IDEA
@@ -59,7 +103,7 @@ out/
 nbproject/private/
 
 # ==========================================================
-# OS
+# OS-generated Files
 # ==========================================================
 .DS_Store
 Thumbs.db
@@ -81,13 +125,20 @@ logs/
 *~
 
 # ==========================================================
-# Git Merge Backup Files
+# Backup / Merge Conflict Files
 # ==========================================================
 *_BASE_*
 *_LOCAL_*
 *_REMOTE_*
 *_BACKUP_*
 *.orig
+*.bak
+*.backup
+*.old
+*.save
+*.autosave
+*.rej
+.history/
 
 # ==========================================================
 # Test / Coverage
@@ -101,40 +152,11 @@ coverage/
 *.class
 
 # ==========================================================
-# Misc
+# Archives
+# ==========================================================
+*.zip
+
+# ==========================================================
+# Miscellaneous Cache
 # ==========================================================
 .cache/
-
-
-# ==========================================================
-# FastAPI / Python
-# ==========================================================
-
-# Virtual environments
-bunhobono/fast-api/.venv/
-bunhobono/fast-api/venv/
-bunhobono/fast-api/env/
-
-# Python cache / compiled files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Test / tool caches
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-
-# Python environment variables
-bunhobono/fast-api/.env
-bunhobono/fast-api/.env.*
-!bunhobono/fast-api/.env.example
-
-# Runtime-generated uploads and crops
-bunhobono/fast-api/runtime/
-bunhobono/fast-api/Ultralytics/
-
-# Archives
-*.zip
