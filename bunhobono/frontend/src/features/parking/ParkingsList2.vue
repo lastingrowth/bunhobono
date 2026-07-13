@@ -48,10 +48,10 @@ onMounted(() => {
 });
 
 const goSignUp = () => {
-  router.push("/parkings/signUp"); // 등록 컴포넌트 라우트로 이동
+  router.push("/admin/parkings/signUp"); // 등록 컴포넌트 라우트로 이동
 };
 
 const goEdit = (parkingNo) => {
-  router.push(`/parkings/${parkingNo}/edit`);
+  router.push(`/admin/parkings/${parkingNo}/edit`);
 };
 </script>
