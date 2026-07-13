@@ -138,3 +138,4 @@ bunhobono/fast-api/.env.*
 # Runtime-generated uploads and crops
 bunhobono/fast-api/runtime/
 >>>>>>> dc2bef4687e83896a49a524e2ef1177f84973041
+*.zip
