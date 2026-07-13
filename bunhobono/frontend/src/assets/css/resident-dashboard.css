@@ -111,39 +111,94 @@
   white-space: nowrap;
 }
 
-/* 차량 수 요약 */
-.resident-summary {
+/* 좌측 차량 목록, 우측 주차장 사용 현황 */
+.resident-main-grid {
   margin-bottom: 18px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
 }
 
-.resident-summary-card {
+.resident-vehicle-column {
+  display: grid;
+  gap: 18px;
+}
+
+.resident-vehicle-column .resident-vehicle-card {
+  margin-bottom: 0;
+}
+
+.parking-usage-card {
   padding: 20px 24px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--bg-header);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
-.resident-summary-card span {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-muted);
+.parking-usage-card .resident-section-header {
+  margin-bottom: 0;
 }
 
-.resident-summary-card strong {
-  font-size: 30px;
+.parking-zone-list {
+  margin: auto 0;
+  padding: 22px 20px;
+  display: grid;
+  gap: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.parking-zone-row {
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: 48px minmax(120px, 1fr) 72px 120px;
+  gap: 12px;
+  align-items: center;
+}
+
+.parking-progress {
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.parking-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+/* 주차장 사용률이 70%를 초과하면 혼잡 상태를 빨간색으로 표시한다. */
+.parking-progress span.parking-progress-danger {
+  background: #ef4444;
+}
+
+.parking-usage-number {
+  text-align: right;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.parking-available {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+/* 차량 목록 제목 옆 차량 대수 */
+.resident-list-count {
+  margin-left: 8px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--primary);
-}
-
-.resident-summary-card:nth-child(2) strong {
-  color: #f59e0b;
 }
 
 /* 입주민 차량 표 */
@@ -168,6 +223,10 @@
 
 /* 태블릿 */
 @media (max-width: 900px) {
+  .resident-main-grid {
+    grid-template-columns: 1fr;
+  }
+
   .resident-member-list {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -210,11 +269,12 @@
     border-bottom: none;
   }
 
-  .resident-summary {
-    grid-template-columns: 1fr;
+  .parking-zone-row {
+    grid-template-columns: 44px minmax(100px, 1fr) 62px;
   }
 
-  .resident-summary-card {
-    padding: 18px 20px;
+  .parking-available {
+    grid-column: 2 / -1;
+    text-align: left;
   }
 }

@@ -1,10 +1,13 @@
 package api.member_p;
 
 import jakarta.annotation.Resource;
+import jakarta.annotation.PostConstruct;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class MemberService {
@@ -13,6 +16,25 @@ public class MemberService {
 
     @Resource
     PasswordEncoder passwordEncoder;
+
+    // 기존 회원 서비스에서 탈퇴 3일 경과 알림 목록을 함께 관리한다.
+    private volatile List<MemberDTO> archiveAlerts = List.of();
+
+    // 서버 시작 시 즉시 한 번 조회해 관리자 첫 화면부터 알림을 표시한다.
+    @PostConstruct
+    public void initializeArchiveAlerts() {
+        refreshArchiveAlerts();
+    }
+
+    // 프로젝트에 이미 활성화된 Spring 스케줄러를 사용해 매시간 목록을 갱신한다.
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    public void refreshArchiveAlerts() {
+        archiveAlerts = List.copyOf(mapper.archiveAlertList());
+    }
+
+    public List<MemberDTO> getArchiveAlerts() {
+        return archiveAlerts;
+    }
 
     // 회원가입
     public void signup(MemberDTO dto) {
@@ -57,7 +79,27 @@ public class MemberService {
 
     // 수정
     public void update(MemberDTO dto) {
+        MemberDTO savedMember = mapper.detail((int) dto.getMemberNo());
+        if (dto.getLoginPwd() == null || dto.getLoginPwd().isBlank()) {
+            // 비밀번호 입력이 없으면 기존 암호화 비밀번호를 그대로 유지한다.
+            dto.setLoginPwd(savedMember.getLoginPwd());
+        } else if (!dto.getLoginPwd().equals(savedMember.getLoginPwd())) {
+            // 초기화 또는 직접 변경한 새 비밀번호만 BCrypt로 암호화한다.
+            dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
+        }
         mapper.update(dto);
+    }
+
+    // 관리자 회원 목록에서 선택한 여러 회원의 승인 상태를 일괄 변경한다.
+    public void updateApprovalStatus(MemberApprovalRequest request) {
+        if (request.getMemberNos() == null || request.getMemberNos().isEmpty()) {
+            throw new IllegalArgumentException("승인 상태를 변경할 회원을 선택해 주세요.");
+        }
+        String status = request.getApprovalStatus();
+        if (!Set.of("PENDING", "APPROVED", "REJECTED").contains(status)) {
+            throw new IllegalArgumentException("올바르지 않은 승인 상태입니다.");
+        }
+        mapper.updateApprovalStatus(request.getMemberNos(), status);
     }
 
     // 삭제

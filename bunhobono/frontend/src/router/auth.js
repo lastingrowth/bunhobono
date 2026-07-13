@@ -15,7 +15,7 @@ export const authRoutes = [
         ]
     },
     {
-        path : '/signup',
+        path : '/resident/signup',
         component : AuthLayout,
 
         children : [

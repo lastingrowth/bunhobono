@@ -9,6 +9,8 @@ public class MemberDTO {
 
     private  long memberNo;
     private  String loginId, loginPwd, memName, memPhone, role, memStatus;
+    // 관리자 회원 승인 상태: PENDING(승인 대기), APPROVED(승인 완료), REJECTED(승인 거절)
+    private String approvalStatus;
     private int memDong, memHo;
     private LocalDate memCreateAt, memDeleteAt;
 }
