@@ -48,7 +48,7 @@
 
       <RouterLink
         class="signup-link"
-        to="/signup">
+        to="/resident/signup">
         회원가입
     </RouterLink>
     </div>

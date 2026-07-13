@@ -1,11 +1,12 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { deleteMember, getMemberDetail, getMemberList, searchMember, signupMember, updateMember, residentMypage, residentEdit, residentDelete, idCheckMember } from "./memApi";
+import { deleteMember, getMemberArchiveAlerts, getMemberDetail, getMemberList, searchMember, signupMember, updateMember, updateMemberApprovalStatus, residentMypage, residentEdit, residentDelete, idCheckMember } from "./memApi";
 
 export const useMemStore =  defineStore("member", () => {
 
   const memberList = ref ([]);
   const member = ref({});
+  const memberArchiveAlerts = ref([]);
 
   // 전체 조회
   const loadmemberList = async () => {
@@ -29,6 +30,18 @@ export const useMemStore =  defineStore("member", () => {
   const editMember = async (memberNo, data) => {
     await updateMember(memberNo, data);
     await loadMember(memberNo);
+  };
+
+  // Spring 스케줄러가 분류한 탈퇴 3일 경과 회원 알림을 조회한다.
+  const loadMemberArchiveAlerts = async () => {
+    const res = await getMemberArchiveAlerts();
+    memberArchiveAlerts.value = res.data;
+  };
+
+  // 선택된 회원들의 승인 상태를 저장한 뒤 최신 목록을 다시 조회한다.
+  const editApprovalStatus = async (memberNos, approvalStatus) => {
+    await updateMemberApprovalStatus(memberNos, approvalStatus);
+    await loadmemberList();
   };
 
   // 삭제
@@ -72,11 +85,14 @@ export const useMemStore =  defineStore("member", () => {
   return {
     memberList,
     member,
+    memberArchiveAlerts,
 
     loadmemberList,
+    loadMemberArchiveAlerts,
     search,
     loadMember,
     editMember,
+    editApprovalStatus,
     removeMember,
     signup,
 

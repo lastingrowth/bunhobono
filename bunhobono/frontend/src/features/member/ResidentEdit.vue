@@ -43,7 +43,7 @@
                         v-if="showPasswordField"
                         type="password"
                         v-model="member.loginPwd"
-                        autocomplete="new-password"
+                        autocomplete="off"
                         placeholder="새 비밀번호 입력"
                     />
                 </td>

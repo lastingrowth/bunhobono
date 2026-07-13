@@ -56,108 +56,68 @@
                 </ul>
             </article>
 
-            <!-- 본인 차량과 방문 차량 수 -->
-            <div class="resident-summary">
-                <article class="resident-summary-card">
-                    <span>본인 차량</span>
-                    <strong>{{ dashboard.normalVehicleCount }}대</strong>
-                </article>
+            <!-- 좌측: 차량 목록 / 우측: 주차장 사용 현황 2열 배치. -->
+            <div class="resident-main-grid">
+                <div class="resident-vehicle-column">
+                    <!-- 본인 차량 목록 -->
+                    <article class="resident-vehicle-card">
+                        <div class="resident-section-header">
+                            <h3>본인 차량 목록 <span class="resident-list-count">{{ dashboard.normalVehicleCount }}대</span></h3>
+                            <button type="button" @click="openVehicleManagement('normal')">내 차량 관리</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>차량번호</th><th>상태</th><th>승인일</th></tr></thead>
+                            <tbody>
+                                <tr v-for="vehicle in normalVehicles" :key="vehicle.vehicleCarNo">
+                                    <td>{{ vehicle.carNo || "-" }}</td>
+                                    <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus || "-" }}</td>
+                                    <td>{{ vehicle.approvedAtText || "-" }}</td>
+                                </tr>
+                                <tr v-if="normalVehicles.length === 0"><td colspan="3">등록한 본인 차량이 없습니다.</td></tr>
+                            </tbody>
+                        </table>
+                    </article>
 
-                <article class="resident-summary-card">
-                    <span>방문 차량</span>
-                    <strong>{{ dashboard.visitVehicleCount }}대</strong>
-                </article>
+                    <!-- 방문 차량 목록 -->
+                    <article class="resident-vehicle-card resident-visit-card">
+                        <div class="resident-section-header">
+                            <h3>방문 차량 목록 <span class="resident-list-count">{{ dashboard.visitVehicleCount }}대</span></h3>
+                            <button type="button" @click="openVehicleManagement('visit')">방문 차량 관리</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>차량번호</th><th>방문 종료</th><th>남은 시간</th></tr></thead>
+                            <tbody>
+                                <tr v-for="vehicle in visitVehicles" :key="vehicle.vehicleCarNo">
+                                    <td>{{ vehicle.carNo || "-" }}</td>
+                                    <td>{{ vehicle.endDateText || "-" }}</td>
+                                    <td>{{ vehicle.remainingTimeText || "-" }}</td>
+                                </tr>
+                                <tr v-if="visitVehicles.length === 0"><td colspan="3">등록한 방문 차량이 없습니다.</td></tr>
+                            </tbody>
+                        </table>
+                    </article>
+                </div>
 
-                <article class="resident-summary-card">
-                    <span>전체 주차칸</span>
-                    <strong>330칸</strong>
-                </article>
-
-                <article class="resident-summary-card">
-                    <span>주차 가능</span>
-                    <strong>296칸</strong>
+                <!-- 구역별 사용량을 막대그래프로 표현. -->
+                <article class="parking-usage-card">
+                    <div class="resident-section-header">
+                        <h3>주차장 사용 현황</h3>
+                    </div>
+                    <div class="parking-zone-list">
+                        <div v-for="zone in parkingZones" :key="zone.name" class="parking-zone-row">
+                            <strong>{{ zone.name }}</strong>
+                            <div class="parking-progress" :aria-label="`${zone.name} 사용률 ${zone.usageRate}%`">
+                                <span
+                                    :class="{ 'parking-progress-danger': zone.usageRate > 70 }"
+                                    :style="{ width: `${zone.usageRate}%` }"
+                                ></span>
+                            </div>
+                            <span class="parking-usage-number">{{ zone.usedSpaces }} / {{ zone.totalSpaces }}</span>
+                            <span class="parking-available">주차 가능 {{ zone.availableSpaces }}칸</span>
+                        </div>
+                    </div>
                 </article>
             </div>
-
-            <!-- 본인 차량 목록 -->
-            <article class="resident-vehicle-card">
-                <div class="resident-section-header">
-                    <h3>본인 차량 목록</h3>
-
-                    <button type="button" @click="openVehicleManagement('normal')">
-                        내 차량 관리
-                    </button>
-                </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>차량번호</th>
-                            <th>차량종류</th>
-                            <th>등록일</th>
-                            <th>승인일</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr
-                            v-for="vehicle in normalVehicles"
-                            :key="vehicle.vehicleCarNo"
-                        >
-                            <td>{{ vehicle.carNo || "-" }}</td>
-                            <td>{{ vehicle.vehicleTypeText || vehicle.vehicleType || "-" }}</td>
-                            <td>{{ vehicle.startDateText || "-" }}</td>
-                            <td>{{ vehicle.approvedAtText || "-" }}</td>
-                        </tr>
-
-                        <tr v-if="normalVehicles.length === 0">
-                            <td colspan="4">
-                                등록한 본인 차량이 없습니다.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </article>
-
-            <!-- 방문 차량 목록 -->
-            <article class="resident-vehicle-card resident-visit-card">
-                <div class="resident-section-header">
-                    <h3>방문 차량 목록</h3>
-
-                    <button type="button" @click="openVehicleManagement('visit')">
-                        방문 차량 관리
-                    </button>
-                </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>차량번호</th>
-                            <th>방문 시작</th>
-                            <th>방문 종료</th>
-                            <th>남은 시간</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr
-                            v-for="vehicle in visitVehicles"
-                            :key="vehicle.vehicleCarNo"
-                        >
-                            <td>{{ vehicle.carNo || "-" }}</td>
-                            <td>{{ vehicle.startDateText || "-" }}</td>
-                            <td>{{ vehicle.endDateText || "-" }}</td>
-                            <td>{{ vehicle.remainingTimeText || "-" }}</td>
-                        </tr>
-
-                        <tr v-if="visitVehicles.length === 0">
-                            <td colspan="4">
-                                등록한 방문 차량이 없습니다.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </article>
 
             <!-- 본인 차량 최근 입출차 및 주차 위치 -->
             <article class="resident-vehicle-card resident-visit-card">
@@ -245,6 +205,22 @@ const normalVehicles = computed(() => {
 const visitVehicles = computed(() => {
     return dashboard.value.vehicles.filter((vehicle) => {
         return vehicle.vehicleType === "visit";
+    });
+});
+
+// 주차장 조회 결과의 앞 네 항목을 A~D 구역 현황으로 변환한다.
+const parkingZones = computed(() => {
+    return ["A구역", "B구역", "C구역", "D구역"].map((name, index) => {
+        const parking = dashboard.value.parkings[index] || {};
+        return {
+            name,
+            availableSpaces: parking.availableSpaces ?? 0,
+            totalSpaces: parking.parkingSpaces ?? 0,
+            usedSpaces: Math.max((parking.parkingSpaces ?? 0) - (parking.availableSpaces ?? 0), 0),
+            usageRate: parking.parkingSpaces
+                ? Math.round(((parking.parkingSpaces - parking.availableSpaces) / parking.parkingSpaces) * 100)
+                : 0
+        };
     });
 });
 

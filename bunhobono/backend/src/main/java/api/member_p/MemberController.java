@@ -15,7 +15,20 @@ public class MemberController {
 
     // 회원가입
     @PostMapping("/members")
-    public void signup(@RequestBody  MemberDTO dto ) {
+    public void signup(@RequestBody MemberDTO dto, Authentication authentication) {
+        // 공개 회원가입에서는 요청 Body와 관계없이 입주민 권한만 허용한다.
+        boolean adminRequest = authentication != null
+                && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ADMIN".equalsIgnoreCase(authority.getAuthority()));
+        if (!adminRequest) {
+            dto.setRole("RESIDENT");
+            dto.setMemStatus("거주");
+            // 공개 입주민 회원가입은 관리자 승인 전까지 승인 대기로 저장한다.
+            dto.setApprovalStatus("PENDING");
+        } else {
+            // 관리자 페이지에서 직접 추가한 회원은 별도의 승인 절차 없이 즉시 승인한다.
+            dto.setApprovalStatus("APPROVED");
+        }
         service.signup(dto);
     }
 
@@ -27,10 +40,22 @@ public class MemberController {
         service.update(dto);
     }
 
+    // 관리자 회원 목록에서 선택한 회원들의 승인 상태를 한 번에 변경한다.
+    @PutMapping("/members/approval-status")
+    public void updateApprovalStatus(@RequestBody MemberApprovalRequest request) {
+        service.updateApprovalStatus(request);
+    }
+
     // 회원 리스트
     @GetMapping("/members")
     public List<MemberDTO> list(){
         return service.list();
+    }
+
+    // 탈퇴 후 3일이 지나 보관 삭제 확인이 필요한 회원 알림 목록이다.
+    @GetMapping("/members/archive-alerts")
+    public List<MemberDTO> archiveAlerts() {
+        return service.getArchiveAlerts();
     }
 
     // 회원 상세내용
