@@ -30,6 +30,13 @@ bunhobono/backend/.gradle/
 bunhobono/backend/build/
 bunhobono/backend/target/
 
+# Camera capture images generated at runtime
+bunhobono/backend/runtime/camera-data/
+
+# Generated packages
+bunhobono/backend/*.jar
+bunhobono/backend/*.war
+
 # Generated packages
 bunhobono/backend/*.jar
 bunhobono/backend/*.war
