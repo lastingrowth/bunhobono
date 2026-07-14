@@ -177,7 +177,6 @@ const detailRows = computed(() => {
 
   return [
     { label: "알림 번호", value: notice.value.noticeNo },
-    { label: "입출차 기록 번호", value: notice.value.carLogNo },
     { label: "등록 차량번호", value: notice.value.registeredCarNo },
     { label: "촬영 차량번호", value: notice.value.capturedCarNo },
     { label: "차량 구분", value: formatCarKind(notice.value.carKind) },
