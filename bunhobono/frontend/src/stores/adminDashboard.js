@@ -6,6 +6,7 @@ import { useVehicleStore } from "@/features/vehicle/vehicleStore";
 import { useParkingsStore } from "@/features/parking/parkingsStore";
 import { useCarlogStore } from "@/features/carlog/carlogStore";
 import { useCameraDataStore } from "@/features/camera-data/cameraDataStore";
+import { getCameraDataDetail, getCameraDataImage } from "@/features/camera-data/cameraDataApi";
 
 export const useAdminDashboardStore = defineStore("adminDashboard", () => {
   
@@ -17,6 +18,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     const loading = ref(false);
     const errorMessage = ref("");
+    const ocrImageUrls = ref({});
+    const ocrDetails = ref({});
 
     // 입출차 목록의 현재 페이지
     const currentCarlogPage = ref(1);
@@ -98,6 +101,91 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             * 100
         );
     });
+
+    // OCR 성공률 영역에 표시할 최신 인식 차량 4건
+    const latestOcrCards = computed(() => {
+        return [...cameraDataStore.list]
+            .filter((data) => data.cameraDataNo)
+            .sort((a, b) => {
+                const aTime = new Date(a.captureTime ?? 0).getTime();
+                const bTime = new Date(b.captureTime ?? 0).getTime();
+
+                return bTime - aTime;
+            })
+            .slice(0, 4)
+            .map((data) => {
+                const detail = ocrDetails.value[data.cameraDataNo] ?? {};
+                const confidenceScore = detail.confidenceScore ?? data.confidenceScore;
+
+                return {
+                    ...data,
+                    ...detail,
+                    imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
+                    carNoText: detail.carNo || data.carNo || "미인식",
+                    confidenceText: confidenceScore == null
+                        ? "-"
+                        : `${Number(confidenceScore).toFixed(1)}%`
+                };
+            });
+    });
+
+    const clearOcrImageUrls = () => {
+        Object.values(ocrImageUrls.value).forEach((url) => {
+            if (url) {
+                URL.revokeObjectURL(url);
+            }
+        });
+
+        ocrImageUrls.value = {};
+        ocrDetails.value = {};
+    };
+
+    const loadOcrImages = async () => {
+        clearOcrImageUrls();
+
+        const latestItems = [...cameraDataStore.list]
+            .filter((data) => data.cameraDataNo)
+            .sort((a, b) => {
+                const aTime = new Date(a.captureTime ?? 0).getTime();
+                const bTime = new Date(b.captureTime ?? 0).getTime();
+
+                return bTime - aTime;
+            })
+            .slice(0, 4);
+
+        const results = await Promise.all(
+            latestItems.map(async (data) => {
+                const result = {
+                    cameraDataNo: data.cameraDataNo,
+                    detail: {},
+                    imageUrl: ""
+                };
+
+                try {
+                    const detailResponse = await getCameraDataDetail(data.cameraDataNo);
+                    result.detail = detailResponse.data ?? {};
+                } catch (error) {
+                    console.error("OCR 상세 정보 조회 실패", error);
+                }
+
+                try {
+                    const imageResponse = await getCameraDataImage(data.cameraDataNo);
+                    result.imageUrl = URL.createObjectURL(imageResponse.data);
+                } catch (error) {
+                    console.error("OCR 차량 이미지 조회 실패", error);
+                }
+
+                return result;
+            })
+        );
+
+        ocrDetails.value = Object.fromEntries(
+            results.map((result) => [result.cameraDataNo, result.detail])
+        );
+        ocrImageUrls.value = Object.fromEntries(
+            results.map((result) => [result.cameraDataNo, result.imageUrl])
+        );
+    };
 
     // 날짜를 YYYY-MM-DD 형식으로 변환
     const getDateKey = (date) => {
@@ -261,6 +349,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             errorMessage.value = "일부 현황을 불러오지 못했습니다.";
         }
 
+        await loadOcrImages();
+
         // 새로 조회한 목록은 첫 페이지부터 표시
         currentCarlogPage.value = 1;
         loading.value = false;
@@ -276,6 +366,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         ocrSuccessCount,
         ocrFailCount,
         ocrSuccessRate,
+        latestOcrCards,
         weeklyEntryStats,
         currentCarlogPage,
         carlogTotalPages,

@@ -52,10 +52,20 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
     // WAITING 또는 APPROVED이고 아직 남은기간이 있는 차량이 있으면 신청 버튼을 막는 데 사용한다.
     // 최종 제한은 백에서도 한 번 더 한다.
     const hasActiveVisitVehicle = computed(() => {
-        return visitVehicles.value.some((item) => {
-            return item.vehicleStatus === "WAITING" || item.vehicleStatus === "APPROVED";
-        });
+    const now = new Date();
+
+    return visitVehicles.value.some((item) => {
+        if (item.vehicleStatus !== "WAITING" && item.vehicleStatus !== "APPROVED") {
+            return false;
+        }
+
+        if (!item.endDate) {
+            return true;
+        }
+
+        return new Date(item.endDate) > now;
     });
+});
 
     // 입주민 방문차량 등록 신청
     const addVisitVehicle = async (data) => {
