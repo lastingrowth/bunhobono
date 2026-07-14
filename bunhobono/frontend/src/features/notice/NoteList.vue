@@ -50,7 +50,7 @@
 
         <tbody>
           <tr
-            v-for="notice in sortedNotices"
+            v-for="(notice, index) in sortedNotices"
             :key="notice.noticeNo ?? notice.notice_no"
             class="notice-row"
             @click="goDetail(notice)"
@@ -61,7 +61,11 @@
               :class="column.className"
               :title="formatValue(getValue(notice, column), column)"
             >
-              <span v-if="column.key === 'alertStat'">
+              <span v-if="column.key === 'noticeNo'">
+                {{ index + 1 }}
+              </span>
+
+              <span v-else-if="column.key === 'alertStat'">
                 {{ getStatusLabel(getAlertStat(notice)) }}
               </span>
 
