@@ -30,5 +30,5 @@ jwt:
 file:
 #   camera-data: C:/kgs/java_work/backend/uploads/camera-data
 #   camera-data: C:/kwon/mbc_a_java21/java_17/backend/runtime/camera-data
-#   camera-data: C:/Users/503-22/Documents/bunhobono/bunhobono/backend/runtime/camera-data
+   camera-data: C:/Users/503-22/Documents/bunhobono/bunhobono/backend/runtime/camera-data
 #   camera-data : C:/Users/dayst/Desktop/camera-data

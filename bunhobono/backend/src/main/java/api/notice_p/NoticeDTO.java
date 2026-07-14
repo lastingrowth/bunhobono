@@ -22,4 +22,12 @@ public class NoticeDTO {
 
     private LocalDateTime inTime;
     private String parkingName;
+
+    //스냅샷 칼럼
+    private Integer snapshotCarLogNo;
+    private String snapshotRegisteredCarNo;
+    private String snapshotCapturedCarNo;
+    private String snapshotCarKind;
+    private String snapshotParkingName;
+    private LocalDateTime snapshotInTime;
 }

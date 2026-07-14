@@ -1,7 +1,8 @@
 package api.notice_p;
 
+import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
-import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,9 @@ public class NoticeController {
     @Resource
     private NoticeService noticeService;
 
+    @Resource
+    private TrashService trashService;
+
     @GetMapping("")
     public List<NoticeDTO> list() {
         return noticeService.list();
@@ -35,5 +39,11 @@ public class NoticeController {
         dto.setNoticeNo(noticeNo);
 
         return noticeService.status(dto);
+    }
+
+    @DeleteMapping("/{noticeNo}/delete")
+    public int delete(@PathVariable int noticeNo) {
+        trashService.moveNotice(noticeNo, "MANUAL");
+        return 1;
     }
 }

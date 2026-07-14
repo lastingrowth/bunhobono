@@ -17,9 +17,6 @@ public class CarLogService {
         return carLogMapper.list(dto);
     }
 
-    public int delete(int carLogNo) {
-        return carLogMapper.delete(carLogNo);
-    }
 
     // camera_data 저장 직후 호출: 게이트 유형에 따라 입차 생성 또는 출차 처리
     public void processCameraData(CameraDataDTO cameraData) {
