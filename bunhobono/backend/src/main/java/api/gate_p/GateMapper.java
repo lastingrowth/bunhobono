@@ -9,10 +9,12 @@ import java.util.List;
 public interface GateMapper {
 
     //리스트 전체보기
-    @Select("SELECT ROW_NUMBER() OVER (ORDER BY gate_no) AS display_no, " +
-            "       gate_no, parking_no, gate_name, gate_type " +
-            "FROM gate " +
-            "ORDER BY gate_no")
+    @Select("SELECT ROW_NUMBER() OVER (ORDER BY g.gate_no) AS display_no, " +
+            "       g.gate_no, g.parking_no, p.parking_name, " +
+            "       g.gate_name, g.gate_type " +
+            "FROM gate g " +
+            "LEFT JOIN parking p ON g.parking_no = p.parking_no " +
+            "ORDER BY g.gate_no")
     List<GateDTO> list(GateDTO dto);
 
     //생성
@@ -21,16 +23,16 @@ public interface GateMapper {
 //    @Options(useGeneratedKeys = true, keyProperty = "gateNo")  //시리얼자동증가값 필요하면 쓸것
     int insert(GateDTO dto);
 
-    //디테일
-    @Select("SELECT * FROM ( " +
-            "    SELECT ROW_NUMBER() OVER (ORDER BY g.gate_no) AS display_no, " +
-            "           g.gate_no, g.gate_name, g.gate_type, g.parking_no, " +
-            "           p.parking_name, p.parking_location " +
-            "    FROM gate g " +
-            "    JOIN parking p ON g.parking_no = p.parking_no " +
-            ") t " +
-            "WHERE t.gate_no = #{gateNo}")
-    GateDTO detail(int gateNo);
+//    //디테일
+//    @Select("SELECT * FROM ( " +
+//            "    SELECT ROW_NUMBER() OVER (ORDER BY g.gate_no) AS display_no, " +
+//            "           g.gate_no, g.gate_name, g.gate_type, g.parking_no, " +
+//            "           p.parking_name, p.parking_location " +
+//            "    FROM gate g " +
+//            "    JOIN parking p ON g.parking_no = p.parking_no " +
+//            ") t " +
+//            "WHERE t.gate_no = #{gateNo}")
+//    GateDTO detail(int gateNo);
 
     //삭제
     @Delete("DELETE FROM gate WHERE gate_no = #{gateNo}")

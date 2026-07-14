@@ -59,19 +59,23 @@ const gate = ref({
 
 onMounted(async () => {
   await pStore.loadList();
-  await gStore.loadDetail(route.params.gateNo);
+  await gStore.loadList();
 
-  if (!gStore.detail) {
+  const selectedGate = gStore.list.find(
+    item => Number(item.gateNo) === Number(route.params.gateNo)
+  );
+
+  if (!selectedGate) {
     alert("게이트 정보를 찾을 수 없습니다.");
     router.push("/admin/gates");
     return;
   }
 
   gate.value = {
-    gateNo: gStore.detail.gateNo,
-    gateName: gStore.detail.gateName,
-    gateType: gStore.detail.gateType,
-    parkingNo: gStore.detail.parkingNo,
+    gateNo: selectedGate.gateNo,
+    gateName: selectedGate.gateName,
+    gateType: selectedGate.gateType,
+    parkingNo: selectedGate.parkingNo,
   };
 });
 

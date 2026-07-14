@@ -21,10 +21,10 @@ public class GateService {
         return gateMapper.insert(dto);
     }
 
-    //상세
-    public GateDTO getGateDetail(int gateNo) {
-        return gateMapper.detail(gateNo);
-    }
+//    //상세
+//    public GateDTO getGateDetail(int gateNo) {
+//        return gateMapper.detail(gateNo);
+//    }
 
     //Delete
     public int delete(int gateNo) {
