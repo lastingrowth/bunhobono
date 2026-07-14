@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import {
+  approvePendingMembers,
   createResVehicle,
   deleteMember,
   deleteMemberArchives,
@@ -8,7 +9,7 @@ import {
   getMemberArchiveAlerts,
   getMemberDetail,
   getMemberList,
-  getResVehicleList,
+  getResidentDashboard,
   idCheckMember,
   residentDelete,
   residentEdit,
@@ -16,10 +17,8 @@ import {
   searchMember,
   signupMember,
   updateMember,
-  updateMemberApprovalStatus,
   updateResVehicle
 } from "./memApi";
-import { getCarLogs } from "../carlog/carlogApi";
 import { getParkingsList } from "../parking/parkingsApi";
 import { toVehicleView } from "../vehicle/vehicleFormat";
 
@@ -80,9 +79,9 @@ export const useMemStore =  defineStore("member", () => {
     return res.data;
   };
 
-  // 선택된 회원들의 승인 상태를 저장한 뒤 최신 목록을 다시 조회한다.
-  const editApprovalStatus = async (memberNos, approvalStatus) => {
-    await updateMemberApprovalStatus(memberNos, approvalStatus);
+  // 선택된 승인 대기 회원을 입주민 역할로 변경한 뒤 목록을 갱신한다.
+  const approveMembers = async (memberNos) => {
+    await approvePendingMembers(memberNos);
     await loadmemberList();
   };
 
@@ -126,11 +125,10 @@ export const useMemStore =  defineStore("member", () => {
 
   // 로그인한 입주민이 등록한 차량만 조회한다.
   const loadVehicleList = async () => {
-    const res = await getResVehicleList();
+    const res = await getResidentDashboard();
 
-    vehicleList.value = res.data
-      .filter((item) => Number(item.memberNo) === Number(member.value.memberNo))
-      .map(toVehicleView);
+    // 통합 대시보드 응답에서 본인 차량 목록만 사용한다.
+    vehicleList.value = (res.data?.vehicles || []).map(toVehicleView);
   };
 
   // 현재 Store의 차량 목록에서 선택한 차량을 조회한다.
@@ -171,21 +169,17 @@ export const useMemStore =  defineStore("member", () => {
     errorMessage.value = "";
 
     try {
-      const [memberResponse, vehicleResponse, parkingResponse, carLogResponse] = await Promise.all([
-        residentMypage(),
-        getResVehicleList(),
-        getParkingsList(),
-        getCarLogs({})
+      const [residentResponse, parkingResponse] = await Promise.all([
+        getResidentDashboard(),
+        getParkingsList()
       ]);
 
-      const memberData = memberResponse.data || {};
-      const vehicles = (vehicleResponse.data || [])
-        .filter((item) => Number(item.memberNo) === Number(memberData.memberNo))
-        .map(toVehicleView);
+      const residentData = residentResponse.data || {};
+      const memberData = residentData.member || {};
+      // Spring Service가 집계한 본인 차량을 대시보드 표시 형식으로 변환한다.
+      const vehicles = (residentData.vehicles || []).map(toVehicleView);
       const parkings = parkingResponse.data || [];
-      const vehicleNos = new Set(vehicles.map((item) => Number(item.vehicleCarNo)));
-      const recentCarLogs = (carLogResponse.data || [])
-        .filter((log) => vehicleNos.has(Number(log.vehicleCarNo)))
+      const recentCarLogs = (residentData.recentCarLogs || [])
         .sort((left, right) => new Date(right.inTime) - new Date(left.inTime))
         .slice(0, 5);
 
@@ -223,7 +217,7 @@ export const useMemStore =  defineStore("member", () => {
     search,
     loadMember,
     editMember,
-    editApprovalStatus,
+    approveMembers,
     removeMember,
     signup,
 

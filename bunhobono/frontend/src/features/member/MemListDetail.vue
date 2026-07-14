@@ -3,6 +3,7 @@
     <div>
         <button @click="goList">목록</button>
         <button @click="goEdit">수정</button>
+        <button v-if="store.member.role === 'PENDING'" type="button" @click="approveMember">승인</button>
         <button @click="goDelte">삭제</button>
     </div>
     <table border="">
@@ -16,18 +17,6 @@
             <tr><th>가입일</th><td>{{ store.member.memCreateAt }}</td></tr>
             <tr><th>탈퇴일</th><td>{{ store.member.memDeleteAt }}</td></tr>
             <tr><th>상태</th><td>{{ store.member.memStatus }}</td></tr>
-            <tr>
-                <th>승인여부</th>
-                <td>
-                    <!-- 미승인 신규 회원은 승인 대기를 기본값으로 표시한다. -->
-                    <select v-model="approvalStatus">
-                        <option value="PENDING">승인 대기</option>
-                        <option value="APPROVED">승인 완료</option>
-                        <option value="REJECTED">승인 거절</option>
-                    </select>
-                    <button type="button" @click="saveApprovalStatus">승인여부 저장</button>
-                </td>
-            </tr>
         </tbody>
     </table>
 </template>
@@ -35,20 +24,20 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router';
 import { useMemStore } from './memStore';
-import { onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 
 const route = useRoute();
 const router = useRouter();
 const store = useMemStore();
 const memberNo = route.params.memberNo;
-const approvalStatus = ref('PENDING');
 
 function goList() { router.push('/admin/members'); }
 function goEdit() { router.push(`/admin/members/${memberNo}/edit`); }
 
-async function saveApprovalStatus() {
-    await store.editMember(memberNo, { ...store.member, approvalStatus: approvalStatus.value });
-    alert('승인여부가 저장되었습니다.');
+async function approveMember() {
+    await store.approveMembers([Number(memberNo)]);
+    await store.loadMember(memberNo);
+    alert('입주민으로 승인되었습니다.');
 }
 
 async function goDelte() {
@@ -60,6 +49,5 @@ async function goDelte() {
 
 onMounted(async () => {
     await store.loadMember(memberNo);
-    approvalStatus.value = store.member.approvalStatus || 'PENDING';
 });
 </script>

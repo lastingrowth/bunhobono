@@ -1,57 +1,78 @@
 <template>
-    <h2>입주민 회원가입</h2>
+    <section class="signup-card">
+        <div class="login-brand">
+            <div class="brand-symbol">P</div>
+            <h1>아파트 주차관리 시스템</h1>
+            <p>SMART PARKING SYSTEM</p>
+        </div>
 
-    <table border="">
-        <tbody>
-            <tr>
-                <th>이름</th>
-                <td><input type="text" v-model="member.memName"></td>
-            </tr>
-            <tr>
-                <th>동</th>
-                <td>
+        <h2 class="login-title">입주민 회원가입</h2>
+
+        <form class="signup-form" @submit.prevent="signupGo">
+            <label class="form-field">
+                <span>이름</span>
+                <input v-model="member.memName" type="text" minlength="2" maxlength="20" placeholder="한글+숫자 조합 2~20자" required @blur="normalizeName">
+            </label>
+
+            <div class="form-row">
+                <label class="form-field">
+                    <span>동</span>
                     <!-- 입주민 회원가입에서 101~108동 셀렉트로 선택. -->
-                    <select v-model.number="member.memDong">
+                    <select v-model.number="member.memDong" required>
                         <option disabled value="">동을 선택하세요</option>
                         <option v-for="dong in dongOptions" :key="dong" :value="dong">{{ dong }}</option>
                     </select>
-                </td>
-            </tr>
-            <tr>
-                <th>호수</th>
-                <td>
+                </label>
+
+                <label class="form-field">
+                    <span>호수</span>
                     <input
                         type="text"
                         inputmode="numeric"
                         :value="member.memHo"
                         placeholder="숫자만 입력하세요"
+                        required
                         @input="handleHoInput"
                     >
-                </td>
-            </tr>
-            <tr>
-                <th>연락처</th>
-                <td><input type="text" v-model="member.memPhone"></td>
-            </tr>
-            <tr>
-                <th>아이디</th>
-                <td><input type="text" v-model="member.loginId"><button @click="idCheck">아이디중복확인</button></td>
-            </tr>
-            <tr>
-                <th>비밀번호</th>
-                <td><input type="password" v-model="member.loginPwd"></td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                <button @click="signupGo">등록</button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+                </label>
+            </div>
+
+            <div class="form-field">
+                <span>연락처</span>
+                <div class="phone-fields">
+                    <input type="text" inputmode="numeric" maxlength="3" :value="phoneParts.first" required @input="handlePhoneInput($event, 'first', 3)">
+                    <span>-</span>
+                    <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.middle" required @input="handlePhoneInput($event, 'middle', 4)">
+                    <span>-</span>
+                    <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.last" required @input="handlePhoneInput($event, 'last', 4)">
+                </div>
+            </div>
+
+            <label class="form-field">
+                <span>아이디</span>
+                <div class="input-action">
+                    <input v-model="member.loginId" type="text" minlength="3" maxlength="20" placeholder="영문+숫자 3~20자" required>
+                    <button type="button" @click="idCheck">중복 확인</button>
+                </div>
+            </label>
+
+            <label class="form-field">
+                <span>비밀번호</span>
+                <input type="password" inputmode="numeric" :value="member.loginPwd" minlength="4" maxlength="20" autocomplete="new-password" placeholder="숫자 4~20자" required @input="handlePasswordInput">
+            </label>
+
+            <button class="login-submit" type="submit">회원가입</button>
+        </form>
+
+        <div class="signup-guide">
+            <span>이미 계정이 있으신가요?</span>
+            <RouterLink class="signup-link" to="/login">로그인</RouterLink>
+        </div>
+    </section>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
 
@@ -60,8 +81,8 @@ const store = useMemStore();
 const dongOptions = [101, 102, 103, 104, 105, 106, 107, 108];
 
 const member = ref({
-    // 공개 회원가입은 입주민 전용이므로 권한을 선택받지 않고 RESIDENT로 고정.
-    role: "RESIDENT",
+    // 외부 회원가입은 관리자 승인 전까지 PENDING 역할로 고정한다.
+    role: "PENDING",
     memName: "",
     memDong: "",
     memHo: "",
@@ -73,6 +94,34 @@ const member = ref({
 });
 const idChecked = ref(false);
 const checkedLoginId = ref("");
+const phoneParts = reactive({ first: "", middle: "", last: "" });
+
+// =====
+// 아이디는 영문과 숫자를 모두 포함하고 비밀번호는 숫자만 허용한다.
+const loginIdPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{3,20}$/;
+const passwordPattern = /^\d{4,20}$/;
+const namePattern = /^(?=.*[가-힣])(?=.*\d)[가-힣\d]{2,20}$/;
+
+const validateSignupFields = () => {
+    if (!namePattern.test(member.value.memName)) {
+        alert("이름은 한글과 숫자를 조합해 2~20자로 입력하세요.");
+        return false;
+    }
+    if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
+        alert("연락처를 정확히 입력하세요.");
+        return false;
+    }
+    if (!loginIdPattern.test(member.value.loginId)) {
+        alert("아이디는 영문과 숫자를 조합해 3~20자로 입력하세요.");
+        return false;
+    }
+    if (!passwordPattern.test(member.value.loginPwd)) {
+        alert("비밀번호는 숫자 4~20자로 입력하세요.");
+        return false;
+    }
+    return true;
+};
+// =====
 
 // 호수에 문자가 입력되면 제거하고 숫자 입력 안내를 표시.
 const handleHoInput = (event) => {
@@ -85,10 +134,31 @@ const handleHoInput = (event) => {
     member.value.memHo = numericValue === "" ? "" : Number(numericValue);
 };
 
+// 연락처 세 칸에는 정해진 길이만큼 숫자만 입력한다.
+const handlePhoneInput = (event, part, maxLength) => {
+    const numericValue = event.target.value.replace(/\D/g, "").slice(0, maxLength);
+    event.target.value = numericValue;
+    phoneParts[part] = numericValue;
+};
+
+// 한글 조합이 끝난 뒤 이름에서 한글과 숫자 이외의 문자를 제거한다.
+const normalizeName = (event) => {
+    const nameValue = event.target.value.replace(/[^가-힣0-9]/g, "").slice(0, 20);
+    event.target.value = nameValue;
+    member.value.memName = nameValue;
+};
+
+// 비밀번호에는 숫자만 입력한다.
+const handlePasswordInput = (event) => {
+    const numericValue = event.target.value.replace(/\D/g, "").slice(0, 20);
+    event.target.value = numericValue;
+    member.value.loginPwd = numericValue;
+};
+
 // 아이디 중복확인
 const idCheck = async () => {
-    if (member.value.loginId === ""){
-        alert("아이디를 입력하세요");
+    if (!loginIdPattern.test(member.value.loginId)) {
+        alert("아이디는 영문과 숫자를 조합해 3~20자로 입력하세요.");
         return;
     }
 
@@ -111,6 +181,10 @@ const idCheck = async () => {
 
 const signupGo = async () => {
 
+    if (!validateSignupFields()) return;
+
+    member.value.memPhone = `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`;
+
     if(!idChecked.value||checkedLoginId.value !== member.value.loginId){
         alert("아이디 중복확인을 해주세요")
         return;
@@ -128,3 +202,90 @@ const signupGo = async () => {
     }
 };
 </script>
+
+<style scoped>
+.signup-card {
+    width: 100%;
+    max-width: 560px;
+    padding: 40px;
+    border-radius: 16px;
+    background: var(--bg-header);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.signup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.form-field select {
+    width: 100%;
+    height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    outline: none;
+    font-size: 15px;
+    color: var(--text-color);
+    background: var(--bg-header);
+}
+
+.form-field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.phone-fields {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+}
+
+.phone-fields input {
+    width: 100%;
+    text-align: center;
+}
+
+.phone-fields span {
+    color: var(--text-muted);
+}
+
+.input-action {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+
+.input-action button {
+    padding: 0 16px;
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--bg-header);
+}
+
+.input-action button:hover {
+    color: var(--text-white);
+    background: var(--primary);
+}
+
+@media (max-width: 700px) {
+    .signup-card {
+        padding: 28px 24px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

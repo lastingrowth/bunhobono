@@ -5,6 +5,11 @@ bunhobono/frontend/node_modules/
 bunhobono/frontend/dist/
 bunhobono/frontend/.vite/
 
+# Frontend environment files
+bunhobono/frontend/.env
+bunhobono/frontend/.env.*
+!bunhobono/frontend/.env.example
+
 # Package Manager
 bunhobono/frontend/.npm/
 bunhobono/frontend/.pnpm-store/
@@ -36,6 +41,9 @@ bunhobono/backend/*.war
 bunhobono/backend/.env
 bunhobono/backend/.env.*
 !bunhobono/backend/.env.example
+
+# Spring Boot local configuration
+bunhobono/backend/src/main/resources/application-local.yaml
 
 # ==========================================================
 # FastAPI / Python

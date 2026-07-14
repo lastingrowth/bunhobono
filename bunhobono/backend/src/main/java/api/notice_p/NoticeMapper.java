@@ -62,7 +62,6 @@ public interface NoticeMapper {
     int status(NoticeDTO dto);
 
 
-
     @Delete("""
         DELETE FROM notice
         WHERE alert_stat = 'Resolved'

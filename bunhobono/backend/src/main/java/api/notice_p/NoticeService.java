@@ -27,10 +27,6 @@ public class NoticeService {
         return noticeMapper.status(dto);
     }
 
-    public int delete(int noticeNo) {
-        return noticeMapper.delete(noticeNo);
-    }
-
     // 매년 1월 1일 새벽 3시: 1년 지난 해결 알림 삭제
     @Scheduled(cron = "0 0 3 1 1 *", zone = "Asia/Seoul")
     public void deleteResolvedNoticesAfterOneYear() {
