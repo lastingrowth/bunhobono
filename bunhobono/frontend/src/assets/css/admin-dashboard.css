@@ -69,8 +69,8 @@
 /* 상단 현황 카드 배치 */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: 220px 130px;
+  grid-template-columns: minmax(190px, 0.8fr) repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(230px, auto) minmax(270px, auto);
   gap: 12px;
   flex-shrink: 0;
 }
@@ -83,7 +83,7 @@
   flex-direction: column;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   text-align: left;
   color: var(--text-color);
   background: var(--bg-header);
@@ -144,6 +144,16 @@ button.dashboard-card:hover {
 }
 
 /* 미처리 알림 카드 */
+.notice-card {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.vehicle-card {
+  grid-column: 1;
+  grid-row: 2;
+}
+
 .notice-card .card-icon {
   background: #fee2e2;
 }
@@ -154,7 +164,9 @@ button.dashboard-card:hover {
 
 /* 주차장별 현황 카드 */
 .parking-overview-card {
-  grid-column: span 2;
+  grid-column: 2 / -1;
+  grid-row: 1;
+  min-height: 230px;
 }
 
 .parking-zone-grid {
@@ -182,7 +194,7 @@ button.dashboard-card:hover {
   margin-bottom: 6px;
   overflow: hidden;
   font-size: 13px;
-  color: var(--text-color);
+  color: #9ca3af;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -233,59 +245,91 @@ button.dashboard-card:hover {
 
 /* OCR 성공률 카드 */
 .ocr-card {
-  grid-column: 1 / -1;
+  grid-column: 2 / -1;
+  grid-row: 2;
+  min-height: 270px;
   padding-top: 12px;
   padding-bottom: 12px;
 }
 
-.ocr-content {
-  margin: auto 0;
-  display: flex;
-  align-items: center;
-  gap: 24px;
+.ocr-photo-grid {
+  min-height: 0;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 10px;
+  flex: 1;
 }
 
-.ocr-circle {
-  width: 64px;
-  height: 64px;
+.ocr-photo-card {
+  min-width: 0;
+  min-height: 205px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  text-align: left;
+  background: var(--bg-main);
+}
+
+button.ocr-photo-card {
+  cursor: pointer;
+}
+
+button.ocr-photo-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.12);
+}
+
+.ocr-photo-frame {
+  width: 100%;
+  height: 150px;
+  aspect-ratio: auto;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(
-      circle,
-      var(--bg-header) 57%,
-      transparent 59%
-    ),
-    conic-gradient(
-      #22c55e var(--ocr-rate),
-      #e5e7eb 0
-    );
-}
-
-.ocr-circle strong {
-  font-size: 18px;
-  color: var(--text-color);
-}
-
-.ocr-detail {
-  display: flex;
-  gap: 28px;
-  font-size: 13px;
+  overflow: hidden;
+  border-radius: 8px;
+  font-size: 12px;
   color: var(--text-muted);
+  background: #e5e7eb;
 }
 
-.ocr-detail span {
+.ocr-photo-frame img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.ocr-photo-info {
+  min-width: 0;
+  margin-top: 7px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
-.ocr-detail strong {
-  font-size: 17px;
-  color: var(--text-color);
+.ocr-photo-info strong {
+  overflow: hidden;
+  font-size: 13px;
+  color: #9ca3af;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ocr-photo-info span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.ocr-empty {
+  margin: auto;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 /* 주간 입차 그래프와 입출차 목록 영역 */
@@ -493,6 +537,14 @@ button.dashboard-card:hover {
     min-height: 190px;
   }
 
+  .notice-card,
+  .vehicle-card,
+  .parking-overview-card,
+  .ocr-card {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
   .parking-overview-card {
     grid-column: 1 / -1;
     min-height: 220px;
@@ -500,7 +552,7 @@ button.dashboard-card:hover {
 
   .ocr-card {
     grid-column: 1 / -1;
-    min-height: 130px;
+    min-height: 190px;
   }
 
   .recent-carlogs {

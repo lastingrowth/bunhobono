@@ -110,4 +110,5 @@ public interface NoticeMapper {
 
     @Delete("DELETE FROM notice WHERE notice_no = #{noticeNo}")
     int delete(int noticeNo);
+
 }
