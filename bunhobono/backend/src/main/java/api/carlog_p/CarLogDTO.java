@@ -25,7 +25,7 @@ public class CarLogDTO {
     private Integer cameraDataNo;
     private Integer inGateNo;
     private String inGateName;
-    private LocalDateTime inTime;
+    private LocalDateTime inTime, realEndDate;
 
     private Integer outGateNo;
     private String outGateName;
