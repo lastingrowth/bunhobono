@@ -51,7 +51,7 @@
       <!-- 차량 현황 -->
       <button
         type="button"
-        class="dashboard-card"
+        class="dashboard-card vehicle-card"
         @click="router.push('/admin/vehicles')"
       >
         <div class="card-heading">
@@ -124,33 +124,40 @@
           <span>OCR 성공률</span>
         </div>
 
-        <div class="ocr-content">
-          <div
-            class="ocr-circle"
-            :style="{
-              '--ocr-rate': `${ocrSuccessRate}%`
-            }"
+        <div
+          v-if="latestOcrCards.length > 0"
+          class="ocr-photo-grid"
+        >
+          <button
+            v-for="item in latestOcrCards"
+            :key="item.cameraDataNo"
+            type="button"
+            class="ocr-photo-card"
+            @click="goCameraDataDetail(item.cameraDataNo)"
           >
-            <strong>{{ ocrSuccessRate }}%</strong>
-          </div>
+            <div class="ocr-photo-frame">
+              <img
+                v-if="item.imageUrl"
+                :src="item.imageUrl"
+                :alt="`${item.carNoText} 차량 사진`"
+              >
 
-          <div class="ocr-detail">
-            <span>
-              성공
-              <strong>{{ ocrSuccessCount }}건</strong>
-            </span>
+              <span v-else>사진 없음</span>
+            </div>
 
-            <span>
-              실패
-              <strong>{{ ocrFailCount }}건</strong>
-            </span>
-
-            <span>
-              전체
-              <strong>{{ ocrTotalCount }}건</strong>
-            </span>
-          </div>
+            <div class="ocr-photo-info">
+              <strong>{{ item.carNoText }}</strong>
+              <span>인식률 {{ item.confidenceText }}</span>
+            </div>
+          </button>
         </div>
+
+        <p
+          v-else
+          class="ocr-empty"
+        >
+          최근 인식된 차량이 없습니다.
+        </p>
       </article>
     </div>
 
@@ -307,10 +314,7 @@ const {
   unresolvedNoticeCount,
   registeredVehicleCount,
   parkingStatusList,
-  ocrTotalCount,
-  ocrSuccessCount,
-  ocrFailCount,
-  ocrSuccessRate,
+  latestOcrCards,
   weeklyEntryStats,
   currentCarlogPage,
   carlogTotalPages,
@@ -326,6 +330,16 @@ const loadDashboard = async () => {
 // 입출차 목록 페이지 변경
 const setCarlogPage = (page) => {
   dashboardStore.setCarlogPage(page)
+}
+
+// OCR 사진 카드를 누르면 해당 카메라 데이터 상세로 이동
+const goCameraDataDetail = (cameraDataNo) => {
+  router.push({
+    name: 'CameraDataDetail',
+    params: {
+      cameraDataNo
+    }
+  })
 }
 
 // 화면에 처음 들어왔을 때 대시보드 데이터 조회

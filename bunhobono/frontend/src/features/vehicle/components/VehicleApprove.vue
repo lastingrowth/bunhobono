@@ -62,67 +62,95 @@
 </template>
 
 <script setup>
-import { useVehicleStore } from '../vehicleStore'
+import { useVehicleStore } from "../vehicleStore";
 
 defineProps({
   vehicles: Array
-})
+});
 
-const vehicleStore = useVehicleStore()
+const vehicleStore = useVehicleStore();
 
 // 방문차량 신청 시 저장된 startDate/endDate 차이로 신청 시간을 계산한다.
 // 관리자가 수정하지 않으면 이 시간이 승인 기본값으로 사용된다.
 function getRequestedVisitHours(vehicle) {
   if (vehicle.periodHours) {
-    return vehicle.periodHours
+    return vehicle.periodHours;
   }
 
   if (!vehicle.startDate || !vehicle.endDate) {
-    return 1
+    return 2;
   }
 
-  const start = new Date(vehicle.startDate)
-  const end = new Date(vehicle.endDate)
+  const start = new Date(vehicle.startDate);
+  const end = new Date(vehicle.endDate);
 
-  const diffMs = end.getTime() - start.getTime()
-  const diffHours = Math.round(diffMs / 1000 / 60 / 60)
+  const diffMs = end.getTime() - start.getTime();
+  const diffHours = Math.round(diffMs / 1000 / 60 / 60);
 
-  return diffHours > 0 ? diffHours : 1
+  return diffHours > 0 ? diffHours : 2;
 }
 
 async function approve(vehicle) {
   const data = {
-    vehicleStatus: 'APPROVED',
+    vehicleStatus: "APPROVED",
     vehicleType: vehicle.vehicleType
+  };
+
+  if (vehicle.vehicleType === "normal") {
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+
+    endDate.setMonth(endDate.getMonth() + Number(vehicle.periodMonths || 3));
+
+    data.startDate = formatDateTimeLocalValue(startDate);
+    data.endDate = formatDateTimeLocalValue(endDate);
   }
 
-  if (vehicle.vehicleType === 'normal') {
-    data.periodMonths = vehicle.periodMonths || 3
+  if (vehicle.vehicleType === "visit") {
+    const startDate = vehicle.startDate
+      ? new Date(vehicle.startDate)
+      : new Date();
+
+    const endDate = new Date(startDate);
+    const hours = Number(vehicle.periodHours || getRequestedVisitHours(vehicle));
+
+    endDate.setHours(endDate.getHours() + hours);
+
+    data.startDate = formatDateTimeLocalValue(startDate);
+    data.endDate = formatDateTimeLocalValue(endDate);
   }
 
-  if (vehicle.vehicleType === 'visit') {
-    data.periodHours = vehicle.periodHours || getRequestedVisitHours(vehicle)
-  }
-
-  await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, data)
-  await vehicleStore.loadVehicleList()
+  await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, data);
+  await vehicleStore.loadVehicleList();
 }
 
 async function reject(vehicle) {
   await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, {
-    vehicleStatus: 'UNKNOWN',
-    vehicleType: vehicle.vehicleType
-  })
+    vehicleStatus: "UNKNOWN",
+    vehicleType: vehicle.vehicleType,
+    startDate: null,
+    endDate: null
+  });
 
-  await vehicleStore.loadVehicleList()
+  await vehicleStore.loadVehicleList();
 }
 
 async function expire(vehicle) {
   await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, {
-    vehicleStatus: 'EXPIRED',
+    vehicleStatus: "EXPIRED",
     vehicleType: vehicle.vehicleType
-  })
+  });
 
-  await vehicleStore.loadVehicleList()
+  await vehicleStore.loadVehicleList();
+}
+
+function formatDateTimeLocalValue(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 </script>

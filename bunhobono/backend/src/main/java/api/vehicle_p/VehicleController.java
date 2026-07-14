@@ -29,19 +29,20 @@ public class VehicleController {
     }
 
     // ADMIN 차량 등록 신청
+    // URL은 기존 프론트 호환을 위해 /signUp 유지
     // normal, visit 모두 가능하지만 등록 즉시 APPROVED가 아니라 WAITING으로 들어간다.
     @PostMapping("/signUp")
-    public int signUp(@RequestBody VehicleDTO dto) {
-        return vehicleService.adminSignUp(dto);
+    public int adminRequest(@RequestBody VehicleDTO dto) {
+        return vehicleService.adminRequest(dto);
     }
 
     // RESIDENT 방문차량 등록 신청
     // RESIDENT는 normal 직접 신청 불가, visit만 가능하다.
     // 토큰의 loginId로 신청자를 판단한다.
     @PostMapping("/resident/visit")
-    public int residentVisitSignUp(Authentication authentication,
-                                   @RequestBody VehicleDTO dto) {
-        return vehicleService.residentVisitSignUp(authentication.getName(), dto);
+    public int residentVisitRequest(Authentication authentication,
+                                    @RequestBody VehicleDTO dto) {
+        return vehicleService.residentVisitRequest(authentication.getName(), dto);
     }
 
     // 차량 삭제
