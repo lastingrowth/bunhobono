@@ -3,6 +3,7 @@ package api.member_p;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class MemberDTO {
@@ -13,6 +14,13 @@ public class MemberDTO {
     private String approvalStatus;
     private int memDong, memHo;
     private LocalDate memCreateAt, memDeleteAt;
+
+    @Data
+    public static class ApprovalRequest {
+        // 회원 목록에서 일괄 승인 상태를 변경할 회원 번호와 변경할 상태를 전달한다.
+        private List<Long> memberNos;
+        private String approvalStatus;
+    }
 }
 
 /*

@@ -1,4 +1,4 @@
-import ResVehicleView from "@/features/resVehicle/ResVehicleView.vue";
+import ResVehicleView from "@/features/member/ResVehicleView.vue";
 
 export default [
   {

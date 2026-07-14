@@ -42,7 +42,7 @@ public class MemberController {
 
     // 관리자 회원 목록에서 선택한 회원들의 승인 상태를 한 번에 변경한다.
     @PutMapping("/members/approval-status")
-    public void updateApprovalStatus(@RequestBody MemberApprovalRequest request) {
+    public void updateApprovalStatus(@RequestBody MemberDTO.ApprovalRequest request) {
         service.updateApprovalStatus(request);
     }
 
@@ -52,10 +52,16 @@ public class MemberController {
         return service.list();
     }
 
-    // 탈퇴 후 3일이 지나 보관 삭제 확인이 필요한 회원 알림 목록이다.
+    // 탈퇴 후 3일이 지나 보관 삭제 확인이 필요한 회원 알림 목록.
     @GetMapping("/members/archive-alerts")
     public List<MemberDTO> archiveAlerts() {
         return service.getArchiveAlerts();
+    }
+
+    // 탈퇴 후 3일 경과 목록에서 선택한 회원을 실제 삭제할 수 있도록.
+    @DeleteMapping("/members/archive")
+    public int deleteArchivedMembers(@RequestBody List<Long> memberNos) {
+        return service.deleteArchivedMembers(memberNos);
     }
 
     // 회원 상세내용
