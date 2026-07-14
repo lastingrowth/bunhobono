@@ -154,26 +154,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-
-import { getResidentDashboard } from "@/features/resident-dashboard/residentDashboardApi";
-import { toVehicleView } from "@/features/vehicle/vehicleFormat";
+import { storeToRefs } from "pinia";
+import { useMemStore } from "@/features/member/memStore";
 
 const router = useRouter();
-
-const loading = ref(false);
-const errorMessage = ref("");
-const dashboard = ref({
-    member: {},
-    normalVehicleCount: 0,
-    visitVehicleCount: 0,
-    totalParkingSpaces: 0,
-    availableParkingSpaces: 0,
-    vehicles: [],
-    parkings: [],
-    recentCarLogs: []
-});
+const memberStore = useMemStore();
+const { loading, errorMessage, dashboard } = storeToRefs(memberStore);
 
 // 차량 관리 화면에 표시할 차량 종류를 URL Query로 전달한다.
 const openVehicleManagement = (type) => {
@@ -235,29 +223,8 @@ const dateTimeText = (value) => {
     }).format(new Date(value));
 };
 
-// 본인 정보와 본인이 등록한 차량 목록 조회
-// 여러 화면 Store를 직접 조합하지 않고 대시보드 전용 집계 API를 한 번만 호출한다.
-const loadDashboard = async () => {
-    loading.value = true;
-    errorMessage.value = "";
-
-    try {
-        const response = await getResidentDashboard();
-        dashboard.value = {
-            ...dashboard.value,
-            ...response.data,
-            member: response.data.member || {},
-            vehicles: (response.data.vehicles || []).map(toVehicleView),
-            parkings: response.data.parkings || [],
-            recentCarLogs: response.data.recentCarLogs || []
-        };
-    } catch (error) {
-        console.error(error);
-        errorMessage.value = "입주민 정보를 불러오지 못했습니다.";
-    } finally {
-        loading.value = false;
-    }
-};
+// 화면은 Store 액션만 호출하고 DB 데이터 조회·조합은 memStore가 담당한다.
+const loadDashboard = () => memberStore.loadDashboard();
 
 onMounted(loadDashboard);
 </script>

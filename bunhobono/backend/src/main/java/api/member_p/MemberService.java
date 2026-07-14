@@ -36,6 +36,16 @@ public class MemberService {
         return archiveAlerts;
     }
 
+    // 화면에서 선택해도 서버에서 탈퇴 3일 경과 조건을 만족한 회원만 삭제한다.
+    public int deleteArchivedMembers(List<Long> memberNos) {
+        if (memberNos == null || memberNos.isEmpty()) {
+            throw new IllegalArgumentException("삭제할 회원을 선택해 주세요.");
+        }
+        int deletedCount = mapper.deleteArchivedMembers(memberNos);
+        refreshArchiveAlerts();
+        return deletedCount;
+    }
+
     // 회원가입
     public void signup(MemberDTO dto) {
         // 프론트 입력값과 관계없이 DB 권한 형식을 대문자로 통일한다.
@@ -90,8 +100,8 @@ public class MemberService {
         mapper.update(dto);
     }
 
-    // 관리자 회원 목록에서 선택한 여러 회원의 승인 상태를 일괄 변경한다.
-    public void updateApprovalStatus(MemberApprovalRequest request) {
+    // 관리자 회원 목록에서 선택한 여러 회원의 승인 상태를 일괄 변경.
+    public void updateApprovalStatus(MemberDTO.ApprovalRequest request) {
         if (request.getMemberNos() == null || request.getMemberNos().isEmpty()) {
             throw new IllegalArgumentException("승인 상태를 변경할 회원을 선택해 주세요.");
         }
