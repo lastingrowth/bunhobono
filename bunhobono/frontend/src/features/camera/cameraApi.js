@@ -19,3 +19,5 @@ export const updateCamera = (cameraNo, data) => {
 export const deleteCamera = (cameraNo) => {
     return api.delete(`/cameras/${cameraNo}/delete`);
 };
+
+
