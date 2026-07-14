@@ -30,16 +30,19 @@
               <option :value="6">6개월</option>
               <option :value="12">12개월</option>
             </select>
-          
+
             <span v-if="vehicle.vehicleType === 'visit'">
               <input
                 type="number"
                 min="1"
                 v-model.number="vehicle.periodHours"
-                placeholder="시간"
+                :placeholder="String(getRequestedVisitHours(vehicle))"
                 style="width: 60px;"
               >
               시간
+              <span>
+                신청 {{ getRequestedVisitHours(vehicle) }}시간
+              </span>
             </span>
           </td>
 
@@ -48,6 +51,10 @@
             <button @click="reject(vehicle)">반려</button>
             <button @click="expire(vehicle)">만료</button>
           </td>
+        </tr>
+
+        <tr v-if="vehicles.length === 0">
+          <td colspan="5" align="center">승인 대기 차량이 없습니다.</td>
         </tr>
       </tbody>
     </table>
@@ -63,6 +70,26 @@ defineProps({
 
 const vehicleStore = useVehicleStore()
 
+// 방문차량 신청 시 저장된 startDate/endDate 차이로 신청 시간을 계산한다.
+// 관리자가 수정하지 않으면 이 시간이 승인 기본값으로 사용된다.
+function getRequestedVisitHours(vehicle) {
+  if (vehicle.periodHours) {
+    return vehicle.periodHours
+  }
+
+  if (!vehicle.startDate || !vehicle.endDate) {
+    return 1
+  }
+
+  const start = new Date(vehicle.startDate)
+  const end = new Date(vehicle.endDate)
+
+  const diffMs = end.getTime() - start.getTime()
+  const diffHours = Math.round(diffMs / 1000 / 60 / 60)
+
+  return diffHours > 0 ? diffHours : 1
+}
+
 async function approve(vehicle) {
   const data = {
     vehicleStatus: 'APPROVED',
@@ -74,12 +101,7 @@ async function approve(vehicle) {
   }
 
   if (vehicle.vehicleType === 'visit') {
-    if (!vehicle.periodHours || vehicle.periodHours < 1) {
-      alert('방문차량 등록시간을 입력하세요')
-      return
-    }
-
-    data.periodHours = vehicle.periodHours
+    data.periodHours = vehicle.periodHours || getRequestedVisitHours(vehicle)
   }
 
   await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, data)

@@ -1,12 +1,10 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import {
     getResVehicleMemberInfo,
     getResVehicleList,
-    createResVehicle,
-    updateResVehicle,
-    deleteResVehicle
+    createResVehicle
 } from "./resVehicleApi";
 
 import { toVehicleView } from "../vehicle/vehicleFormat";
@@ -20,51 +18,49 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
     // 로그인한 입주민 정보
     const loadMyInfo = async () => {
         const res = await getResVehicleMemberInfo();
-
         member.value = res.data;
     };
 
     // 입주민 본인 차량 목록
+    // 서버가 토큰 loginId 기준으로 본인 차량만 반환한다.
     const loadVehicleList = async () => {
         const res = await getResVehicleList();
-
-        // 서버가 로그인 ID로 필터링한 본인 차량만 반환한다.
         vehicleList.value = res.data.map(toVehicleView);
     };
 
-    // 입주민 본인 차량 상세
-    const loadVehicle = async (vehicleCarNo) => {
-        if (vehicleList.value.length === 0) {
-            await loadVehicleList();
-        }
-
-        vehicle.value = vehicleList.value.find((item) => {
-            return Number(item.vehicleCarNo) === Number(vehicleCarNo);
-        }) ?? {};
-    };
-
-    // 입주민 차량 등록
-    const addVehicle = async (data) => {
-        // 소유 관계는 서버가 로그인 ID로 저장하므로 memberNo를 Body에 넣지 않는다.
-        await createResVehicle(data);
-
-        await loadVehicleList();
-    };
-
-    // 입주민 차량 수정
-    const editVehicle = async (vehicleCarNo, data) => {
-        await updateResVehicle(vehicleCarNo, data);
-
-        await loadVehicleList();
-    };
-
-    // 입주민 차량 삭제
-    const removeVehicle = async (vehicleCarNo) => {
-        await deleteResVehicle(vehicleCarNo);
-
-        vehicleList.value = vehicleList.value.filter((item) => {
-            return item.vehicleCarNo !== vehicleCarNo;
+    // 본인 normal 차량
+    const normalVehicles = computed(() => {
+        return vehicleList.value.filter((item) => {
+            return item.vehicleType === "normal";
         });
+    });
+
+    // 본인이 신청한 visit 차량
+    // 최근 차량이 위로 오도록 백에서 DESC 정렬되지만,
+    // 혹시 몰라 프론트에서도 한 번 더 정렬한다.
+    const visitVehicles = computed(() => {
+        return vehicleList.value
+            .filter((item) => {
+                return item.vehicleType === "visit";
+            })
+            .sort((a, b) => {
+                return Number(b.vehicleCarNo) - Number(a.vehicleCarNo);
+            });
+    });
+
+    // 유효한 방문차량 존재 여부
+    // WAITING 또는 APPROVED이고 아직 남은기간이 있는 차량이 있으면 신청 버튼을 막는 데 사용한다.
+    // 최종 제한은 백에서도 한 번 더 한다.
+    const hasActiveVisitVehicle = computed(() => {
+        return visitVehicles.value.some((item) => {
+            return item.vehicleStatus === "WAITING" || item.vehicleStatus === "APPROVED";
+        });
+    });
+
+    // 입주민 방문차량 등록 신청
+    const addVisitVehicle = async (data) => {
+        await createResVehicle(data);
+        await loadVehicleList();
     };
 
     return {
@@ -72,12 +68,12 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         vehicleList,
         vehicle,
 
+        normalVehicles,
+        visitVehicles,
+        hasActiveVisitVehicle,
+
         loadMyInfo,
         loadVehicleList,
-        loadVehicle,
-        addVehicle,
-        editVehicle,
-        removeVehicle
+        addVisitVehicle
     };
-
 });

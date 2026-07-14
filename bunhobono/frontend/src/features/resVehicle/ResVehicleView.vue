@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>{{ pageTitle }}</h2>
+    <h2>내 차량 관리</h2>
 
     <div>
       {{ resVehicleStore.member.memName }}
@@ -9,58 +9,62 @@
       {{ resVehicleStore.member.memHo }}호
     </div>
 
-    <div>
-      <button @click="openList">차량 목록</button>
-      <button @click="openInsert">차량 등록</button>
-    </div>
+    <!-- 본인 등록 차량: 조회만 가능 -->
+    <section>
+      <h3>본인 차량</h3>
 
-    <ResVehicleList
-      v-if="mode === 'list'"
-      :vehicles="filteredVehicles"
-      @edit="openEdit"
-      @remove="removeVehicle"
-    />
+      <ResVehicleList
+        :vehicles="resVehicleStore.normalVehicles"
+        empty-message="등록된 본인 차량이 없습니다."
+        :show-manage="false"
+      />
+    </section>
 
-    <ResVehicleForm
-      v-if="mode === 'form'"
-      :vehicle="selectedVehicle"
-      :default-vehicle-type="selectedVehicleType"
-      @submit="submitVehicle"
-      @cancel="openList"
-    />
+    <hr>
+
+    <!-- 방문 차량: 신청 가능 -->
+    <section>
+      <div>
+        <h3>방문 차량</h3>
+
+        <button
+          v-if="mode === 'list'"
+          :disabled="resVehicleStore.hasActiveVisitVehicle"
+          @click="openInsert"
+        >
+          방문차량 신청
+        </button>
+      </div>
+
+      <div v-if="resVehicleStore.hasActiveVisitVehicle">
+        승인 대기 또는 사용 중인 방문차량이 있어 추가 신청할 수 없습니다.
+      </div>
+
+      <ResVehicleList
+        v-if="mode === 'list'"
+        :vehicles="resVehicleStore.visitVehicles"
+        empty-message="신청한 방문차량이 없습니다."
+        :show-manage="false"
+      />
+
+      <ResVehicleForm
+        v-if="mode === 'form'"
+        @submit="submitVisitVehicle"
+        @cancel="openList"
+      />
+    </section>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { onMounted, ref } from "vue";
 import { useResVehicleStore } from "./resVehicleStore";
 import ResVehicleList from "./components/ResVehicleList.vue";
 import ResVehicleForm from "./components/ResVehicleForm.vue";
 
 const resVehicleStore = useResVehicleStore();
-const route = useRoute();
 
 const mode = ref("list");
-const selectedVehicle = ref(null);
-
-// URL의 type 값으로 일반 차량과 방문 차량 관리 화면을 구분한다.
-const selectedVehicleType = computed(() => {
-  return route.query.type === "visit" ? "visit" : "normal";
-});
-
-const pageTitle = computed(() => {
-  return selectedVehicleType.value === "visit"
-    ? "방문 차량 관리"
-    : "내 차량 관리";
-});
-
-// 서버가 반환한 본인 차량 중 현재 관리 화면의 차량 종류만 표시한다.
-const filteredVehicles = computed(() => {
-  return resVehicleStore.vehicleList.filter((vehicle) => {
-    return vehicle.vehicleType === selectedVehicleType.value;
-  });
-});
 
 onMounted(async () => {
   await resVehicleStore.loadMyInfo();
@@ -69,37 +73,14 @@ onMounted(async () => {
 
 function openList() {
   mode.value = "list";
-  selectedVehicle.value = null;
 }
 
 function openInsert() {
   mode.value = "form";
-  selectedVehicle.value = null;
 }
 
-function openEdit(vehicle) {
-  mode.value = "form";
-  selectedVehicle.value = vehicle;
-}
-
-async function submitVehicle(data) {
-  if (selectedVehicle.value) {
-    await resVehicleStore.editVehicle(
-      selectedVehicle.value.vehicleCarNo,
-      data
-    );
-  } else {
-    await resVehicleStore.addVehicle(data);
-  }
-
+async function submitVisitVehicle(data) {
+  await resVehicleStore.addVisitVehicle(data);
   openList();
-}
-
-async function removeVehicle(vehicleCarNo) {
-  if (!confirm("삭제할까요?")) {
-    return;
-  }
-
-  await resVehicleStore.removeVehicle(vehicleCarNo);
 }
 </script>
