@@ -7,21 +7,22 @@ import java.util.List;
 @Mapper
 public interface MemberMapper {
     // 회원가입
-    // 가입 시 생성일은 비워 두고 관리자가 거주·근무 상태로 승인할 때 기록한다.
-    // 입주민 회원가입은 PENDING, 관리자가 직접 추가한 회원은 APPROVED로 전달받아 저장한다.
-    @Insert("insert into member(login_id, login_pwd, mem_dong, mem_ho, mem_name, mem_phone, role, mem_status, approval_status, create_at) values" +
+    // 외부 회원가입은 PENDING 역할로 저장하고 가입일은 실제 가입 시각을 기록한다.
+    @Insert("insert into member(login_id, login_pwd, mem_dong, mem_ho, mem_name, mem_phone, role, mem_status, create_at) values" +
             "(#{loginId},#{loginPwd},#{memDong}, #{memHo},#{memName},#{memPhone},#{role},#{memStatus}," +
-            "COALESCE(#{approvalStatus}, 'PENDING')," +
-            "CASE WHEN #{approvalStatus} = 'APPROVED' THEN CURRENT_TIMESTAMP ELSE NULL END)")
+            "CURRENT_TIMESTAMP)")
     int signup (MemberDTO dto);
 
     // 회원목록
-    @Select("SELECT m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at FROM member m")
+    @Select("SELECT m.*, " +
+            "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at FROM member m")
     List<MemberDTO> list();
 
     // 탈퇴일로부터 3일 이상 지난 회원을 보관 삭제 알림 대상으로 조회한다.
     @Select("""
-        SELECT m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at
+        SELECT m.*,
+               m.create_at AS mem_create_at,
+               m.delete_at AS mem_delete_at
         FROM member m
         WHERE m.delete_at IS NOT NULL
           AND m.delete_at <= CURRENT_TIMESTAMP - INTERVAL '3 days'
@@ -30,12 +31,16 @@ public interface MemberMapper {
     List<MemberDTO> archiveAlertList();
 
     // 회원상세
-    @Select("SELECT m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at FROM member m WHERE member_no = #{memberNo}")
+    @Select("SELECT m.*, " +
+            "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
+            "FROM member m WHERE member_no = #{memberNo}")
     MemberDTO detail(int memberNo);
 
     // 회원검색
     @Select("""
-        select m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at
+        SELECT m.*,
+               m.create_at AS mem_create_at,
+               m.delete_at AS mem_delete_at
         from member m
         where
             (
@@ -60,36 +65,17 @@ public interface MemberMapper {
             @Param("dong") Integer dong,
             @Param("ho") Integer ho
     );
-    @Select("SELECT m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at FROM member m WHERE mem_name LIKE concat('%', #{keyword}, '%')")
-    List<MemberDTO> searchByName(String keyword);
 
-    @Select("SELECT m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at FROM member m WHERE role LIKE concat('%', #{keyword}, '%')")
-    List<MemberDTO> searchByRole(String keyword);
-
-    @Select("SELECT m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at FROM member m WHERE mem_dong = #{dong} AND mem_ho = #{ho}")
-    List<MemberDTO> searchByDongHo(@Param("dong") Integer dong, @Param("ho") Integer ho);
-
-    // 활성 상태로 최초 승인되는 시점에만 create_at을 저장하고 이후에는 보존한다.
+    // 관리자는 연락처, 비밀번호, 회원 상태만 수정하며 탈퇴일 생성을 유지한다.
     @Update("""
         UPDATE member
-        SET role = #{role},
-            mem_name = #{memName},
-            mem_dong = #{memDong},
-            mem_ho = #{memHo},
-            mem_phone = #{memPhone},
-            login_id = #{loginId},
+        SET mem_phone = #{memPhone},
             login_pwd = #{loginPwd},
             mem_status = #{memStatus},
-            approval_status = COALESCE(#{approvalStatus}, approval_status),
-            create_at = CASE
-                WHEN create_at IS NULL AND COALESCE(#{approvalStatus}, approval_status) = 'APPROVED'
-                THEN CURRENT_TIMESTAMP
-                ELSE create_at
-            END,
             delete_at = CASE
                 WHEN delete_at IS NULL
-                    AND ((UPPER(TRIM(#{role})) = 'RESIDENT' AND TRIM(#{memStatus}) = '전출')
-                        OR (UPPER(TRIM(#{role})) = 'ADMIN' AND TRIM(#{memStatus}) = '퇴사'))
+                    AND ((UPPER(TRIM(role)) = 'RESIDENT' AND TRIM(#{memStatus}) = '전출')
+                        OR (UPPER(TRIM(role)) = 'ADMIN' AND TRIM(#{memStatus}) = '퇴사'))
                 THEN CURRENT_TIMESTAMP
                 ELSE delete_at
             END
@@ -97,24 +83,19 @@ public interface MemberMapper {
         """)
     void update(MemberDTO dto);
 
-    // 선택 회원의 승인 상태를 한 번에 변경하고, 최초 승인 시 가입일을 자동 생성한다.
+    // 선택한 승인 대기 회원의 역할을 입주민으로 변경한다.
     @Update("""
         <script>
         UPDATE member
-        SET approval_status = #{approvalStatus},
-            create_at = CASE
-                WHEN create_at IS NULL AND #{approvalStatus} = 'APPROVED'
-                THEN CURRENT_TIMESTAMP
-                ELSE create_at
-            END
-        WHERE member_no IN
+        SET role = 'RESIDENT'
+        WHERE UPPER(TRIM(role)) = 'PENDING'
+          AND member_no IN
         <foreach collection="memberNos" item="memberNo" open="(" separator="," close=")">
             #{memberNo}
         </foreach>
         </script>
         """)
-    int updateApprovalStatus(@Param("memberNos") List<Long> memberNos,
-                             @Param("approvalStatus") String approvalStatus);
+    int approvePendingMembers(@Param("memberNos") List<Long> memberNos);
 
     // 탈퇴 후 3일이 지난 선택 회원만 실제 DB에서 삭제한다.
     @Delete("""
@@ -134,25 +115,71 @@ public interface MemberMapper {
     void delete(int memberNo);
 
     // 입주민 마이페이지
-    @Select("SELECT m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at FROM member m WHERE login_id = #{loginId}")
+    @Select("SELECT m.*, " +
+            "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
+            "FROM member m WHERE login_id = #{loginId}")
     MemberDTO residentMypage(String loginId);
 
-    // 입주민이 마이페이지 직접 수정
-    // loginPwd가 전달된 경우에만 비밀번호 컬럼을 변경한다.
+    // 로그인 회원과 vehicle_car.member_no를 조인해 해당 입주민의 차량만 조회한다.
+    @Select("""
+        SELECT
+            vc.vehicle_car_no,
+            vc.vehicle_type,
+            vc.car_no,
+            vc.vehicle_status,
+            vc.start_date,
+            vc.end_date,
+            vc.approved_at,
+            CASE
+                WHEN latest_log.car_log_no IS NULL THEN 'NONE'
+                WHEN latest_log.out_time IS NULL THEN 'PARKING'
+                ELSE 'OUT'
+            END AS parking_state,
+            latest_log.parking_name
+        FROM member m
+        JOIN vehicle_car vc ON vc.member_no = m.member_no
+        LEFT JOIN LATERAL (
+            SELECT
+                cl.car_log_no,
+                cl.out_time,
+                p.parking_name
+            FROM car_log cl
+            LEFT JOIN gate ig ON cl.in_gate_no = ig.gate_no
+            LEFT JOIN parking p ON ig.parking_no = p.parking_no
+            WHERE cl.vehicle_car_no = vc.vehicle_car_no
+            ORDER BY cl.in_time DESC
+            LIMIT 1
+        ) latest_log ON TRUE
+        WHERE m.login_id = #{loginId}
+        ORDER BY vc.vehicle_car_no
+        """)
+    List<MemberDTO.ResidentVehicle> residentVehicles(String loginId);
+
+    // 새 DB의 vehicle_car.member_no를 기준으로 로그인 입주민 차량의 최근 입출차 기록을 조회한다.
+    @Select("""
+        SELECT
+            cl.car_log_no,
+            cl.in_time,
+            cl.out_time,
+            vc.car_no,
+            p.parking_name,
+            CASE WHEN cl.out_time IS NULL THEN 'PARKING' ELSE 'OUT' END AS parking_state
+        FROM car_log cl
+        JOIN vehicle_car vc ON cl.vehicle_car_no = vc.vehicle_car_no
+        JOIN member m ON vc.member_no = m.member_no
+        LEFT JOIN gate ig ON cl.in_gate_no = ig.gate_no
+        LEFT JOIN parking p ON ig.parking_no = p.parking_no
+        WHERE m.login_id = #{loginId}
+        ORDER BY cl.in_time DESC
+        LIMIT 5
+        """)
+    List<MemberDTO.ResidentCarLog> residentCarLogs(String loginId);
+
+    // 입주민은 마이페이지에서 연락처와 새 비밀번호만 변경할 수 있다.
     @Update("""
         <script>
         UPDATE member
-        SET role = #{role},
-            mem_name = #{memName},
-            mem_dong = #{memDong},
-            mem_ho = #{memHo},
-            mem_phone = #{memPhone},
-            mem_status = #{memStatus},
-            delete_at = CASE
-                WHEN delete_at IS NULL AND UPPER(TRIM(role)) = 'RESIDENT' AND TRIM(#{memStatus}) = '전출'
-                THEN CURRENT_TIMESTAMP
-                ELSE delete_at
-            END
+        SET mem_phone = #{memPhone}
             <if test="loginPwd != null and loginPwd != ''">
                 , login_pwd = #{loginPwd}
             </if>

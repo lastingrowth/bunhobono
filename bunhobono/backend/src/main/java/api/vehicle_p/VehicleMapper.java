@@ -22,26 +22,6 @@ public interface VehicleMapper {
             "ORDER BY vc.vehicle_car_no")
     List<VehicleDTO> list();
 
-    // ===== 입주민 대시보드 추가 시작 =====
-    // 별도 연결 테이블 없이 vehicle_car.registered_no와 member.member_no를 연결해 본인 차량 조회
-    @Select("SELECT ROW_NUMBER() OVER (ORDER BY vc.vehicle_car_no) AS display_no, " +
-            "       vc.vehicle_car_no, " +
-            "       vc.vehicle_type, " +
-            "       vc.car_no, " +
-            "       vc.vehicle_status, " +
-            "       vc.start_date, " +
-            "       vc.end_date, " +
-            "       vc.registered_no AS member_no, " +
-            "       approver.mem_name AS approved_member_name, " +
-            "       vc.approved_at " +
-            "FROM vehicle_car vc " +
-            "JOIN member registrant ON registrant.member_no = vc.registered_no " +
-            "LEFT JOIN member approver ON approver.member_no = vc.approved_no " +
-            "WHERE registrant.login_id = #{loginId} " +
-            "ORDER BY vc.vehicle_car_no")
-    List<VehicleDTO> listByLoginId(@Param("loginId") String loginId);
-    // ===== 입주민 대시보드 추가 끝 =====
-
     //추가
     @Insert("INSERT INTO vehicle_car (vehicle_type, car_no, start_date, end_date) " +
             "VALUES (#{vehicleType}, #{carNo}, #{startDate}, #{endDate})")

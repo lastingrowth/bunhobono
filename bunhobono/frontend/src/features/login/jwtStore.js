@@ -61,6 +61,10 @@ export const useJwtStore = defineStore('jwtStore', {
         // 로그인 성공 후 라우팅
         if (this.role === "ADMIN") {
           router.push("/admin")
+        } else if (this.role === "PENDING") {
+          alert("관리자 승인 후 로그인할 수 있습니다.")
+          this.logout()
+          return false
         } else {
           router.push("/resident")
         }
