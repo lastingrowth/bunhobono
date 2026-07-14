@@ -80,21 +80,39 @@ const expectedEndText = computed(() => {
     return "";
   }
 
-  const date = new Date(form.startDate);
-  date.setHours(date.getHours() + Number(form.periodHours));
+  const endDate = makeEndDate();
 
-  return formatDateTimeLocal(date);
+  return formatDateTimeText(endDate);
 });
 
 function submit() {
+  const endDate = makeEndDate();
+
   emit("submit", {
     carNo: form.carNo,
     startDate: form.startDate,
-    periodHours: form.periodHours
+    endDate: formatDateTimeLocalValue(endDate)
   });
 }
 
-function formatDateTimeLocal(date) {
+function makeEndDate() {
+  const date = new Date(form.startDate);
+  date.setHours(date.getHours() + Number(form.periodHours));
+
+  return date;
+}
+
+function formatDateTimeLocalValue(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+function formatDateTimeText(date) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
