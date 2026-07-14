@@ -1,30 +1,16 @@
 # yolo_detect.py
 
 from pathlib import Path
-import os
-
-
-BASE_DIR = Path(__file__).resolve().parent
-RUNTIME_DIR = BASE_DIR / "runtime"
-ULTRALYTICS_CONFIG_DIR = RUNTIME_DIR / "ultralytics"
-MATPLOTLIB_CONFIG_DIR = RUNTIME_DIR / "matplotlib"
-ULTRALYTICS_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-MATPLOTLIB_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-# 사용자 홈 경로 대신 프로젝트 내부에 Ultralytics 설정을 저장한다.
-os.environ.setdefault(
-    "YOLO_CONFIG_DIR",
-    str(ULTRALYTICS_CONFIG_DIR)
-)
-os.environ.setdefault("MPLCONFIGDIR", str(MATPLOTLIB_CONFIG_DIR))
-
 import cv2
 import numpy as np
 from ultralytics import YOLO
 
 
+BASE_DIR = Path(__file__).resolve().parent
+
 YOLO_MODEL_PATH = BASE_DIR / "model" / "yolo11s_bono1199" / "best.pt"
 
+RUNTIME_DIR = BASE_DIR / "runtime"
 UPLOAD_DIR = RUNTIME_DIR / "uploads"
 CROP_DIR = RUNTIME_DIR / "crops"
 
@@ -53,9 +39,33 @@ class PlateDetector:
 
         encoded.tofile(str(path))
 
+    # 업로드 이미지 bytes를 받아 번호판 탐지 후 crop 저장
     def detect_and_crop(self, image_bytes: bytes, filename: str):
         img = self.read_image_from_bytes(image_bytes)
 
+        return self._detect_and_crop_image(
+            img=img,
+            filename=filename
+        )
+
+    # 영상에서 읽은 frame을 받아 번호판 탐지 후 crop 저장
+    def detect_and_crop_frame(self, frame, filename: str):
+        if frame is None:
+            return {
+                "success": False,
+                "message": "frame이 비어 있습니다.",
+                "crop_path": None,
+                "det_conf": 0.0,
+                "box": None
+            }
+
+        return self._detect_and_crop_image(
+            img=frame,
+            filename=filename
+        )
+
+    # 실제 YOLO 번호판 탐지와 crop 저장 공통 처리
+    def _detect_and_crop_image(self, img, filename: str):
         results = self.model.predict(
             source=img,
             conf=0.25,

@@ -1,18 +1,12 @@
 # plate_ocr.py
 
 from pathlib import Path
-import os
 import re
 
-BASE_DIR = Path(__file__).resolve().parent
-PYTHON_HOME = BASE_DIR / "runtime" / "python-home"
-PYTHON_HOME.mkdir(parents=True, exist_ok=True)
-
-# Paddle가 사용자 홈 대신 프로젝트 내부에 캐시를 저장하도록 한다.
-os.environ.setdefault("HOME", str(PYTHON_HOME))
-os.environ["USERPROFILE"] = str(PYTHON_HOME)
-
 from paddleocr import TextRecognition
+
+
+BASE_DIR = Path(__file__).resolve().parent
 
 OCR_MODEL_DIR = (
     BASE_DIR
