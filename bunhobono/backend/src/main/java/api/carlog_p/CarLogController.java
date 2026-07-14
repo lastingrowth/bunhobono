@@ -1,5 +1,6 @@
 package api.carlog_p;
 
+import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,9 @@ public class CarLogController {
     @Resource
     private CarLogService carLogService;
 
+    @Resource
+    private TrashService trashService;
+
     @GetMapping({""})
     public List<CarLogDTO> list(CarLogDTO dto) {
         return carLogService.list(dto);
@@ -28,6 +32,7 @@ public class CarLogController {
 
     @DeleteMapping("/{carLogNo}/delete")
     public int delete(@PathVariable int carLogNo) {
-        return carLogService.delete(carLogNo);
+        trashService.moveCarLog(carLogNo, "MANUAL");
+        return 1;
     }
 }

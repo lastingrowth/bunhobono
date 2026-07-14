@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 
 import { ref } from "vue";
-import { getNoteList, updateNoticeStatus } from "./noticeApi";
+import { deleteNotice, getNoteList, updateNoticeStatus } from "./noticeApi";
 import { useJwtStore } from "../login/jwtStore";
 
 export const useNoticeStore = defineStore("notice", () => {
@@ -43,6 +43,41 @@ export const useNoticeStore = defineStore("notice", () => {
         await loadNotice(noticeNo);
     };
 
+    // 알림 삭제
+    const remove = async (noticeNo, router) => {
+        const result = confirm("알림을 삭제하시겠습니까?");
+
+        if (!result) {
+            return;
+        }
+
+        const response = await deleteNotice(noticeNo);
+
+        if (response.data === 1) {
+            notices.value = notices.value.filter((item) => {
+                const itemNo = item.noticeNo ?? item.notice_no;
+
+                return Number(itemNo) !== Number(noticeNo);
+            });
+
+            if (notice.value) {
+                const currentNo = notice.value.noticeNo ?? notice.value.notice_no;
+
+                if (Number(currentNo) === Number(noticeNo)) {
+                    notice.value = null;
+                }
+            }
+
+            alert("알림 삭제 완료");
+
+            if (router) {
+                router.push("/admin/notice");
+            }
+        } else {
+            alert("알림 삭제 실패");
+        }
+    };
+
     return {
         notices,
         notice,
@@ -50,5 +85,6 @@ export const useNoticeStore = defineStore("notice", () => {
         loadNotices,
         loadNotice,
         changeNoticeStatus,
+        remove,
     };
 });

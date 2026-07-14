@@ -25,7 +25,7 @@ public class CarLogDTO {
     private Integer cameraDataNo;
     private Integer inGateNo;
     private String inGateName;
-    private LocalDateTime inTime;
+    private LocalDateTime inTime, realEndDate;
 
     private Integer outGateNo;
     private String outGateName;
@@ -39,4 +39,7 @@ public class CarLogDTO {
     // camera_data 자동 처리용 게이트 정보
     @JsonIgnore
     private String gateType;
+
+    //스냅샷 칼럼
+    private String snapshotCarNo;
 }

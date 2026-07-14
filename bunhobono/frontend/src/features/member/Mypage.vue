@@ -35,14 +35,6 @@
                 <td>{{ store.member.loginId }}</td>
             </tr>
             <tr>
-                <th>가입일</th>
-                <td>{{ store.member.memCreateAt }}</td>
-            </tr>
-            <tr>
-                <th>탈퇴일</th>
-                <td>{{ store.member.memDeleteAt }}</td>
-            </tr>
-            <tr>
                 <th>상태</th>
                 <td>{{ store.member.memStatus }}</td>
             </tr>

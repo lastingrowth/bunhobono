@@ -1,5 +1,6 @@
 package api.cameradata_p;
 
+import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.MediaType;
@@ -19,6 +20,9 @@ public class CameraDataController {
 
     @Resource
     CameraDataService cameraDataService;
+
+    @Resource
+    private TrashService trashService;
 
     @GetMapping("")
     public List<CameraDataDTO> list(CameraDataDTO dto){
@@ -48,6 +52,12 @@ public class CameraDataController {
     @GetMapping("/search")
     public List<CameraDataDTO> search(@RequestParam String carNo) {
         return cameraDataService.searchByCarNo(carNo);
+    }
+
+    @DeleteMapping("/{cameraDataNo}/delete")
+    public int delete(@PathVariable int cameraDataNo) {
+        trashService.moveCameraData(cameraDataNo, "MANUAL");
+        return 1;
     }
 
     @GetMapping("/{cameraDataNo}/image")

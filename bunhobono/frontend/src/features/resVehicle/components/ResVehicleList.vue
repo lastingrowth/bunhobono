@@ -1,7 +1,5 @@
 <template>
   <div>
-    <h3>내 차량 목록</h3>
-
     <table border="">
       <thead>
         <tr>
@@ -12,7 +10,7 @@
           <th>등록기간</th>
           <th>만기일</th>
           <th>남은기간</th>
-          <th>관리</th>
+          <th v-if="showManage">관리</th>
         </tr>
       </thead>
 
@@ -25,14 +23,17 @@
           <td>{{ vehicle.periodText || '-' }}</td>
           <td>{{ vehicle.endDateText || '-' }}</td>
           <td>{{ vehicle.remainingTimeText || '-' }}</td>
-          <td>
+
+          <td v-if="showManage">
             <button @click="$emit('edit', vehicle)">수정</button>
             <button @click="$emit('remove', vehicle.vehicleCarNo)">삭제</button>
           </td>
         </tr>
 
         <tr v-if="vehicles.length === 0">
-          <td colspan="8" align="center">등록된 차량이 없습니다.</td>
+          <td :colspan="showManage ? 8 : 7" align="center">
+            {{ emptyMessage }}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -44,8 +45,16 @@ defineProps({
   vehicles: {
     type: Array,
     default: () => []
+  },
+  emptyMessage: {
+    type: String,
+    default: "조회된 차량이 없습니다."
+  },
+  showManage: {
+    type: Boolean,
+    default: false
   }
-})
+});
 
-defineEmits(['edit', 'remove'])
+defineEmits(["edit", "remove"]);
 </script>

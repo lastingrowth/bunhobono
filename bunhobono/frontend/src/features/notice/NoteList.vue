@@ -44,6 +44,7 @@
             >
               {{ column.label }}
             </th>
+            <th class="col-action">관리</th>
           </tr>
         </thead>
 
@@ -67,6 +68,14 @@
               <template v-else>
                 {{ formatValue(getValue(notice, column), column) }}
               </template>
+            </td>
+            <td class="col-action">
+              <button
+                type="button"
+                @click.stop="noticeStore.remove(getNoticeNo(notice))"
+              >
+                삭제
+              </button>
             </td>
           </tr>
         </tbody>
