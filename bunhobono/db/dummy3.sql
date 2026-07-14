@@ -28,7 +28,9 @@ VALUES
     ('res2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6',
      101, 1002, '입주민2', '010-2222-1002', 'RESIDENT', NOW(), NULL, '거주'),
     ('res3', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6',
-     102, 1101, '입주민3', '010-2222-1101', 'RESIDENT', NOW(), NULL, '거주');
+     102, 1101, '입주민3', '010-2222-1101', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res4', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6',
+     102, 1102, '입주민4', '010-2222-1102', 'PENDING', NOW(), NULL, '거주');
 
 -- =====================================================
 -- PARKING

@@ -29,7 +29,7 @@ CREATE TABLE member (
     mem_name VARCHAR(30),
     mem_phone VARCHAR(30),
     role VARCHAR(30) NOT NULL
-        CHECK (role IN ('ADMIN', 'RESIDENT')),
+        CHECK (role IN ('ADMIN', 'RESIDENT', 'PENDING')),
     create_at TIMESTAMP,
     delete_at TIMESTAMP,
     mem_status VARCHAR(30)
