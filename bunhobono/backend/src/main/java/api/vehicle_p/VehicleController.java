@@ -3,7 +3,6 @@ package api.vehicle_p;
 import jakarta.annotation.Resource;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 

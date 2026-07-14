@@ -30,9 +30,9 @@ export const updateMember = (memberNo, data) => {
     return api.put(`/members/${memberNo}/edit`, data);
 };
 
-// 회원 목록에서 선택한 여러 회원의 승인 상태를 한 번에 변경한다.
-export const updateMemberApprovalStatus = (memberNos, approvalStatus) => {
-    return api.put('/members/approval-status', { memberNos, approvalStatus });
+// 선택한 승인 대기 회원의 역할을 입주민으로 변경한다.
+export const approvePendingMembers = (memberNos) => {
+    return api.put('/members/approve', memberNos);
 };
 
 // 회원 삭제
@@ -71,9 +71,9 @@ export const idCheckMember = (loginId) => {
     });
 };
 
-// 로그인한 입주민이 등록한 차량 목록 조회
-export const getResVehicleList = () => {
-    return api.get("/vehicles/resident");
+// 로그인 입주민 정보와 차량·최근 입출차 기록을 한 번에 조회한다.
+export const getResidentDashboard = () => {
+    return api.get("/resident/mypage/dashboard");
 };
 
 // 입주민 차량 등록 신청

@@ -10,8 +10,10 @@
     </div>
 
     <div>
-      <button @click="openList">차량 목록</button>
-      <button @click="openInsert">차량 등록</button>
+      <button v-if="mode === 'list'" @click="goHome">홈</button>
+      <button v-else @click="openList">차량 목록</button>
+      <!-- 방문 차량 화면에서만 신규 차량 등록을 허용한다. -->
+      <button v-if="mode === 'list' && selectedVehicleType === 'visit'" @click="openInsert">차량 등록</button>
     </div>
 
     <div v-if="mode === 'list'">
@@ -110,11 +112,12 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
 
 const memberStore = useMemStore();
 const route = useRoute();
+const router = useRouter();
 
 const mode = ref("list");
 const selectedVehicle = ref(null);
@@ -160,7 +163,17 @@ function openList() {
   resetVehicleForm();
 }
 
+// =====
+// 입주민 대시보드 홈으로 이동한다.
+function goHome() {
+  router.push("/resident/dashboard");
+}
+// =====
+
 function openInsert() {
+  // 내 차량 메뉴에서는 신규 등록 화면으로 진입하지 않는다.
+  if (selectedVehicleType.value !== "visit") return;
+
   selectedVehicle.value = null;
   resetVehicleForm();
   mode.value = "form";
