@@ -8,6 +8,7 @@ import gates from "./gates";
 import cameraData from "./cameraData";
 import notices from "./notices";
 import cameras from "./cameras";
+import trash from "./trash";
 
 export const adminRoutes = [
     {
@@ -27,7 +28,8 @@ export const adminRoutes = [
             ...gates,
             ...cameras,
             ...cameraData,
-            ...notices
+            ...notices,
+            ...trash
         ]
     }
 ]

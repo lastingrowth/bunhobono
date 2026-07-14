@@ -3,34 +3,58 @@ package api.member_p;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
 public class MemberDTO {
 
-    private  long memberNo;
-    private  String loginId, loginPwd, memName, memPhone, role, memStatus;
-    // 관리자 회원 승인 상태: PENDING(승인 대기), APPROVED(승인 완료), REJECTED(승인 거절)
-    private String approvalStatus;
-    private int memDong, memHo;
-    private LocalDate memCreateAt, memDeleteAt;
+    // 회원 가입·조회·수정에 사용하는 기본 회원 정보다.
+    private long memberNo;
+    private String loginId;
+    private String loginPwd;
+    private String memName;
+    private String memPhone;
+    private String role;
+    private String memStatus;
+    private int memDong;
+    private int memHo;
+    private LocalDate memCreateAt;
+    private LocalDate memDeleteAt;
 
+    // 입주민 대시보드에 표시할 본인 차량 정보를 전달한다.
     @Data
-    public static class ApprovalRequest {
-        // 회원 목록에서 일괄 승인 상태를 변경할 회원 번호와 변경할 상태를 전달한다.
-        private List<Long> memberNos;
-        private String approvalStatus;
+    public static class ResidentVehicle {
+
+        private Integer vehicleCarNo;
+        private String vehicleType;
+        private String carNo;
+        private String vehicleStatus;
+        private LocalDateTime startDate;
+        private LocalDateTime endDate;
+        private LocalDateTime approvedAt;
+        private String parkingState;
+        private String parkingName;
+    }
+
+    // 입주민 차량의 최근 입차·출차 기록을 전달한다.
+    @Data
+    public static class ResidentCarLog {
+
+        private Integer carLogNo;
+        private String carNo;
+        private String parkingName;
+        private String parkingState;
+        private LocalDateTime inTime;
+        private LocalDateTime outTime;
+    }
+
+    // 회원 정보·본인 차량·최근 입출차 기록을 대시보드 응답 하나로 묶는다.
+    @Data
+    public static class ResidentDashboard {
+
+        private MemberDTO member;
+        private List<ResidentVehicle> vehicles;
+        private List<ResidentCarLog> recentCarLogs;
     }
 }
-
-/*
-Controller : 사용자가 보낸 값 받기
-Service    : 아이디 중복 확인 → 저장할지 판단 → Mapper 호출
-Mapper     : DB에 insert/select 실행
-DTO        : 데이터 담는 통
-
-회원가입 insert 확인
-→ 로그인 select 확인
-→ 로그인 성공 시 문자열 반환
-→ 그다음 JWT 토큰 반환으로 변경
-*/

@@ -4,15 +4,10 @@
         <button type="button" @click="router.push('/admin/signup')">회원 추가</button>
     </div>
 
-    <!-- 체크한 여러 회원의 승인 상태를 한 번에 변경. -->
+    <!-- 승인 대기 회원을 선택해 입주민 역할로 변경한다. -->
     <div class="approval-actions">
         <button type="button" @click="toggleSelectAll">{{ allVisibleSelected ? '전체해제' : '전체선택' }}</button>
-        <select v-model="bulkApprovalStatus">
-            <option value="PENDING">승인 대기</option>
-            <option value="APPROVED">승인 완료</option>
-            <option value="REJECTED">승인 거절</option>
-        </select>
-        <button type="button" @click="changeSelectedApprovalStatus">승인여부 변경</button>
+        <button type="button" @click="approveSelectedMembers">승인</button>
         <span>선택 {{ selectedMemberNos.length }}명</span>
     </div>
 
@@ -23,7 +18,7 @@
             <thead>
                 <tr>
                     <th>선택</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th>
-                    <th>연락처</th><th>아이디</th><th>승인여부</th>
+                    <th>연락처</th><th>아이디</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,9 +28,8 @@
                     <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
                     <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td>
                     <td>{{ mem.memPhone }}</td><td>{{ mem.loginId }}</td>
-                    <td>{{ approvalStatusText(mem.approvalStatus) }}</td>
                 </tr>
-                <tr v-if="pendingMembers.length === 0"><td colspan="8">승인 대기 회원이 없습니다.</td></tr>
+                <tr v-if="pendingMembers.length === 0"><td colspan="7">승인 대기 회원이 없습니다.</td></tr>
             </tbody>
         </table>
     </section>
@@ -91,18 +85,17 @@
     <table border="">
         <thead>
             <tr>
-                <th>선택</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th><th>연락처</th>
-                <th>아이디</th><th>가입일</th><th>탈퇴일</th><th>상태</th><th>승인여부</th>
+                <th>가입유형</th><th>이름</th><th>동</th><th>호수</th><th>연락처</th>
+                <th>아이디</th><th>가입일</th><th>탈퇴일</th><th>상태</th>
             </tr>
         </thead>
         <tbody>
             <tr v-for="mem in approvedMembers" :key="mem.memberNo">
-                <td><input v-model="selectedMemberNos" type="checkbox" :value="mem.memberNo"></td>
                 <td>{{ mem.role }}</td>
                 <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
                 <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.memPhone }}</td>
                 <td>{{ mem.loginId }}</td><td>{{ mem.memCreateAt }}</td><td>{{ mem.memDeleteAt }}</td>
-                <td>{{ mem.memStatus }}</td><td>{{ approvalStatusText(mem.approvalStatus) }}</td>
+                <td>{{ mem.memStatus }}</td>
             </tr>
         </tbody>
     </table>
@@ -122,17 +115,16 @@ const searchKeyword = ref('');
 const dong = ref('');
 const ho = ref('');
 const selectedMemberNos = ref([]);
-const bulkApprovalStatus = ref('APPROVED');
 const selectedArchiveMemberNos = ref([]);
 
-// 기존 데이터에 승인값이 없으면 안전하게 승인 대기로 분류한다.
+// PENDING 역할 회원만 승인 대기 목록으로 분류한다.
 const pendingMembers = computed(() => memberList.value.filter(
-    (member) => !member.approvalStatus || member.approvalStatus === 'PENDING'
+    (member) => String(member.role || '').toUpperCase() === 'PENDING'
 ));
 
-// 하단 회원 목록에는 승인 완료된 회원만 표시.
+// ADMIN과 RESIDENT 역할 회원만 승인된 회원 목록에 표시한다.
 const approvedMembers = computed(() => memberList.value.filter(
-    (member) => member.approvalStatus === 'APPROVED'
+    (member) => ['ADMIN', 'RESIDENT'].includes(String(member.role || '').toUpperCase())
         && !memberArchiveAlerts.value.some((alertMember) => alertMember.memberNo === member.memberNo)
 ));
 
@@ -171,18 +163,14 @@ const deleteSelectedArchives = async () => {
     alert(`${deletedCount}명의 회원이 삭제되었습니다.`);
 };
 
-const approvalStatusText = (status) => ({
-    PENDING: '승인 대기', APPROVED: '승인 완료', REJECTED: '승인 거절'
-}[status] ?? '승인 대기');
-
-const changeSelectedApprovalStatus = async () => {
+const approveSelectedMembers = async () => {
     if (selectedMemberNos.value.length === 0) {
-        alert('승인여부를 변경할 회원을 선택해 주세요.');
+        alert('승인할 회원을 선택해 주세요.');
         return;
     }
-    await store.editApprovalStatus(selectedMemberNos.value, bulkApprovalStatus.value);
+    await store.approveMembers(selectedMemberNos.value);
     selectedMemberNos.value = [];
-    alert('선택한 회원의 승인여부가 변경되었습니다.');
+    alert('선택한 회원이 입주민으로 승인되었습니다.');
 };
 
 const searchGo = async () => {

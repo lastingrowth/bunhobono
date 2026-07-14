@@ -143,54 +143,54 @@
   margin-bottom: 0;
 }
 
-.parking-zone-list {
+.parking-usage-card .parking-zone-grid {
+  width: 100%;
   margin: auto 0;
-  padding: 22px 20px;
-  display: grid;
-  gap: 20px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  flex: 0 0 auto;
+  grid-auto-rows: 158px;
+}
+
+.parking-usage-card .parking-zone {
+  height: 158px;
+  padding: 14px 8px;
+  justify-content: center;
   background: #f8fafc;
 }
 
-.parking-zone-row {
-  min-height: 36px;
-  display: grid;
-  grid-template-columns: 48px minmax(120px, 1fr) 72px 120px;
-  gap: 12px;
-  align-items: center;
+.parking-usage-card .parking-zone-name {
+  margin-bottom: 8px;
+  font-size: 15px;
 }
 
-.parking-progress {
-  height: 14px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e5e7eb;
+.parking-usage-card .parking-zone-donut {
+  width: 74px;
+  height: 74px;
 }
 
-.parking-progress span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--primary);
+.parking-usage-card .parking-zone-donut strong {
+  font-size: 19px;
 }
 
-/* 주차장 사용률이 70%를 초과하면 혼잡 상태를 빨간색으로 표시한다. */
-.parking-progress span.parking-progress-danger {
-  background: #ef4444;
+.parking-usage-card .parking-zone-count {
+  margin-top: 8px;
+  font-size: 14px;
 }
 
-.parking-usage-number {
-  text-align: right;
-  font-weight: 700;
-  color: var(--text-color);
+.parking-usage-card .parking-zone-available {
+  margin-top: 3px;
+  font-size: 12px;
 }
 
-.parking-available {
-  text-align: right;
-  font-size: 13px;
-  font-weight: 700;
-  color: #16a34a;
+.parking-usage-link {
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.parking-usage-link:hover,
+.parking-usage-link:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.15);
+  outline: none;
 }
 
 /* 차량 목록 제목 옆 차량 대수 */
@@ -269,12 +269,4 @@
     border-bottom: none;
   }
 
-  .parking-zone-row {
-    grid-template-columns: 44px minmax(100px, 1fr) 62px;
-  }
-
-  .parking-available {
-    grid-column: 2 / -1;
-    text-align: left;
-  }
 }
