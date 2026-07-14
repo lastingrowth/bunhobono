@@ -1,5 +1,6 @@
 <template>
   <section class="gate-page">
+    <!-- 게이트 목록 제목 -->
     <div class="page-heading">
       <h2>게이트 목록</h2>
       <p>주차장별 입·출차 게이트를 관리합니다.</p>
