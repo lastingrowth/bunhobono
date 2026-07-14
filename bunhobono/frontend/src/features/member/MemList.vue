@@ -40,18 +40,25 @@
         </table>
     </section>
 
+    <div class="approval-actions">
+        <button type="button" @click="selectAllArchives">전체선택</button>
+        <button type="button" @click="deleteSelectedArchives">삭제</button>
+        <span>선택 {{ selectedArchiveMemberNos.length }}명</span>
+    </div>
+
     <!-- Spring 스케줄러가 분류한 탈퇴 3일 경과 회원을 별도 알림으로 표시. -->
     <section class="archive-alert-section">
         <h3>탈퇴 후 3일 경과 회원 알림 ({{ memberArchiveAlerts.length }}명)</h3>
         <table border="">
             <thead>
                 <tr>
-                    <th>가입유형</th><th>이름</th><th>동</th><th>호수</th>
+                    <th>선택</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th>
                     <th>아이디</th><th>상태</th><th>탈퇴일</th><th>알림</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="mem in memberArchiveAlerts" :key="mem.memberNo">
+                    <td><input v-model="selectedArchiveMemberNos" type="checkbox" :value="mem.memberNo"></td>
                     <td>{{ mem.role }}</td>
                     <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
                     <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.loginId }}</td>
@@ -59,7 +66,7 @@
                     <td>보관 삭제 확인 필요</td>
                 </tr>
                 <tr v-if="memberArchiveAlerts.length === 0">
-                    <td colspan="8">탈퇴 후 3일이 지난 회원이 없습니다.</td>
+                    <td colspan="9">탈퇴 후 3일이 지난 회원이 없습니다.</td>
                 </tr>
             </tbody>
         </table>
@@ -116,6 +123,7 @@ const dong = ref('');
 const ho = ref('');
 const selectedMemberNos = ref([]);
 const bulkApprovalStatus = ref('APPROVED');
+const selectedArchiveMemberNos = ref([]);
 
 // 기존 데이터에 승인값이 없으면 안전하게 승인 대기로 분류한다.
 const pendingMembers = computed(() => memberList.value.filter(
@@ -144,6 +152,23 @@ const toggleSelectAll = () => {
         return;
     }
     selectedMemberNos.value = [...visibleMemberNos.value];
+};
+
+// 탈퇴 후 3일 경과 목록만 전체선택하며 전체해제 동작은 제공하지 않는다.
+const selectAllArchives = () => {
+    selectedArchiveMemberNos.value = memberArchiveAlerts.value.map((member) => member.memberNo);
+};
+
+const deleteSelectedArchives = async () => {
+    if (selectedArchiveMemberNos.value.length === 0) {
+        alert('삭제할 회원을 선택해 주세요.');
+        return;
+    }
+    if (!confirm('선택한 회원을 완전히 삭제하시겠습니까?')) return;
+
+    const deletedCount = await store.removeMemberArchives(selectedArchiveMemberNos.value);
+    selectedArchiveMemberNos.value = [];
+    alert(`${deletedCount}명의 회원이 삭제되었습니다.`);
 };
 
 const approvalStatusText = (status) => ({

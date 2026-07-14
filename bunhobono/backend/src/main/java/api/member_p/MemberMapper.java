@@ -116,6 +116,20 @@ public interface MemberMapper {
     int updateApprovalStatus(@Param("memberNos") List<Long> memberNos,
                              @Param("approvalStatus") String approvalStatus);
 
+    // 탈퇴 후 3일이 지난 선택 회원만 실제 DB에서 삭제한다.
+    @Delete("""
+        <script>
+        DELETE FROM member
+        WHERE delete_at IS NOT NULL
+          AND delete_at &lt;= CURRENT_TIMESTAMP - INTERVAL '3 days'
+          AND member_no IN
+          <foreach collection="memberNos" item="memberNo" open="(" separator="," close=")">
+              #{memberNo}
+          </foreach>
+        </script>
+        """)
+    int deleteArchivedMembers(@Param("memberNos") List<Long> memberNos);
+
     @Delete("DELETE FROM member WHERE member_no = #{memberNo}")
     void delete(int memberNo);
 
@@ -157,5 +171,4 @@ public interface MemberMapper {
 
 
 }
-
 

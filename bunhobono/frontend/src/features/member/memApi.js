@@ -10,6 +10,11 @@ export const getMemberArchiveAlerts = () => {
     return api.get('/members/archive-alerts');
 };
 
+// 탈퇴 후 3일 경과 목록에서 선택한 회원을 실제 삭제한다.
+export const deleteMemberArchives = (memberNos) => {
+    return api.delete('/members/archive', { data: memberNos });
+};
+
 // 회원 검색
 export const searchMember = (params) => {
     return api.get("/members/search", {params,});
@@ -64,4 +69,24 @@ export const idCheckMember = (loginId) => {
     return api.get("/signup/check-id",{
         params : {loginId}
     });
+};
+
+// 로그인한 입주민이 등록한 차량 목록 조회
+export const getResVehicleList = () => {
+    return api.get("/vehicles/resident");
+};
+
+// 입주민 차량 등록 신청
+export const createResVehicle = (data) => {
+    return api.post("/vehicles/signUp", data);
+};
+
+// 입주민 차량 수정 신청
+export const updateResVehicle = (vehicleCarNo, data) => {
+    return api.put(`/vehicles/${vehicleCarNo}/edit`, data);
+};
+
+// 입주민 차량 삭제
+export const deleteResVehicle = (vehicleCarNo) => {
+    return api.delete(`/vehicles/${vehicleCarNo}/delete`);
 };

@@ -19,6 +19,13 @@ public class VehicleService {
         return vehicleMapper.list();
     }
 
+    // ===== 입주민 대시보드 추가 시작 =====
+    // vehicle_car.registered_no를 기준으로 로그인 회원의 차량만 조회
+    public List<VehicleDTO> listByLoginId(String loginId) {
+        return vehicleMapper.listByLoginId(loginId);
+    }
+    // ===== 입주민 대시보드 추가 끝 =====
+
     // 차량 등록
     public int signUp(VehicleDTO dto) {
         String carNo = dto.getCarNo() == null ? "" : dto.getCarNo().trim();
