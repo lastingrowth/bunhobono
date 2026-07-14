@@ -23,6 +23,10 @@
         <button type="button" @click="router.push('/admin/notice')">
           목록
         </button>
+
+        <button type="button" @click="deleteCurrentNotice">
+          삭제
+        </button>
       </div>
     </div>
 
@@ -45,30 +49,12 @@
       </table>
 
       <section class="status-panel">
-        <label for="alert-status">
-          처리 상태 변경
-        </label>
-
-        <select
-          id="alert-status"
-          v-model="statusDraft"
-          :disabled="saving"
-        >
-          <option
-            v-for="option in statusSelectOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-
         <button
           type="button"
-          :disabled="!canSaveStatus"
-          @click="saveStatus"
+          :disabled="!canCompleteNotice"
+          @click="completeNotice"
         >
-          {{ saving ? "저장 중" : "저장" }}
+          {{ saving ? "처리 중" : "처리 완료" }}
         </button>
       </section>
     </template>
@@ -83,7 +69,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { getNoteList, updateNoticeStatus } from "@/features/notice/noticeApi";
+import { getNoteList } from "@/features/notice/noticeApi";
 import { useNoticeStore } from "./noticeStore";
 
 const route = useRoute();
@@ -95,19 +81,12 @@ const { notice, notices: noticeList } = storeToRefs(noticeStore);
 const loading = ref(false);
 const saving = ref(false);
 const errorMessage = ref("");
-const statusDraft = ref("Unresolved");
 
 const statusOptions = {
   Unresolved: "미확인",
   Checked: "확인",
   Resolved: "처리 완료",
 };
-
-const statusSelectOptions = [
-  { value: "Unresolved", label: "미확인" },
-  { value: "Checked", label: "확인" },
-  { value: "Resolved", label: "처리 완료" },
-];
 
 const noticeNo = computed(() => {
   return route.params.noticeNo;
@@ -144,9 +123,9 @@ const nextNotice = computed(() => {
   return noticeList.value[currentIndex.value + 1];
 });
 
-// 알림이 있고 저장 중이 아닐 때만 상태 변경 가능
-const canSaveStatus = computed(() => {
-  return Boolean(notice.value) && !saving.value;
+// 알림이 있고 아직 처리 완료가 아닐 때만 완료 가능
+const canCompleteNotice = computed(() => {
+  return Boolean(notice.value) && notice.value.alertStat !== "Resolved" && !saving.value;
 });
 
 // 날짜 표시 형식
@@ -226,11 +205,9 @@ const loadDetail = async () => {
 
     // 미확인 알림을 열면 확인 상태로 변경
     if (notice.value.alertStat === "Unresolved") {
-      await updateNoticeStatus(notice.value.noticeNo, "Checked");
-      notice.value.alertStat = "Checked";
+      await noticeStore.changeNoticeStatus(notice.value.noticeNo, "Checked");
     }
 
-    statusDraft.value = notice.value.alertStat ?? "Checked";
   } catch (error) {
     console.error(error);
     errorMessage.value = "알림 상세 정보를 불러오지 못했습니다.";
@@ -261,9 +238,9 @@ const moveNotice = (targetNotice) => {
   router.push(`/admin/notice/${targetNoticeNo}`);
 };
 
-// 선택한 처리 상태 저장
-const saveStatus = async () => {
-  if (!canSaveStatus.value) {
+// 알림 처리 완료
+const completeNotice = async () => {
+  if (!canCompleteNotice.value) {
     return;
   }
 
@@ -271,21 +248,27 @@ const saveStatus = async () => {
   errorMessage.value = "";
 
   try {
-    await updateNoticeStatus(notice.value.noticeNo, statusDraft.value);
-    notice.value.alertStat = statusDraft.value;
-
-    if (statusDraft.value === "Resolved") {
-      alert("처리 완료되었습니다.");
-    } else if (statusDraft.value === "Unresolved") {
-      alert("미확인 상태로 변경되었습니다.");
-    } else {
-      alert("확인 상태로 변경되었습니다.");
-    }
+    await noticeStore.changeNoticeStatus(notice.value.noticeNo, "Resolved");
+    alert("처리 완료되었습니다.");
   } catch (error) {
     console.error(error);
-    errorMessage.value = "처리 상태 변경에 실패했습니다.";
+    errorMessage.value = "처리 완료 변경에 실패했습니다.";
   } finally {
     saving.value = false;
+  }
+};
+
+// 현재 알림 삭제
+const deleteCurrentNotice = async () => {
+  if (!notice.value) {
+    return;
+  }
+
+  try {
+    await noticeStore.remove(notice.value.noticeNo, router);
+  } catch (error) {
+    console.error(error);
+    errorMessage.value = "알림 삭제에 실패했습니다.";
   }
 };
 
