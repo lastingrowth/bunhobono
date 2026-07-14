@@ -32,10 +32,6 @@ bunhobono/backend/runtime/camera-data/
 bunhobono/backend/*.jar
 bunhobono/backend/*.war
 
-# Generated packages
-bunhobono/backend/*.jar
-bunhobono/backend/*.war
-
 # Backend environment / local configuration
 bunhobono/backend/.env
 bunhobono/backend/.env.*
