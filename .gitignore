@@ -5,11 +5,6 @@ bunhobono/frontend/node_modules/
 bunhobono/frontend/dist/
 bunhobono/frontend/.vite/
 
-# Environment
-bunhobono/frontend/.env
-bunhobono/frontend/.env.*
-!bunhobono/frontend/.env.example
-
 # Package Manager
 bunhobono/frontend/.npm/
 bunhobono/frontend/.pnpm-store/
@@ -29,6 +24,9 @@ bunhobono/frontend/pnpm-debug.log*
 bunhobono/backend/.gradle/
 bunhobono/backend/build/
 bunhobono/backend/target/
+
+# Camera capture images generated at runtime
+bunhobono/backend/runtime/camera-data/
 
 # Generated packages
 bunhobono/backend/*.jar
