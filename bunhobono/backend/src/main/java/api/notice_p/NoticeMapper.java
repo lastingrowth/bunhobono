@@ -61,9 +61,6 @@ public interface NoticeMapper {
     """)
     int status(NoticeDTO dto);
 
-    @Delete("DELETE FROM notice WHERE notice_no = #{noticeNo}")
-    int delete(int noticeNo);
-
     @Delete("""
         DELETE FROM notice
         WHERE alert_stat = 'Resolved'

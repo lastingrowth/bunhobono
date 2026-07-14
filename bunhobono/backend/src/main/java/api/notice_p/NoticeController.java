@@ -2,10 +2,8 @@ package api.notice_p;
 
 import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
-<<<<<<< HEAD
+
 import org.springframework.web.bind.annotation.DeleteMapping;
-=======
->>>>>>> main
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,11 +45,7 @@ public class NoticeController {
 
     @DeleteMapping("/{noticeNo}/delete")
     public int delete(@PathVariable int noticeNo) {
-<<<<<<< HEAD
         trashService.moveNotice(noticeNo, "MANUAL");
         return 1;
-=======
-        return noticeService.delete(noticeNo);
->>>>>>> main
     }
 }

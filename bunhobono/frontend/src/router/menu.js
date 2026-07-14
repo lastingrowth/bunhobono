@@ -28,6 +28,11 @@ export const adminMenu = [
     title: '게이트',
     path: '/admin/gates',
     icon: '🚧'
+  },
+  {
+    title: '휴지통',
+    path: '/admin/trash',
+    icon: '🗑️'
   }
 
 ];
