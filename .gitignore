@@ -5,11 +5,6 @@ bunhobono/frontend/node_modules/
 bunhobono/frontend/dist/
 bunhobono/frontend/.vite/
 
-# Environment
-bunhobono/frontend/.env
-bunhobono/frontend/.env.*
-!bunhobono/frontend/.env.example
-
 # Package Manager
 bunhobono/frontend/.npm/
 bunhobono/frontend/.pnpm-store/
