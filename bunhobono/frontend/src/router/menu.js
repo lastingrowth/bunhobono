@@ -5,9 +5,24 @@ export const adminMenu = [
     icon: '▦'
   },
   {
+    title: '알림 관리',
+    path: '/admin/notice',
+    icon: '🔔'
+  },
+  {
     title: '회원관리',
     path: '/admin/members',
     icon: '👥'
+  },
+  {
+    title: '차량 관리',
+    path: '/admin/vehicles',
+    icon: '🚙'
+  },
+  {
+    title: '주차장 관리',
+    path: '/admin/parkings',
+    icon: '🅿️'
   },
   {
     title: '카메라',
@@ -45,14 +60,9 @@ export const residentMenu = [
     icon: '▦'
   },
   {
-    title: '내 차량',
-    path: '/resident/vehicles?type=normal',
+    title: '차량관리',
+    path: '/resident/vehicles',
     icon: '🚙'
-  },
-  {
-    title: '방문 차량',
-    path: '/resident/vehicles?type=visit',
-    icon: '🚐'
   },
   {
     title: '주차현황',

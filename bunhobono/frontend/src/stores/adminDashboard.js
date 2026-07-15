@@ -395,6 +395,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             vehicleStore.loadVehicleList(),
             parkingStore.loadList(),
             carlogStore.loadCarLogs(),
+            cameraStore.loadList(),
+            gateStore.loadList(),
             cameraDataStore.loadList()
         ]);
 

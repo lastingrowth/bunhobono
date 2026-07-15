@@ -17,6 +17,11 @@ export const useOcrStore = defineStore("ocr", () => {
         try {
             const res = await uploadOcrImage(file, cameraNo);
 
+            // 임시 로그
+            console.log("FastAPI 응답:", res.data);
+            console.log("Spring 상태:", res.data.spring_status);
+            console.log("Spring 결과:", res.data.spring_result);
+
             result.value = res.data;
 
             return res.data;
