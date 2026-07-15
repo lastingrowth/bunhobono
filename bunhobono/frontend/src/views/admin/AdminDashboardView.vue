@@ -330,7 +330,23 @@ const goCameraDataList = (parkingNo) => {
 }
 
 let ocrRefreshTimer = null
+/*
+// 대시보드에 처음 들어오면 전체 현황 조회 후 OCR 사진 자동 갱신 시작
+onMounted(async () => {
+  await loadDashboard()
 
+  ocrRefreshTimer = setInterval(() => {
+    dashboardStore.refreshOcrCards()
+  }, 3000)
+})
+
+// 대시보드에서 나가면 자동 조회 중지
+onUnmounted(() => {
+  if (ocrRefreshTimer) {
+    clearInterval(ocrRefreshTimer)
+  }
+})
+========
 let ocrRefreshing = false
 
 const refreshOcrImages = async () => {
@@ -356,6 +372,42 @@ onMounted(async () => {
 onUnmounted(() => {
   if (ocrRefreshTimer) {
     window.clearInterval(ocrRefreshTimer)
+  }
+})
+*/
+
+let ocrRefreshing = false
+
+const refreshOcrCards = async () => {
+  // 이전 갱신이 끝나지 않았으면 중복 요청하지 않음
+  if (ocrRefreshing) {
+    return
+  }
+
+  ocrRefreshing = true
+
+  try {
+    // 카메라 목록 갱신 후 카메라 번호별 OCR 이미지 갱신
+    await dashboardStore.refreshOcrCards()
+  } catch (error) {
+    console.error('OCR 대시보드 자동 갱신 실패', error)
+  } finally {
+    ocrRefreshing = false
+  }
+}
+
+// 처음 진입했을 때 전체 대시보드를 조회하고 OCR 자동 갱신 시작
+onMounted(async () => {
+  await loadDashboard()
+
+  ocrRefreshTimer = window.setInterval(refreshOcrCards, 3000)
+})
+
+// 화면에서 나가면 자동 갱신 중지
+onUnmounted(() => {
+  if (ocrRefreshTimer) {
+    window.clearInterval(ocrRefreshTimer)
+    ocrRefreshTimer = null
   }
 })
 </script>
