@@ -44,7 +44,7 @@
             >
               {{ column.label }}
             </th>
-            <th class="col-action">관리</th>
+            <th class="col-action"></th>
           </tr>
         </thead>
 

@@ -120,7 +120,7 @@
               type="button"
               class="parking-ocr-preview"
               :disabled="!parking.ocr.cameraDataNo"
-              @click="parking.ocr.cameraDataNo && goCameraDataDetail(parking.ocr.cameraDataNo)"
+              @click="parking.ocr.cameraDataNo && goCameraDataList(parking.parkingNo)"
             >
               <div class="parking-ocr-frame">
                 <img
@@ -316,18 +316,18 @@ const setCarlogPage = (page) => {
   dashboardStore.setCarlogPage(page)
 }
 
-// OCR 사진 카드를 누르면 해당 카메라 데이터 상세로 이동
-const goCameraDataDetail = (cameraDataNo) => {
+// OCR 사진 카드를 누르면 해당 주차장의 카메라 데이터 목록으로 이동
+const goCameraDataList = (parkingNo) => {
   router.push({
-    name: 'CameraDataDetail',
-    params: {
-      cameraDataNo
+    name: 'CameraDataList',
+    query: {
+      parkingNo
     }
   })
 }
 
 let ocrRefreshTimer = null
-
+/*
 // 대시보드에 처음 들어오면 전체 현황 조회 후 OCR 사진 자동 갱신 시작
 onMounted(async () => {
   await loadDashboard()
@@ -341,6 +341,70 @@ onMounted(async () => {
 onUnmounted(() => {
   if (ocrRefreshTimer) {
     clearInterval(ocrRefreshTimer)
+  }
+})
+========
+let ocrRefreshing = false
+
+const refreshOcrImages = async () => {
+  if (ocrRefreshing) {
+    return
+  }
+
+  ocrRefreshing = true
+
+  try {
+    await dashboardStore.refreshOcrImages()
+  } finally {
+    ocrRefreshing = false
+  }
+}
+
+// 화면에 처음 들어왔을 때 대시보드 데이터 조회 후 OCR 사진 자동 갱신 시작
+onMounted(async () => {
+  await loadDashboard()
+  ocrRefreshTimer = window.setInterval(refreshOcrImages, 3000)
+})
+
+onUnmounted(() => {
+  if (ocrRefreshTimer) {
+    window.clearInterval(ocrRefreshTimer)
+  }
+})
+*/
+
+let ocrRefreshing = false
+
+const refreshOcrCards = async () => {
+  // 이전 갱신이 끝나지 않았으면 중복 요청하지 않음
+  if (ocrRefreshing) {
+    return
+  }
+
+  ocrRefreshing = true
+
+  try {
+    // 카메라 목록 갱신 후 카메라 번호별 OCR 이미지 갱신
+    await dashboardStore.refreshOcrCards()
+  } catch (error) {
+    console.error('OCR 대시보드 자동 갱신 실패', error)
+  } finally {
+    ocrRefreshing = false
+  }
+}
+
+// 처음 진입했을 때 전체 대시보드를 조회하고 OCR 자동 갱신 시작
+onMounted(async () => {
+  await loadDashboard()
+
+  ocrRefreshTimer = window.setInterval(refreshOcrCards, 3000)
+})
+
+// 화면에서 나가면 자동 갱신 중지
+onUnmounted(() => {
+  if (ocrRefreshTimer) {
+    window.clearInterval(ocrRefreshTimer)
+    ocrRefreshTimer = null
   }
 })
 </script>

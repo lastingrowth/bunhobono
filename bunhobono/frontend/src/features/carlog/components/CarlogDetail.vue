@@ -11,6 +11,7 @@
         <th>입차게이트</th>
         <th>출차게이트</th>
         <th>주차장</th>        
+        <th>관리</th>
       </tr>
     </thead>
 
@@ -25,12 +26,19 @@
         <td>{{ log.inGateText }}</td>
         <td>{{ log.outGateText }}</td>
         <td>{{ log.parkingName || '-' }}</td>
+        <td>
+          <button type="button" @click="carlogStore.remove(log.carLogNo)">삭제</button>
+        </td>
       </tr>
     </tbody>
   </table>
 </template>
 
 <script setup>
+import { useCarlogStore } from '../carlogStore'
+
+const carlogStore = useCarlogStore()
+
 defineProps({
   logs: Array
 })

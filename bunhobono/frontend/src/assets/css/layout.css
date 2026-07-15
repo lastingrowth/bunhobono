@@ -530,6 +530,17 @@ textarea {
   width: 120px;
 }
 
+.notice-table .col-action {
+  width: 90px;
+  text-align: center;
+}
+
+.notice-table .col-action button {
+  min-width: 52px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
 .notice-table .col-status span {
   padding: 5px 9px;
   display: inline-block;
@@ -909,4 +920,3 @@ textarea {
   color: var(--text-white);
   background: var(--primary-hover);
 }
-
