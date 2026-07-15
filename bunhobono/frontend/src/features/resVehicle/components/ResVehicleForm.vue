@@ -27,6 +27,7 @@
               <input
                 v-model="form.startDate"
                 type="datetime-local"
+                :min="nowDateTime"
                 required
               >
             </td>
@@ -69,10 +70,16 @@ import { computed, reactive } from "vue";
 
 const emit = defineEmits(["submit", "cancel"]);
 
+const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/;
+
 const form = reactive({
   carNo: "",
   startDate: "",
   periodHours: 2
+});
+
+const nowDateTime = computed(() => {
+  return formatDateTimeLocalValue(new Date());
 });
 
 const expectedEndText = computed(() => {
@@ -86,11 +93,26 @@ const expectedEndText = computed(() => {
 });
 
 function submit() {
+  const normalizedCarNo = form.carNo.trim().replace(/\s/g, "");
+
+  if (!carNoPattern.test(normalizedCarNo)) {
+    alert("차량번호 형식이 올바르지 않습니다. 예: 12가3456, 서울12가3456");
+    return;
+  }
+
+  const startDate = new Date(form.startDate);
+  const now = new Date();
+
+  if (startDate < now) {
+    alert("현재 시간보다 이전 시간은 신청할 수 없습니다.");
+    return;
+  }
+
   const endDate = makeEndDate();
 
   emit("submit", {
-    carNo: form.carNo,
-    startDate: form.startDate,
+    carNo: normalizedCarNo,
+    startDate: formatDateTimeLocalValue(startDate),
     endDate: formatDateTimeLocalValue(endDate)
   });
 }
