@@ -34,10 +34,10 @@
                     <input v-model="member.memName" type="text" minlength="2" maxlength="20" placeholder="한글+숫자 조합 2~20자" required @blur="normalizeName">
                 </label>
 
-                <div class="form-row">
+                <div class="form-row address-row">
                     <label class="form-field">
                         <span>동</span>
-                        <!-- 관리자 회원 추가에서도 101~108동만 선택할 수 있다. -->
+                        <!-- 관리자 계정은 0동, 입주민 계정은 101~108동을 선택한다. -->
                         <select v-model.number="member.memDong" required>
                             <option disabled value="">동을 선택하세요</option>
                             <option v-for="dong in dongOptions" :key="dong" :value="dong">{{ dong }}</option>
@@ -48,6 +48,7 @@
                         <span>호수</span>
                         <input type="text" inputmode="numeric" :value="member.memHo" placeholder="숫자만 입력하세요" required @input="handleHoInput">
                     </label>
+                    <p class="address-guide">※ 관리자 계정은 0동 0호로 입력해주세요.</p>
                 </div>
 
                 <div class="form-field">
@@ -89,7 +90,7 @@ const router = useRouter();
 const store = useMemStore();
 const idChecked = ref(false);
 const checkedLoginId = ref("");
-const dongOptions = [101, 102, 103, 104, 105, 106, 107, 108];
+const dongOptions = [0, 101, 102, 103, 104, 105, 106, 107, 108];
 const phoneParts = reactive({ first: "", middle: "", last: "" });
 
 // =====
@@ -265,6 +266,18 @@ const signupGo = async () => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
+}
+
+.address-guide {
+    grid-column: 1 / -1;
+    margin: -4px 2px 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+.address-row {
+    row-gap: 8px;
 }
 
 .form-field select {
