@@ -134,6 +134,9 @@
 
               <span class="parking-ocr-zone">{{ parking.parkingName }}</span>
               <strong>{{ parking.ocr.carNoText }}</strong>
+              <span class="parking-ocr-movement">
+                {{ parking.ocr.movementText }}
+              </span>
               <span class="parking-ocr-rate">인식률 {{ parking.ocr.confidenceText }}</span>
             </button>
           </div>

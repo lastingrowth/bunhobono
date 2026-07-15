@@ -119,7 +119,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
     const getLatestCameraDataByParkingNo = (parkingNo) => {
-        return [...cameraDataStore.list]
+        return [...cameraDataStore.displayList]
             .filter((data) => {
                 return data.cameraDataNo
                     && Number(getCameraParkingNo(data.cameraNo)) === Number(parkingNo);
@@ -140,6 +140,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 cameraDataNo: null,
                 imageUrl: "",
                 carNoText: "데이터 없음",
+                movementText: "-",
                 confidenceText: "-"
             };
         }
@@ -152,6 +153,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             ...detail,
             imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
             carNoText: detail.carNo || data.carNo || "미인식",
+            movementText: data.movementTypeText ?? "확인 불가",
             confidenceText: confidenceScore == null
                 ? "-"
                 : `${Number(confidenceScore).toFixed(1)}%`

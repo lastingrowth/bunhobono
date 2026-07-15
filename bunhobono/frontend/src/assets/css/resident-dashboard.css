@@ -130,6 +130,7 @@
 }
 
 .parking-usage-card {
+  margin-bottom: 0;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -140,19 +141,24 @@
 }
 
 .parking-usage-card .resident-section-header {
-  margin-bottom: 0;
+  margin-bottom: 16px;
 }
 
 .parking-usage-card .parking-zone-grid {
   width: 100%;
-  margin: auto 0;
-  flex: 0 0 auto;
-  grid-auto-rows: 158px;
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .parking-usage-card .parking-zone {
-  height: 158px;
-  padding: 14px 8px;
+  min-height: 0;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   background: #f8fafc;
 }
@@ -227,6 +233,10 @@
     grid-template-columns: 1fr;
   }
 
+  .parking-usage-card .parking-zone-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .resident-member-list {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -258,6 +268,11 @@
 
   .resident-member-list {
     grid-template-columns: 1fr;
+  }
+
+  .parking-usage-card .parking-zone-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
   }
 
   .resident-member-list li {
