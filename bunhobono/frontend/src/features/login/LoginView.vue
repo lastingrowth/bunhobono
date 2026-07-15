@@ -74,7 +74,13 @@ const loginId = ref('')
 const pw = ref('')
 
 async function loginGo() {
-  await jwtStore.loginGo(loginId.value, pw.value)
+  const loginSuccess = await jwtStore.loginGo(loginId.value, pw.value)
+
+  // 로그인에 실패하거나 승인 대기 상태이면 입력한 계정 정보를 초기화한다.
+  if (!loginSuccess) {
+    loginId.value = ''
+    pw.value = ''
+  }
 }
 </script>
 
