@@ -16,6 +16,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import api.trash_p.TrashService;
 
 @Service
 public class CameraDataService {
@@ -26,6 +27,9 @@ public class CameraDataService {
 
     @Resource
     CarLogService carLogService;
+
+    @Resource
+    TrashService trashService;
 
     @Value("${file.camera-data}")
     private String uploadDir;
@@ -111,33 +115,35 @@ public class CameraDataService {
     }
 
     public int deleteData() {
-        List<CameraDataDTO> deleteList = cameraDataMapper.deleteTarget();
+        List<CameraDataDTO> deleteList =
+                cameraDataMapper.deleteTarget();
 
         int deleteCount = 0;
 
         for (CameraDataDTO dto : deleteList) {
             try {
-                if (dto.getImagePath() != null && !dto.getImagePath().isBlank()) {
-                    Path imagePath = Paths.get(dto.getImagePath());
-
-                    Files.deleteIfExists(imagePath);
-                }
-                deleteCount += cameraDataMapper.delete(dto.getCameraDataNo());
+                trashService.moveCameraData(
+                        dto.getCameraDataNo(),
+                        "SCHEDULED"
+                );
+                deleteCount++;
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-
         return deleteCount;
     }
+    //매분실행 테스트용
+   //@Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
 
-    @Scheduled (cron = "0 */1 * * * *")
+    //밤 12시실행요      자동쓰레기통행 삭제
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void autoDelete() {
         System.out.println("스케쥴러 삭제 실행");
 
         int count = deleteData();
 
-        System.out.println("자동 삭제된 카메라 데이터 수 : " + count);
+        System.out.println("휴지통으로 이동된 카메라 데이터 수  : " + count);
     }
 
     public Path getCameraImagePath(int cameraDataNo) {

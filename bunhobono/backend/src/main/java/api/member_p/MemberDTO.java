@@ -11,6 +11,7 @@ public class MemberDTO {
 
     // 회원 가입·조회·수정에 사용하는 기본 회원 정보다.
     private long memberNo;
+    private long displayNo;     // 흔들리지 않는 인덱스
     private String loginId;
     private String loginPwd;
     private String memName;

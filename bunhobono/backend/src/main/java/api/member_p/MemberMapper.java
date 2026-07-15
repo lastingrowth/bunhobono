@@ -14,21 +14,10 @@ public interface MemberMapper {
     int signup (MemberDTO dto);
 
     // 회원목록
-    @Select("SELECT m.*, " +
-            "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at FROM member m")
+    @Select("SELECT ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) AS display_no, " +
+            "m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
+            "FROM member m ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC")
     List<MemberDTO> list();
-
-    // 탈퇴일로부터 3일 이상 지난 회원을 보관 삭제 알림 대상으로 조회한다.
-    @Select("""
-        SELECT m.*,
-               m.create_at AS mem_create_at,
-               m.delete_at AS mem_delete_at
-        FROM member m
-        WHERE m.delete_at IS NOT NULL
-          AND m.delete_at <= CURRENT_TIMESTAMP - INTERVAL '3 days'
-        ORDER BY m.delete_at ASC
-        """)
-    List<MemberDTO> archiveAlertList();
 
     // 회원상세
     @Select("SELECT m.*, " +
@@ -38,7 +27,8 @@ public interface MemberMapper {
 
     // 회원검색
     @Select("""
-        SELECT m.*,
+        SELECT ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) AS display_no,
+               m.*,
                m.create_at AS mem_create_at,
                m.delete_at AS mem_delete_at
         from member m
@@ -58,6 +48,7 @@ public interface MemberMapper {
                 and mem_dong = #{dong}
                 and mem_ho = #{ho}
             )
+        ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC
         """)
     List<MemberDTO> search(
             @Param("type") String type,
@@ -97,21 +88,45 @@ public interface MemberMapper {
         """)
     int approvePendingMembers(@Param("memberNos") List<Long> memberNos);
 
-    // 탈퇴 후 3일이 지난 선택 회원만 실제 DB에서 삭제한다.
+    // 탈퇴 처리된 선택 회원을 영구 삭제한다.
     @Delete("""
         <script>
         DELETE FROM member
         WHERE delete_at IS NOT NULL
-          AND delete_at &lt;= CURRENT_TIMESTAMP - INTERVAL '3 days'
           AND member_no IN
-          <foreach collection="memberNos" item="memberNo" open="(" separator="," close=")">
-              #{memberNo}
-          </foreach>
+        <foreach collection="memberNos" item="memberNo" open="(" separator="," close=")">
+            #{memberNo}
+        </foreach>
         </script>
         """)
-    int deleteArchivedMembers(@Param("memberNos") List<Long> memberNos);
+    int permanentlyDeleteWithdrawnMembers(@Param("memberNos") List<Long> memberNos);
 
-    @Delete("DELETE FROM member WHERE member_no = #{memberNo}")
+    // 선택한 탈퇴 회원을 거주 상태로 복원하고 탈퇴일을 제거한다.
+    @Update("""
+        <script>
+        UPDATE member
+        SET mem_status = '거주',
+            delete_at = NULL
+        WHERE delete_at IS NOT NULL
+          AND member_no IN
+        <foreach collection="memberNos" item="memberNo" open="(" separator="," close=")">
+            #{memberNo}
+        </foreach>
+        </script>
+        """)
+    int restoreMembers(@Param("memberNos") List<Long> memberNos);
+
+    // 관리자 화면의 회원 삭제는 즉시 제거하지 않고 탈퇴 상태와 최초 탈퇴일을 기록한다.
+    @Update("""
+        UPDATE member
+        SET mem_status = CASE
+                WHEN UPPER(TRIM(role)) = 'ADMIN' THEN '퇴사'
+                WHEN UPPER(TRIM(role)) = 'RESIDENT' THEN '전출'
+                ELSE '가입취소'
+            END,
+            delete_at = COALESCE(delete_at, CURRENT_TIMESTAMP)
+        WHERE member_no = #{memberNo}
+        """)
     void delete(int memberNo);
 
     // 입주민 마이페이지
@@ -158,6 +173,7 @@ public interface MemberMapper {
     // 새 DB의 vehicle_car.member_no를 기준으로 로그인 입주민 차량의 최근 입출차 기록을 조회한다.
     @Select("""
         SELECT
+            cl.car_log_no,
             cl.car_log_no,
             cl.in_time,
             cl.out_time,

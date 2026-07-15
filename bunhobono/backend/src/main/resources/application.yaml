@@ -27,7 +27,7 @@ mybatis:
 
 jwt:
   secret: kkkkkkkkkgggggggggggssssssssskkkkkkgggggggssssss
-  expiration-seconds: 3600
+  expiration-seconds: 36000
 
 file:
   camera-data : ${local.camera-data}
