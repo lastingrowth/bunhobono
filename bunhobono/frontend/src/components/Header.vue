@@ -6,7 +6,7 @@
                 ☰
             </button>
         
-            <h1 class="logo">아파트 주차관리 시스템</h1>
+            <h1 class="logo"><RouterLink to="/admin">아파트 주차관리 시스템</RouterLink></h1>
         </div>
 
         <div class="user-info">
@@ -33,3 +33,16 @@ const emit = defineEmits([
     'toggle-sidebar'
 ])
 </script>
+
+<style scoped>
+.logo a {
+  color: #0f3b73;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.logo a:hover {
+  color: #0b63ce;
+  text-decoration: none;
+}
+</style>
