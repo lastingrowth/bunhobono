@@ -78,18 +78,18 @@
 
         <div
           v-if="parkingStatusWithOcr.length > 0"
-          class="parking-overview-content"
-        >
+          class="parking-overview-content">
+          <!-- A/B/C/D 주차장 사용률 -->
           <button
             type="button"
             class="parking-status-strip"
-            @click="router.push('/admin/parkings')"
-          >
+            @click="router.push('/admin/parkings')">
+
             <div
               v-for="parking in parkingStatusWithOcr"
               :key="`status-${parking.parkingNo}`"
-              class="parking-zone-status"
-            >
+              class="parking-zone-status" >
+
               <strong class="parking-zone-name">
                 {{ parking.parkingName }}
               </strong>
@@ -113,6 +113,7 @@
             </div>
           </button>
 
+          <!-- A/B/C/D 주차장별 최신 OCR 사진 -->
           <div class="parking-ocr-row">
             <button
               v-for="parking in parkingStatusWithOcr"
@@ -181,9 +182,7 @@
               <div class="weekly-entry-track">
                 <div
                   class="weekly-entry-bar"
-                  :style="{
-                    '--bar-height': `${day.barHeight}%`
-                  }" />
+                  :style="{'--bar-height': `${day.barHeight}%`}" />
               </div>
 
               <span class="weekly-entry-date">
@@ -224,9 +223,7 @@
 
                   <td>
                     {{
-                      log.parkingStateText
-                      || log.parkingState
-                      || '-'
+                      log.parkingStateText || log.parkingState || '-'
                     }}
                   </td>
 
@@ -248,7 +245,7 @@
             </table>
           </div>
 
-          <!-- 페이지 번호 -->
+          <!-- 입출차 목록 페이지 번호 -->
           <div class="carlog-pagination">
             <button
               type="button"
@@ -262,9 +259,7 @@
               v-for="page in carlogPageNumbers"
               :key="page"
               type="button"
-              :class="{
-                active: currentCarlogPage === page
-              }"
+              :class="{ active: currentCarlogPage === page }"
               @click="setCarlogPage(page)"
             >
               {{ page }}
@@ -272,9 +267,7 @@
 
             <button
               type="button"
-              :disabled="
-                currentCarlogPage === carlogTotalPages
-              "
+              :disabled="currentCarlogPage === carlogTotalPages"
               @click="setCarlogPage(currentCarlogPage + 1)"
             >
               다음
@@ -309,6 +302,9 @@ const {
   paginatedCarlogs
 } = storeToRefs(dashboardStore)
 
+let ocrRefreshTimer = null
+let ocrRefreshing = false
+
 // 새로고침 버튼과 최초 화면 진입 시 사용
 const loadDashboard = async () => {
   await dashboardStore.loadDashboard()
@@ -329,56 +325,9 @@ const goCameraDataList = (parkingNo) => {
   })
 }
 
-let ocrRefreshTimer = null
-/*
-// 대시보드에 처음 들어오면 전체 현황 조회 후 OCR 사진 자동 갱신 시작
-onMounted(async () => {
-  await loadDashboard()
 
-  ocrRefreshTimer = setInterval(() => {
-    dashboardStore.refreshOcrCards()
-  }, 3000)
-})
-
-// 대시보드에서 나가면 자동 조회 중지
-onUnmounted(() => {
-  if (ocrRefreshTimer) {
-    clearInterval(ocrRefreshTimer)
-  }
-})
-========
-let ocrRefreshing = false
-
-const refreshOcrImages = async () => {
-  if (ocrRefreshing) {
-    return
-  }
-
-  ocrRefreshing = true
-
-  try {
-    await dashboardStore.refreshOcrImages()
-  } finally {
-    ocrRefreshing = false
-  }
-}
-
-// 화면에 처음 들어왔을 때 대시보드 데이터 조회 후 OCR 사진 자동 갱신 시작
-onMounted(async () => {
-  await loadDashboard()
-  ocrRefreshTimer = window.setInterval(refreshOcrImages, 3000)
-})
-
-onUnmounted(() => {
-  if (ocrRefreshTimer) {
-    window.clearInterval(ocrRefreshTimer)
-  }
-})
-*/
-
-let ocrRefreshing = false
-
-const refreshOcrCards = async () => {
+// OCR 업로드 후 대시보드가 자동으로 바뀌도록 주기적으로 최신 데이터 조회
+const refreshDashboardImages = async () => {
   // 이전 갱신이 끝나지 않았으면 중복 요청하지 않음
   if (ocrRefreshing) {
     return
@@ -388,7 +337,7 @@ const refreshOcrCards = async () => {
 
   try {
     // 카메라 목록 갱신 후 카메라 번호별 OCR 이미지 갱신
-    await dashboardStore.refreshOcrCards()
+    await dashboardStore.refreshOcrImages()
   } catch (error) {
     console.error('OCR 대시보드 자동 갱신 실패', error)
   } finally {
@@ -396,11 +345,13 @@ const refreshOcrCards = async () => {
   }
 }
 
-// 처음 진입했을 때 전체 대시보드를 조회하고 OCR 자동 갱신 시작
+// 처음 진입했을 때 전체 대시보드를 조회하고 3초마다 OCR 자동 갱신 시작
 onMounted(async () => {
   await loadDashboard()
 
-  ocrRefreshTimer = window.setInterval(refreshOcrCards, 3000)
+  ocrRefreshTimer = window.setInterval(() => {
+    refreshDashboardImages()
+  }, 3000)
 })
 
 // 화면에서 나가면 자동 갱신 중지

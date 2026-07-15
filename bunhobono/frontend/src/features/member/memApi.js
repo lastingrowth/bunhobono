@@ -75,18 +75,3 @@ export const idCheckMember = (loginId) => {
 export const getResidentDashboard = () => {
     return api.get("/resident/mypage/dashboard");
 };
-
-// 입주민 차량 등록 신청
-export const createResVehicle = (data) => {
-    return api.post("/vehicles/signUp", data);
-};
-
-// 입주민 차량 수정 신청
-export const updateResVehicle = (vehicleCarNo, data) => {
-    return api.put(`/vehicles/${vehicleCarNo}/edit`, data);
-};
-
-// 입주민 차량 삭제
-export const deleteResVehicle = (vehicleCarNo) => {
-    return api.delete(`/vehicles/${vehicleCarNo}/delete`);
-};
