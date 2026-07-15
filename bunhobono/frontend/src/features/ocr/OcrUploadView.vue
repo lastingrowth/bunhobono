@@ -317,8 +317,9 @@ onUnmounted(() => {
 
 .upload-content {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.8fr);
-  gap: 28px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(360px, 0.85fr);
+  align-items : stretch;
+  gap: 34px;
 }
 
 .preview-section {
@@ -330,7 +331,7 @@ onUnmounted(() => {
 }
 
 .upload-drop-zone {
-  height: 420px;
+  height: 470px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -386,6 +387,7 @@ onUnmounted(() => {
 
 .control-section {
   padding: 28px;
+  box-sizing: border-box;
   background: #f7f9fc;
   border: 1px solid #dbe3ec;
   border-radius: 22px;
@@ -459,12 +461,12 @@ onUnmounted(() => {
 .camera-button-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px 12px;
 }
 
 .camera-select-button {
   min-width: 0;
-  min-height: 48px;
+  min-height: 44px;
   padding: 8px 4px;
   color: #168bd1;
   background: #ffffff;
@@ -491,7 +493,7 @@ onUnmounted(() => {
 .analyze-button {
   width: 100%;
   min-height: 52px;
-  margin-top: 18px;
+  margin-top: 22px;
   color: #fff;
   font-size: 16px;
   font-weight: 800;
@@ -583,7 +585,7 @@ onUnmounted(() => {
   }
 
   .upload-drop-zone {
-    height: 320px;
+    height: 450px;
   }
 }
 </style>

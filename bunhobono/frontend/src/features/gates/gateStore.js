@@ -52,16 +52,22 @@ export const useGateStore =  defineStore("gate", () => {
         return;
     }
 
-    const res = await deleteGate(gateNo);
+    try {
+      const res = await deleteGate(gateNo);
 
-    if (res.data === 1) {
-      list.value = list.value.filter((gate) => {
-        return gate.gateNo !== gateNo;
-      });
+      if (res.data === 1) {
+        list.value = list.value.filter((gate) => {
+          return gate.gateNo !== gateNo;
+        });
+        
+        alert("게이트 삭제 완료");
+      } else {
+        alert("게이트 삭제 실패");
+      }  
+    } catch (e) {
+      console.error(e);
 
-      alert("게이트 삭제 완료");
-    } else {
-      alert("게이트 삭제 실패");
+      alert("카메라 입출차 기록에서 사용 중인 게이트는 삭제할 수 없습니다.")
     }
   };
 

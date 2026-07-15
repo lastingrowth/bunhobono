@@ -89,11 +89,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useNoticeStore } from "./noticeStore";
 import { storeToRefs } from "pinia";
 
+const route = useRoute();
 const router = useRouter();
 const noticeStore = useNoticeStore();
 
@@ -102,13 +103,22 @@ const { notices } = storeToRefs(noticeStore);
 const loading = ref(false);
 const errorMessage = ref("");
 const sortOrder = ref("desc");
-const selectedStatus = ref("Unresolved");
 
 const statusOptions = [
   { value: "Unresolved", label: "미확인" },
   { value: "Checked", label: "확인" },
   { value: "Resolved", label: "처리완료" },
 ];
+
+const validStatuses = statusOptions.map((option) => option.value);
+
+const getRouteStatus = () => {
+  const status = route.query.status;
+
+  return validStatuses.includes(status) ? status : "Unresolved";
+};
+
+const selectedStatus = ref(getRouteStatus());
 
 const columns = [
   { key: "noticeNo", fallbackKey: "notice_no", label: "번호", className: "col-xs" },
@@ -181,13 +191,11 @@ const getStatusLabel = (value) => {
   return statusOptions.find((option) => option.value === value)?.label ?? value ?? "-";
 };
 
-// 화면에서 목록 조회를 처리하는 함수
 const handleLoadNotices = async () => {
   loading.value = true;
   errorMessage.value = "";
 
   try {
-    // Store의 목록 조회 함수 호출
     await noticeStore.loadNotices();
   } catch (error) {
     console.error(error);
@@ -208,4 +216,18 @@ const goDetail = (notice) => {
 };
 
 onMounted(handleLoadNotices);
+
+watch(
+  () => route.query.status,
+  () => {
+    selectedStatus.value = getRouteStatus();
+  }
+);
+
+watch(selectedStatus, (status) => {
+  router.replace({
+    name: "NoticeList",
+    query: { status },
+  });
+});
 </script>

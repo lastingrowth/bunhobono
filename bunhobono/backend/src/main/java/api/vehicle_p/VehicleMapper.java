@@ -8,10 +8,10 @@ import java.util.List;
 public interface VehicleMapper {
 
     // ADMIN 전체 차량 목록
-    // 최근 등록 차량이 위로 오도록 vehicle_car_no DESC 정렬
+    // 최근 등록 차량이 위로 오도록 vehicle_car_no ASC 정렬
     @Select("""
         SELECT
-            ROW_NUMBER() OVER (ORDER BY vc.vehicle_car_no DESC) AS display_no,
+            ROW_NUMBER() OVER (ORDER BY vc.vehicle_car_no ASC) AS display_no,
             vc.vehicle_car_no,
             vc.vehicle_type,
             vc.car_no,
@@ -24,7 +24,7 @@ public interface VehicleMapper {
         FROM vehicle_car vc
         LEFT JOIN member m
             ON vc.member_no = m.member_no
-        ORDER BY vc.vehicle_car_no DESC
+        ORDER BY vc.vehicle_car_no ASC
     """)
     List<VehicleDTO> list();
 
