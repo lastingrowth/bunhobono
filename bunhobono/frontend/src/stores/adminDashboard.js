@@ -187,6 +187,12 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         );
     };
 
+    // 새로 등록된 OCR 데이터와 사진만 다시 조회
+    const refreshOcrCards = async () => {
+        await cameraDataStore.loadList();
+        await loadOcrImages();
+    }
+
     // 날짜를 YYYY-MM-DD 형식으로 변환
     const getDateKey = (date) => {
         const year = date.getFullYear();
@@ -373,6 +379,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         carlogPageNumbers,
         paginatedCarlogs,
         setCarlogPage,
+        refreshOcrCards,
         loadDashboard
     };
 });
