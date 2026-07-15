@@ -145,11 +145,13 @@ public interface CarLogMapper {
     @Delete("DELETE FROM car_log WHERE car_log_no = #{carLogNo}")
     int delete(int carLogNo);
 
-    @Delete("""
-        DELETE FROM car_log
-        WHERE out_time IS NOT NULL
-          AND out_time < NOW() - INTERVAL '15 days'
---        AND out_time < NOW() - INTERVAL '1 minute'
+    // 출차 완료 후 15일이 지난 입출차 기록 번호 조회
+    @Select("""
+    SELECT car_log_no
+    FROM car_log
+    WHERE out_time IS NOT NULL
+      AND out_time < NOW() - INTERVAL '15 days'
     """)
-    int deleteOldLogs();
+    List<Integer> findOldCarLogNosForTrash();
+    //테스트 날짜 알아서
 }

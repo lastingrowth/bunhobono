@@ -26,6 +26,9 @@ public class TrashService {
         return trashMapper.detail(trashNo);
     }
 
+
+    // 휴지통 저장과 원본 삭제를 하나의 작업으로 처리
+    // 중간에 실패하면 모든 DB 변경을 롤백
     // 카메라 데이터 휴지통 이동
     @Transactional      //트랜젝션으로 묶어줌
     public void moveCameraData(int cameraDataNo, String deleteType) {
