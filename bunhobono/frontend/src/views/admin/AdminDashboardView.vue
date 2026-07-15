@@ -70,93 +70,78 @@
       </button>
 
       <!-- 주차장별 현황 -->
-      <button
-        type="button"
-        class="dashboard-card parking-overview-card"
-        @click="router.push('/admin/parkings')" >
+      <article class="dashboard-card parking-overview-card">
         <div class="card-heading">
           <span class="card-icon">🅿️</span>
           <span>주차장 현황</span>
         </div>
 
         <div
-          v-if="parkingStatusList.length > 0"
-          class="parking-zone-grid">
-          
-          <div
-            v-for="parking in parkingStatusList"
-            :key="parking.parkingNo"
-            class="parking-zone"
+          v-if="parkingStatusWithOcr.length > 0"
+          class="parking-overview-content"
+        >
+          <button
+            type="button"
+            class="parking-status-strip"
+            @click="router.push('/admin/parkings')"
           >
-            <strong class="parking-zone-name">
-              {{ parking.parkingName }}
-            </strong>
-
             <div
-              class="parking-zone-donut"
-              :style="{
-                '--parking-rate': `${parking.usageRate}%`
-              }"
+              v-for="parking in parkingStatusWithOcr"
+              :key="`status-${parking.parkingNo}`"
+              class="parking-zone-status"
             >
-              <strong>{{ parking.usageRate }}%</strong>
+              <strong class="parking-zone-name">
+                {{ parking.parkingName }}
+              </strong>
+
+              <div
+                class="parking-zone-donut"
+                :style="{
+                  '--parking-rate': `${parking.usageRate}%`
+                }"
+              >
+                <strong>{{ parking.usageRate }}%</strong>
+              </div>
+
+              <span class="parking-zone-count">
+                {{ parking.occupied }} / {{ parking.total }}면
+              </span>
+
+              <span class="parking-zone-available">
+                주차 가능 {{ parking.available }}면
+              </span>
             </div>
+          </button>
 
-            <span class="parking-zone-count">
-              {{ parking.occupied }} / {{ parking.total }}면
-            </span>
+          <div class="parking-ocr-row">
+            <button
+              v-for="parking in parkingStatusWithOcr"
+              :key="`ocr-${parking.parkingNo}`"
+              type="button"
+              class="parking-ocr-preview"
+              :disabled="!parking.ocr.cameraDataNo"
+              @click="parking.ocr.cameraDataNo && goCameraDataDetail(parking.ocr.cameraDataNo)"
+            >
+              <div class="parking-ocr-frame">
+                <img
+                  v-if="parking.ocr.imageUrl"
+                  :src="parking.ocr.imageUrl"
+                  :alt="`${parking.parkingName} ${parking.ocr.carNoText} 차량 사진`"
+                >
 
-            <span class="parking-zone-available">
-              주차 가능 {{ parking.available }}면
-            </span>
+                <span v-else>사진 없음</span>
+              </div>
+
+              <span class="parking-ocr-zone">{{ parking.parkingName }}</span>
+              <strong>{{ parking.ocr.carNoText }}</strong>
+              <span class="parking-ocr-rate">인식률 {{ parking.ocr.confidenceText }}</span>
+            </button>
           </div>
         </div>
 
         <p v-else
           class="parking-empty" >
           등록된 주차장이 없습니다.
-        </p>
-      </button>
-
-      <!-- OCR 성공률 -->
-      <article class="dashboard-card ocr-card">
-        <div class="card-heading">
-          <span class="card-icon">📷</span>
-          <span>OCR 성공률</span>
-        </div>
-
-        <div
-          v-if="latestOcrCards.length > 0"
-          class="ocr-photo-grid"
-        >
-          <button
-            v-for="item in latestOcrCards"
-            :key="item.cameraDataNo"
-            type="button"
-            class="ocr-photo-card"
-            @click="goCameraDataDetail(item.cameraDataNo)"
-          >
-            <div class="ocr-photo-frame">
-              <img
-                v-if="item.imageUrl"
-                :src="item.imageUrl"
-                :alt="`${item.carNoText} 차량 사진`"
-              >
-
-              <span v-else>사진 없음</span>
-            </div>
-
-            <div class="ocr-photo-info">
-              <strong>{{ item.carNoText }}</strong>
-              <span>인식률 {{ item.confidenceText }}</span>
-            </div>
-          </button>
-        </div>
-
-        <p
-          v-else
-          class="ocr-empty"
-        >
-          최근 인식된 차량이 없습니다.
         </p>
       </article>
     </div>
@@ -313,8 +298,7 @@ const {
   errorMessage,
   unresolvedNoticeCount,
   registeredVehicleCount,
-  parkingStatusList,
-  latestOcrCards,
+  parkingStatusWithOcr,
   weeklyEntryStats,
   currentCarlogPage,
   carlogTotalPages,

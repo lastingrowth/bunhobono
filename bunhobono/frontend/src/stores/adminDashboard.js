@@ -6,6 +6,8 @@ import { useVehicleStore } from "@/features/vehicle/vehicleStore";
 import { useParkingsStore } from "@/features/parking/parkingsStore";
 import { useCarlogStore } from "@/features/carlog/carlogStore";
 import { useCameraDataStore } from "@/features/camera-data/cameraDataStore";
+import { useCameraStore } from "@/features/camera/cameraStore";
+import { useGateStore } from "@/features/gates/gateStore";
 import { getCameraDataDetail, getCameraDataImage } from "@/features/camera-data/cameraDataApi";
 
 export const useAdminDashboardStore = defineStore("adminDashboard", () => {
@@ -15,6 +17,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     const parkingStore = useParkingsStore();
     const carlogStore = useCarlogStore();
     const cameraDataStore = useCameraDataStore();
+    const cameraStore = useCameraStore();
+    const gateStore = useGateStore();
 
     const loading = ref(false);
     const errorMessage = ref("");
@@ -102,31 +106,66 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         );
     });
 
-    // OCR 성공률 영역에 표시할 최신 인식 차량 4건
-    const latestOcrCards = computed(() => {
+    const getCameraParkingNo = (cameraNo) => {
+        const camera = cameraStore.list.find((item) => {
+            return Number(item.cameraNo) === Number(cameraNo);
+        });
+
+        const gate = gateStore.list.find((item) => {
+            return Number(item.gateNo) === Number(camera?.gateNo);
+        });
+
+        return gate?.parkingNo ?? null;
+    };
+
+    const getLatestCameraDataByParkingNo = (parkingNo) => {
         return [...cameraDataStore.list]
-            .filter((data) => data.cameraDataNo)
+            .filter((data) => {
+                return data.cameraDataNo
+                    && Number(getCameraParkingNo(data.cameraNo)) === Number(parkingNo);
+            })
             .sort((a, b) => {
                 const aTime = new Date(a.captureTime ?? 0).getTime();
                 const bTime = new Date(b.captureTime ?? 0).getTime();
 
                 return bTime - aTime;
-            })
-            .slice(0, 4)
-            .map((data) => {
-                const detail = ocrDetails.value[data.cameraDataNo] ?? {};
-                const confidenceScore = detail.confidenceScore ?? data.confidenceScore;
+            })[0];
+    };
 
-                return {
-                    ...data,
-                    ...detail,
-                    imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
-                    carNoText: detail.carNo || data.carNo || "미인식",
-                    confidenceText: confidenceScore == null
-                        ? "-"
-                        : `${Number(confidenceScore).toFixed(1)}%`
-                };
-            });
+    const getParkingOcrCard = (parking) => {
+        const data = getLatestCameraDataByParkingNo(parking.parkingNo);
+
+        if (!data) {
+            return {
+                cameraDataNo: null,
+                imageUrl: "",
+                carNoText: "데이터 없음",
+                confidenceText: "-"
+            };
+        }
+
+        const detail = ocrDetails.value[data.cameraDataNo] ?? {};
+        const confidenceScore = detail.confidenceScore ?? data.confidenceScore;
+
+        return {
+            ...data,
+            ...detail,
+            imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
+            carNoText: detail.carNo || data.carNo || "미인식",
+            confidenceText: confidenceScore == null
+                ? "-"
+                : `${Number(confidenceScore).toFixed(1)}%`
+        };
+    };
+
+    // 주차장 현황 카드 안에 함께 표시할 주차장별 최신 OCR 정보
+    const parkingStatusWithOcr = computed(() => {
+        return parkingStatusList.value.slice(0, 4).map((parking) => {
+            return {
+                ...parking,
+                ocr: getParkingOcrCard(parking)
+            };
+        });
     });
 
     const clearOcrImageUrls = () => {
@@ -143,15 +182,10 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     const loadOcrImages = async () => {
         clearOcrImageUrls();
 
-        const latestItems = [...cameraDataStore.list]
-            .filter((data) => data.cameraDataNo)
-            .sort((a, b) => {
-                const aTime = new Date(a.captureTime ?? 0).getTime();
-                const bTime = new Date(b.captureTime ?? 0).getTime();
-
-                return bTime - aTime;
-            })
-            .slice(0, 4);
+        const latestItems = parkingStatusList.value
+            .slice(0, 4)
+            .map((parking) => getLatestCameraDataByParkingNo(parking.parkingNo))
+            .filter(Boolean);
 
         const results = await Promise.all(
             latestItems.map(async (data) => {
@@ -366,7 +400,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         ocrSuccessCount,
         ocrFailCount,
         ocrSuccessRate,
-        latestOcrCards,
+        parkingStatusWithOcr,
         weeklyEntryStats,
         currentCarlogPage,
         carlogTotalPages,
