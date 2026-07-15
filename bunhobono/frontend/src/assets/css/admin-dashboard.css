@@ -337,6 +337,16 @@ button.dashboard-card:hover {
   white-space: nowrap;
 }
 
+.parking-ocr-movement {
+  width: 100%;
+  margin-top: 4px;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary);
+  text-align: left;
+}
+
 .parking-ocr-rate {
   width: 100%;
   margin-top: 4px;

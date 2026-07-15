@@ -188,8 +188,14 @@ public interface MemberMapper {
         """)
     void residentMypageEdit(MemberDTO dto);
 
-    // 입주민이 직접 회원 탈퇴
-    @Delete("DELETE FROM member WHERE login_id = #{loginId}")
+    // 입주민이 직접 탈퇴하면 전출 상태와 최초 탈퇴 시각을 기록한다.
+    @Update("""
+        UPDATE member
+        SET mem_status = '전출',
+            delete_at = COALESCE(delete_at, CURRENT_TIMESTAMP)
+        WHERE login_id = #{loginId}
+          AND UPPER(TRIM(role)) = 'RESIDENT'
+        """)
     int residentDelete(String loginId);
 
     // 아이디 중복확인

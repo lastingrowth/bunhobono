@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { deleteCameraData, getCameraDataDetail, getCameraDataList, searchCameraDataByCarNo } from "./cameraDataApi";
 import { useCameraStore } from "../camera/cameraStore";
 import { useGateStore } from "../gates/gateStore";
+import { getCarLogs } from "../carlog/carlogApi";
 
 export const useCameraDataStore =  defineStore("camera-data", () => {
 
@@ -14,6 +15,7 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
   const searchResults = ref([]);
   const detail = ref(null);
   const detailMap = ref({});
+  const carLogs = ref([]);
   const searchMode = ref(false);
 
   const getField = (source, camelKey, snakeKey) => {
@@ -22,6 +24,22 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
 
   const getCameraNo = (cameraData) => {
     return getField(cameraData, "cameraNo", "camera_no");
+  };
+
+  const getCameraDataNo = (cameraData) => {
+    return getField(cameraData, "cameraDataNo", "camera_data_no");
+  };
+
+  const getVehicleCarNo = (source) => {
+    return getField(source, "vehicleCarNo", "vehicle_car_no");
+  };
+
+  const getCarNo = (source) => {
+    return getField(source, "carNo", "car_no");
+  };
+
+  const getCaptureTime = (cameraData) => {
+    return getField(cameraData, "captureTime", "capture_time");
   };
 
   const getCameraGateNo = (camera) => {
@@ -57,13 +75,100 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
   };
 
   const ensureRelationLists = async () => {
-    await Promise.all([
+    const [, , carLogResult] = await Promise.allSettled([
       cameraStore.loadList(),
-      gateStore.loadList()
+      gateStore.loadList(),
+      getCarLogs({ sort: "latest" })
     ]);
+
+    if (carLogResult.status === "fulfilled") {
+      carLogs.value = carLogResult.value.data ?? [];
+    } else {
+      console.error("입출차 기록 조회 실패", carLogResult.reason);
+      carLogs.value = [];
+    }
   };
 
-  // 카메라 번호로 연결된 게이트 타입 확인
+  const toTime = (value) => {
+    if (!value) {
+      return null;
+    }
+
+    const time = new Date(value).getTime();
+
+    return Number.isNaN(time) ? null : time;
+  };
+
+  const isSameCaptureTime = (captureTime, logTime) => {
+    const capture = toTime(captureTime);
+    const log = toTime(logTime);
+
+    if (capture === null || log === null) {
+      return false;
+    }
+
+    return Math.abs(capture - log) <= 60 * 1000;
+  };
+
+  const findRelatedCarLog = (cameraData) => {
+    const cameraDataNo = getCameraDataNo(cameraData);
+    const vehicleCarNo = getVehicleCarNo(cameraData);
+    const carNo = getCarNo(cameraData);
+    const captureTime = getCaptureTime(cameraData);
+
+    const exactLog = carLogs.value.find((log) => {
+      return Number(log.cameraDataNo) === Number(cameraDataNo);
+    });
+
+    if (exactLog) {
+      return exactLog;
+    }
+
+    return carLogs.value.find((log) => {
+      const sameVehicle = vehicleCarNo
+        && Number(log.vehicleCarNo) === Number(vehicleCarNo);
+
+      const sameCarNo = carNo
+        && log.carNo === carNo;
+
+      if (!sameVehicle && !sameCarNo) {
+        return false;
+      }
+
+      return isSameCaptureTime(captureTime, log.inTime)
+        || isSameCaptureTime(captureTime, log.outTime);
+    });
+  };
+
+  const getBothGateMovementType = (cameraData) => {
+    const relatedLog = findRelatedCarLog(cameraData);
+
+    if (!relatedLog) {
+      return "UNKNOWN";
+    }
+
+    const captureTime = getCaptureTime(cameraData);
+
+    if (isSameCaptureTime(captureTime, relatedLog.outTime)) {
+      return "OUT";
+    }
+
+    if (isSameCaptureTime(captureTime, relatedLog.inTime)) {
+      return "IN";
+    }
+
+    if (Number(relatedLog.cameraDataNo) === Number(getCameraDataNo(cameraData))) {
+      return "IN";
+    }
+
+    if (!relatedLog.outTime) {
+      return "IN";
+    }
+
+    return "UNKNOWN";
+  };
+
+  // 카메라 번호로 연결된 게이트 타입과 car_log를 확인
   const getMovementType = (cameraData) => {
     // 카메라 데이터와 같은 카메라 번호 검색
     const camera = findCamera(cameraData);
@@ -87,6 +192,10 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
 
     if (gateType === "OUT") {
       return "OUT";
+    }
+
+    if (gateType === "BOTH") {
+      return getBothGateMovementType(cameraData);
     }
 
     return "UNKNOWN";

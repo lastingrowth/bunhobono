@@ -52,8 +52,15 @@
         회원가입
     </RouterLink>
     </div>
-
   </section>
+
+  <!-- 로그인 하지 않고 OCR 카메라 시연 화면으로 이동 -->
+  <RouterLink class="ocr-demo-link"
+              to="/ocr-upload?cameraNo=1">
+    <span aria-hidden>📷</span>
+    OCR 시연 카메라
+  </RouterLink>
+
 </template>
 
 <script setup>
@@ -67,6 +74,51 @@ const loginId = ref('')
 const pw = ref('')
 
 async function loginGo() {
-  await jwtStore.loginGo(loginId.value, pw.value)
+  const loginSuccess = await jwtStore.loginGo(loginId.value, pw.value)
+
+  // 로그인에 실패하거나 승인 대기 상태이면 입력한 계정 정보를 초기화한다.
+  if (!loginSuccess) {
+    loginId.value = ''
+    pw.value = ''
+  }
 }
 </script>
+
+<style scoped>
+/* 로그인 화면 오른쪽 아래에 고정되는 OCR 시연 버튼 */
+.ocr-demo-link {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 10;
+  padding: 9px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.ocr-demo-link:hover {
+  color: #0284c7;
+  border-color: #38bdf8;
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 9px 22px rgba(14, 165, 233, 0.16);
+}
+
+/* 작은 화면에서는 화면 가장자리 간격을 줄인다. */
+@media (max-width: 700px) {
+  .ocr-demo-link {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+</style>

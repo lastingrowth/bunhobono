@@ -119,7 +119,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
     const getLatestCameraDataByParkingNo = (parkingNo) => {
-        return [...cameraDataStore.list]
+        return [...cameraDataStore.displayList]
             .filter((data) => {
                 return data.cameraDataNo
                     && Number(getCameraParkingNo(data.cameraNo)) === Number(parkingNo);
@@ -140,6 +140,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 cameraDataNo: null,
                 imageUrl: "",
                 carNoText: "데이터 없음",
+                movementText: "-",
                 confidenceText: "-"
             };
         }
@@ -152,6 +153,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             ...detail,
             imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
             carNoText: detail.carNo || data.carNo || "미인식",
+            movementText: data.movementTypeText ?? "확인 불가",
             confidenceText: confidenceScore == null
                 ? "-"
                 : `${Number(confidenceScore).toFixed(1)}%`
@@ -368,13 +370,18 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
 
-    // OCR 사진만 백그라운드로 다시 조회
+    // 주차장 현황, 입출차 기록, OCR 사진을 백그라운드로 다시 조회
     const refreshOcrImages = async () => {
         try {
-            await cameraDataStore.loadList();
+            await Promise.all([
+                parkingStore.loadList(),
+                carlogStore.loadCarLogs(),
+                cameraDataStore.loadList()
+            ]);
+
             await loadOcrImages();
         } catch (error) {
-            console.error("OCR 사진 자동 갱신 실패", error);
+            console.error("대시보드 자동 갱신 실패", error);
         }
     };
 
