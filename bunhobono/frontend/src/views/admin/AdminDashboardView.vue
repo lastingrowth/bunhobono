@@ -327,6 +327,7 @@ const goCameraDataList = (parkingNo) => {
 }
 
 let ocrRefreshTimer = null
+
 let ocrRefreshing = false
 
 const refreshOcrImages = async () => {
