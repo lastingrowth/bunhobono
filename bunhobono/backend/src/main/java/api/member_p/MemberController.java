@@ -31,9 +31,10 @@ public class MemberController {
     // 관리자 회원 수정: 연락처, 비밀번호, 회원 상태만 변경
     @PutMapping("/members/{memberNo}/edit")
     public void update(@PathVariable int memberNo,
-                       @RequestBody MemberDTO dto) {
+                       @RequestBody MemberDTO dto,
+                       Authentication authentication) {
         dto.setMemberNo(memberNo);
-        service.update(dto);
+        service.update(dto, authentication.getName());
     }
 
     // 대기 역할 회원을 입주민 역할로 변경해 승인한다.
@@ -48,16 +49,16 @@ public class MemberController {
         return service.list();
     }
 
-    // 탈퇴 후 3일이 지나 보관 삭제 확인이 필요한 회원 알림 목록.
-    @GetMapping("/members/archive-alerts")
-    public List<MemberDTO> archiveAlerts() {
-        return service.getArchiveAlerts();
+    // 탈퇴 회원을 거주 상태의 승인 회원으로 복원한다.
+    @PutMapping("/members/restore")
+    public int restoreMembers(@RequestBody List<Long> memberNos) {
+        return service.restoreMembers(memberNos);
     }
 
-    // 탈퇴 후 3일 경과 목록에서 선택한 회원을 실제 삭제할 수 있도록.
-    @DeleteMapping("/members/archive")
-    public int deleteArchivedMembers(@RequestBody List<Long> memberNos) {
-        return service.deleteArchivedMembers(memberNos);
+    // 탈퇴 처리된 선택 회원을 영구 삭제한다.
+    @DeleteMapping("/members/withdrawn")
+    public int permanentlyDeleteWithdrawnMembers(@RequestBody List<Long> memberNos) {
+        return service.permanentlyDeleteWithdrawnMembers(memberNos);
     }
 
     // 회원 상세내용
@@ -76,10 +77,10 @@ public class MemberController {
     ) {
         return service.search(type, keyword, dong, ho);
     }
-    // 삭제
+    // 관리자 회원 탈퇴 처리
     @DeleteMapping("/members/{memberNo}/delete")
-    public void delete(@PathVariable int memberNo) {
-        service.delete(memberNo);
+    public void delete(@PathVariable int memberNo, Authentication authentication) {
+        service.delete(memberNo, authentication.getName());
     }
 
     // 입주민 마이페이지

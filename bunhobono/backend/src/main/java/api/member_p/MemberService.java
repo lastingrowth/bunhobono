@@ -1,8 +1,6 @@
 package api.member_p;
 
 import jakarta.annotation.Resource;
-import jakarta.annotation.PostConstruct;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,33 +29,19 @@ public class MemberService {
     @Resource
     PasswordEncoder passwordEncoder;
 
-    // 기존 회원 서비스에서 탈퇴 3일 경과 알림 목록을 함께 관리.
-    private volatile List<MemberDTO> archiveAlerts = List.of();
-
-    // 서버 시작 시 즉시 한 번 조회해 관리자 첫 화면부터 알림을 표시.
-    @PostConstruct
-    public void initializeArchiveAlerts() {
-        refreshArchiveAlerts();
-    }
-
-    // 프로젝트에 이미 활성화된 Spring 스케줄러를 사용해 매시간 목록을 갱신.
-    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
-    public void refreshArchiveAlerts() {
-        archiveAlerts = List.copyOf(mapper.archiveAlertList());
-    }
-
-    public List<MemberDTO> getArchiveAlerts() {
-        return archiveAlerts;
-    }
-
-    // 탈퇴 후 3일이 지난 회원을 관리자가 체크박스로 선택하여 영구 삭제할 수 있도록 한다.
-    public int deleteArchivedMembers(List<Long> memberNos) {
+    public int restoreMembers(List<Long> memberNos) {
         if (memberNos == null || memberNos.isEmpty()) {
-            throw new IllegalArgumentException("삭제할 회원을 선택해 주세요.");
+            throw new IllegalArgumentException("복원할 회원을 선택해 주세요.");
         }
-        int deletedCount = mapper.deleteArchivedMembers(memberNos);
-        refreshArchiveAlerts();
-        return deletedCount;
+        int restoredCount = mapper.restoreMembers(memberNos);
+        return restoredCount;
+    }
+
+    public int permanentlyDeleteWithdrawnMembers(List<Long> memberNos) {
+        if (memberNos == null || memberNos.isEmpty()) {
+            throw new IllegalArgumentException("영구 삭제할 회원을 선택해 주세요.");
+        }
+        return mapper.permanentlyDeleteWithdrawnMembers(memberNos);
     }
 
     // 회원가입
@@ -124,8 +108,16 @@ public class MemberService {
     }
 
     // 관리자 회원 수정: 새 비밀번호만 암호화하고 허용된 항목을 저장
-    public void update(MemberDTO dto) {
+    public void update(MemberDTO dto, String currentLoginId) {
         MemberDTO savedMember = mapper.detail((int) dto.getMemberNo());
+        if (savedMember == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다.");
+        }
+        if (savedMember.getLoginId().equals(currentLoginId)
+                && "ADMIN".equalsIgnoreCase(savedMember.getRole())
+                && "퇴사".equals(dto.getMemStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "로그인한 관리자는 본인 계정을 퇴사 처리할 수 없습니다.");
+        }
         if (dto.getLoginPwd() == null || dto.getLoginPwd().isBlank()) {
             // 비밀번호 입력이 없으면 기존 암호화 비밀번호를 그대로 유지한다.
             dto.setLoginPwd(savedMember.getLoginPwd());
@@ -144,8 +136,15 @@ public class MemberService {
         mapper.approvePendingMembers(memberNos);
     }
 
-    // 삭제
-    public void delete(int memberNo) {
+    // 관리자 회원 삭제는 탈퇴 상태와 탈퇴일만 기록하며, 영구 삭제는 3일 경과 후 별도로 처리한다.
+    public void delete(int memberNo, String currentLoginId) {
+        MemberDTO savedMember = mapper.detail(memberNo);
+        if (savedMember == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다.");
+        }
+        if (savedMember.getLoginId().equals(currentLoginId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "로그인한 관리자는 본인 계정을 탈퇴 처리할 수 없습니다.");
+        }
         mapper.delete(memberNo);
     }
 

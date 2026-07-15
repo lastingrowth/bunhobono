@@ -4,16 +4,16 @@ import {
   approvePendingMembers,
   createResVehicle,
   deleteMember,
-  deleteMemberArchives,
   deleteResVehicle,
-  getMemberArchiveAlerts,
   getMemberDetail,
   getMemberList,
   getResidentDashboard,
   idCheckMember,
+  permanentlyDeleteWithdrawnMembers,
   residentDelete,
   residentEdit,
   residentMypage,
+  restoreWithdrawnMembers,
   searchMember,
   signupMember,
   updateMember,
@@ -26,7 +26,6 @@ export const useMemStore =  defineStore("member", () => {
 
   const memberList = ref ([]);
   const member = ref({});
-  const memberArchiveAlerts = ref([]);
   const vehicleList = ref([]);
   const vehicle = ref({});
   const loading = ref(false);
@@ -66,16 +65,15 @@ export const useMemStore =  defineStore("member", () => {
     await loadMember(memberNo);
   };
 
-  // Spring 스케줄러가 분류한 탈퇴 3일 경과 회원 알림을 조회한다.
-  const loadMemberArchiveAlerts = async () => {
-    const res = await getMemberArchiveAlerts();
-    memberArchiveAlerts.value = res.data;
+  const restoreMembers = async (memberNos) => {
+    const res = await restoreWithdrawnMembers(memberNos);
+    await loadmemberList();
+    return res.data;
   };
 
-  // 탈퇴 후 3일 경과 회원을 삭제하고 회원 목록과 알림을 함께 갱신한다.
-  const removeMemberArchives = async (memberNos) => {
-    const res = await deleteMemberArchives(memberNos);
-    await Promise.all([loadmemberList(), loadMemberArchiveAlerts()]);
+  const removeWithdrawnMembers = async (memberNos) => {
+    const res = await permanentlyDeleteWithdrawnMembers(memberNos);
+    await loadmemberList();
     return res.data;
   };
 
@@ -85,13 +83,10 @@ export const useMemStore =  defineStore("member", () => {
     await loadmemberList();
   };
 
-  // 삭제
+  // 회원을 탈퇴 처리하고 목록을 갱신한다.
   const removeMember = async (memberNo) => {
     await deleteMember(memberNo);
-
-    memberList.value = memberList.value.filter((item) => {
-      return item.memberNo !== memberNo;
-    });
+    await loadmemberList();
   };
 
   // 등록
@@ -204,7 +199,6 @@ export const useMemStore =  defineStore("member", () => {
   return {
     memberList,
     member,
-    memberArchiveAlerts,
     vehicleList,
     vehicle,
     loading,
@@ -212,8 +206,8 @@ export const useMemStore =  defineStore("member", () => {
     dashboard,
 
     loadmemberList,
-    loadMemberArchiveAlerts,
-    removeMemberArchives,
+    restoreMembers,
+    removeWithdrawnMembers,
     search,
     loadMember,
     editMember,

@@ -72,10 +72,12 @@
 import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
+import { useJwtStore } from "@/features/login/jwtStore";
 
 const route = useRoute();
 const router = useRouter();
 const store = useMemStore();
+const jwtStore = useJwtStore();
 
 const memberNo = route.params.memberNo;
 const phoneParts = reactive({ first: "", middle: "", last: "" });
@@ -92,9 +94,14 @@ const member = reactive({
 });
 
 // RESIDENT는 거주·전출, ADMIN은 근무·휴직·퇴사 상태만 선택한다.
-const statusOptions = computed(() => member.role === "ADMIN"
-    ? ["근무", "휴직", "퇴사"]
-    : ["거주", "전출"]);
+const isCurrentAdmin = computed(() =>
+    member.role === "ADMIN" && member.loginId === jwtStore.userId
+);
+
+const statusOptions = computed(() => {
+    if (member.role !== "ADMIN") return ["거주", "전출"];
+    return isCurrentAdmin.value ? ["근무", "휴직"] : ["근무", "휴직", "퇴사"];
+});
 
 onMounted(async () => {
     await store.loadMember(memberNo);

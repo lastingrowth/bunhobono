@@ -5,14 +5,14 @@ export const getMemberList = () => {
     return api.get("/members");
 };
 
-// 탈퇴 후 3일이 지나 보관 삭제 확인이 필요한 회원 알림을 조회한다.
-export const getMemberArchiveAlerts = () => {
-    return api.get('/members/archive-alerts');
+// 선택한 탈퇴 회원을 승인 회원으로 복원한다.
+export const restoreWithdrawnMembers = (memberNos) => {
+    return api.put('/members/restore', memberNos);
 };
 
-// 탈퇴 후 3일 경과 목록에서 선택한 회원을 실제 삭제한다.
-export const deleteMemberArchives = (memberNos) => {
-    return api.delete('/members/archive', { data: memberNos });
+// 탈퇴 처리된 선택 회원을 영구 삭제한다.
+export const permanentlyDeleteWithdrawnMembers = (memberNos) => {
+    return api.delete('/members/withdrawn', { data: memberNos });
 };
 
 // 회원 검색
