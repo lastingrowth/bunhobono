@@ -49,11 +49,7 @@ export const residentMenu = [
     path: '/resident/vehicles?type=normal',
     icon: '🚙'
   },
-  {
-    title: '방문 차량',
-    path: '/resident/vehicles?type=visit',
-    icon: '🚐'
-  },
+
   {
     title: '주차현황',
     path: '/resident/parkings',

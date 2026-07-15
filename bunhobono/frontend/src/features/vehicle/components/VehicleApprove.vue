@@ -70,8 +70,6 @@ defineProps({
 
 const vehicleStore = useVehicleStore();
 
-// 방문차량 신청 시 저장된 startDate/endDate 차이로 신청 시간을 계산한다.
-// 관리자가 수정하지 않으면 이 시간이 승인 기본값으로 사용된다.
 function getRequestedVisitHours(vehicle) {
   if (vehicle.periodHours) {
     return vehicle.periodHours;
@@ -125,14 +123,12 @@ async function approve(vehicle) {
 }
 
 async function reject(vehicle) {
-  await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, {
-    vehicleStatus: "UNKNOWN",
-    vehicleType: vehicle.vehicleType,
-    startDate: null,
-    endDate: null
-  });
+  if (!confirm("신청을 반려하고 목록에서 삭제할까요?")) {
+    return;
+  }
 
-  await vehicleStore.loadVehicleList();
+  await vehicleStore.removeVehicle(vehicle.vehicleCarNo);
+  await vehicleStore.loadVehicleApproveList();
 }
 
 async function expire(vehicle) {

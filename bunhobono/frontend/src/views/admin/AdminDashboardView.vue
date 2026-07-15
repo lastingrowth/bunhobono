@@ -388,7 +388,7 @@ const refreshOcrCards = async () => {
 
   try {
     // 카메라 목록 갱신 후 카메라 번호별 OCR 이미지 갱신
-    await dashboardStore.refreshOcrCards()
+    await dashboardStore.refreshOcrImages()
   } catch (error) {
     console.error('OCR 대시보드 자동 갱신 실패', error)
   } finally {
@@ -411,3 +411,4 @@ onUnmounted(() => {
   }
 })
 </script>
+
