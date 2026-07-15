@@ -52,11 +52,11 @@
                         <h2>촬영 정보</h2>
                     </div>
 
-                    <!-- 주소에서 받은 카메라 번호 -->
+                    <!-- 현재 선택된 카메라 번호 -->
                     <div class="camera-device"
                         :class="{missing : !cameraNo}">
                         
-                        <span>연결된 카메라</span>
+                        <span>현재 카메라</span>
 
                         <strong v-if="cameraNo">
                             CAMERA #{{ cameraNo }}
@@ -71,16 +71,38 @@
                         </small>
 
                         <small v-else>
-                            주소 뒤에 ?cameraNo=1을 추가해주세요
+                            아래에서 사용할 카메라를 선택해주세요
                         </small>
                     </div>
 
-                    <button type="button"
-                            class="analyze-button"
-                            :disabled="loading || !cameraNo"
-                            @click="analyzeImage">
-                        <span v-if="loading">차량번호 분석중...</span>
-                        <span v-else>OCR 분석 시작</span>
+                    <!-- 1번부터 8번까지 시연 카메라 선택 -->
+                    <div class="camera-selector">
+                      <span class="camera-selector-label">
+                        카메라 선택
+                      </span>
+
+                      <div class="camera-button-grid">
+                        <button
+                          v-for="number in cameraNumbers"
+                          :key="number"
+                          type="button"
+                          class="camera-select-button"
+                          :class="{ active : cameraNo === number }"
+                          :aria-pressed="cameraNo === number"
+                          @click="selectCamera(number)">
+                        CAM {{ number }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <button 
+                      type="button"
+                      class="analyze-button"
+                      :disabled="loading || !selectedFile || !cameraNo"
+                      @click="analyzeImage">
+
+                      <span v-if="loading">OCR 분석 중...</span>
+                      <span v-else>OCR 분석 시작</span>
                     </button>
 
                     <p v-if="errorMessage" class="error-message">
@@ -127,10 +149,16 @@
 import { storeToRefs } from 'pinia';
 import { useOcrStore } from './ocrStore';
 import { computed, onUnmounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute()
+const router = useRouter()
 const ocrStore = useOcrStore()
+
+const cameraNumbers = [
+  1, 2, 3, 4,
+  5, 6, 7, 8
+]
 
 const {
     loading,
@@ -153,6 +181,16 @@ const cameraNo = computed(() => {
 
     return value
 })
+
+// 선택한 카메라 번호로 URL을 변경
+const selectCamera = (cameraNumber) => {
+    router.replace({
+        path: '/ocr-upload',
+        query: {
+            cameraNo: cameraNumber
+        }
+    })
+}
  
 // FastAPI의 OCR 신뢰도를 백분율로 표시
 const confidenceText = computed(() => {
@@ -397,6 +435,57 @@ onUnmounted(() => {
 
 .camera-device.missing strong {
   color: #dc2626;
+}
+
+/* 현재 카메라 번호를 발표 화면에서도 잘 보이게 강조 */
+.camera-device strong {
+  font-size: 34px;
+  letter-spacing: 0.04em;
+}
+
+/* 카메라 선택 버튼 영역 */
+.camera-selector {
+  margin-top: 20px;
+}
+
+.camera-selector-label {
+  display: block;
+  margin-bottom: 10px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.camera-button-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.camera-select-button {
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px 4px;
+  color: #168bd1;
+  background: #ffffff;
+  border: 1px solid #38a9e8;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.camera-select-button:hover {
+  background: #edf8ff;
+  transform: translateY(-1px);
+}
+
+.camera-select-button.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #169ee5, #2376e5);
+  border-color: #168bd1;
+  box-shadow: 0 7px 16px rgba(31, 130, 224, 0.2);
 }
 
 .analyze-button {
