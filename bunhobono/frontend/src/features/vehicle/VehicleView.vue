@@ -34,8 +34,10 @@ import VehicleSearch from './components/VehicleSearch.vue'
 import VehicleForm from './components/VehicleForm.vue'
 import VehicleList from './components/VehicleList.vue'
 import VehicleApprove from './components/VehicleApprove.vue'
+import { useRoute } from 'vue-router'
 
 const vehicleStore = useVehicleStore()
+const route = useRoute()
 
 const viewMode = ref('list')
 const showVehicleForm = ref(false)
@@ -50,6 +52,9 @@ const toggleVehicleForm = () => {
 }
 
 onMounted(() => {
+  if (route.query.mode === 'approve') {
+    viewMode.value = 'approve'
+  }
   vehicleStore.loadVehicleList()
   vehicleStore.loadVehicleApproveList()
 })

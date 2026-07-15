@@ -3,8 +3,6 @@ import { ref } from "vue";
 import {
   approvePendingMembers,
   deleteMember,
-  deleteMemberArchives,
-  getMemberArchiveAlerts,
   getMemberDetail,
   getMemberList,
   getResidentDashboard,

@@ -40,10 +40,34 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         }).length;
     });
 
-    // 전체 등록 차량 수
-    const registeredVehicleCount = computed(() => {
-        return vehicleStore.vehicleList.length;
+    // 승인 대기 차량 수
+    const waitingVehicleCount = computed(() => {
+        return vehicleStore.vehicleList.filter((vehicle) => {
+            return vehicle.vehicleStatus === "WAITING";
+        }).length;
     });
+
+    // 오늘 방문 차량 수
+    const todayVisitVehicleCount = computed(() => {
+        const today = new Date();
+
+        return vehicleStore.vehicleList.filter((vehicle) => {
+            if (vehicle.vehicleType !== "visit") {
+                return false;
+            }
+
+            const startDate = new Date(vehicle.startDate);
+
+            if (Number.isNaN(startDate.getTime())) {
+                return false;
+            }
+
+            return startDate.getFullYear() === today.getFullYear()
+                && startDate.getMonth() === today.getMonth()
+                && startDate.getDate() === today.getDate();
+        }).length;
+    })
+
 
     // 주차장별 전체 면수, 사용 면수, 가능 면수와 사용률
     const parkingStatusList = computed(() => {
@@ -419,7 +443,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         loading,
         errorMessage,
         unresolvedNoticeCount,
-        registeredVehicleCount,
+        waitingVehicleCount,
+        todayVisitVehicleCount,
         parkingStatusList,
         ocrTotalCount,
         ocrSuccessCount,
