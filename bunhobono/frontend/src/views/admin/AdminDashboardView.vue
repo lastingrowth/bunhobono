@@ -286,7 +286,7 @@
 <script setup>
 import { useAdminDashboardStore } from '@/stores/adminDashboard'
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -326,6 +326,32 @@ const goCameraDataDetail = (cameraDataNo) => {
   })
 }
 
-// 화면에 처음 들어왔을 때 대시보드 데이터 조회
-onMounted(loadDashboard)
+let ocrRefreshTimer = null
+let ocrRefreshing = false
+
+const refreshOcrImages = async () => {
+  if (ocrRefreshing) {
+    return
+  }
+
+  ocrRefreshing = true
+
+  try {
+    await dashboardStore.refreshOcrImages()
+  } finally {
+    ocrRefreshing = false
+  }
+}
+
+// 화면에 처음 들어왔을 때 대시보드 데이터 조회 후 OCR 사진 자동 갱신 시작
+onMounted(async () => {
+  await loadDashboard()
+  ocrRefreshTimer = window.setInterval(refreshOcrImages, 3000)
+})
+
+onUnmounted(() => {
+  if (ocrRefreshTimer) {
+    window.clearInterval(ocrRefreshTimer)
+  }
+})
 </script>
