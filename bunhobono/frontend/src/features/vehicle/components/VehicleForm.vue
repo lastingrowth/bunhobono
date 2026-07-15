@@ -35,16 +35,6 @@
         </option>
       </select>
 
-      <select v-model.number="memberNo">
-        <option :value="null">입주민 선택</option>
-        <option
-          v-for="member in filteredMembers"
-          :key="member.memberNo"
-          :value="member.memberNo"
-        >
-          {{ member.memDong }}동 {{ member.memHo }}호 / {{ member.memName }}
-        </option>
-      </select>
 
       <button @click="add">등록</button>
       <button @click="reset">초기화</button>
@@ -64,23 +54,6 @@ const carNo = ref('')
 const vehicleType = ref('normal')
 const selectedDong = ref('')
 const selectedHo = ref('')
-const memberNo = ref(null)
-
-const filteredMembers = computed(() => {
-  return memberStore.memberList.filter((member) => {
-    const dongMatched = !selectedDong.value
-      || String(member.memDong ?? '') === selectedDong.value
-
-    const hoMatched = !selectedHo.value
-      || String(member.memHo ?? '') === selectedHo.value
-
-    const isResident = member.memStatus === 'APPROVED'
-      || member.role === 'resident'
-      || member.role === 'RESIDENT'
-
-    return dongMatched && hoMatched && isResident
-  })
-})
 
 const dongOptions = computed(() => {
   return [...new Set(
@@ -106,11 +79,6 @@ const hoOptions = computed(() => {
 
 watch(selectedDong, () => {
   selectedHo.value = ''
-  memberNo.value = null
-})
-
-watch(selectedHo, () => {
-  memberNo.value = null
 })
 
 onMounted(async () => {
@@ -125,17 +93,11 @@ async function add() {
     return
   }
 
-  if (!memberNo.value) {
-    alert('입주민을 선택하세요')
-    return
-  }
-
   try {
     await vehicleStore.addVehicle({
       carNo: carNo.value.trim(),
       vehicleType: vehicleType.value,
       vehicleStatus: 'WAITING',
-      memberNo: memberNo.value
     })
 
     alert('차량이 등록되었습니다')
@@ -158,6 +120,6 @@ function reset() {
   vehicleType.value = 'normal'
   selectedDong.value = ''
   selectedHo.value = ''
-  memberNo.value = null
+
 }
 </script>

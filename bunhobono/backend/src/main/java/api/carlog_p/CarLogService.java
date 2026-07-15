@@ -30,9 +30,10 @@ public class CarLogService {
         }
 
         if ("In".equalsIgnoreCase(gate.getGateType())) {
-            if (!carLogMapper.existsOpenLog(cameraData)) {
-                carLogMapper.insertEntry(cameraData, gate.getGateNo());
-            }
+            boolean alreadyParking = carLogMapper.existsOpenLog(cameraData);
+            if (alreadyParking) { return; }
+            carLogMapper.insertEntry(cameraData, gate.getGateNo());
+
         } else if ("Out".equalsIgnoreCase(gate.getGateType())) {
             carLogMapper.completeExit(cameraData, gate.getGateNo());
         }
