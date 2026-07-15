@@ -40,6 +40,7 @@ public interface CameraDataMapper {
 
     @Select("select * from camera_data where capture_time < NOW() - INTERVAL '3 months'")
     List<CameraDataDTO>deleteTarget();
+    //1 minute 테스트용 쓰레기통행
 
     @Delete("delete from camera_data where camera_data_no = #{cameraDataNo}")
     int delete(int cameraDataNo);

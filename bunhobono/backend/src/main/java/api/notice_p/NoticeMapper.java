@@ -61,12 +61,16 @@ public interface NoticeMapper {
     """)
     int status(NoticeDTO dto);
 
-    @Delete("""
-        DELETE FROM notice
-        WHERE alert_stat = 'Resolved'
-          AND detect_at < NOW() - INTERVAL '1 year'
-    """)
-    int deleteResolvedNoticesAfterOneYear();
+    //자동삭제
+    @Select("""
+    SELECT notice_no
+    FROM notice
+    WHERE alert_stat = 'Resolved'
+      AND handled_at IS NOT NULL
+      AND handled_at < NOW() - INTERVAL '1 month'
+""")
+    List<Integer> findResolvedNoticeNosForTrash();
+    //삭제기능 1 minute 테스트용
 
     //carlog에서 notice쪽으로 변경시
     @Insert("INSERT INTO notice " +
@@ -107,7 +111,10 @@ public interface NoticeMapper {
             "WHERE COALESCE(n.car_log_no, n.snapshot_car_log_no) = cl.car_log_no" +
             ")")
     int createNoticesFromCarLog();
+    // notice 테스트용 '1minute'
 
+
+    //직접삭제 부분
     @Delete("DELETE FROM notice WHERE notice_no = #{noticeNo}")
     int delete(int noticeNo);
 

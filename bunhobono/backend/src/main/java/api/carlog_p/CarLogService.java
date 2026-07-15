@@ -1,10 +1,10 @@
 package api.carlog_p;
+import api.trash_p.TrashService;
 
 import api.cameradata_p.CameraDataDTO;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 @Service
@@ -12,6 +12,9 @@ public class CarLogService {
 
     @Resource
     private CarLogMapper carLogMapper;
+
+    @Resource
+    private TrashService trashService;
 
     public List<CarLogDTO> list(CarLogDTO dto) {
         return carLogMapper.list(dto);
@@ -30,20 +33,36 @@ public class CarLogService {
         }
 
         if ("In".equalsIgnoreCase(gate.getGateType())) {
-            if (!carLogMapper.existsOpenLog(cameraData)) {
-                carLogMapper.insertEntry(cameraData, gate.getGateNo());
-            }
+            boolean alreadyParking = carLogMapper.existsOpenLog(cameraData);
+            if (alreadyParking) { return; }
+            carLogMapper.insertEntry(cameraData, gate.getGateNo());
+
         } else if ("Out".equalsIgnoreCase(gate.getGateType())) {
             carLogMapper.completeExit(cameraData, gate.getGateNo());
         }
-        // Both 게이트는 방향 정보가 없으므로 자동 입·출차 처리하지 않음
     }
 
-
-    // 시연용: 매분 실행
-// @Scheduled(cron = "0 * * * * *")
-    @Scheduled(cron = "0 0 3 * * *")
-    public void deleteOldLogs() {
-        carLogMapper.deleteOldLogs();
+    // 테스트용: 매분 실행
+    // @Scheduled(cron = "0 * * * * *")
+    // 매일 자정: 출차 후 15일 지난 입출차 기록을 휴지통으로 이동
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    public void moveOldCarLogsToTrash() {
+        List<Integer> carLogNos =
+                carLogMapper.findOldCarLogNosForTrash();
+        int moveCount = 0;
+        for (Integer carLogNo : carLogNos) {
+            try {
+                trashService.moveCarLog(
+                        carLogNo,
+                        "SCHEDULED"
+                );
+                moveCount++;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println(
+                "휴지통으로 이동된 입출차 기록 수: " + moveCount
+        );
     }
 }
