@@ -6,6 +6,7 @@
       <button class="filter-btn" @click="filterType = 'all'">전체</button>
       <button class="filter-btn" @click="filterType = 'normal'">입주민만</button>
       <button class="filter-btn" @click="filterType = 'visit'">방문자만</button>
+      <button class="filter-btn" @click="filterType = 'expired'">만기차량</button>
       <button class="filter-btn" @click="toggleSort">
         {{ sortButtonText }}
       </button>
@@ -69,12 +70,26 @@ const filterType = ref('all')
 const sortMode = ref('latest')
 
 const filteredVehicles = computed(() => {
-  if (filterType.value === 'all') {
-    return props.vehicles
-  }
-
   return props.vehicles.filter((vehicle) => {
-    return vehicle.vehicleType === filterType.value
+    const expired = isExpiredVehicle(vehicle)
+
+    if (filterType.value === 'expired') {
+      return expired
+    }
+
+    if (expired) {
+      return false
+    }
+
+    if (filterType.value === 'normal') {
+      return vehicle.vehicleType === 'normal'
+    }
+
+    if (filterType.value === 'visit') {
+      return vehicle.vehicleType === 'visit'
+    }
+
+    return true
   })
 })
 
@@ -109,6 +124,10 @@ function toggleSort() {
   }
 }
 
+function isExpiredVehicle(vehicle) {
+  return String(vehicle.remainingTimeText || '').startsWith('만기됨')
+}
+
 function getVehicleMember(vehicle) {
   return memberStore.memberList.find((member) => {
     return Number(member.memberNo) === Number(vehicle.memberNo)
@@ -135,9 +154,9 @@ async function remove(vehicleNo) {
   display: flex;
   gap: 8px;
   align-items: center;
-  width: 600px;
-  min-width: 600px;
-  max-width: 600px;
+  width: 740px;
+  min-width: 740px;
+  max-width: 740px;
   margin: 12px 0;
 }
 
