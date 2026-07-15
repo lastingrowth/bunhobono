@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { getCarLogs } from "./carlogApi";
+import { deleteCarLog, getCarLogs } from "./carlogApi";
 import { toCarLogView } from "./carlogFormat";
 
 export const useCarlogStore = defineStore("carlog", () => {
@@ -54,6 +54,27 @@ export const useCarlogStore = defineStore("carlog", () => {
         await loadCarLogs();
     };
 
+    // 카로그 삭제
+    const remove = async (carLogNo) => {
+        const result = confirm("카로그를 삭제하시겠습니까?");
+
+        if (!result) {
+            return;
+        }
+
+        const response = await deleteCarLog(carLogNo);
+
+        if (response.data === 1) {
+            carLogs.value = carLogs.value.filter((log) => {
+                return Number(log.carLogNo ?? log.car_log_no) !== Number(carLogNo);
+            });
+
+            alert("카로그 삭제 완료");
+        } else {
+            alert("카로그 삭제 실패");
+        }
+    };
+
     return {
         carLogs,
         search,
@@ -65,5 +86,6 @@ export const useCarlogStore = defineStore("carlog", () => {
 
         loadCarLogs,
         resetSearch,
+        remove,
     };
 });

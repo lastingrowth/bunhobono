@@ -1,6 +1,5 @@
 import ResVehicleView from "@/features/resVehicle/ResVehicleView.vue";
 
-
 export default [
   {
     path: "vehicles",

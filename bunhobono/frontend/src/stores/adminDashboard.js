@@ -221,6 +221,12 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         );
     };
 
+    // 새로 등록된 OCR 데이터와 사진만 다시 조회
+    const refreshOcrCards = async () => {
+        await cameraDataStore.loadList();
+        await loadOcrImages();
+    }
+
     // 날짜를 YYYY-MM-DD 형식으로 변환
     const getDateKey = (date) => {
         const year = date.getFullYear();
@@ -362,6 +368,16 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
 
+    // OCR 사진만 백그라운드로 다시 조회
+    const refreshOcrImages = async () => {
+        try {
+            await cameraDataStore.loadList();
+            await loadOcrImages();
+        } catch (error) {
+            console.error("OCR 사진 자동 갱신 실패", error);
+        }
+    };
+
     // 대시보드에 필요한 데이터를 한 번에 조회
     const loadDashboard = async () => {
         loading.value = true;
@@ -407,6 +423,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         carlogPageNumbers,
         paginatedCarlogs,
         setCarlogPage,
+        refreshOcrCards,
+        refreshOcrImages,
         loadDashboard
     };
 });
