@@ -41,9 +41,6 @@
           <th>촬영 시각</th>
           <th>입출차 구분</th>
           <th>인식률</th>
-          <th>등록 기간</th>
-          <th>만료일</th>
-          <th>남은 시간</th>
           <th>상세보기</th>
           <th>관리</th>
         </tr>
@@ -57,9 +54,6 @@
           <td>{{ formatDate(d.captureTime) }}</td>
           <td>{{ d.movementTypeText }}</td>
           <td>{{ formatConfidence(d.confidenceScore) }}</td>
-          <td>{{ registrationPeriod(d.startDate, d.endDate, d.vehicleCarNo) }}</td>
-          <td>{{ formatDate(d.endDate) }}</td>
-          <td>{{ remainingTime(d.endDate, d.vehicleCarNo) }}</td>
           <td>
             <router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo : d.cameraDataNo } }">
             <button>이미지보기</button>

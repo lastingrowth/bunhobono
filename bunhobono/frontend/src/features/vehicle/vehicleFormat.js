@@ -2,12 +2,22 @@ export function toVehicleView(item) {
     return {
         ...item,
         vehicleTypeText: vehicleTypeText(item.vehicleType),
-        vehicleStatusText: vehicleStatusText(item.vehicleStatus, item.endDate),
+        vehicleStatusText: vehicleStatusText(item.vehicleStatus, item.vehicleType, item.endDate, item.realEndDate),
         approvedAtText: dateText(item.approvedAt),
         startDateText: dateText(item.startDate),
-        endDateText: dateText(item.endDate),
+
+        // 등록기간은 신청/승인된 무료 주차 시간
+        // startDate ~ endDate 차이로 계산한다.
         periodText: periodText(item.startDate, item.endDate),
-        remainingTimeText: remainingTimeText(item.endDate),
+
+        // 만기일은 차량 종류에 따라 다르게 계산한다.
+        // normal: endDate
+        // visit + 입차 전: 입차 X
+        // visit + 입차 후: realEndDate
+        endDateText: vehicleEndDateText(item),
+
+        // 남은기간도 visit 차량은 realEndDate 기준으로 계산한다.
+        remainingTimeText: vehicleRemainingTimeText(item),
     };
 }
 
@@ -23,8 +33,12 @@ function vehicleTypeText(value) {
     return "-";
 }
 
-function vehicleStatusText(status, endDate) {
-    if (status === "APPROVED" && isExpired(endDate)) {
+function vehicleStatusText(status, vehicleType, endDate, realEndDate) {
+    const targetEndDate = vehicleType === "visit"
+        ? realEndDate
+        : endDate;
+
+    if (status === "APPROVED" && targetEndDate && isExpired(targetEndDate)) {
         return "승인만료";
     }
 
@@ -45,6 +59,30 @@ function vehicleStatusText(status, endDate) {
     }
 
     return "-";
+}
+
+function vehicleEndDateText(item) {
+    if (item.vehicleType === "visit") {
+        if (!item.inTime) {
+            return "입차 X";
+        }
+
+        return dateText(item.realEndDate);
+    }
+
+    return dateText(item.endDate);
+}
+
+function vehicleRemainingTimeText(item) {
+    if (item.vehicleType === "visit") {
+        if (!item.inTime) {
+            return "-";
+        }
+
+        return remainingTimeText(item.realEndDate);
+    }
+
+    return remainingTimeText(item.endDate);
 }
 
 function dateText(value) {
@@ -107,8 +145,6 @@ function remainingTimeText(endDate) {
         const hours = Math.floor(totalMinutes / 60);
         let minutes = totalMinutes % 60;
 
-        minutes = Math.floor(minutes / 10) * 10;
-
         if (minutes === 0) {
             return `만기됨(+${hours}시간)`;
         }
@@ -120,8 +156,6 @@ function remainingTimeText(endDate) {
     const days = Math.floor(totalMinutes / (60 * 24));
     const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
     let minutes = totalMinutes % 60;
-
-    minutes = Math.floor(minutes / 10) * 10;
 
     if (days > 0) {
         return `${days}일 ${hours}시간`;
