@@ -150,9 +150,10 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useMemStore } from './memStore';
 import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const store = useMemStore();
+const route = useRoute();
 const router = useRouter();
 const { memberList } = storeToRefs(store);
 const searchType = ref('all');
@@ -166,12 +167,17 @@ const currentTime = ref(Date.now());
 const currentPage = ref(1);
 const pageSize = 10;
 let elapsedCheckTimer;
-const activeSection = ref('approved');
 const managementSections = [
     { value: 'approved', label: '승인회원관리' },
     { value: 'pending', label: '승인대기회원' },
     { value: 'withdrawn', label: '탈퇴회원관리' }
 ];
+const requestedSection = String(route.query.section || 'approved');
+const activeSection = ref(
+    managementSections.some((section) => section.value === requestedSection)
+        ? requestedSection
+        : 'approved'
+);
 
 // PENDING 역할 회원만 승인 대기 목록으로 분류한다.
 const pendingMembers = computed(() => memberList.value.filter(

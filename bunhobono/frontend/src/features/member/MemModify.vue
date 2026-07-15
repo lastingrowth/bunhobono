@@ -164,6 +164,10 @@ const update = async () => {
         memStatus: member.memStatus
     });
     alert("수정되었습니다.");
+    if (["전출", "퇴사"].includes(member.memStatus)) {
+        router.push({ path: "/admin/members", query: { section: "withdrawn" } });
+        return;
+    }
     router.push(`/admin/members/${memberNo}/detail`);
 };
 </script>
