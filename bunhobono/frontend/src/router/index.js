@@ -3,6 +3,7 @@ import { authRoutes } from './auth'
 import { adminRoutes } from './admin'
 import { residentRoutes } from './resident'
 import { useJwtStore } from '@/features/login/jwtStore'
+import { ocrRoutes } from './ocr'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,7 +14,8 @@ const router = createRouter({
     },
       ...authRoutes,
       ...adminRoutes,
-      ...residentRoutes
+      ...residentRoutes,
+      ...ocrRoutes
   ],
 })
 
