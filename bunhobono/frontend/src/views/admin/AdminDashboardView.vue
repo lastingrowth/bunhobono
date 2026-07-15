@@ -182,38 +182,6 @@
       </div>
 
       <div class="carlog-dashboard-content">
-        <!-- 최근 7일 입차 막대그래프 -->
-        <section class="weekly-entry-panel">
-          <h4 class="weekly-entry-title">
-            최근 7일 입차 기록
-          </h4>
-
-          <div class="weekly-entry-chart">
-            <div
-              v-for="day in weeklyEntryStats"
-              :key="day.dateKey"
-              class="weekly-entry-item"
-            >
-              <span class="weekly-entry-count">
-                {{ day.count }}건
-              </span>
-
-              <div class="weekly-entry-track">
-                <div
-                  class="weekly-entry-bar"
-                  :style="{'--bar-height': `${day.barHeight}%`}" />
-              </div>
-
-              <span class="weekly-entry-date">
-                {{ day.dateLabel }}
-              </span>
-
-              <span class="weekly-entry-day">
-                {{ day.dayLabel }}
-              </span>
-            </div>
-          </div>
-        </section>
 
         <!-- 페이지네이션 입출차 목록 -->
         <section class="carlog-list-panel">
@@ -241,9 +209,12 @@
                   </td>
 
                   <td>
-                    {{
-                      log.parkingStateText || log.parkingState || '-'
-                    }}
+                    <!-- 주차 상태를 색상 배지로 표시 -->
+                    <span class="carlog-state-badge"
+                          :class="{ parking : log.parkingState === 'PARKING',
+                                    out : log.parkingState === 'OUT' }">
+                      {{ log.parkingStateText || log.parkingState || '-' }}
+                    </span>
                   </td>
 
                   <td>
@@ -251,7 +222,7 @@
                   </td>
 
                   <td>
-                    {{ log.outTimeText || log.outTime || '-' }}
+                    {{ log.outTime ? log.outTimeText || log.outTime : '-' }}
                   </td>
                 </tr>
 
@@ -293,6 +264,56 @@
             </button>
           </div>
         </section>
+
+        <!-- 최근 7일 입차 막대그래프 -->
+        <section class="weekly-entry-panel">
+          <!-- 그래프 제목과 막대 색상 설명 -->
+          <div class="weekly-entry-header">
+          
+            <h4 class="weekly-entry-title">
+              최근 7일 입차 기록
+            </h4>
+
+            <div class="weekly-entry-legend">
+              <span class="resident">입주민</span>
+              <span class="visit">방문객</span>
+            </div>
+          </div>
+
+          <div class="weekly-entry-chart">
+            <div
+              v-for="day in weeklyEntryStats"
+              :key="day.dateKey"
+              class="weekly-entry-item"
+            >
+          
+              <!-- 입주민과 방문객 입차 합계 -->
+              <span class="weekly-entry-count">
+                {{ day.residentCount + day.visitCount }}건
+              </span>
+
+              <!-- 요일별 입주민/방문객 입차 막대 -->
+              <div class="weekly-entry-track grouped">
+                <div
+                  class="weekly-entry-bar resident"
+                  :style="{'--bar-height': `${day.residentBarHeight}%`}" />
+
+                <div
+                  class="weekly-entry-bar visit"
+                  :style="{'--bar-height': `${day.visitBarHeight}%`}" />
+              </div>
+
+              <span class="weekly-entry-date">
+                {{ day.dateLabel }}
+              </span>
+
+              <span class="weekly-entry-day">
+                {{ day.dayLabel }}
+              </span>
+            </div>
+          </div>
+        </section>
+
       </div>
     </article>
   </section>

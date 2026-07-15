@@ -7,6 +7,24 @@
       </div>
     </div>
 
+    <!-- 촬영 이미지를 상세 정보보다 먼저 크게 표시 -->
+    <div class="camera-image-preview">
+      <img
+        v-if="imageUrl"
+        :src="imageUrl"
+        class="capture-image"
+        alt="차량 촬영 이미지"
+      />
+
+      <span v-else-if="imageLoading">
+        이미지를 불러오는 중...
+      </span>
+
+      <span v-else class="image-error">
+        이미지를 불러올 수 없습니다.
+      </span>
+    </div>
+
     <div class="info-detail-highlight">
       <span>인식 차량번호</span>
       <strong>{{ dStore.detail.carNo || '-' }}</strong>
@@ -21,20 +39,6 @@
       <div>
         <dt>촬영 시간</dt>
         <dd>{{ formatDate(dStore.detail.captureTime) }}</dd>
-      </div>
-
-      <div class="camera-image-row">
-        <dt>촬영 이미지</dt>
-        <dd class="camera-image-content">
-          <img
-            v-if="imageUrl"
-            :src="imageUrl"
-            class="capture-image"
-            alt="차량 촬영 이미지"
-          />
-          <span v-else-if="imageLoading">이미지를 불러오는 중...</span>
-          <span v-else class="image-error">이미지를 불러올 수 없습니다.</span>
-        </dd>
       </div>
 
       <div>
@@ -147,28 +151,25 @@ onBeforeUnmount(() => {
 })
 
 
-
-
 </script>
 
 <style scoped>
-.camera-image-row {
-  display: block;
-}
-
-.camera-image-content {
-  margin-top: 12px;
+.camera-image-preview {
+  width: 100%;
+  margin: 22px 0 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .capture-image {
   display: block;
-  width: 100%;
-  max-width: 720px;
-  max-height: 500px;
+  width: min(100%, 760px);
+  max-height: 420px;
   object-fit: contain;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #f4f6f9;
-  box-shadow: 0 8px 24px rgba(28, 39, 60, 0.1);
+  box-shadow: 0 10px 28px rgba(28, 39, 60, 0.14);
 }
 
 .image-error {

@@ -394,7 +394,7 @@ button.dashboard-card:hover {
 
 /* 주간 입차 그래프와 입출차 목록 영역 */
 .recent-carlogs {
-  min-height: 380px;
+  min-height: auto;
   margin-top: 12px;
   padding: 14px 18px;
   display: flex;
@@ -427,17 +427,17 @@ button.dashboard-card:hover {
 }
 
 .carlog-dashboard-content {
-  min-height: 300px;
+  min-height: auto;
   display: grid;
-  grid-template-columns: minmax(300px, 0.8fr) minmax(520px, 1.2fr);
-  gap: 18px;
-  flex: 1;
+  grid-template-columns: minmax(560px, 1.4fr) minmax(320px, 0.8fr);
+  gap: 14px;
+  align-items: stretch;
 }
 
 /* 최근 7일 입차 막대그래프 */
 .weekly-entry-panel {
   min-width: 0;
-  min-height: 270px;
+  min-height: auto;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -447,10 +447,45 @@ button.dashboard-card:hover {
 }
 
 .weekly-entry-title {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 13px;
   font-weight: 700;
   color: var(--text-color);
+}
+
+.weekly-entry-header {
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.weekly-entry-legend {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.weekly-entry-legend span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.weekly-entry-legend span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.weekly-entry-legend .resident::before {
+  background: #2563eb;
+}
+
+.weekly-entry-legend .visit::before {
+  background: #22c55e;
 }
 
 .weekly-entry-chart {
@@ -479,27 +514,32 @@ button.dashboard-card:hover {
 
 .weekly-entry-track {
   width: 100%;
-  max-width: 34px;
-  min-height: 78px;
+  max-width: 42px;
+  height: 82px;
   margin-top: auto;
   display: flex;
   align-items: flex-end;
-  overflow: hidden;
+  justify-content: center;
+  gap: 4px;
+  overflow: visible;
   border-radius: 7px 7px 3px 3px;
-  background: #e5e7eb;
+  background: transparent;
 }
 
 .weekly-entry-bar {
-  width: 100%;
+  width: 13px;
   height: var(--bar-height);
   min-height: 0;
   border-radius: 7px 7px 3px 3px;
-  background: linear-gradient(
-    180deg,
-    #38bdf8 0%,
-    var(--primary) 100%
-  );
   transition: height 0.3s ease;
+}
+
+.weekly-entry-bar.resident {
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+}
+
+.weekly-entry-bar.visit {
+  background: linear-gradient(180deg, #86efac 0%, #22c55e 100%);
 }
 
 .weekly-entry-date {
@@ -518,15 +558,15 @@ button.dashboard-card:hover {
 /* 페이지네이션이 적용되는 입출차 목록 */
 .carlog-list-panel {
   min-width: 0;
-  min-height: 270px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
 }
 
 .carlog-table-wrap {
-  min-height: 0;
-  overflow-x: auto;
-  flex: 1;
+  min-height: auto;
+  overflow-x: visible;
+  flex: none;
 }
 
 .recent-carlogs table {
@@ -540,6 +580,31 @@ button.dashboard-card:hover {
   padding: 7px 10px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+/* 입출차 목록의 주차상태 배지 */
+.carlog-state-badge {
+  min-width: 58px;
+  padding: 4px 8px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 현재 주차중 */
+.carlog-state-badge.parking {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+/* 출차 완료 */
+.carlog-state-badge.out {
+  color: #0369a1;
+  background: #e0f2fe;
 }
 
 /* 입출차 목록 페이지 버튼 */
@@ -611,14 +676,20 @@ button.dashboard-card:hover {
 
 
   .recent-carlogs {
-    min-height: 360px;
+    min-height: auto;
+    margin-top: 12px;
+    padding: 14px 18px;
+    display: flex;
+    flex: none;
+    flex-direction: column;
     overflow: visible;
-  }
-
-  .carlog-dashboard-content {
-    grid-template-columns: minmax(270px, 0.8fr) minmax(460px, 1.2fr);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-header);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
   }
 }
+
 
 /* 모바일 */
 @media (max-width: 700px) {
@@ -653,18 +724,16 @@ button.dashboard-card:hover {
   }
 
   .recent-carlogs {
-    padding: 12px;
-  }
-
-  .carlog-dashboard-content {
-    grid-template-columns: 1fr;
-  }
-
-  .weekly-entry-panel {
-    min-height: 210px;
-  }
-
-  .carlog-list-panel {
-    overflow-x: auto;
-  }
+    min-height: auto;
+    margin-top: 12px;
+    padding: 14px 18px;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    overflow: visible;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-header);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  } 
 }

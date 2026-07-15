@@ -6,13 +6,15 @@
         <h2>카메라 목록</h2>
         <p>주차장 출입구에 설치된 카메라를 관리합니다.</p>
       </div>
-    </div>
 
-    <button class="register-button" 
+      <button class="register-button" 
             type="button" 
             @click="openDialog">
-      + 카메라 등록
-    </button>
+        + 카메라 등록
+      </button>
+    </div>
+
+    
 
     <!-- 카메라 목록 -->
     <div class="table-wrap">
