@@ -3,15 +3,15 @@
     <h2>차량 관리</h2>
 
     <div>
-      <button @click="viewMode = 'list'">차량 목록</button>
+      <button @click="openVehicleList">차량 목록</button>
+      <button @click="toggleVehicleForm">차량 등록</button>
       <button @click="viewMode = 'approve'">승인 대기</button>
-      <button @click="viewMode = 'insert'">차량 등록</button>
     </div>
 
     <VehicleSearch />
 
     <VehicleForm
-      v-if="viewMode === 'insert'"
+      v-if="viewMode === 'list' && showVehicleForm"
     />
 
     <VehicleList
@@ -38,6 +38,16 @@ import VehicleApprove from './components/VehicleApprove.vue'
 const vehicleStore = useVehicleStore()
 
 const viewMode = ref('list')
+const showVehicleForm = ref(false)
+
+const openVehicleList = () => {
+  viewMode.value = 'list'
+}
+
+const toggleVehicleForm = () => {
+  viewMode.value = 'list'
+  showVehicleForm.value = !showVehicleForm.value
+}
 
 onMounted(() => {
   vehicleStore.loadVehicleList()

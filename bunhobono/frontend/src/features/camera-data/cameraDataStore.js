@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { getCameraDataDetail, getCameraDataList, searchCameraDataByCarNo } from "./cameraDataApi";
+import { deleteCameraData, getCameraDataDetail, getCameraDataList, searchCameraDataByCarNo } from "./cameraDataApi";
 import { useCameraStore } from "../camera/cameraStore";
 import { useGateStore } from "../gates/gateStore";
 
@@ -202,6 +202,32 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
     detail.value = res.data;
   };
 
+  // 카메라 데이터 삭제
+  const remove = async (cameraDataNo) => {
+    const result = confirm("카메라 데이터를 삭제하시겠습니까?");
+
+    if (!result) {
+      return;
+    }
+
+    const response = await deleteCameraData(cameraDataNo);
+
+    if (response.data === 1) {
+      list.value = list.value.filter((item) => {
+        return Number(item.cameraDataNo ?? item.camera_data_no) !== Number(cameraDataNo);
+      });
+      searchResults.value = searchResults.value.filter((item) => {
+        return Number(item.cameraDataNo ?? item.camera_data_no) !== Number(cameraDataNo);
+      });
+
+      delete detailMap.value[cameraDataNo];
+
+      alert("카메라 데이터 삭제 완료");
+    } else {
+      alert("카메라 데이터 삭제 실패");
+    }
+  };
+
   return {
     list,
     searchResults,
@@ -211,6 +237,7 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
     loadList,
     searchByCarNo,
     loadDetail,
+    remove,
   };
 
 });

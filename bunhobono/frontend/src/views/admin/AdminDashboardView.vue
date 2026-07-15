@@ -120,7 +120,7 @@
               type="button"
               class="parking-ocr-preview"
               :disabled="!parking.ocr.cameraDataNo"
-              @click="parking.ocr.cameraDataNo && goCameraDataDetail(parking.ocr.cameraDataNo)"
+              @click="parking.ocr.cameraDataNo && goCameraDataList(parking.parkingNo)"
             >
               <div class="parking-ocr-frame">
                 <img
@@ -316,12 +316,12 @@ const setCarlogPage = (page) => {
   dashboardStore.setCarlogPage(page)
 }
 
-// OCR 사진 카드를 누르면 해당 카메라 데이터 상세로 이동
-const goCameraDataDetail = (cameraDataNo) => {
+// OCR 사진 카드를 누르면 해당 주차장의 카메라 데이터 목록으로 이동
+const goCameraDataList = (parkingNo) => {
   router.push({
-    name: 'CameraDataDetail',
-    params: {
-      cameraDataNo
+    name: 'CameraDataList',
+    query: {
+      parkingNo
     }
   })
 }

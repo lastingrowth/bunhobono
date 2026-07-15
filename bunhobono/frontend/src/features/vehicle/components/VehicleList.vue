@@ -12,6 +12,8 @@
       <thead>
         <tr>
           <th>차량번호</th>
+          <th>동</th>
+          <th>호수</th>
           <th>차량종류</th>
           <th>승인상태</th>
           <th>승인일</th>
@@ -25,6 +27,8 @@
       <tbody>
         <tr v-for="vehicle in filteredVehicles" :key="vehicle.vehicleCarNo">
           <td>{{ vehicle.carNo }}</td>
+          <td>{{ getVehicleMember(vehicle)?.memDong ?? '-' }}</td>
+          <td>{{ getVehicleMember(vehicle)?.memHo ?? '-' }}</td>
           <td>{{ vehicle.vehicleTypeText || vehicle.vehicleType }}</td>
           <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus }}</td>
           <td>{{ vehicle.approvedAtText || '-' }}</td>
@@ -32,82 +36,21 @@
           <td>{{ vehicle.endDateText || '-' }}</td>
           <td>{{ vehicle.remainingTimeText || '-' }}</td>
           <td>
-            <button @click="detail(vehicle.vehicleCarNo)">상세</button>
             <button @click="remove(vehicle.vehicleCarNo)">삭제</button>
           </td>
         </tr>
 
         <tr v-if="filteredVehicles.length === 0">
-          <td colspan="8">조회된 차량이 없습니다.</td>
+          <td colspan="10">조회된 차량이 없습니다.</td>
         </tr>
       </tbody>
     </table>
-
-    <!-- 선택한 차량 상세 정보 -->
-    <div v-if="vehicleStore.vehicle.vehicleCarNo">
-      <div class="detail-header">
-        <h3>차량 상세</h3>
-        <button @click="closeDetail">닫기</button>
-      </div>
-
-      <table class="detail-table">
-        <tbody>
-          <tr>
-            <th>차량번호</th>
-            <td>{{ vehicleStore.vehicle.carNo || '-' }}</td>
-          </tr>
-
-          <tr>
-            <th>차량종류</th>
-            <td>
-              {{ vehicleStore.vehicle.vehicleTypeText || vehicleStore.vehicle.vehicleType || '-' }}
-            </td>
-          </tr>
-
-          <tr>
-            <th>승인상태</th>
-            <td>
-              {{ vehicleStore.vehicle.vehicleStatusText || vehicleStore.vehicle.vehicleStatus || '-' }}
-            </td>
-          </tr>
-
-          <tr>
-            <th>회원번호</th>
-            <td>{{ vehicleStore.vehicle.memberNo ?? '-' }}</td>
-          </tr>
-
-          <tr>
-            <th>승인 관리자</th>
-            <td>{{ vehicleStore.vehicle.approvedMemberName || '-' }}</td>
-          </tr>
-
-          <tr>
-            <th>승인일</th>
-            <td>{{ vehicleStore.vehicle.approvedAtText || '-' }}</td>
-          </tr>
-
-          <tr>
-            <th>등록기간</th>
-            <td>{{ vehicleStore.vehicle.periodText || '-' }}</td>
-          </tr>
-
-          <tr>
-            <th>만기일</th>
-            <td>{{ vehicleStore.vehicle.endDateText || '-' }}</td>
-          </tr>
-
-          <tr>
-            <th>남은기간</th>
-            <td>{{ vehicleStore.vehicle.remainingTimeText || '-' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useMemStore } from '../../member/memStore'
 import { useVehicleStore } from '../vehicleStore'
 
 const props = defineProps({
@@ -115,6 +58,7 @@ const props = defineProps({
 })
 
 const vehicleStore = useVehicleStore()
+const memberStore = useMemStore()
 const filterType = ref('all')
 
 const filteredVehicles = computed(() => {
@@ -125,13 +69,17 @@ const filteredVehicles = computed(() => {
   return props.vehicles.filter(vehicle => vehicle.vehicleType === filterType.value)
 })
 
-async function detail(vehicleNo) {
-  await vehicleStore.loadVehicle(vehicleNo)
+function getVehicleMember(vehicle) {
+  return memberStore.memberList.find((member) => {
+    return Number(member.memberNo) === Number(vehicle.memberNo)
+  })
 }
 
-function closeDetail() {
-  vehicleStore.vehicle = {}
-}
+onMounted(async () => {
+  if (memberStore.memberList.length === 0) {
+    await memberStore.loadmemberList()
+  }
+})
 
 async function remove(vehicleNo) {
   if (!confirm('삭제할까요?')) {

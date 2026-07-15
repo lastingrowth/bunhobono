@@ -36,3 +36,7 @@ export const getCameraDataImage = (cameraDataNo) => {
     responseType: 'blob',
   })
 }
+
+export const deleteCameraData = (cameraDataNo) => {
+  return api.delete(`/camera-data/${cameraDataNo}/delete`);
+};

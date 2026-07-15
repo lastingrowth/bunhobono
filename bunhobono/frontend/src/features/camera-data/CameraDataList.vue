@@ -27,7 +27,7 @@
               type="radio"
               :value="String(parking.parkingNo)"
             />
-            <span>{{ parking.parkingName }}</span>
+            <span>{{ formatParkingName(parking.parkingName) }}</span>
           </label>
         </div>
 
@@ -45,12 +45,13 @@
           <th>만료일</th>
           <th>남은 시간</th>
           <th>상세보기</th>
+          <th>관리</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="d in filteredCameraDataList" :key="d.cameraDataNo">
-          <td>{{ d.displayNo }}</td>
-          <td>{{ d.parkingName }}</td>
+        <tr v-for="(d, index) in filteredCameraDataList" :key="d.cameraDataNo">
+          <td>{{ index + 1 }}</td>
+          <td>{{ formatParkingName(d.parkingName) }}</td>
           <td>{{ d.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</td>
           <td>{{ d.carNo || '미인식' }}</td>
           <td>{{ formatDate(d.captureTime) }}</td>
@@ -64,10 +65,13 @@
             <button>이미지보기</button>
             </router-link>
           </td>
+          <td>
+            <button type="button" @click="dStore.remove(d.cameraDataNo)">삭제</button>
+          </td>
         </tr>
 
         <tr v-if="filteredCameraDataList.length === 0">
-          <td colspan="11">조회된 카메라 데이터가 없습니다.</td>
+          <td colspan="12">조회된 카메라 데이터가 없습니다.</td>
         </tr>
       </tbody>
     </table>
@@ -75,10 +79,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useCameraDataStore } from './cameraDataStore';
 import { useParkingsStore } from '../parking/parkingsStore';
 
+const route = useRoute();
+const router = useRouter();
 const dStore = useCameraDataStore();
 const parkingStore = useParkingsStore();
 const keyword = ref("");
@@ -93,14 +100,41 @@ const parkingOptions = computed(() => {
 });
 
 const filteredCameraDataList = computed(() => {
+  const sortLatestFirst = (items) => {
+    return [...items].sort((a, b) => {
+      const aTime = new Date(a.captureTime ?? 0).getTime();
+      const bTime = new Date(b.captureTime ?? 0).getTime();
+
+      if (aTime !== bTime) {
+        return bTime - aTime;
+      }
+
+      return Number(b.cameraDataNo ?? 0) - Number(a.cameraDataNo ?? 0);
+    });
+  };
+
   if (selectedParkingNo.value === "all") {
-    return dStore.displayList;
+    return sortLatestFirst(dStore.displayList);
   }
 
-  return dStore.displayList.filter((data) => {
+  return sortLatestFirst(dStore.displayList.filter((data) => {
     return Number(data.parkingNo) === Number(selectedParkingNo.value);
-  });
+  }));
 });
+
+const applyParkingQuery = () => {
+  selectedParkingNo.value = route.query.parkingNo
+    ? String(route.query.parkingNo)
+    : "all";
+};
+
+const formatParkingName = (value) => {
+  if (!value) return '-';
+
+  const match = String(value).match(/[A-Za-z]+/);
+
+  return match ? match[0].toUpperCase() : value;
+};
 
 // 차량번호 검색
 const searchGo = async () => {
@@ -111,6 +145,9 @@ const searchGo = async () => {
 const resetList = async () => {
   keyword.value = "";
   selectedParkingNo.value = "all";
+  await router.replace({
+    name: 'CameraDataList'
+  });
   await dStore.loadList();
 };
 
@@ -168,6 +205,8 @@ const remainingTime = (endDate, vehicleCarNo) => {
 
 // 화면에 들어오면 카메라 데이터와 carlog 조회
 onMounted(async () => {
+  applyParkingQuery();
+
   await Promise.all([
     dStore.loadList(),
     parkingStore.loadList()
@@ -181,4 +220,11 @@ onUnmounted(() => {
     window.clearInterval(listRefreshTimer);
   }
 });
+
+watch(
+  () => route.query.parkingNo,
+  () => {
+    applyParkingQuery();
+  }
+);
 </script>
