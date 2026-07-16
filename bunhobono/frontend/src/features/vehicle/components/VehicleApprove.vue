@@ -14,7 +14,7 @@
       </thead>
 
       <tbody>
-        <tr v-for="vehicle in paginationItems" :key="vehicle.vehicleCarNo">
+        <tr v-for="vehicle in paginatedItems" :key="vehicle.vehicleCarNo">
           <td>{{ vehicle.carNo }}</td>
           <td>{{ vehicle.vehicleTypeText || vehicle.vehicleType }}</td>
           <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus }}</td>
@@ -91,7 +91,7 @@ const {
   currentPage,
   totalPages,
   pageNumbers,
-  paginationItems,
+  paginatedItems,
   setPage
 } = usePagination(approveVehicles, pageSize);
 
@@ -144,7 +144,6 @@ async function approve(vehicle) {
   }
 
   await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, data);
-  await vehicleStore.loadVehicleList();
 }
 
 async function reject(vehicle) {
@@ -161,8 +160,6 @@ async function expire(vehicle) {
     vehicleStatus: "EXPIRED",
     vehicleType: vehicle.vehicleType
   });
-
-  await vehicleStore.loadVehicleList();
 }
 
 function formatDateTimeLocalValue(date) {
