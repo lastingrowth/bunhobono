@@ -169,13 +169,9 @@ public interface MemberMapper {
         SET mem_status = CASE
                 WHEN UPPER(TRIM(role)) = 'ADMIN' THEN '퇴사'
                 WHEN UPPER(TRIM(role)) = 'RESIDENT' THEN '전출'
-                ELSE mem_status
+                ELSE '가입취소'
             END,
-            delete_at = CASE
-                WHEN UPPER(TRIM(role)) IN ('ADMIN', 'RESIDENT')
-                THEN COALESCE(delete_at, CURRENT_TIMESTAMP)
-                ELSE delete_at
-            END
+            delete_at = COALESCE(delete_at, CURRENT_TIMESTAMP)
         WHERE member_no = #{memberNo}
         """)
     void delete(int memberNo);

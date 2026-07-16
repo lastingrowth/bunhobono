@@ -111,6 +111,11 @@ const hoOptions = computed(() => {
 
 watch(selectedDong, () => {
   selectedHo.value = ''
+  memberNo.value = null
+})
+
+watch(selectedHo, () => {
+  memberNo.value = null
 })
 
 onMounted(async () => {
@@ -142,11 +147,13 @@ async function add() {
       carNo: normalizedCarNo,
       vehicleType: vehicleType.value,
       vehicleStatus: 'WAITING',
+      memberNo: memberNo.value
     })
 
     alert('차량이 등록되었습니다')
     reset()
     await vehicleStore.loadVehicleApproveList()
+    await vehicleStore.loadVehicleList()
   } catch (error) {
     if (error.response?.status === 409) {
       alert('이미 등록 또는 승인 대기 중인 차량번호입니다.')
@@ -164,7 +171,7 @@ function reset() {
   vehicleType.value = 'normal'
   selectedDong.value = ''
   selectedHo.value = ''
-
+  memberNo.value = null
 }
 
 function dongText(dong) {

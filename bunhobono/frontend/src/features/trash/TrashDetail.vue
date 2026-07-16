@@ -3,7 +3,7 @@
     <section class="trash-detail-dialog">
     <div class="detail-header">
       <div>
-        <h2>휴지통 상세</h2>
+        <h2>지난기록 상세</h2>
         <p>삭제된 데이터의 상세 내용을 확인합니다.</p>
       </div>
 
@@ -99,7 +99,7 @@ const commonRows = computed(() => {
 
   return [
     {
-      label: "휴지통 번호",
+      label: "지난기록 번호",
       value: showValue(detail.trashNo),
     },
     {
