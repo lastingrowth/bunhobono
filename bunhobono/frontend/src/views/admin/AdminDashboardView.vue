@@ -24,62 +24,6 @@
 
     </div>
 
-    <dialog ref="gateDialog" class="gate-open-dialog">
-      <div class="gate-dialog-header">
-        <div>
-          <h3>수동 입차 승인</h3>
-          <p>
-            {{ selectedGateParkingName }}게이트를 열 차량을 확인해주세요.
-          </p>
-        </div>
-        <button type="button" class="gate-dialog-close" @click="closeGateDialog">
-          닫기
-        </button>
-      </div>
-
-      <div class="gate-dialog-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>주차장</th>
-              <th>게이트</th>
-              <th>차량번호</th>
-              <th>차량상태</th>
-              <th>촬영시각</th>
-              <th>처리</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="vehicle in dialogApprovalVehicles" :key="vehicle.cameraDataNo">
-              <td>{{ vehicle.parkingName || '-' }}</td>
-              <td>
-                {{ vehicle.gateName || '-' }}
-                <small v-if="vehicle.gateNo" class="gate-number">
-                  #{{ vehicle.gateNo }}
-                </small>
-              </td>
-              <td>{{ vehicle.carNo || '미인식' }}</td>
-              <td>{{ getManualVehicleStatusText(vehicle) }}</td>
-              <td>{{ formatGateRequestTime(vehicle.captureTime) }}</td>
-              <td>
-                <button
-                  type="button"
-                  class="gate-approve-button"
-                  :disabled="openingCameraDataNo !== null"
-                  @click="confirmGateOpen(vehicle)"
-                >
-                  {{ openingCameraDataNo === vehicle.cameraDataNo ? '처리 중...' : '입차 승인' }}
-                </button>
-              </td>
-            </tr>
-            <tr v-if="dialogApprovalVehicles.length === 0">
-              <td colspan="6">수동 승인 대기 차량이 없습니다.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </dialog>
-
     <!-- 데이터 조회 상태 -->
     <p v-if="loading"
       class="dashboard-message">
@@ -154,16 +98,18 @@
           <!-- A/B/C/D 주차장 사용률 -->
           <div
             class="parking-status-strip"
+            role="link"
+            tabindex="0"
+            aria-label="주차장 관리 화면으로 이동"
+            @click="goParkingList"
+            @keydown.enter="goParkingList"
+            @keydown.space.prevent="goParkingList"
           >
 
-            <button
+            <div
               v-for="parking in parkingStatusWithOcr"
               :key="`status-${parking.parkingNo}`"
-              type="button"
               class="parking-zone-status"
-              :class="{ 'has-gate-request': hasManualRequest(parking.parkingNo) }"
-              :disabled="!hasManualRequest(parking.parkingNo)"
-              @click="openGateDialog(parking.parkingNo)"
             >
 
               <strong class="parking-zone-name">
@@ -187,13 +133,7 @@
                 주차 가능 {{ parking.available }}면
               </span>
 
-              <span
-                v-if="manualRequestCount(parking.parkingNo) > 0"
-                class="parking-gate-request-count"
-              >
-                게이트 요청 {{ manualRequestCount(parking.parkingNo) }}건
-              </span>
-            </button>
+            </div>
           </div>
 
           <!-- A/B/C/D 주차장별 최신 OCR 사진 -->
@@ -385,9 +325,8 @@
 
 <script setup>
 import { useAdminDashboardStore } from '@/stores/adminDashboard'
-import { openGateForCameraData } from '@/features/camera-data/cameraDataApi'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -401,7 +340,6 @@ const {
   waitingVehicleCount,
   todayVisitVehicleCount,
   parkingStatusWithOcr,
-  manualApprovalVehicles,
   weeklyEntryStats,
   currentCarlogPage,
   carlogTotalPages,
@@ -409,108 +347,12 @@ const {
   paginatedCarlogs
 } = storeToRefs(dashboardStore)
 
-const gateDialog = ref(null)
-const openingCameraDataNo = ref(null)
-const selectedGateParkingNo = ref(null)
 let ocrRefreshTimer = null
 let ocrRefreshing = false
 
 // 새로고침 버튼과 최초 화면 진입 시 사용
 const loadDashboard = async () => {
   await dashboardStore.loadDashboard()
-}
-
-const dialogApprovalVehicles = computed(() => {
-  if (selectedGateParkingNo.value === null) {
-    return manualApprovalVehicles.value
-  }
-
-  return manualApprovalVehicles.value.filter((vehicle) => {
-    return Number(vehicle.parkingNo) === Number(selectedGateParkingNo.value)
-  })
-})
-
-const selectedGateParkingName = computed(() => {
-  if (selectedGateParkingNo.value === null) return ''
-
-  const parking = parkingStatusWithOcr.value.find((item) => {
-    return Number(item.parkingNo) === Number(selectedGateParkingNo.value)
-  })
-
-  return parking?.parkingName ? `${parking.parkingName} 주차장 ` : ''
-})
-
-const manualRequestCount = (parkingNo) => {
-  return manualApprovalVehicles.value.filter((vehicle) => {
-    return Number(vehicle.parkingNo) === Number(parkingNo)
-  }).length
-}
-
-const hasManualRequest = (parkingNo) => {
-  return manualRequestCount(parkingNo) > 0
-}
-
-const openGateDialog = (parkingNo = null) => {
-  selectedGateParkingNo.value = parkingNo
-  gateDialog.value?.showModal()
-}
-
-const closeGateDialog = () => {
-  gateDialog.value?.close()
-  selectedGateParkingNo.value = null
-}
-
-const getManualVehicleStatusText = (vehicle) => {
-  if (!vehicle.vehicleCarNo) return '미등록'
-  if (vehicle.vehicleStatus === 'WAITING') return '승인 대기'
-  if (vehicle.vehicleStatus === 'EXPIRED') return '만료'
-  if (vehicle.vehicleStatus === 'UNKNOWN') return '미확인'
-  return vehicle.vehicleStatus || '-'
-}
-
-const formatGateRequestTime = (value) => {
-  if (!value) return '-'
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-
-  return date.toLocaleString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const confirmGateOpen = async (vehicle) => {
-  const confirmed = window.confirm(
-    `${vehicle.carNo || '미인식'} 차량의 `
-      + `${vehicle.gateName || '연결된 게이트'}를 열겠습니까?`
-  )
-
-  if (!confirmed || openingCameraDataNo.value !== null) return
-
-  openingCameraDataNo.value = vehicle.cameraDataNo
-
-  try {
-    await openGateForCameraData(vehicle.cameraDataNo)
-    window.alert('입차 승인이 완료되었습니다.')
-    await dashboardStore.refreshOcrImages()
-
-    if (dialogApprovalVehicles.value.length === 0) {
-      closeGateDialog()
-    }
-  } catch (error) {
-    const status = error.response?.status
-
-    if (status === 409) {
-      window.alert('이미 처리됐거나 게이트가 열려 있습니다.')
-    } else {
-      window.alert('게이트 열기 처리에 실패했습니다.')
-    }
-  } finally {
-    openingCameraDataNo.value = null
-  }
 }
 
 // 관리자 대시보드에서 점검 화면을 테스트하기 위한 임시 트리거
@@ -534,6 +376,11 @@ const goCameraDataList = (parkingNo) => {
       parkingNo
     }
   })
+}
+
+// 주차장 현황 카드를 누르면 주차장 관리 화면으로 이동
+const goParkingList = () => {
+  router.push('/admin/parkings')
 }
 
 

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { deleteCameraData, getCameraDataDetail, getCameraDataList, openGateForCameraData, searchCameraDataByCarNo } from "./cameraDataApi";
+import { deleteCameraData, getCameraDataDetail, getCameraDataList, searchCameraDataByCarNo } from "./cameraDataApi";
 import { useCameraStore } from "../camera/cameraStore";
 import { useGateStore } from "../gates/gateStore";
 import { getCarLogs } from "../carlog/carlogApi";
@@ -17,7 +17,6 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
   const detailMap = ref({});
   const carLogs = ref([]);
   const searchMode = ref(false);
-  const processingCameraDataNo = ref(null);
 
   const getField = (source, camelKey, snakeKey) => {
     return source?.[camelKey] ?? source?.[snakeKey];
@@ -125,6 +124,16 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
       return exactLog;
     }
 
+    const camera = findCamera(cameraData);
+    const gate = findGateByCamera(camera);
+    const gateType = String(getField(gate, "gateType", "gate_type") ?? "").toUpperCase();
+
+    // 입차는 car_log.camera_data_no가 정확히 같은 경우만 처리 완료로 인정한다.
+    // 같은 차량의 반복 촬영을 기존 입차 로그에 연결하지 않는다.
+    if (gateType === "IN") {
+      return null;
+    }
+
     return carLogs.value.find((log) => {
       const sameVehicle = vehicleCarNo
         && Number(log.vehicleCarNo) === Number(vehicleCarNo);
@@ -136,8 +145,9 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
         return false;
       }
 
-      return isSameCaptureTime(captureTime, log.inTime)
-        || isSameCaptureTime(captureTime, log.outTime);
+      // 출차 CameraData는 car_log에 직접 FK가 없으므로 차량과 출차 시각으로 연결한다.
+      return gateType === "OUT"
+        && isSameCaptureTime(captureTime, log.outTime);
     });
   };
 
@@ -233,13 +243,22 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
     const movementType = getMovementType(cameraData);
     const parking = getCameraParking(cameraData);
     const relatedCarLog = findRelatedCarLog(cameraData);
+    const processedMovementType = relatedCarLog
+      ? (Number(relatedCarLog.cameraDataNo) === Number(getCameraDataNo(cameraData))
+          ? "IN"
+          : isSameCaptureTime(getCaptureTime(cameraData), relatedCarLog.outTime)
+            ? "OUT"
+            : null)
+      : null;
 
     return {
       ...cameraData,
       ...parking,
       movementType,
       movementTypeText : getMovementTypeText(movementType),
-      processed: Boolean(relatedCarLog)
+      processed: Boolean(processedMovementType),
+      processedMovementType,
+      relatedCarLog
     };
   };
 
@@ -343,43 +362,15 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
     }
   };
 
-  // 미등록/미승인 입차 차량 수동 통과
-  const openGate = async (cameraDataNo) => {
-    if (processingCameraDataNo.value !== null) {
-      return;
-    }
-
-    const approved = confirm("이 차량의 게이트를 열어주시겠습니까?");
-    if (!approved) {
-      return;
-    }
-
-    try {
-      processingCameraDataNo.value = cameraDataNo;
-      await openGateForCameraData(cameraDataNo);
-      alert("게이트 열기 처리가 완료되었습니다.");
-      await loadList();
-    } catch (error) {
-      const message = error.response?.data?.detail
-        || error.response?.data?.message
-        || "게이트 처리에 실패했습니다.";
-      alert(message);
-    } finally {
-      processingCameraDataNo.value = null;
-    }
-  };
-
   return {
     list,
     searchResults,
     detail,
     detailMap,
     displayList,
-    processingCameraDataNo,
     loadList,
     searchByCarNo,
     loadDetail,
-    openGate,
     remove,
   };
 

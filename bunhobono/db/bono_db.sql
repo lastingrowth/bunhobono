@@ -56,8 +56,8 @@ CREATE TABLE gate (
     gate_name VARCHAR(100) NOT NULL,
     gate_type VARCHAR(10) NOT NULL
         CHECK (gate_type IN ('In', 'Out', 'Both')),
-	gate_status INT NOT NULL DEFAULT 0
-    CHECK (gate_status IN (0, 1)),
+    gate_status INT NOT NULL DEFAULT 0
+        CHECK (gate_status IN (0, 1)),
 
     CONSTRAINT fk_gate_parking
         FOREIGN KEY (parking_no)
@@ -163,6 +163,17 @@ CREATE TABLE car_log (
         REFERENCES camera_data(camera_data_no)
         ON DELETE SET NULL
 );
+
+-- 같은 차량은 출차 전까지 입차 기록을 하나만 가질 수 있다.
+CREATE UNIQUE INDEX uq_car_log_open_vehicle
+    ON car_log (vehicle_car_no)
+    WHERE out_time IS NULL AND vehicle_car_no IS NOT NULL;
+
+CREATE UNIQUE INDEX uq_car_log_open_snapshot_car
+    ON car_log (snapshot_car_no)
+    WHERE out_time IS NULL
+      AND vehicle_car_no IS NULL
+      AND snapshot_car_no IS NOT NULL;
 
 -- =====================================================
 -- NOTICE

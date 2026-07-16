@@ -21,26 +21,19 @@ public class CarLogService {
         return carLogMapper.list(dto);
     }
 
-    // 등록차량은 vehicleCarNo, 미등록차량은 carNo로 현재 미출차 로그 확인
     public boolean isAlreadyParking(CameraDataDTO cameraData) {
         return carLogMapper.existsOpenLog(cameraData);
     }
 
-
-    // camera_data 저장 직후 호출: 게이트 유형에 따라 입차 생성 또는 출차 처리
-    public void processCameraData(CameraDataDTO cameraData, GateDTO gate) {
-        if (cameraData.getCarNo() == null || cameraData.getCarNo().isBlank()) {
-            return;
-        }
-
+    // 게이트가 열린 뒤에만 입차 로그를 생성하거나 출차 로그를 완료한다.
+    public int processCameraData(CameraDataDTO cameraData, GateDTO gate) {
         if ("In".equalsIgnoreCase(gate.getGateType())) {
-            boolean alreadyParking = isAlreadyParking(cameraData);
-            if (alreadyParking) { return; }
-            carLogMapper.insertEntry(cameraData, gate.getGateNo());
+            return carLogMapper.insertEntry(cameraData, gate.getGateNo());
 
         } else if ("Out".equalsIgnoreCase(gate.getGateType())) {
-            carLogMapper.completeExit(cameraData, gate.getGateNo());
+            return carLogMapper.completeExit(cameraData, gate.getGateNo());
         }
+        return 0;
     }
 
     // 테스트용: 매분 실행

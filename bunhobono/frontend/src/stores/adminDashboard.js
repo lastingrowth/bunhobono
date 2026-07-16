@@ -173,18 +173,24 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         const confidenceScore = detail.confidenceScore ?? data.confidenceScore;
         const vehicleStatus = detail.vehicleStatus ?? data.vehicleStatus;
         const vehicleCarNo = detail.vehicleCarNo ?? data.vehicleCarNo;
+        const relatedCarLog = data.relatedCarLog;
         const waitingForApproval = data.movementType === "IN"
             && !data.processed
             && (!vehicleCarNo || vehicleStatus === "WAITING" || vehicleStatus === "UNKNOWN");
+        const movementText = data.processedMovementType === "IN"
+            ? "입차"
+            : data.processedMovementType === "OUT"
+                ? "출차"
+                : waitingForApproval
+                    ? "대기중"
+                    : "처리 안 됨";
 
         return {
             ...data,
             ...detail,
             imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
-            carNoText: detail.carNo || data.carNo || "미인식",
-            movementText: waitingForApproval
-                ? "대기중"
-                : data.movementTypeText ?? "확인 불가",
+            carNoText: relatedCarLog?.carNo || detail.carNo || data.carNo || "미인식",
+            movementText,
             confidenceText: confidenceScore == null
                 ? "-"
                 : `${Number(confidenceScore).toFixed(1)}%`
@@ -199,26 +205,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 ocr: getParkingOcrCard(parking)
             };
         });
-    });
-
-    // 입차 카메라에 감지됐지만 자동 통과하지 않은 수동 승인 대상 차량
-    const manualApprovalVehicles = computed(() => {
-        return [...cameraDataStore.displayList]
-            .filter((data) => {
-                if (!data.cameraDataNo || data.movementType !== "IN" || data.processed) {
-                    return false;
-                }
-
-                if (!data.vehicleCarNo) {
-                    return true;
-                }
-
-                return data.vehicleStatus !== "APPROVED";
-            })
-            .sort((a, b) => {
-                return new Date(b.captureTime ?? 0).getTime()
-                    - new Date(a.captureTime ?? 0).getTime();
-            });
     });
 
     const clearOcrImageUrls = () => {
@@ -480,7 +466,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         ocrFailCount,
         ocrSuccessRate,
         parkingStatusWithOcr,
-        manualApprovalVehicles,
         weeklyEntryStats,
         currentCarlogPage,
         carlogTotalPages,

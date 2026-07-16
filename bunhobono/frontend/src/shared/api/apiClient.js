@@ -3,6 +3,8 @@
 
 import axios from "axios";
 
+let redirectingToLogin = false;
+
 /*
 |--------------------------------------------------------------------------
 | 1. Axios 인스턴스 생성 (핵심)
@@ -128,6 +130,15 @@ api.interceptors.response.use(
 
             if (status === 401) {
                 console.error("🚨 인증 실패 (로그인 필요)");
+
+                localStorage.removeItem("token");
+                localStorage.removeItem("userId");
+                localStorage.removeItem("memStatus");
+
+                if (!redirectingToLogin && window.location.pathname !== "/login") {
+                    redirectingToLogin = true;
+                    window.location.assign("/login");
+                }
             }
 
             if (status === 403) {
