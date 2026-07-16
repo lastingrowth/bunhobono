@@ -127,6 +127,7 @@ public class CameraDataService {
         }
 
         if ("In".equalsIgnoreCase(gate.getGateType())
+                && !carLogService.isAlreadyParking(cameraData)
                 && canAutoEnter(cameraData)) {
             passGate(cameraData, gate);
         }
@@ -190,6 +191,22 @@ public class CameraDataService {
                     "카메라에 연결된 게이트가 없습니다."
             );
         }
+
+        if (!"In".equalsIgnoreCase(gate.getGateType())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "입차 게이트의 차량만 수동 처리할 수 있습니다."
+            );
+        }
+
+        // 같은 차량이 아직 출차하지 않았다면 게이트를 다시 열지 않음
+        if (carLogService.isAlreadyParking(cameraData)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "아직 출차하지 않은 차량입니다."
+            );
+        }
+
         // 4. 기존 자동 처리와 동일한 공통 메서드 사용
         passGate(cameraData, gate);
     }

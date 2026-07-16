@@ -79,6 +79,14 @@
             </router-link>
           </td>
           <td>
+            <button
+              v-if="needsManualEntry(d)"
+              type="button"
+              :disabled="dStore.processingCameraDataNo !== null"
+              @click="dStore.openGate(d.cameraDataNo)"
+            >
+              {{ dStore.processingCameraDataNo === d.cameraDataNo ? '처리 중' : '게이트 열기' }}
+            </button>
             <button type="button" @click="dStore.remove(d.cameraDataNo)">삭제</button>
           </td>
         </tr>
@@ -130,6 +138,23 @@ const filteredCameraDataList = computed(() => {
     return Number(data.parkingNo) === selectedParkingNo.value;
   });
 });
+
+const needsManualEntry = (cameraData) => {
+  if (cameraData.movementType !== 'IN' || cameraData.processed) {
+    return false;
+  }
+
+  if (!cameraData.vehicleCarNo) {
+    return true;
+  }
+
+  if (cameraData.vehicleStatus !== 'APPROVED') {
+    return true;
+  }
+
+  return cameraData.vehicleType !== 'normal'
+    && cameraData.vehicleType !== 'visit';
+};
 
 const pageSize = 10;
 

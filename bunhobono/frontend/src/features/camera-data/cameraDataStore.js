@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { deleteCameraData, getCameraDataDetail, getCameraDataList, searchCameraDataByCarNo } from "./cameraDataApi";
+import { deleteCameraData, getCameraDataDetail, getCameraDataList, openGateForCameraData, searchCameraDataByCarNo } from "./cameraDataApi";
 import { useCameraStore } from "../camera/cameraStore";
 import { useGateStore } from "../gates/gateStore";
 import { getCarLogs } from "../carlog/carlogApi";
@@ -17,6 +17,7 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
   const detailMap = ref({});
   const carLogs = ref([]);
   const searchMode = ref(false);
+  const processingCameraDataNo = ref(null);
 
   const getField = (source, camelKey, snakeKey) => {
     return source?.[camelKey] ?? source?.[snakeKey];
@@ -342,15 +343,43 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
     }
   };
 
+  // 미등록/미승인 입차 차량 수동 통과
+  const openGate = async (cameraDataNo) => {
+    if (processingCameraDataNo.value !== null) {
+      return;
+    }
+
+    const approved = confirm("이 차량의 게이트를 열어주시겠습니까?");
+    if (!approved) {
+      return;
+    }
+
+    try {
+      processingCameraDataNo.value = cameraDataNo;
+      await openGateForCameraData(cameraDataNo);
+      alert("게이트 열기 처리가 완료되었습니다.");
+      await loadList();
+    } catch (error) {
+      const message = error.response?.data?.detail
+        || error.response?.data?.message
+        || "게이트 처리에 실패했습니다.";
+      alert(message);
+    } finally {
+      processingCameraDataNo.value = null;
+    }
+  };
+
   return {
     list,
     searchResults,
     detail,
     detailMap,
     displayList,
+    processingCameraDataNo,
     loadList,
     searchByCarNo,
     loadDetail,
+    openGate,
     remove,
   };
 
