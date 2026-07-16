@@ -30,8 +30,8 @@
       </thead>
 
       <tbody>
-        <tr v-for="vehicle in sortedVehicles" :key="vehicle.vehicleCarNo">
-          <td>{{ vehicle.displayNo }}</td>
+        <tr v-for="(vehicle, index) in paginatedItems" :key="vehicle.vehicleCarNo">
+          <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
           <td>{{ vehicle.carNo }}</td>
           <td>{{ memberDongText(vehicle) }}</td>
           <td>{{ memberHoText(vehicle) }}</td>
@@ -51,12 +51,19 @@
         </tr>
       </tbody>
     </table>
+    <Pagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :page-numbers="pageNumbers"
+      @change-page="setPage"/>
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
 import { useVehicleStore } from '../vehicleStore'
+import { usePagination } from '@/shared/pagination/usePagination'
+import Pagination from '@/shared/pagination/Pagination.vue'
 
 const props = defineProps({
   vehicles: {
@@ -108,6 +115,17 @@ const sortedVehicles = computed(() => {
     return right - left
   })
 })
+
+// 한 페이지에 보여줄 목록 수
+const pageSize = 10
+
+const {
+  currentPage,
+  totalPages,
+  pageNumbers,
+  paginatedItems,
+  setPage
+} = usePagination(sortedVehicles, pageSize)
 
 const sortButtonText = computed(() => {
   if (sortMode.value === 'oldest') {
