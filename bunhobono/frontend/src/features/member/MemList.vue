@@ -35,7 +35,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="mem in paginatedPendingMembers" :key="mem.memberNo">
+                <tr v-for="mem in paginatedMembers" :key="mem.memberNo">
                     <td><input v-model="selectedMemberNos" type="checkbox" :value="mem.memberNo"></td>
                     <td>{{ mem.role }}</td>
                     <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
@@ -45,11 +45,11 @@
                 <tr v-if="pendingMembers.length === 0"><td colspan="7">승인 대기 회원이 없습니다.</td></tr>
             </tbody>
         </table>
-        <div class="member-pagination">
-            <button type="button" :disabled="currentPage === 1" @click="setPage(currentPage - 1)">이전</button>
-            <button v-for="page in pageNumbers" :key="page" type="button" :class="{ active: currentPage === page }" @click="setPage(page)">{{ page }}</button>
-            <button type="button" :disabled="currentPage === totalPages" @click="setPage(currentPage + 1)">다음</button>
-        </div>
+        <pagination
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :page-numbers="pageNumbers"
+            @change-page="setPage"/>
     </section>
     </template>
 
@@ -72,7 +72,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="mem in paginatedWithdrawnMembers" :key="mem.memberNo" :class="{ 'withdrawn-expired': getElapsedDays(mem.memDeleteAt) >= 3 }">
+                <tr v-for="mem in paginatedMembers" :key="mem.memberNo" :class="{ 'withdrawn-expired': getElapsedDays(mem.memDeleteAt) >= 3 }">
                     <td><input type="checkbox" :checked="selectedWithdrawnMemberNos.includes(mem.memberNo)" @change="toggleWithdrawnMember(mem.memberNo)"></td>
                     <td>{{ mem.role }}</td>
                     <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
@@ -85,11 +85,11 @@
                 </tr>
             </tbody>
         </table>
-        <div class="member-pagination">
-            <button type="button" :disabled="currentPage === 1" @click="setPage(currentPage - 1)">이전</button>
-            <button v-for="page in pageNumbers" :key="page" type="button" :class="{ active: currentPage === page }" @click="setPage(page)">{{ page }}</button>
-            <button type="button" :disabled="currentPage === totalPages" @click="setPage(currentPage + 1)">다음</button>
-        </div>
+        <pagination
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :page-numbers="pageNumbers"
+            @change-page="setPage"/>
     </section>
     </template>
 
@@ -128,7 +128,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr v-for="mem in paginatedApprovedMembers" :key="mem.memberNo">
+            <tr v-for="mem in paginatedMembers" :key="mem.memberNo">
                 <td>{{ mem.displayNo }}</td>
                 <td>{{ mem.role }}</td>
                 <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
@@ -138,11 +138,11 @@
             </tr>
         </tbody>
     </table>
-    <div class="member-pagination">
-        <button type="button" :disabled="currentPage === 1" @click="setPage(currentPage - 1)">이전</button>
-        <button v-for="page in pageNumbers" :key="page" type="button" :class="{ active: currentPage === page }" @click="setPage(page)">{{ page }}</button>
-        <button type="button" :disabled="currentPage === totalPages" @click="setPage(currentPage + 1)">다음</button>
-    </div>
+    <pagination
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :page-numbers="pageNumbers"
+            @change-page="setPage"/>
     </template>
 </template>
 
@@ -151,6 +151,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useMemStore } from './memStore';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
+import { usePagination } from '@/shared/pagination/usePagination';
+import Pagination from '@/shared/pagination/Pagination.vue';
 
 const store = useMemStore();
 const route = useRoute();
@@ -164,7 +166,6 @@ const dongOptions = [0, 101, 102, 103, 104, 105, 106, 107, 108];
 const selectedMemberNos = ref([]);
 const selectedWithdrawnMemberNos = ref([]);
 const currentTime = ref(Date.now());
-const currentPage = ref(1);
 const pageSize = 10;
 let elapsedCheckTimer;
 const managementSections = [
@@ -207,28 +208,13 @@ const activeMembers = computed(() => {
     return approvedMembers.value;
 });
 
-const totalPages = computed(() => Math.max(Math.ceil(activeMembers.value.length / pageSize), 1));
-
-const pageNumbers = computed(() => {
-    let startPage = Math.max(currentPage.value - 2, 1);
-    let endPage = Math.min(startPage + 4, totalPages.value);
-    startPage = Math.max(endPage - 4, 1);
-    return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
-});
-
-const paginateMembers = (members) => {
-    const start = (currentPage.value - 1) * pageSize;
-    return members.slice(start, start + pageSize);
-};
-
-const paginatedApprovedMembers = computed(() => paginateMembers(approvedMembers.value));
-const paginatedPendingMembers = computed(() => paginateMembers(pendingMembers.value));
-const paginatedWithdrawnMembers = computed(() => paginateMembers(withdrawnMembers.value));
-
-const setPage = (page) => {
-    if (page < 1 || page > totalPages.value) return;
-    currentPage.value = page;
-};
+const {
+    currentPage,
+    totalPages,
+    pageNumbers,
+    paginatedItems : paginatedMembers,
+    setPage
+} = usePagination(activeMembers, pageSize);
 
 const getElapsedDays = (deleteAt) => {
     const deletedTime = new Date(deleteAt).getTime();
@@ -368,11 +354,6 @@ onUnmounted(() => {
 .member-search, .member-search-fields { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .member-search { min-width: 0; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-header); }
 .member-search select, .member-search input, .member-search button { display: inline-block; min-height: 36px; }
-.member-pagination { margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 5px; }
-.member-pagination button { min-width: 34px; height: 30px; padding: 0 9px; border: 1px solid var(--border-color); border-radius: 7px; cursor: pointer; font-size: 12px; color: var(--text-color); background: var(--bg-header); }
-.member-pagination button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
-.member-pagination button.active { border-color: var(--bg-sidebar); color: var(--text-white); background: var(--bg-sidebar); box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18); }
-.member-pagination button:disabled { cursor: default; opacity: 0.45; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 8px; text-align: center; }
 
