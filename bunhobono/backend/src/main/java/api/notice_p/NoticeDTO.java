@@ -21,6 +21,7 @@ public class NoticeDTO {
     private LocalDateTime handledAt;
 
     private LocalDateTime inTime;
+    private LocalDateTime outTime;
     private String parkingName;
 
     //스냅샷 칼럼
