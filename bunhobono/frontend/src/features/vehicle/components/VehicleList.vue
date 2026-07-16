@@ -33,8 +33,8 @@
         <tr v-for="vehicle in sortedVehicles" :key="vehicle.vehicleCarNo">
           <td>{{ vehicle.displayNo }}</td>
           <td>{{ vehicle.carNo }}</td>
-          <td>{{ getVehicleMember(vehicle)?.memDong ?? '-' }}</td>
-          <td>{{ getVehicleMember(vehicle)?.memHo ?? '-' }}</td>
+          <td>{{ memberDongText(vehicle) }}</td>
+          <td>{{ memberHoText(vehicle) }}</td>
           <td>{{ vehicle.vehicleTypeText || vehicle.vehicleType }}</td>
           <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus }}</td>
           <td>{{ vehicle.approvedAtText || '-' }}</td>
@@ -55,16 +55,17 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useMemStore } from '../../member/memStore'
+import { computed, ref } from 'vue'
 import { useVehicleStore } from '../vehicleStore'
 
 const props = defineProps({
-  vehicles: Array
+  vehicles: {
+    type: Array,
+    default: () => []
+  }
 })
 
 const vehicleStore = useVehicleStore()
-const memberStore = useMemStore()
 
 const filterType = ref('all')
 const sortMode = ref('latest')
@@ -128,17 +129,29 @@ function isExpiredVehicle(vehicle) {
   return String(vehicle.remainingTimeText || '').startsWith('만기됨')
 }
 
-function getVehicleMember(vehicle) {
-  return memberStore.memberList.find((member) => {
-    return Number(member.memberNo) === Number(vehicle.memberNo)
-  })
+function memberDongText(vehicle) {
+  if (vehicle.memDong === null || vehicle.memDong === undefined) {
+    return '-'
+  }
+
+  if (Number(vehicle.memDong) === 0) {
+    return '관리동'
+  }
+
+  return vehicle.memDong
 }
 
-onMounted(async () => {
-  if (memberStore.memberList.length === 0) {
-    await memberStore.loadmemberList()
+function memberHoText(vehicle) {
+  if (vehicle.memHo === null || vehicle.memHo === undefined) {
+    return '-'
   }
-})
+
+  if (Number(vehicle.memHo) === 0) {
+    return '관리실'
+  }
+
+  return vehicle.memHo
+}
 
 async function remove(vehicleNo) {
   if (!confirm('삭제할까요?')) {
