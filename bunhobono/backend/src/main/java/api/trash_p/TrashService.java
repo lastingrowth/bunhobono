@@ -70,4 +70,9 @@ public class TrashService {
             throw new IllegalStateException("알림 삭제에 실패했습니다.");
         }
     }
+    
+    //검색
+    public List<TrashDTO> searchByCarNo(String carNo) {
+        return trashMapper.searchByCarNo(carNo);
+    }
 }

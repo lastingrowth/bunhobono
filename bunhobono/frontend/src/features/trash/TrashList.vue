@@ -1,11 +1,13 @@
 <template>
   <main class="trash-page">
     <div class="trash-header">
-      <h2>휴지통</h2>
+      
+
+      <h2>지난기록</h2>
 
       <div class="trash-filter">
         <label for="dataType">데이터 종류</label>
-
+        <br/>
         <select
           id="dataType"
           :value="trashStore.selectedDataType"
@@ -17,17 +19,39 @@
           <option value="NOTICE">알림</option>
         </select>
       </div>
+      <div class="trash-search">
+        <input
+          v-model="trashStore.searchCarNo"
+          type="text"
+          placeholder="차량번호를 입력하세요"
+          @keyup.enter="trashStore.searchByCarNo"
+        />
+
+        <button
+          type="button"
+          @click="trashStore.searchByCarNo"
+        >
+          검색
+        </button>
+
+        <button
+          type="button"
+          @click="trashStore.resetTrashList"
+        >
+          목록 초기화
+        </button>
+      </div>
     </div>
 
     <div class="trash-table-wrap">
       <table class="trash-table">
         <thead>
           <tr>
-            <th>휴지통 번호</th>
+            <th>지난기록 번호</th>
             <th>데이터 종류</th>
+            <th>차량번호</th>
             <th>삭제 방식</th>
-            <th>삭제 일시</th>
-            <th>영구삭제 예정일</th>
+            <th>삭제일시</th>
             <th>상세</th>
           </tr>
         </thead>
@@ -43,16 +67,14 @@
               {{ getDataTypeText(item.dataType) }}
             </td>
 
+            <td>{{ getTrashCarNo(item) }}</td>
+
             <td>
               {{ getDeleteTypeText(item.deleteType) }}
             </td>
 
             <td>
               {{ formatDate(item.deletedAt) }}
-            </td>
-
-            <td>
-              {{ formatDate(item.purgeAt) }}
             </td>
 
             <td>
@@ -67,7 +89,7 @@
 
           <tr v-if="trashStore.trashList.length === 0">
             <td colspan="6" class="empty-message">
-              휴지통에 데이터가 없습니다.
+              지난기록에 데이터가 없습니다.
             </td>
           </tr>
         </tbody>
@@ -90,6 +112,26 @@ import {
 
 const router = useRouter();
 const trashStore = useTrashStore();
+
+const getTrashCarNo = (item) => {
+  if (item.carNo) {
+    return item.carNo;
+  }
+
+  try {
+    const data = typeof item.dataJson === "string"
+      ? JSON.parse(item.dataJson)
+      : item.dataJson;
+
+    return data?.captured_car_no
+      || data?.car_no
+      || data?.snapshot_car_no
+      || data?.snapshot_captured_car_no
+      || "-";
+  } catch {
+    return "-";
+  }
+};
 
 const changeDataType = async (event) => {
   await trashStore.changeDataType(event.target.value);

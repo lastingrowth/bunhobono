@@ -26,4 +26,10 @@ public class TrashController {
     public TrashDTO detail(@PathVariable long trashNo) {
         return trashService.detail(trashNo);
     }
+
+    //휴지통 검색
+    @GetMapping("/search")
+    public List<TrashDTO> search(@RequestParam String carNo) {
+        return trashService.searchByCarNo(carNo);
+    }
 }
