@@ -199,7 +199,7 @@ public class CameraDataService {
             );
         }
 
-        // 같은 차량이 아직 출차하지 않았다면 게이트를 다시 열지 않음
+        // 4. 같은 차량이 아직 출차하지 않았다면 게이트를 다시 열지 않음
         if (carLogService.isAlreadyParking(cameraData)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -207,7 +207,7 @@ public class CameraDataService {
             );
         }
 
-        // 4. 기존 자동 처리와 동일한 공통 메서드 사용
+
         passGate(cameraData, gate);
     }
 

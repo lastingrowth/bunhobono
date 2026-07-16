@@ -171,13 +171,20 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
         const detail = ocrDetails.value[data.cameraDataNo] ?? {};
         const confidenceScore = detail.confidenceScore ?? data.confidenceScore;
+        const vehicleStatus = detail.vehicleStatus ?? data.vehicleStatus;
+        const vehicleCarNo = detail.vehicleCarNo ?? data.vehicleCarNo;
+        const waitingForApproval = data.movementType === "IN"
+            && !data.processed
+            && (!vehicleCarNo || vehicleStatus === "WAITING" || vehicleStatus === "UNKNOWN");
 
         return {
             ...data,
             ...detail,
             imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
             carNoText: detail.carNo || data.carNo || "미인식",
-            movementText: data.movementTypeText ?? "확인 불가",
+            movementText: waitingForApproval
+                ? "대기중"
+                : data.movementTypeText ?? "확인 불가",
             confidenceText: confidenceScore == null
                 ? "-"
                 : `${Number(confidenceScore).toFixed(1)}%`
