@@ -29,7 +29,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     const currentCarlogPage = ref(1);
 
     // 한 페이지에 표시할 입출차 기록 수
-    const carlogPageSize = 4;
+    const carlogPageSize = 5;
 
     // 확인하지 않은 알림 수
     const unresolvedNoticeCount = computed(() => {
@@ -291,7 +291,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             const dateKey = getDateKey(date);
 
             // 해당 날짜에 입차한 기록 수
-            const count = carlogStore.carLogs.filter((log) => {
+            const dayLogs = carlogStore.carLogs.filter((log) => {
                 if (!log.inTime) {
                     return false;
                 }
@@ -303,31 +303,37 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 }
 
                 return getDateKey(inTime) === dateKey;
+            });
+
+            // 입주민 차량 입차 수
+            const residentCount = dayLogs.filter((log) => {
+                return log.carKind === "normal" || log.vehicleType === "normal";
+            }).length;
+
+            // 방문 차량 입차 수
+            const visitCount = dayLogs.filter((log) => {
+                return log.carKind === "visit" || log.vehicleType === "visit";
             }).length;
 
             days.push({
                 dateKey,
                 dateLabel: `${date.getMonth() + 1}/${date.getDate()}`,
                 dayLabel: weekNames[date.getDay()],
-                count
+                residentCount,
+                visitCount
             });
         }
 
-        // 입차량이 가장 많은 날을 막대 높이 100%로 사용
+        // 입주민 / 방문객 중 입차량이 가장 많은 날을 막대 높이 100%로 사용
         const maximumCount = Math.max(
-            ...days.map((day) => day.count), 1
+            ...days.map((day) => { return Math.max(day.residentCount, day.visitCount);}), 1
         );
 
         return days.map((day) => {
-            const barHeight = day.count === 0
-                ? 0
-                : Math.max(
-                    Math.round(day.count / maximumCount * 100), 8
-                );
-
             return {
                 ...day,
-                barHeight
+                residentBarHeight : day.residentCount === 0 ? 0 : Math.max(Math.round(day.residentCount / maximumCount * 100), 8),
+                visitBarHeight : day.visitCount === 0 ? 0 : Math.max(Math.round(day.visitCount / maximumCount * 100), 8)
             };
         });
     });
