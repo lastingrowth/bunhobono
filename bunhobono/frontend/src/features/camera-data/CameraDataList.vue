@@ -65,8 +65,8 @@
       </thead>
 
       <tbody>
-        <tr v-for="(d, index) in filteredCameraDataList" :key="d.cameraDataNo">
-          <td>{{ index + 1 }}</td>
+        <tr v-for="(d, index) in paginatedItems" :key="d.cameraDataNo">
+          <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
           <td>{{ formatParkingName(d.parkingName) }}</td>
           <td>{{ d.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</td>
           <td>{{ d.carNo || '미인식' }}</td>
@@ -88,6 +88,11 @@
         </tr>
       </tbody>
     </table>
+    <pagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :page-numbers="pageNumbers"
+      @change-page="setPage"/>
   </div>
 </template>
 
@@ -95,6 +100,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useCameraDataStore } from './cameraDataStore';
+import { usePagination } from '@/shared/pagination/usePagination';
+import Pagination from '@/shared/pagination/Pagination.vue';
 
 const dStore = useCameraDataStore();
 const route = useRoute();
@@ -123,6 +130,17 @@ const filteredCameraDataList = computed(() => {
     return Number(data.parkingNo) === selectedParkingNo.value;
   });
 });
+
+const pageSize = 10;
+
+// usePagination(리스트, 한 화면에 보여줄 목록 수)
+const {
+  currentPage,
+  totalPages,
+  pageNumbers,
+  paginatedItems,
+  setPage
+} = usePagination(filteredCameraDataList, pageSize);
 
 const formatParkingName = (value) => {
   if (!value) return '-';
