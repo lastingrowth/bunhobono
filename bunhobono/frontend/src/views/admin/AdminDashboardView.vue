@@ -6,12 +6,22 @@
         <p>주차 관리 현황을 한눈에 확인하세요.</p>
       </div>
 
-      <button
-        type="button"
-        class="dashboard-refresh"
-        @click="loadDashboard">
-        새로고침
-      </button>
+      <div class="dashboard-header-actions">
+        <button
+          type="button"
+          class="dashboard-maintenance"
+          @click="startMaintenanceMode">
+          점검 시작
+        </button>
+
+        <button
+          type="button"
+          class="dashboard-refresh"
+          @click="loadDashboard">
+          새로고침
+        </button>
+      </div>
+
     </div>
 
     <!-- 데이터 조회 상태 -->
@@ -34,7 +44,6 @@
         @click="router.push('/admin/notice')"
       >
         <div class="card-heading">
-          <span class="card-icon">🔔</span>
           <span>미처리 알림</span>
         </div>
 
@@ -52,27 +61,34 @@
       <button
         type="button"
         class="dashboard-card vehicle-card"
-        @click="router.push('/admin/vehicles')"
+        @click="router.push('/admin/vehicles?mode=approve')"
       >
         <div class="card-heading">
-          <span class="card-icon">🚗</span>
           <span>차량 현황</span>
         </div>
 
-        <strong class="card-value">
-          {{ registeredVehicleCount }}
-          <small>대</small>
-        </strong>
+        <div class="card-vehicle-summary">
+          <div class="vehicle-summary-item">
+            <span>승인 대기</span>
+            <strong>
+              {{ waitingVehicleCount }}
+              <small>대</small>
+            </strong>
+          </div>
 
-        <span class="card-description">
-          전체 등록 차량
-        </span>
+          <div class="vehicle-summary-item">
+            <span>오늘 방문</span>
+            <strong>
+              {{ todayVisitVehicleCount }}
+              <small>대</small>
+            </strong>
+          </div>
+        </div>
       </button>
 
       <!-- 주차장별 현황 -->
       <article class="dashboard-card parking-overview-card">
         <div class="card-heading">
-          <span class="card-icon">🅿️</span>
           <span>주차장 현황</span>
         </div>
 
@@ -293,7 +309,8 @@ const {
   loading,
   errorMessage,
   unresolvedNoticeCount,
-  registeredVehicleCount,
+  waitingVehicleCount,
+  todayVisitVehicleCount,
   parkingStatusWithOcr,
   weeklyEntryStats,
   currentCarlogPage,
@@ -308,6 +325,14 @@ let ocrRefreshing = false
 // 새로고침 버튼과 최초 화면 진입 시 사용
 const loadDashboard = async () => {
   await dashboardStore.loadDashboard()
+}
+
+// 관리자 대시보드에서 점검 화면을 테스트하기 위한 임시 트리거
+// 백엔드 점검 API가 연결되면 window.startMaintenance() 대신 API 호출로 변경한다.
+const startMaintenanceMode = () => {
+  if (window.startMaintenance) {
+    window.startMaintenance()
+  }
 }
 
 // 입출차 목록 페이지 변경
@@ -362,4 +387,3 @@ onUnmounted(() => {
   }
 })
 </script>
-

@@ -156,6 +156,32 @@ onBeforeUnmount(() => {
   display: block;
 }
 
+.info-detail-card {
+  max-width: 760px;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18);
+}
+
+.info-detail-header {
+  padding: 22px 24px;
+}
+
+.info-detail-highlight {
+  padding: 22px 24px;
+}
+
+.info-detail-list {
+  padding: 8px 24px 20px;
+}
+
+.info-detail-actions {
+  padding: 18px 24px;
+  border-top: 1px solid var(--border-color);
+  background: #f8fafb;
+}
+
 .camera-image-content {
   margin-top: 12px;
 }

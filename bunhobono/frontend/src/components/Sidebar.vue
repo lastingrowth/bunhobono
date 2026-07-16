@@ -10,10 +10,6 @@
             active-class="route-record-active"
             exact-active-class="route-record-exact-active">
 
-            <span class="menu-icon">
-                {{ menu.icon }}
-            </span>
-
             <span v-if="!collapsed" class="menu-title">
                 {{ menu.title }}
             </span>

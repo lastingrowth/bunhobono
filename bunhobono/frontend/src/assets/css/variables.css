@@ -5,19 +5,22 @@
     --sidebar-width: 240px;
 
     /* background */
-    --bg-header: white;
-    --bg-sidebar: #e5e7eb;
-    --bg-main: #f3f4f6;
+    --bg-header: #ffffff;
+    --bg-sidebar: #292522;
+    --bg-main: #f3f6f8;
 
     /* Primary */
-    --primary: #0ea5e9;
-    --primary-hover: #0284c7;
+    --primary: #5b7c99;
+    --primary-hover: #44657f;
+    --accent: #565b60;
+    --accent-soft: #e7eaed;
 
     /* Text */
-    --text-color: #374151;      /* 기본 글자 */
-    --text-white: #ffffff;      /* 흰 글자 */
-    --text-muted: #9ca3af;      /* 구분선, 보조텍스트 */
+    --text-color: #303b44;      /* 기본 글자 */
+    --heading-color: #38bdf8;   /* 페이지 제목 */
+    --text-white: #ffffff;      /* 밝은 글자 */
+    --text-muted: #81909c;      /* 구분선, 보조텍스트 */
 
     /* Border */
-    --border-color: #d1d5db;    /* border, table, input */
+    --border-color: #d9e1e7;    /* border, table, input */
 }

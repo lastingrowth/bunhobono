@@ -3,7 +3,7 @@ server :
 
 spring :
   config:
-    import: "classpath:application-path.yaml"
+    import: "classpath:application-local.yaml"
   mvc :
     view:
       prefix: /views/

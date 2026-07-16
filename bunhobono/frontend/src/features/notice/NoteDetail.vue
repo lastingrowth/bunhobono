@@ -1,5 +1,6 @@
 <template>
   <main class="notice-detail-page">
+    <section class="notice-detail-dialog">
     <div class="detail-header">
       <h1>알림 상세</h1>
 
@@ -48,7 +49,7 @@
         </tbody>
       </table>
 
-      <section class="status-panel">
+      <section class="notice-detail-actions">
         <button
           type="button"
           :disabled="!canCompleteNotice"
@@ -62,6 +63,7 @@
     <p v-else>
       조회할 알림이 없습니다.
     </p>
+    </section>
   </main>
 </template>
 
@@ -277,3 +279,62 @@ watch(noticeNo, async () => {
   await loadDetail();
 });
 </script>
+
+<style scoped>
+.notice-detail-page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.notice-detail-dialog {
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bg-header);
+  box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18);
+}
+
+.detail-header {
+  width: 100%;
+  margin: 0;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-table {
+  width: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.detail-table th {
+  width: 190px;
+}
+
+.notice-detail-actions {
+  padding: 18px 24px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-color);
+  background: #f8fafb;
+}
+
+.notice-detail-dialog > p {
+  margin: 0;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .detail-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .detail-table th {
+    width: 140px;
+  }
+}
+</style>

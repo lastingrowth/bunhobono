@@ -34,7 +34,6 @@
                             class="preview-image"/>
 
                         <div v-else class="upload-placeholder">
-                            <span class="upload-icon">📷</span>
                             <strong>차량 사진을 선택하세요</strong>
                             <span>클릭하거나 사진을 이 영역에 끌어놓을 수 있습니다.</span>
                         </div>
@@ -373,10 +372,6 @@ onUnmounted(() => {
   font-size: 20px;
 }
 
-.upload-icon {
-  font-size: 56px;
-}
-
 .selected-file-name {
   margin: 12px 4px 0;
   overflow: hidden;
@@ -485,9 +480,9 @@ onUnmounted(() => {
 
 .camera-select-button.active {
   color: #ffffff;
-  background: linear-gradient(135deg, #169ee5, #2376e5);
-  border-color: #168bd1;
-  box-shadow: 0 7px 16px rgba(31, 130, 224, 0.2);
+  background: var(--bg-sidebar);
+  border-color: var(--bg-sidebar);
+  box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18);
 }
 
 .analyze-button {
@@ -568,6 +563,105 @@ onUnmounted(() => {
 .result-failed-title {
   color: #dc2626;
   font-size: 20px;
+}
+
+/* 로그인 화면과 통일한 다크 OCR 시연 테마 */
+.ocr-upload-page {
+  color: #263442;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(139, 167, 190, 0.28), transparent 40%),
+    linear-gradient(145deg, #4b5862, #303940);
+}
+
+.ocr-upload-card {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  background: rgba(250, 252, 253, 0.98);
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.upload-category,
+.control-heading span {
+  color: #93c5fd;
+}
+
+.upload-header p,
+.selected-file-name,
+.camera-device > span,
+.camera-device small,
+.result-label,
+.result-card p {
+  color: #748493;
+}
+
+.upload-drop-zone,
+.control-section {
+  border-color: #d9e3ea;
+  border-radius: 7px;
+  background: #f3f7f9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.upload-drop-zone:hover,
+.upload-drop-zone.dragging {
+  border-color: #38bdf8;
+  background: #edf8fd;
+}
+
+.upload-placeholder {
+  color: #81909c;
+}
+
+.upload-placeholder strong,
+.control-heading h2,
+.camera-selector-label {
+  color: #2e3b46;
+}
+
+.camera-device,
+.result-card {
+  border-color: #d8e3ea;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.camera-device strong,
+.result-information strong {
+  color: #7dd3fc;
+}
+
+.camera-select-button {
+  border-color: #c9d8e3;
+  border-radius: 5px;
+  color: #50687c;
+  background: #ffffff;
+}
+
+.camera-select-button:hover {
+  background: #edf5fa;
+}
+
+.camera-select-button.active {
+  border-color: var(--bg-sidebar);
+  color: #ffffff;
+  background: var(--bg-sidebar);
+}
+
+.analyze-button {
+  border-radius: 5px;
+  color: #ffffff;
+  background: var(--bg-sidebar);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.result-car-number {
+  color: #263442;
+}
+
+.result-information {
+  border-top-color: #dfe7ec;
 }
 
 @media (max-width: 800px) {

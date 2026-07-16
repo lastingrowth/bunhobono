@@ -150,9 +150,10 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useMemStore } from './memStore';
 import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const store = useMemStore();
+const route = useRoute();
 const router = useRouter();
 const { memberList } = storeToRefs(store);
 const searchType = ref('all');
@@ -166,12 +167,17 @@ const currentTime = ref(Date.now());
 const currentPage = ref(1);
 const pageSize = 10;
 let elapsedCheckTimer;
-const activeSection = ref('approved');
 const managementSections = [
     { value: 'approved', label: '승인회원관리' },
     { value: 'pending', label: '승인대기회원' },
     { value: 'withdrawn', label: '탈퇴회원관리' }
 ];
+const requestedSection = String(route.query.section || 'approved');
+const activeSection = ref(
+    managementSections.some((section) => section.value === requestedSection)
+        ? requestedSection
+        : 'approved'
+);
 
 // PENDING 역할 회원만 승인 대기 목록으로 분류한다.
 const pendingMembers = computed(() => memberList.value.filter(
@@ -356,7 +362,7 @@ onUnmounted(() => {
 .member-management-tabs { display: flex; align-items: center; gap: 4px; margin: 18px 0; }
 .member-management-tabs button { padding: 9px 14px; border: 1px solid var(--border-color); border-radius: 7px; cursor: pointer; font-weight: 700; color: var(--text-color); background: var(--bg-header); }
 .member-management-tabs button:hover { border-color: var(--primary); color: var(--primary); }
-.member-management-tabs button.active { border-color: var(--primary); color: var(--text-white); background: var(--primary); }
+.member-management-tabs button.active { border-color: var(--bg-sidebar); color: var(--text-white); background: var(--bg-sidebar); box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18); }
 .approved-list-header { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 12px; margin: 24px 0 12px; }
 .approved-list-header h3 { flex: none; margin: 0; }
 .member-search, .member-search-fields { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -365,7 +371,7 @@ onUnmounted(() => {
 .member-pagination { margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 5px; }
 .member-pagination button { min-width: 34px; height: 30px; padding: 0 9px; border: 1px solid var(--border-color); border-radius: 7px; cursor: pointer; font-size: 12px; color: var(--text-color); background: var(--bg-header); }
 .member-pagination button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
-.member-pagination button.active { border-color: var(--primary); color: var(--text-white); background: var(--primary); }
+.member-pagination button.active { border-color: var(--bg-sidebar); color: var(--text-white); background: var(--bg-sidebar); box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18); }
 .member-pagination button:disabled { cursor: default; opacity: 0.45; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 8px; text-align: center; }

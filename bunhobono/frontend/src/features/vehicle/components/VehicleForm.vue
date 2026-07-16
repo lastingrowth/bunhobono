@@ -35,7 +35,6 @@
         </option>
       </select>
 
-
       <select v-model.number="memberNo">
         <option :value="null">입주민 선택</option>
         <option
@@ -46,7 +45,6 @@
           {{ memberLabel(member) }}
         </option>
       </select>
-
 
       <button @click="add">등록</button>
       <button @click="reset">초기화</button>
@@ -89,7 +87,6 @@ const filteredMembers = computed(() => {
   })
 })
 
-
 const dongOptions = computed(() => {
   return [...new Set(
     memberStore.memberList
@@ -130,7 +127,6 @@ async function add() {
     return
   }
 
-
   if (!carNoPattern.test(normalizedCarNo)) {
     alert('차량번호 형식이 올바르지 않습니다. 예: 12가3456, 서울12가3456')
     return
@@ -140,7 +136,6 @@ async function add() {
     alert('입주민을 선택하세요')
     return
   }
-
 
   try {
     await vehicleStore.addVehicle({

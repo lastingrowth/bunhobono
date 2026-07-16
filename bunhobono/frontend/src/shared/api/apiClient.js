@@ -27,7 +27,7 @@ const api = axios.create({
     | api.get("/users")
     | → http://localhost/api/users
     |
-    | ⚠️ 반드시 .env에 있어야 함
+    | 반드시 .env에 있어야 함
     */
     baseURL: import.meta.env.VITE_API_URL,
 

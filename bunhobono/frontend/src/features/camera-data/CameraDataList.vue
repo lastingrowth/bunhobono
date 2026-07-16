@@ -2,11 +2,52 @@
   <div>
     <h2>카메라 데이터 목록</h2>
 
-    <div>
-      <input v-model="keyword" placeholder="차량번호 검색" />
-      <button @click="searchGo">검색</button>
-      <button @click="resetList">전체보기</button>
+    <div class="camera-data-toolbar">
+      <div class="camera-data-search">
+        <input
+          v-model="keyword"
+          type="search"
+          placeholder="차량번호를 입력하세요"
+          aria-label="차량번호 검색"
+          @keyup.enter="searchGo"
+        >
+        <button type="button" :disabled="isSearching" @click="searchGo">
+          {{ isSearching ? '검색 중...' : '검색' }}
+        </button>
+        <button type="button" :disabled="isSearching" @click="resetList">
+          전체보기
+        </button>
+      </div>
+
+      <div class="status-filters" aria-label="주차장 카메라 로그 필터">
+      <label class="status-filter">
+        <input
+          type="radio"
+          name="cameraDataParking"
+          :checked="!selectedParkingNo"
+          @change="selectParking(null)"
+        >
+        <span>전체</span>
+      </label>
+
+      <label
+        v-for="parking in parkingButtons"
+        :key="parking.parkingNo"
+        class="status-filter"
+      >
+        <input
+          type="radio"
+          name="cameraDataParking"
+          :value="parking.parkingNo"
+          :checked="selectedParkingNo === parking.parkingNo"
+          @change="selectParking(parking.parkingNo)"
+        >
+        <span>{{ parking.label }} 주차장</span>
+      </label>
+      </div>
     </div>
+
+    <p v-if="searchError" class="search-error">{{ searchError }}</p>
 
     <table border="1">
       <thead>
@@ -51,19 +92,36 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useCameraDataStore } from './cameraDataStore';
 
 const dStore = useCameraDataStore();
+const route = useRoute();
+const router = useRouter();
 
 const keyword = ref("");
-const isSearchMode = ref(false);
+const isSearching = ref(false);
+const searchError = ref("");
+const parkingButtons = [
+  { parkingNo: 1, label: 'A' },
+  { parkingNo: 2, label: 'B' },
+  { parkingNo: 3, label: 'C' },
+  { parkingNo: 4, label: 'D' }
+];
 
-let listRefreshTimer = null;
-let listRefreshing = false;
+const selectedParkingNo = computed(() => {
+  const parkingNo = Number(route.query.parkingNo);
+
+  return Number.isInteger(parkingNo) && parkingNo > 0 ? parkingNo : null;
+});
 
 const filteredCameraDataList = computed(() => {
-  return dStore.displayList;
+  if (!selectedParkingNo.value) return dStore.displayList;
+
+  return dStore.displayList.filter((data) => {
+    return Number(data.parkingNo) === selectedParkingNo.value;
+  });
 });
 
 const formatParkingName = (value) => {
@@ -78,31 +136,37 @@ const searchGo = async () => {
   const carNo = keyword.value.trim();
 
   if (!carNo) {
-    isSearchMode.value = false;
-    await dStore.loadList();
+    await resetList();
     return;
   }
 
-  isSearchMode.value = true;
-  await dStore.searchByCarNo(carNo);
+  isSearching.value = true;
+  searchError.value = "";
+
+  try {
+    // 백엔드 차량번호 검색 결과가 주차장 필터에 가려지지 않도록 전체로 전환
+    await router.replace({ name: 'CameraDataList' });
+    await dStore.searchByCarNo(carNo);
+  } catch (error) {
+    console.error('카메라 데이터 검색 실패', error);
+    searchError.value = '검색 결과를 불러오지 못했습니다.';
+  } finally {
+    isSearching.value = false;
+  }
+};
+
+const selectParking = async (parkingNo) => {
+  await router.replace({
+    name: 'CameraDataList',
+    query: parkingNo ? { parkingNo } : {}
+  });
 };
 
 const resetList = async () => {
   keyword.value = "";
-  isSearchMode.value = false;
+  searchError.value = "";
+  await router.replace({ name: 'CameraDataList' });
   await dStore.loadList();
-};
-
-const refreshCameraDataList = async () => {
-  if (listRefreshing || isSearchMode.value) return;
-
-  listRefreshing = true;
-
-  try {
-    await dStore.loadList();
-  } finally {
-    listRefreshing = false;
-  }
 };
 
 const formatDate = (value) => {
@@ -121,13 +185,54 @@ const formatConfidence = (value) => {
 
 onMounted(async () => {
   await dStore.loadList();
-
-  listRefreshTimer = window.setInterval(refreshCameraDataList, 3000);
-});
-
-onUnmounted(() => {
-  if (listRefreshTimer) {
-    window.clearInterval(listRefreshTimer);
-  }
 });
 </script>
+
+<style scoped>
+.camera-data-toolbar {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.camera-data-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.camera-data-search input {
+  width: 280px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  outline: none;
+  color: var(--text-color);
+  background: var(--bg-header);
+}
+
+.camera-data-search input:focus {
+  border-color: var(--primary);
+}
+
+.search-error {
+  margin-bottom: 16px;
+  color: var(--text-color);
+}
+
+@media (max-width: 760px) {
+  .camera-data-toolbar,
+  .camera-data-search {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .camera-data-search input {
+    width: 100%;
+  }
+}
+</style>
