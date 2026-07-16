@@ -209,10 +209,10 @@ onMounted(async () => {
 /* 게이트 목록 */
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid #e5e9f2;
-  border-radius: 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   background: #fff;
-  box-shadow: 0 8px 24px rgba(28, 39, 60, 0.06);
+  box-shadow: 0 10px 26px rgba(35, 52, 66, 0.11);
 }
 
 table {

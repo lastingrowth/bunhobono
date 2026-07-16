@@ -1,38 +1,43 @@
 export const adminMenu = [
   {
     title: '대시보드',
-    path: '/admin/dashboard',
-    icon: '▦'
+    path: '/admin/dashboard'
+  },
+  {
+    title: '알림 관리',
+    path: '/admin/notice'
   },
   {
     title: '회원관리',
-    path: '/admin/members',
-    icon: '👥'
+    path: '/admin/members'
+  },
+  {
+    title: '차량 관리',
+    path: '/admin/vehicles'
+  },
+  {
+    title: '주차장 관리',
+    path: '/admin/parkings'
   },
   {
     title: '카메라',
-    path: '/admin/cameras',
-    icon: '📷'
+    path: '/admin/cameras'
   },
   {
     title: "카메라 기록 관리",
-    path: "/admin/camera-data",
-    icon: "🖼️"
+    path: "/admin/camera-data"
   },
   {
     title: '입출차 기록',
-    path: '/admin/carlogs',
-    icon: '🚘'
+    path: '/admin/carlogs'
   },
   {
     title: '게이트',
-    path: '/admin/gates',
-    icon: '🚧'
+    path: '/admin/gates'
   },
   {
     title: '휴지통',
-    path: '/admin/trash',
-    icon: '🗑️'
+    path: '/admin/trash'
   }
 
 ];
@@ -41,22 +46,18 @@ export const adminMenu = [
 export const residentMenu = [
 {
     title: '대시보드',
-    path: '/resident/dashboard',
-    icon: '▦'
+    path: '/resident/dashboard'
   },
   {
     title: '차량관리',
-    path: '/resident/vehicles',
-    icon: '🚙'
+    path: '/resident/vehicles'
   },
   {
     title: '주차현황',
-    path: '/resident/parkings',
-    icon: '🅿'
+    path: '/resident/parkings'
   },
   {
     title: '마이페이지',
-    path: '/resident/mypage',
-    icon: '👤'
+    path: '/resident/mypage'
   }
 ]

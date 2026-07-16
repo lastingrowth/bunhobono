@@ -5,7 +5,7 @@
     <div>
       <input
         v-model="carNo"
-        placeholder="차량번호"
+        placeholder="차량번호 예: 12가3456"
       >
 
       <select v-model="vehicleType">
@@ -20,7 +20,7 @@
           :key="dong"
           :value="dong"
         >
-          {{ dong }}동
+          {{ dongText(dong) }}
         </option>
       </select>
 
@@ -31,7 +31,7 @@
           :key="ho"
           :value="ho"
         >
-          {{ ho }}호
+          {{ hoText(ho) }}
         </option>
       </select>
 
@@ -42,7 +42,7 @@
           :key="member.memberNo"
           :value="member.memberNo"
         >
-          {{ member.memDong }}동 {{ member.memHo }}호 / {{ member.memName }}
+          {{ memberLabel(member) }}
         </option>
       </select>
 
@@ -66,6 +66,8 @@ const selectedDong = ref('')
 const selectedHo = ref('')
 const memberNo = ref(null)
 
+const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
+
 const filteredMembers = computed(() => {
   return memberStore.memberList.filter((member) => {
     const dongMatched = !selectedDong.value
@@ -74,11 +76,14 @@ const filteredMembers = computed(() => {
     const hoMatched = !selectedHo.value
       || String(member.memHo ?? '') === selectedHo.value
 
-    const isResident = member.memStatus === 'APPROVED'
+    const isSelectableMember =
+      member.memStatus === 'APPROVED'
       || member.role === 'resident'
       || member.role === 'RESIDENT'
+      || member.role === 'admin'
+      || member.role === 'ADMIN'
 
-    return dongMatched && hoMatched && isResident
+    return dongMatched && hoMatched && isSelectableMember
   })
 })
 
@@ -106,11 +111,6 @@ const hoOptions = computed(() => {
 
 watch(selectedDong, () => {
   selectedHo.value = ''
-  memberNo.value = null
-})
-
-watch(selectedHo, () => {
-  memberNo.value = null
 })
 
 onMounted(async () => {
@@ -120,8 +120,15 @@ onMounted(async () => {
 })
 
 async function add() {
-  if (carNo.value.trim() === '') {
+  const normalizedCarNo = carNo.value.trim().replace(/\s/g, '')
+
+  if (normalizedCarNo === '') {
     alert('차량번호를 입력하세요')
+    return
+  }
+
+  if (!carNoPattern.test(normalizedCarNo)) {
+    alert('차량번호 형식이 올바르지 않습니다. 예: 12가3456, 서울12가3456')
     return
   }
 
@@ -132,10 +139,9 @@ async function add() {
 
   try {
     await vehicleStore.addVehicle({
-      carNo: carNo.value.trim(),
+      carNo: normalizedCarNo,
       vehicleType: vehicleType.value,
       vehicleStatus: 'WAITING',
-      memberNo: memberNo.value
     })
 
     alert('차량이 등록되었습니다')
@@ -143,7 +149,7 @@ async function add() {
     await vehicleStore.loadVehicleApproveList()
   } catch (error) {
     if (error.response?.status === 409) {
-      alert(error.response.data?.message || '이미 등록 또는 승인 대기 중인 차량번호입니다.')
+      alert('이미 등록 또는 승인 대기 중인 차량번호입니다.')
       reset()
       return
     }
@@ -158,6 +164,29 @@ function reset() {
   vehicleType.value = 'normal'
   selectedDong.value = ''
   selectedHo.value = ''
-  memberNo.value = null
+
+}
+
+function dongText(dong) {
+  if (String(dong) === '0') {
+    return '관리동'
+  }
+
+  return `${dong}동`
+}
+
+function hoText(ho) {
+  if (String(ho) === '0') {
+    return '관리실'
+  }
+
+  return `${ho}호`
+}
+
+function memberLabel(member) {
+  const dong = dongText(member.memDong)
+  const ho = hoText(member.memHo)
+
+  return `${dong} ${ho} / ${member.memName}`
 }
 </script>

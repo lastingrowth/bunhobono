@@ -2,9 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import {
   approvePendingMembers,
-  createResVehicle,
   deleteMember,
-  deleteResVehicle,
   getMemberDetail,
   getMemberList,
   getResidentDashboard,
@@ -17,7 +15,6 @@ import {
   searchMember,
   signupMember,
   updateMember,
-  updateResVehicle
 } from "./memApi";
 import { getParkingsList } from "../parking/parkingsApi";
 import { toVehicleView } from "../vehicle/vehicleFormat";
@@ -26,8 +23,7 @@ export const useMemStore =  defineStore("member", () => {
 
   const memberList = ref ([]);
   const member = ref({});
-  const vehicleList = ref([]);
-  const vehicle = ref({});
+  const memberArchiveAlerts = ref([]);
   const loading = ref(false);
   const errorMessage = ref("");
   const dashboard = ref({
@@ -118,46 +114,6 @@ export const useMemStore =  defineStore("member", () => {
     return res.data;
   }
 
-  // 로그인한 입주민이 등록한 차량만 조회한다.
-  const loadVehicleList = async () => {
-    const res = await getResidentDashboard();
-
-    // 통합 대시보드 응답에서 본인 차량 목록만 사용한다.
-    vehicleList.value = (res.data?.vehicles || []).map(toVehicleView);
-  };
-
-  // 현재 Store의 차량 목록에서 선택한 차량을 조회한다.
-  const loadVehicle = async (vehicleCarNo) => {
-    if (vehicleList.value.length === 0) {
-      await loadVehicleList();
-    }
-
-    vehicle.value = vehicleList.value.find((item) => {
-      return Number(item.vehicleCarNo) === Number(vehicleCarNo);
-    }) ?? {};
-  };
-
-  // 입주민 차량을 등록하고 목록을 갱신한다.
-  const addVehicle = async (data) => {
-    await createResVehicle(data);
-    await loadVehicleList();
-  };
-
-  // 입주민 차량을 수정하고 목록을 갱신한다.
-  const editVehicle = async (vehicleCarNo, data) => {
-    await updateResVehicle(vehicleCarNo, data);
-    await loadVehicleList();
-  };
-
-  // 입주민 차량을 삭제하고 현재 목록에서도 제거한다.
-  const removeVehicle = async (vehicleCarNo) => {
-    await deleteResVehicle(vehicleCarNo);
-
-    vehicleList.value = vehicleList.value.filter((item) => {
-      return item.vehicleCarNo !== vehicleCarNo;
-    });
-  };
-
   // 기존 Spring API 데이터를 조회해 입주민 대시보드 데이터로 조합한다.
   const loadDashboard = async () => {
     loading.value = true;
@@ -199,8 +155,7 @@ export const useMemStore =  defineStore("member", () => {
   return {
     memberList,
     member,
-    vehicleList,
-    vehicle,
+    memberArchiveAlerts,
     loading,
     errorMessage,
     dashboard,
@@ -220,11 +175,6 @@ export const useMemStore =  defineStore("member", () => {
     removeResident,
     idCheck,
 
-    loadVehicleList,
-    loadVehicle,
-    addVehicle,
-    editVehicle,
-    removeVehicle,
     loadDashboard,
   };
 

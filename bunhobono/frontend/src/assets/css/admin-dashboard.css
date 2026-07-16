@@ -1,5 +1,9 @@
 /* 관리자 대시보드 전체 영역 */
 .admin-dashboard {
+  --dashboard-blue: #60a5fa;
+  --dashboard-cyan: #7dd3fc;
+  --dashboard-green: #4ade80;
+  --dashboard-red: #f87171;
   width: 100%;
   max-width: 1600px;
   min-height: calc(100vh - var(--header-height) - 48px);
@@ -10,7 +14,7 @@
   overflow: visible;
 }
 
-/* 대시보드 제목과 새로고침 버튼 */
+/* 대시보드 제목과 상단 버튼 */
 .dashboard-header {
   margin-bottom: 14px;
   display: flex;
@@ -23,13 +27,34 @@
   margin: 0 0 3px;
   font-size: 24px;
   font-weight: 700;
-  color: var(--text-color);
+  color: var(--heading-color);
 }
 
 .dashboard-header p {
   margin: 0;
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.dashboard-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-maintenance {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #6b7278;
+}
+
+.dashboard-maintenance:hover {
+  background: #535960;
 }
 
 .dashboard-refresh {
@@ -57,8 +82,8 @@
 }
 
 .dashboard-message {
-  color: var(--primary);
-  background: rgba(14, 165, 233, 0.1);
+  color: var(--dashboard-blue);
+  background: rgba(37, 99, 235, 0.1);
 }
 
 .dashboard-error {
@@ -81,13 +106,13 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   overflow: visible;
   text-align: left;
   color: var(--text-color);
   background: var(--bg-header);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 26px rgba(35, 52, 66, 0.11);
 }
 
 button.dashboard-card {
@@ -95,8 +120,8 @@ button.dashboard-card {
 }
 
 button.dashboard-card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.12);
+  border-color: transparent;
+  box-shadow: 0 12px 28px rgba(68, 101, 127, 0.14);
   transform: translateY(-2px);
   transition:
     transform 0.2s ease,
@@ -112,54 +137,73 @@ button.dashboard-card:hover {
   font-weight: 700;
 }
 
-.card-icon {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  justify-content: center;
+.card-vehicle-summary {
+  margin: auto 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  flex-shrink: 0;
-  border-radius: 50%;
-  font-size: 17px;
-  background: rgba(14, 165, 233, 0.1);
+  gap: 12px;
 }
 
-.card-value {
-  margin: auto 0 6px;
-  font-size: 34px;
-  line-height: 1;
-  color: var(--primary);
+.vehicle-summary-item {
+  min-width: 0;
+  text-align: center;
 }
 
-.card-value small {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-color);
+.vehicle-summary-item + .vehicle-summary-item {
+  padding-left: 12px;
+  border-left: 1px solid #e2e8f0;
 }
 
-.card-description {
-  margin-top: auto;
-  font-size: 12px;
+.vehicle-summary-item span {
+  display: block;
   color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-/* 미처리 알림 카드 */
+.vehicle-summary-item strong {
+  margin-top: 12px;
+  display: block;
+  color: var(--dashboard-blue);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.vehicle-summary-item strong small {
+  margin-left: 2px;
+  color: var(--text-color);
+  font-size: 13px;
+}
+
 .notice-card {
-  grid-column: 1;
-  grid-row: 1;
+  padding-right: 26px;
+  align-items: flex-end;
+  text-align: right;
 }
 
-.vehicle-card {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.notice-card .card-icon {
-  background: #fee2e2;
+.notice-card .card-heading {
+  justify-content: flex-end;
+  font-size: 17px;
+  font-weight: 800;
 }
 
 .notice-card .card-value {
-  color: #dc2626;
+  margin: auto 0;
+  font-size: 42px;
+  line-height: 1;
+  color: var(--dashboard-red);
+}
+
+.notice-card .card-value small {
+  margin-left: 3px;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.notice-card .card-description {
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 /* 주차장별 현황 카드 */
@@ -185,19 +229,21 @@ button.dashboard-card:hover {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
   cursor: pointer;
   color: inherit;
   background: var(--bg-main);
+  box-shadow: 0 6px 16px rgba(35, 52, 66, 0.08);
 }
 
 .parking-status-strip:hover {
-  border-color: var(--primary);
+  border-color: transparent;
+  box-shadow: 0 9px 20px rgba(68, 101, 127, 0.13);
 }
 
 .parking-status-strip:hover .parking-zone-name {
-  color: var(--primary);
+  color: var(--dashboard-blue);
 }
 
 .parking-zone-status,
@@ -240,8 +286,8 @@ button.dashboard-card:hover {
       transparent 58%
     ),
     conic-gradient(
-      var(--primary) var(--parking-rate),
-      #e5e7eb 0
+      #38bdf8 var(--parking-rate),
+      #dfe6eb 0
     );
 }
 
@@ -273,9 +319,10 @@ button.dashboard-card:hover {
 .parking-ocr-preview {
   min-height: 0;
   padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
   background: var(--bg-main);
+  box-shadow: 0 6px 16px rgba(35, 52, 66, 0.08);
 }
 
 .parking-ocr-preview:not(:disabled) {
@@ -283,11 +330,12 @@ button.dashboard-card:hover {
 }
 
 .parking-ocr-preview:hover:not(:disabled) {
-  border-color: var(--primary);
+  border-color: transparent;
+  box-shadow: 0 9px 20px rgba(68, 101, 127, 0.13);
 }
 
 .parking-ocr-preview:hover:not(:disabled) strong {
-  color: var(--primary);
+  color: var(--dashboard-blue);
 }
 
 .parking-ocr-preview:disabled {
@@ -301,7 +349,7 @@ button.dashboard-card:hover {
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: 12px;
   color: var(--text-muted);
   background: #e5e7eb;
@@ -343,7 +391,7 @@ button.dashboard-card:hover {
   display: block;
   font-size: 12px;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--dashboard-blue);
   text-align: left;
 }
 
@@ -352,7 +400,7 @@ button.dashboard-card:hover {
   margin-top: 4px;
   font-size: 12px;
   font-weight: 700;
-  color: #16a34a;
+  color: var(--dashboard-green);
   text-align: left;
 }
 
@@ -364,17 +412,17 @@ button.dashboard-card:hover {
 
 /* 주간 입차 그래프와 입출차 목록 영역 */
 .recent-carlogs {
-  min-height: 380px;
+  min-height: auto;
   margin-top: 12px;
   padding: 14px 18px;
   display: flex;
   flex: none;
   flex-direction: column;
   overflow: visible;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   background: var(--bg-header);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 26px rgba(35, 52, 66, 0.11);
 }
 
 .section-heading {
@@ -397,30 +445,66 @@ button.dashboard-card:hover {
 }
 
 .carlog-dashboard-content {
-  min-height: 300px;
+  min-height: auto;
   display: grid;
-  grid-template-columns: minmax(300px, 0.8fr) minmax(520px, 1.2fr);
-  gap: 18px;
-  flex: 1;
+  grid-template-columns: minmax(560px, 1.4fr) minmax(320px, 0.8fr);
+  gap: 14px;
+  align-items: stretch;
 }
 
 /* 최근 7일 입차 막대그래프 */
 .weekly-entry-panel {
   min-width: 0;
-  min-height: 270px;
+  min-height: auto;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
   background: var(--bg-main);
+  box-shadow: 0 6px 16px rgba(35, 52, 66, 0.08);
 }
 
 .weekly-entry-title {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 13px;
   font-weight: 700;
   color: var(--text-color);
+}
+
+.weekly-entry-header {
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.weekly-entry-legend {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.weekly-entry-legend span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.weekly-entry-legend span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.weekly-entry-legend .resident::before {
+  background: #2563eb;
+}
+
+.weekly-entry-legend .visit::before {
+  background: #22c55e;
 }
 
 .weekly-entry-chart {
@@ -449,27 +533,37 @@ button.dashboard-card:hover {
 
 .weekly-entry-track {
   width: 100%;
-  max-width: 34px;
-  min-height: 78px;
+  max-width: 42px;
+  height: 82px;
   margin-top: auto;
   display: flex;
   align-items: flex-end;
-  overflow: hidden;
+  justify-content: center;
+  gap: 4px;
+  overflow: visible;
   border-radius: 7px 7px 3px 3px;
-  background: #e5e7eb;
+  background: transparent;
 }
 
 .weekly-entry-bar {
-  width: 100%;
+  width: 13px;
   height: var(--bar-height);
   min-height: 0;
   border-radius: 7px 7px 3px 3px;
   background: linear-gradient(
     180deg,
-    #38bdf8 0%,
-    var(--primary) 100%
+    var(--dashboard-cyan) 0%,
+    var(--dashboard-blue) 100%
   );
   transition: height 0.3s ease;
+}
+
+.weekly-entry-bar.resident {
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+}
+
+.weekly-entry-bar.visit {
+  background: linear-gradient(180deg, #86efac 0%, #22c55e 100%);
 }
 
 .weekly-entry-date {
@@ -488,20 +582,20 @@ button.dashboard-card:hover {
 /* 페이지네이션이 적용되는 입출차 목록 */
 .carlog-list-panel {
   min-width: 0;
-  min-height: 270px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
 }
 
 .carlog-table-wrap {
-  min-height: 0;
-  overflow-x: auto;
-  flex: 1;
+  min-height: auto;
+  overflow-x: visible;
+  flex: none;
 }
 
 .recent-carlogs table {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 4px;
   box-shadow: none;
 }
 
@@ -510,6 +604,31 @@ button.dashboard-card:hover {
   padding: 7px 10px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+/* 입출차 목록의 주차상태 배지 */
+.carlog-state-badge {
+  min-width: 58px;
+  padding: 4px 8px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 현재 주차중 */
+.carlog-state-badge.parking {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+/* 출차 완료 */
+.carlog-state-badge.out {
+  color: #0369a1;
+  background: #e0f2fe;
 }
 
 /* 입출차 목록 페이지 버튼 */
@@ -535,14 +654,15 @@ button.dashboard-card:hover {
 }
 
 .carlog-pagination button:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--bg-sidebar);
+  color: var(--bg-sidebar);
 }
 
 .carlog-pagination button.active {
-  border-color: var(--primary);
+  border-color: var(--bg-sidebar);
   color: var(--text-white);
-  background: var(--primary);
+  background: var(--bg-sidebar);
+  box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18);
 }
 
 .carlog-pagination button:disabled {
@@ -581,14 +701,20 @@ button.dashboard-card:hover {
 
 
   .recent-carlogs {
-    min-height: 360px;
+    min-height: auto;
+    margin-top: 12px;
+    padding: 14px 18px;
+    display: flex;
+    flex: none;
+    flex-direction: column;
     overflow: visible;
-  }
-
-  .carlog-dashboard-content {
-    grid-template-columns: minmax(270px, 0.8fr) minmax(460px, 1.2fr);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-header);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
   }
 }
+
 
 /* 모바일 */
 @media (max-width: 700px) {
@@ -623,18 +749,16 @@ button.dashboard-card:hover {
   }
 
   .recent-carlogs {
-    padding: 12px;
-  }
-
-  .carlog-dashboard-content {
-    grid-template-columns: 1fr;
-  }
-
-  .weekly-entry-panel {
-    min-height: 210px;
-  }
-
-  .carlog-list-panel {
-    overflow-x: auto;
-  }
+    min-height: auto;
+    margin-top: 12px;
+    padding: 14px 18px;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    overflow: visible;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-header);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  } 
 }

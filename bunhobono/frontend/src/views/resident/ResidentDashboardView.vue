@@ -59,21 +59,15 @@
             <!-- 좌측: 차량 목록 / 우측: 관리자 대시보드와 같은 주차장 현황 2열 배치. -->
             <div class="resident-main-grid">
                 <div class="resident-vehicle-column">
-                    <!-- 본인 차량과 방문 차량을 하나의 목록으로 표시한다. -->
-                    <article
-                        class="resident-vehicle-card resident-vehicle-link"
-                        role="button"
-                        tabindex="0"
-                        @click="openVehicleManagement"
-                        @keyup.enter="openVehicleManagement"
-                    >
+                    <!-- 본인 차량 목록 -->
+                    <article class="resident-vehicle-card">
                         <div class="resident-section-header">
-                            <h3>내 차량 · 방문 차량 <span class="resident-list-count">{{ dashboard.vehicles.length }}대</span></h3>
+                            <h3>본인 차량 목록 <span class="resident-list-count">{{ dashboard.normalVehicleCount }}대</span></h3>
+                            <button type="button" @click="openVehicleManagement('normal')">내 차량 관리</button>
                         </div>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>차량구분</th>
                                     <th>차량번호</th>
                                     <th>승인여부</th>
                                     <th>기간</th>
@@ -82,20 +76,43 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr
-                                    v-for="vehicle in dashboard.vehicles"
-                                    :key="`${vehicle.vehicleType}-${vehicle.vehicleCarNo}`"
-                                >
-                                    <td>{{ vehicle.vehicleType === "visit" ? "방문 차량" : "본인 차량" }}</td>
+                                <tr v-for="vehicle in normalVehicles" :key="vehicle.vehicleCarNo">
                                     <td>{{ vehicle.carNo || "-" }}</td>
                                     <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus || "-" }}</td>
                                     <td>{{ vehiclePeriodText(vehicle) }}</td>
                                     <td>{{ parkingStateText(vehicle.parkingState) }}</td>
                                     <td>{{ vehicle.parkingName || "-" }}</td>
                                 </tr>
-                                <tr v-if="dashboard.vehicles.length === 0">
-                                    <td colspan="6">등록한 본인 차량 또는 방문 차량이 없습니다.</td>
+                                <tr v-if="normalVehicles.length === 0"><td colspan="5">등록한 본인 차량이 없습니다.</td></tr>
+                            </tbody>
+                        </table>
+                    </article>
+
+                    <!-- 방문 차량 목록 -->
+                    <article class="resident-vehicle-card resident-visit-card">
+                        <div class="resident-section-header">
+                            <h3>방문 차량 목록 <span class="resident-list-count">{{ dashboard.visitVehicleCount }}대</span></h3>
+                            <button type="button" @click="openVehicleManagement('visit')">방문 차량 관리</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>차량번호</th>
+                                    <th>승인여부</th>
+                                    <th>기간</th>
+                                    <th>주차현황</th>
+                                    <th>주차장소</th>
                                 </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="vehicle in visitVehicles" :key="vehicle.vehicleCarNo">
+                                    <td>{{ vehicle.carNo || "-" }}</td>
+                                    <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus || "-" }}</td>
+                                    <td>{{ vehiclePeriodText(vehicle) }}</td>
+                                    <td>{{ parkingStateText(vehicle.parkingState) }}</td>
+                                    <td>{{ vehicle.parkingName || "-" }}</td>
+                                </tr>
+                                <tr v-if="visitVehicles.length === 0"><td colspan="5">등록한 방문 차량이 없습니다.</td></tr>
                             </tbody>
                         </table>
                     </article>
@@ -170,35 +187,29 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue";
+import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { useMemStore } from "@/features/member/memStore";
+import { useResidentDashboardStore } from "@/stores/residentDashboard";
 
 const router = useRouter();
-const memberStore = useMemStore();
-const { loading, errorMessage, dashboard } = storeToRefs(memberStore);
+const dashboardStore = useResidentDashboardStore();
 
-// 통합 차량 목록을 누르면 좌측 차량관리 메뉴와 같은 화면으로 이동한다.
-const openVehicleManagement = () => router.push("/resident/vehicles");
+const { loading, errorMessage, dashboard, residenceText, normalVehicles, visitVehicles, parkingStatusList } = storeToRefs(dashboardStore);
+
+// 차량 관리 화면에 표시할 차량 종류를 URL Query로 전달한다.
+const openVehicleManagement = (type) => {
+    router.push({
+        path: "/resident/vehicles",
+        query: { type }
+    });
+};
 
 // =====
 // 좌측 메뉴의 주차현황 화면으로 이동한다.
 const openParkingStatus = () => {
     router.push("/resident/parkings");
 };
-// =====
-
-// 로그인한 입주민의 동·호수
-const residenceText = computed(() => {
-    const member = dashboard.value.member;
-
-    if (!member.memDong || !member.memHo) {
-        return "-";
-    }
-
-    return `${member.memDong}동 ${member.memHo}호`;
-});
 
 // 일반 차량은 승인 시작일부터, 방문 차량은 시작·종료 기간을 표시한다.
 const vehiclePeriodText = (vehicle) => {
@@ -217,26 +228,6 @@ const parkingStateText = (state) => ({
     NONE: "미주차"
 }[state] || "미주차");
 
-// 관리자 대시보드와 동일하게 전체·사용·가능 면수와 사용률을 계산한다.
-const parkingStatusList = computed(() => {
-    return dashboard.value.parkings.map((parking) => {
-        const total = Math.max(Number(parking.parkingSpaces ?? 0), 0);
-        const available = Math.min(
-            Math.max(Number(parking.availableSpaces ?? 0), 0),
-            total
-        );
-        const occupied = Math.max(total - available, 0);
-        const usageRate = total === 0 ? 0 : Math.round(occupied / total * 100);
-
-        return {
-            ...parking,
-            total,
-            available,
-            occupied,
-            usageRate
-        };
-    });
-});
 
 const dateTimeText = (value) => {
     if (!value) return "-";
@@ -249,8 +240,8 @@ const dateTimeText = (value) => {
     }).format(new Date(value));
 };
 
-// 화면은 Store 액션만 호출하고 DB 데이터 조회·조합은 memStore가 담당한다.
-const loadDashboard = () => memberStore.loadDashboard();
+// 화면은 Store 액션만 호출하고 데이터 조회·조합은 대시보드 Store가 담당한다.
+const loadDashboard = () => dashboardStore.loadDashboard();
 
 onMounted(loadDashboard);
 </script>

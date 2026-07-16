@@ -44,6 +44,7 @@ bunhobono/backend/.env.*
 
 # Spring Boot local configuration
 bunhobono/backend/src/main/resources/application-local.yaml
+bunhobono/backend/src/main/resources/application-path.yaml
 
 # ==========================================================
 # FastAPI / Python

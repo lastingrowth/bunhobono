@@ -1,6 +1,9 @@
 <template>
-    <h2>회원 상세</h2>
-    <div>
+  <main class="member-detail-page">
+    <section class="member-detail-dialog">
+      <header class="member-detail-header">
+        <h2>회원 상세</h2>
+        <div class="member-detail-header-actions">
         <button @click="goList">목록</button>
         <button v-if="canEditMember" @click="goEdit">수정</button>
         <button v-if="store.member.role === 'PENDING'" type="button" @click="approveMember">승인</button>
@@ -11,8 +14,9 @@
         >
             영구삭제
         </button>
-    </div>
-    <table border="">
+        </div>
+      </header>
+    <table class="member-detail-table">
         <tbody>
             <tr><th>가입유형</th><td>{{ store.member.role }}</td></tr>
             <tr><th>이름</th><td>{{ store.member.memName }}</td></tr>
@@ -25,6 +29,8 @@
             <tr><th>상태</th><td>{{ store.member.memStatus }}</td></tr>
         </tbody>
     </table>
+    </section>
+  </main>
 </template>
 
 <script setup>
@@ -71,3 +77,59 @@ onMounted(async () => {
     await store.loadMember(memberNo);
 });
 </script>
+
+<style scoped>
+.member-detail-page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.member-detail-dialog {
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bg-header);
+  box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18);
+}
+
+.member-detail-header {
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.member-detail-header h2 {
+  margin: 0;
+}
+
+.member-detail-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.member-detail-table {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.member-detail-table th {
+  width: 190px;
+}
+
+@media (max-width: 760px) {
+  .member-detail-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .member-detail-table th {
+    width: 140px;
+  }
+}
+</style>

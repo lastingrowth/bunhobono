@@ -242,7 +242,7 @@ const signupGo = async () => {
 
 .signup-header h2 {
     margin: 0;
-    color: var(--text-color);
+    color: var(--heading-color);
 }
 
 .back-button {

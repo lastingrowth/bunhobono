@@ -362,7 +362,7 @@ onUnmounted(() => {
 .member-management-tabs { display: flex; align-items: center; gap: 4px; margin: 18px 0; }
 .member-management-tabs button { padding: 9px 14px; border: 1px solid var(--border-color); border-radius: 7px; cursor: pointer; font-weight: 700; color: var(--text-color); background: var(--bg-header); }
 .member-management-tabs button:hover { border-color: var(--primary); color: var(--primary); }
-.member-management-tabs button.active { border-color: var(--primary); color: var(--text-white); background: var(--primary); }
+.member-management-tabs button.active { border-color: var(--bg-sidebar); color: var(--text-white); background: var(--bg-sidebar); box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18); }
 .approved-list-header { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 12px; margin: 24px 0 12px; }
 .approved-list-header h3 { flex: none; margin: 0; }
 .member-search, .member-search-fields { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -371,7 +371,7 @@ onUnmounted(() => {
 .member-pagination { margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 5px; }
 .member-pagination button { min-width: 34px; height: 30px; padding: 0 9px; border: 1px solid var(--border-color); border-radius: 7px; cursor: pointer; font-size: 12px; color: var(--text-color); background: var(--bg-header); }
 .member-pagination button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
-.member-pagination button.active { border-color: var(--primary); color: var(--text-white); background: var(--primary); }
+.member-pagination button.active { border-color: var(--bg-sidebar); color: var(--text-white); background: var(--bg-sidebar); box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18); }
 .member-pagination button:disabled { cursor: default; opacity: 0.45; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 8px; text-align: center; }

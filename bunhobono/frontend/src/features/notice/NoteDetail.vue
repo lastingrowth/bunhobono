@@ -1,5 +1,6 @@
 <template>
   <main class="notice-detail-page">
+    <section class="notice-detail-dialog">
     <div class="detail-header">
       <h1>알림 상세</h1>
 
@@ -20,7 +21,7 @@
           다음
         </button>
 
-        <button type="button" @click="router.push('/admin/notice')">
+        <button type="button" @click="goNoticeList">
           목록
         </button>
 
@@ -48,7 +49,7 @@
         </tbody>
       </table>
 
-      <section class="status-panel">
+      <section class="notice-detail-actions">
         <button
           type="button"
           :disabled="!canCompleteNotice"
@@ -62,6 +63,7 @@
     <p v-else>
       조회할 알림이 없습니다.
     </p>
+    </section>
   </main>
 </template>
 
@@ -96,7 +98,6 @@ const currentNoticeNo = computed(() => {
   return Number(noticeNo.value);
 });
 
-// 현재 알림이 목록에서 몇 번째인지 확인
 const currentIndex = computed(() => {
   return noticeList.value.findIndex((item) => {
     const itemNo = item.noticeNo ?? item.notice_no;
@@ -105,7 +106,6 @@ const currentIndex = computed(() => {
   });
 });
 
-// 이전 알림
 const prevNotice = computed(() => {
   if (currentIndex.value <= 0) {
     return null;
@@ -114,7 +114,6 @@ const prevNotice = computed(() => {
   return noticeList.value[currentIndex.value - 1];
 });
 
-// 다음 알림
 const nextNotice = computed(() => {
   if (currentIndex.value < 0 || currentIndex.value >= noticeList.value.length - 1) {
     return null;
@@ -123,12 +122,10 @@ const nextNotice = computed(() => {
   return noticeList.value[currentIndex.value + 1];
 });
 
-// 알림이 있고 아직 처리 완료가 아닐 때만 완료 가능
 const canCompleteNotice = computed(() => {
   return Boolean(notice.value) && notice.value.alertStat !== "Resolved" && !saving.value;
 });
 
-// 날짜 표시 형식
 const formatDate = (value) => {
   if (!value) {
     return "-";
@@ -143,7 +140,6 @@ const formatDate = (value) => {
   return date.toLocaleString("ko-KR");
 };
 
-// 값이 없을 때 하이픈 표시
 const formatValue = (value) => {
   if (value === null || value === undefined || value === "") {
     return "-";
@@ -152,7 +148,6 @@ const formatValue = (value) => {
   return value;
 };
 
-// 차량 구분 표시
 const formatCarKind = (value) => {
   if (value === "NORMAL") {
     return "입주민 차량";
@@ -169,7 +164,6 @@ const formatCarKind = (value) => {
   return value;
 };
 
-// 백엔드 NoticeDTO에 맞춘 상세 항목
 const detailRows = computed(() => {
   if (!notice.value) {
     return [];
@@ -186,11 +180,9 @@ const detailRows = computed(() => {
     { label: "주차 일수", value: notice.value.stayDays },
     { label: "처리 상태", value: statusOptions[notice.value.alertStat] ?? notice.value.alertStat },
     { label: "처리 관리자", value: notice.value.handledByMemberName },
-    { label: "처리 일시", value: formatDate(notice.value.handledAt) },
   ];
 });
 
-// 목록에서 현재 알림을 찾아 상세 정보로 사용
 const loadDetail = async () => {
   loading.value = true;
   errorMessage.value = "";
@@ -202,11 +194,9 @@ const loadDetail = async () => {
       return;
     }
 
-    // 미확인 알림을 열면 확인 상태로 변경
     if (notice.value.alertStat === "Unresolved") {
       await noticeStore.changeNoticeStatus(notice.value.noticeNo, "Checked");
     }
-
   } catch (error) {
     console.error(error);
     errorMessage.value = "알림 상세 정보를 불러오지 못했습니다.";
@@ -215,7 +205,6 @@ const loadDetail = async () => {
   }
 };
 
-// 이전·다음 알림 이동에 사용할 목록 조회
 const loadNoticeList = async () => {
   try {
     const response = await getNoteList();
@@ -226,7 +215,6 @@ const loadNoticeList = async () => {
   }
 };
 
-// 이전 또는 다음 알림으로 이동
 const moveNotice = (targetNotice) => {
   const targetNoticeNo = targetNotice?.noticeNo ?? targetNotice?.notice_no;
 
@@ -237,7 +225,19 @@ const moveNotice = (targetNotice) => {
   router.push(`/admin/notice/${targetNoticeNo}`);
 };
 
-// 알림 처리 완료
+const getCurrentNoticeStatus = () => {
+  return notice.value?.alertStat ?? notice.value?.alert_stat ?? "Unresolved";
+};
+
+const goNoticeList = () => {
+  router.push({
+    name: "NoticeList",
+    query: {
+      status: getCurrentNoticeStatus(),
+    },
+  });
+};
+
 const completeNotice = async () => {
   if (!canCompleteNotice.value) {
     return;
@@ -257,7 +257,6 @@ const completeNotice = async () => {
   }
 };
 
-// 현재 알림 삭제
 const deleteCurrentNotice = async () => {
   if (!notice.value) {
     return;
@@ -276,8 +275,66 @@ onMounted(async () => {
   await loadDetail();
 });
 
-// 이전 또는 다음 알림으로 이동하면 상세 정보를 다시 조회
 watch(noticeNo, async () => {
   await loadDetail();
 });
 </script>
+
+<style scoped>
+.notice-detail-page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.notice-detail-dialog {
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bg-header);
+  box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18);
+}
+
+.detail-header {
+  width: 100%;
+  margin: 0;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-table {
+  width: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.detail-table th {
+  width: 190px;
+}
+
+.notice-detail-actions {
+  padding: 18px 24px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-color);
+  background: #f8fafb;
+}
+
+.notice-detail-dialog > p {
+  margin: 0;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .detail-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .detail-table th {
+    width: 140px;
+  }
+}
+</style>

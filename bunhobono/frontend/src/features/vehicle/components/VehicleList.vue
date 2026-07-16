@@ -2,15 +2,20 @@
   <div>
     <h3>차량 목록</h3>
 
-    <div>
-      <button @click="filterType = 'all'">전체</button>
-      <button @click="filterType = 'normal'">입주민차량만 보기</button>
-      <button @click="filterType = 'visit'">방문차량만 보기</button>
+    <div class="vehicle-filter-bar">
+      <button class="filter-btn" @click="filterType = 'all'">전체</button>
+      <button class="filter-btn" @click="filterType = 'normal'">입주민만</button>
+      <button class="filter-btn" @click="filterType = 'visit'">방문자만</button>
+      <button class="filter-btn" @click="filterType = 'expired'">만기차량</button>
+      <button class="filter-btn" @click="toggleSort">
+        {{ sortButtonText }}
+      </button>
     </div>
 
     <table border="">
       <thead>
         <tr>
+          <th>번호</th>
           <th>차량번호</th>
           <th>동</th>
           <th>호수</th>
@@ -25,7 +30,8 @@
       </thead>
 
       <tbody>
-        <tr v-for="vehicle in filteredVehicles" :key="vehicle.vehicleCarNo">
+        <tr v-for="vehicle in sortedVehicles" :key="vehicle.vehicleCarNo">
+          <td>{{ vehicle.displayNo }}</td>
           <td>{{ vehicle.carNo }}</td>
           <td>{{ getVehicleMember(vehicle)?.memDong ?? '-' }}</td>
           <td>{{ getVehicleMember(vehicle)?.memHo ?? '-' }}</td>
@@ -40,8 +46,8 @@
           </td>
         </tr>
 
-        <tr v-if="filteredVehicles.length === 0">
-          <td colspan="10">조회된 차량이 없습니다.</td>
+        <tr v-if="sortedVehicles.length === 0">
+          <td colspan="11">조회된 차량이 없습니다.</td>
         </tr>
       </tbody>
     </table>
@@ -59,15 +65,68 @@ const props = defineProps({
 
 const vehicleStore = useVehicleStore()
 const memberStore = useMemStore()
+
 const filterType = ref('all')
+const sortMode = ref('latest')
 
 const filteredVehicles = computed(() => {
-  if (filterType.value === 'all') {
-    return props.vehicles
+  return props.vehicles.filter((vehicle) => {
+    const expired = isExpiredVehicle(vehicle)
+
+    if (filterType.value === 'expired') {
+      return expired
+    }
+
+    if (expired) {
+      return false
+    }
+
+    if (filterType.value === 'normal') {
+      return vehicle.vehicleType === 'normal'
+    }
+
+    if (filterType.value === 'visit') {
+      return vehicle.vehicleType === 'visit'
+    }
+
+    return true
+  })
+})
+
+const sortedVehicles = computed(() => {
+  const list = [...filteredVehicles.value]
+
+  return list.sort((a, b) => {
+    const left = Number(a.displayNo ?? a.vehicleCarNo)
+    const right = Number(b.displayNo ?? b.vehicleCarNo)
+
+    if (sortMode.value === 'oldest') {
+      return left - right
+    }
+
+    return right - left
+  })
+})
+
+const sortButtonText = computed(() => {
+  if (sortMode.value === 'oldest') {
+    return '오래된순'
   }
 
-  return props.vehicles.filter(vehicle => vehicle.vehicleType === filterType.value)
+  return '최신순'
 })
+
+function toggleSort() {
+  if (sortMode.value === 'latest') {
+    sortMode.value = 'oldest'
+  } else {
+    sortMode.value = 'latest'
+  }
+}
+
+function isExpiredVehicle(vehicle) {
+  return String(vehicle.remainingTimeText || '').startsWith('만기됨')
+}
 
 function getVehicleMember(vehicle) {
   return memberStore.memberList.find((member) => {
@@ -89,3 +148,22 @@ async function remove(vehicleNo) {
   await vehicleStore.removeVehicle(vehicleNo)
 }
 </script>
+
+<style scoped>
+.vehicle-filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 740px;
+  min-width: 740px;
+  max-width: 740px;
+  margin: 12px 0;
+}
+
+.filter-btn {
+  width: 120px;
+  height: 36px;
+  white-space: nowrap;
+  text-align: center;
+}
+</style>

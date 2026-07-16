@@ -6,13 +6,15 @@
         <h2>카메라 목록</h2>
         <p>주차장 출입구에 설치된 카메라를 관리합니다.</p>
       </div>
-    </div>
 
-    <button class="register-button" 
+      <button class="register-button" 
             type="button" 
             @click="openDialog">
-      + 카메라 등록
-    </button>
+        + 카메라 등록
+      </button>
+    </div>
+
+    
 
     <!-- 카메라 목록 -->
     <div class="table-wrap">
@@ -224,10 +226,10 @@ onMounted(async () => {
 /* 카메라 목록 */
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid #e5e9f2;
-  border-radius: 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   background: #fff;
-  box-shadow: 0 8px 24px rgba(28, 39, 60, 0.06);
+  box-shadow: 0 10px 26px rgba(35, 52, 66, 0.11);
 }
 
 table {

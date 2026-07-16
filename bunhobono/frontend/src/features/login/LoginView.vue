@@ -57,7 +57,6 @@
   <!-- 로그인 하지 않고 OCR 카메라 시연 화면으로 이동 -->
   <RouterLink class="ocr-demo-link"
               to="/ocr-upload?cameraNo=1">
-    <span aria-hidden>📷</span>
     OCR 시연 카메라
   </RouterLink>
 

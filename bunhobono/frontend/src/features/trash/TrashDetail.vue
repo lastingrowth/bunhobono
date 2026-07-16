@@ -1,5 +1,6 @@
 <template>
   <main class="trash-detail-page">
+    <section class="trash-detail-dialog">
     <div class="detail-header">
       <div>
         <h2>휴지통 상세</h2>
@@ -57,6 +58,7 @@
         <pre>{{ formatJson(trashStore.trashDetail.dataJson) }}</pre>
       </details>
     </template>
+    </section>
   </main>
 </template>
 
@@ -296,3 +298,57 @@ onMounted(async () => {
   );
 });
 </script>
+
+<style scoped>
+.trash-detail-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.trash-detail-dialog {
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bg-header);
+  box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18);
+}
+
+.detail-header {
+  margin: 0;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+}
+
+.detail-card {
+  padding: 20px 24px 0;
+}
+
+.detail-card h3 {
+  margin: 0 0 12px;
+}
+
+.detail-table {
+  width: 100%;
+  max-width: none;
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+.detail-table th {
+  width: 190px;
+}
+
+.json-card {
+  margin: 20px 24px 24px;
+}
+
+.loading {
+  padding: 40px 24px;
+  text-align: center;
+}
+</style>

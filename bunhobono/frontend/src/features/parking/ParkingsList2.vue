@@ -4,17 +4,15 @@
     <table border="1">
       <thead>
         <tr>
-          <th>Parking No</th>
-          <th>display No</th>
-          <th>Parking Name</th>
-          <th>Parking Spaces</th>
-          <th>Parking Location</th>
+          <th>주차장번호</th>
+          <th>주차장이름</th>
+          <th>주차가용 수</th>
+          <th>주차장위치</th>
           <th>주차중</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="p in pStore.list" :key="p.parkingNo">
-          <td>{{ p.parkingNo }}</td>
           <td>{{ p.displayNo }}</td>
           <td>{{ p.parkingName }}</td>
           <td>{{ p.parkingSpaces }}</td>

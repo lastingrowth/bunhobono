@@ -1,5 +1,6 @@
 package api.notice_p;
 
+import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,9 @@ public class NoticeService {
 
     @Resource
     private NoticeMapper noticeMapper;
+
+    @Resource
+    TrashService trashService;
 
     public List<NoticeDTO> list() {
         return noticeMapper.list();
@@ -27,14 +31,33 @@ public class NoticeService {
         return noticeMapper.status(dto);
     }
 
-    // 매년 1월 1일 새벽 3시: 1년 지난 해결 알림 삭제
-    @Scheduled(cron = "0 0 3 1 1 *", zone = "Asia/Seoul")
-    public void deleteResolvedNoticesAfterOneYear() {
-        noticeMapper.deleteResolvedNoticesAfterOneYear();
+    //매분실행 테스트용
+    //@Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
+
+    // 매일 자정 : 자동삭제 휴지통으로다가  스케쥴로 삭제 기능
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    public void moveResolvedNoticesToTrash() {
+        List<Integer> noticeNos =
+                noticeMapper.findResolvedNoticeNosForTrash();
+        int moveCount = 0;
+        for (Integer noticeNo : noticeNos) {
+            try {
+                trashService.moveNotice(
+                        noticeNo,
+                        "SCHEDULED"
+                );
+                moveCount++;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println(
+                "휴지통으로 이동된 알림 수: " + moveCount
+        );
     }
 
-    // 매시 정각: 장기 주차/미등록 차량 알림 생성
-    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    // 24시 통일  장기 주차/미등록 차량 알림 생성
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void createNoticesFromCarLog() {
         noticeMapper.createNoticesFromCarLog();
     }
