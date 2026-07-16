@@ -141,6 +141,18 @@
   outline: none;
 }
 
+.resident-vehicle-list-section + .resident-vehicle-list-section {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.resident-vehicle-list-section h4 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: var(--text-color);
+}
+
 .parking-usage-card {
   margin-bottom: 0;
   padding: 20px 24px;

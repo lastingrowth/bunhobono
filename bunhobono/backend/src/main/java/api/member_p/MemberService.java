@@ -4,6 +4,7 @@ import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -45,6 +46,7 @@ public class MemberService {
     }
 
     // 회원가입
+    @Transactional
     public void signup(MemberDTO dto) {
         validateSignup(dto);
 
@@ -55,10 +57,31 @@ public class MemberService {
         if (!Set.of("PENDING", "RESIDENT", "ADMIN").contains(dto.getRole())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 회원 역할입니다.");
         }
+        // 공개 가입은 전출로 비어 있고 다른 승인 대기·거주 회원이 없는 세대만 허용한다.
+        if ("PENDING".equals(dto.getRole())) {
+            validateAvailableSignupUnit(dto.getMemDong(), dto.getMemHo());
+        }
         // 비밀번호 암호화
         dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
         // DB 저장
         mapper.signup(dto);
+    }
+
+    public List<MemberDTO> availableSignupUnits() {
+        return mapper.availableSignupUnits();
+    }
+
+    private void validateAvailableSignupUnit(int dong, int ho) {
+        if (dong < 101 || dong > 104 || ho / 100 < 1 || ho / 100 > 15
+                || ho % 100 < 1 || ho % 100 > 4) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 동·호수입니다.");
+        }
+
+        // 같은 전출 세대의 동시 가입 요청을 순서대로 처리한다.
+        Long withdrawnMemberNo = mapper.lockWithdrawnUnit(dong, ho);
+        if (withdrawnMemberNo == null || mapper.countActiveMembersAtUnit(dong, ho) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 거주 중이거나 가입 신청이 접수된 세대입니다.");
+        }
     }
 
     // 회원가입 요청을 서버에서도 검증해 잘못된 값의 저장을 차단.

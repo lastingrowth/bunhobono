@@ -13,6 +13,53 @@ public interface MemberMapper {
             "CURRENT_TIMESTAMP)")
     int signup (MemberDTO dto);
 
+    // 전출 이력이 있고 현재 거주·승인대기 회원이 없는 세대만 공개 회원가입 대상으로 조회한다.
+    @Select("""
+        SELECT DISTINCT departed.mem_dong, departed.mem_ho
+        FROM member departed
+        WHERE UPPER(TRIM(departed.role)) = 'RESIDENT'
+          AND TRIM(departed.mem_status) = '전출'
+          AND departed.mem_dong BETWEEN 101 AND 104
+          AND (departed.mem_ho / 100) BETWEEN 1 AND 15
+          AND MOD(departed.mem_ho, 100) BETWEEN 1 AND 4
+          AND NOT EXISTS (
+              SELECT 1
+              FROM member active
+              WHERE active.mem_dong = departed.mem_dong
+                AND active.mem_ho = departed.mem_ho
+                AND UPPER(TRIM(active.role)) IN ('PENDING', 'RESIDENT')
+                AND TRIM(active.mem_status) <> '전출'
+                AND active.delete_at IS NULL
+          )
+        ORDER BY departed.mem_dong, departed.mem_ho
+        """)
+    List<MemberDTO> availableSignupUnits();
+
+    // 가입 처리 중 같은 전출 세대 행을 잠가 동시 중복 신청을 방지한다.
+    @Select("""
+        SELECT member_no
+        FROM member
+        WHERE mem_dong = #{dong}
+          AND mem_ho = #{ho}
+          AND UPPER(TRIM(role)) = 'RESIDENT'
+          AND TRIM(mem_status) = '전출'
+        ORDER BY delete_at DESC NULLS LAST, member_no DESC
+        LIMIT 1
+        FOR UPDATE
+        """)
+    Long lockWithdrawnUnit(@Param("dong") int dong, @Param("ho") int ho);
+
+    @Select("""
+        SELECT COUNT(*)
+        FROM member
+        WHERE mem_dong = #{dong}
+          AND mem_ho = #{ho}
+          AND UPPER(TRIM(role)) IN ('PENDING', 'RESIDENT')
+          AND TRIM(mem_status) <> '전출'
+          AND delete_at IS NULL
+        """)
+    int countActiveMembersAtUnit(@Param("dong") int dong, @Param("ho") int ho);
+
     // 회원목록
     @Select("SELECT ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) AS display_no, " +
             "m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
