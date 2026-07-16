@@ -43,6 +43,20 @@ export const useJwtStore = defineStore('jwtStore', {
         this.role = decoded.role
         this.memStatus = decoded.memStatus
 
+        // 전출·퇴사 처리된 회원은 프론트에서 토큰을 폐기하고 로그인을 차단한다.
+        if (["전출", "퇴사"].includes(this.memStatus)) {
+          this.token = null
+          this.userId = null
+          this.role = null
+          this.memStatus = null
+          this.errorMessage = "탈퇴 처리된 계정은 로그인할 수 없습니다."
+
+          localStorage.removeItem('token')
+          localStorage.removeItem('userId')
+          localStorage.removeItem('memStatus')
+          return false
+        }
+
         this.errorMessage = null
         
         /*

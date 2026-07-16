@@ -45,14 +45,9 @@ export const residentMenu = [
     icon: '▦'
   },
   {
-    title: '내 차량',
-    path: '/resident/vehicles?type=normal',
+    title: '차량관리',
+    path: '/resident/vehicles',
     icon: '🚙'
-  },
-  {
-    title: '방문 차량',
-    path: '/resident/vehicles?type=visit',
-    icon: '🚐'
   },
   {
     title: '주차현황',

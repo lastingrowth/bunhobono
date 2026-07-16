@@ -1,8 +1,8 @@
 <template>
-  <div>
-    <h2>내 차량 관리</h2>
+  <div class="resident-vehicle-management">
+    <h2>차량관리</h2>
 
-    <div>
+    <div class="resident-vehicle-member">
       {{ resVehicleStore.member.memName }}
       ({{ resVehicleStore.member.loginId }})
       {{ resVehicleStore.member.memDong }}동
@@ -10,7 +10,7 @@
     </div>
 
     <!-- 본인 등록 차량: 조회만 가능 -->
-    <section>
+    <section class="vehicle-management-section">
       <h3>본인 차량</h3>
 
       <ResVehicleList
@@ -20,11 +20,9 @@
       />
     </section>
 
-    <hr>
-
     <!-- 방문 차량: 신청 가능 -->
-    <section>
-      <div>
+    <section class="vehicle-management-section vehicle-management-visit-section">
+      <div class="vehicle-management-section-header">
         <h3>방문 차량</h3>
 
         <button
@@ -84,3 +82,60 @@ async function submitVisitVehicle(data) {
   openList();
 }
 </script>
+
+<style scoped>
+.resident-vehicle-management {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.resident-vehicle-management h2,
+.vehicle-management-section h3 {
+  margin: 0;
+}
+
+.resident-vehicle-member {
+  color: var(--text-muted);
+}
+
+.vehicle-management-section {
+  padding: 22px 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-header);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.vehicle-management-section h3 {
+  margin-bottom: 16px;
+}
+
+.vehicle-management-section-header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.vehicle-management-section-header h3 {
+  margin-bottom: 0;
+}
+
+.vehicle-management-visit-section > div:nth-child(2) {
+  margin-bottom: 14px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+  .vehicle-management-section {
+    padding: 18px;
+  }
+
+  .vehicle-management-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>
