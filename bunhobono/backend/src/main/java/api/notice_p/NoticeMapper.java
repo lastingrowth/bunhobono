@@ -34,6 +34,7 @@ public interface NoticeMapper {
             m.mem_name AS handled_by_member_name,
             n.handled_at,
             COALESCE(cl.in_time, n.snapshot_in_time) AS in_time,
+            cl.out_time AS out_time,
             COALESCE(p.parking_name, n.snapshot_parking_name) AS parking_name
         FROM notice n
         LEFT JOIN car_log cl ON n.car_log_no = cl.car_log_no

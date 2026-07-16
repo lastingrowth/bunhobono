@@ -17,7 +17,7 @@
     </thead>
 
     <tbody>
-      <tr v-for="log in logs" :key="log.carLogNo">
+      <tr v-for="log in paginatedItems" :key="log.carLogNo">
         <td>{{ log.displayNo }}</td>
         <td>{{ log.carNo || '미인식' }}</td>
         <td>{{ log.parkingStateText }}</td>
@@ -42,17 +42,42 @@
       </tr>
     </tbody>
   </table>
+  <Pagination
+    :current-page="currentPage"
+    :total-pages="totalPages"
+    :page-numbers="pageNumbers"
+    @change-page="setPage"/>
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { useCarlogStore } from '../carlogStore'
+import { usePagination } from '@/shared/pagination/usePagination';
+import Pagination from '@/shared/pagination/Pagination.vue';
+
 
 const carlogStore = useCarlogStore()
 
-defineProps({
+const props = defineProps({
   logs: {
     type: Array,
     default: () => []
   }
 })
+
+const logList = computed(() => {
+  return props.logs
+})
+
+const pageSize = 10
+
+const {
+  currentPage,
+  totalPages,
+  pageNumbers,
+  paginatedItems,
+  setPage
+} = usePagination(logList, pageSize)
+
+
 </script>

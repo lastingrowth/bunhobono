@@ -176,6 +176,7 @@ const detailRows = computed(() => {
     { label: "차량 구분", value: formatCarKind(notice.value.carKind) },
     { label: "주차장", value: notice.value.parkingName },
     { label: "입차 일시", value: formatDate(notice.value.inTime) },
+    { label: "출차 일시", value: formatDate(notice.value.outTime) },
     { label: "감지 일시", value: formatDate(notice.value.detectAt) },
     { label: "주차 일수", value: notice.value.stayDays },
     { label: "처리 상태", value: statusOptions[notice.value.alertStat] ?? notice.value.alertStat },
@@ -240,6 +241,11 @@ const goNoticeList = () => {
 
 const completeNotice = async () => {
   if (!canCompleteNotice.value) {
+    return;
+  }
+
+  if (!notice.value.outTime) {
+    alert("해당 차량이 여전히 주차중입니다.")
     return;
   }
 
