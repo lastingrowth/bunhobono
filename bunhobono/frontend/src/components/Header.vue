@@ -6,7 +6,7 @@
                 ☰
             </button>
         
-            <h1 class="logo"><RouterLink to="/admin">아파트 주차관리 시스템</RouterLink></h1>
+            <h1 class="logo"><RouterLink :to="homePath">아파트 주차관리 시스템</RouterLink></h1>
         </div>
 
         <div class="user-info">
@@ -22,8 +22,21 @@
 
 <script setup>
 import { useJwtStore } from '@/features/login/jwtStore';
+import { computed } from 'vue';
 
 const jwtStore = useJwtStore()
+
+const homePath = computed(() => {
+    if (jwtStore.role === 'ADMIN') {
+        return '/admin/dashboard'
+    }
+
+    if (jwtStore.role === 'RESIDENT') {
+        return '/resident/dashboard'
+    }
+
+    return '/login'
+})
 
 function logout() {
     jwtStore.logout()

@@ -14,7 +14,7 @@
       </thead>
 
       <tbody>
-        <tr v-for="vehicle in vehicles" :key="vehicle.vehicleCarNo">
+        <tr v-for="vehicle in paginationItems" :key="vehicle.vehicleCarNo">
           <td>{{ vehicle.carNo }}</td>
           <td>{{ vehicle.vehicleTypeText || vehicle.vehicleType }}</td>
           <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus }}</td>
@@ -58,17 +58,42 @@
         </tr>
       </tbody>
     </table>
+    <Pagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :page-numbers="pageNumbers"
+      @change-page="setPage"/>
   </div>
 </template>
 
 <script setup>
+import { usePagination } from "@/shared/pagination/usePagination";
 import { useVehicleStore } from "../vehicleStore";
+import { computed } from "vue";
+import Pagination from "@/shared/pagination/Pagination.vue";
 
-defineProps({
-  vehicles: Array
+
+const props = defineProps({
+  vehicles: {
+    type : Array,
+    default : () => []
+  }
 });
 
 const vehicleStore = useVehicleStore();
+const approveVehicles = computed(() => {
+  return props.vehicles;
+});
+
+const pageSize = 10;
+
+const {
+  currentPage,
+  totalPages,
+  pageNumbers,
+  paginationItems,
+  setPage
+} = usePagination(approveVehicles, pageSize);
 
 function getRequestedVisitHours(vehicle) {
   if (vehicle.periodHours) {
