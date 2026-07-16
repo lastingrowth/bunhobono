@@ -1,5 +1,4 @@
 package api.carlog_p;
-import api.notice_p.NoticeMapper;
 import api.trash_p.TrashService;
 
 import api.cameradata_p.CameraDataDTO;
@@ -16,7 +15,6 @@ public class CarLogService {
 
     @Resource
     private TrashService trashService;
-
 
     public List<CarLogDTO> list(CarLogDTO dto) {
         return carLogMapper.list(dto);
@@ -37,9 +35,7 @@ public class CarLogService {
         if ("In".equalsIgnoreCase(gate.getGateType())) {
             boolean alreadyParking = carLogMapper.existsOpenLog(cameraData);
             if (alreadyParking) { return; }
-
             carLogMapper.insertEntry(cameraData, gate.getGateNo());
-
 
         } else if ("Out".equalsIgnoreCase(gate.getGateType())) {
             carLogMapper.completeExit(cameraData, gate.getGateNo());
