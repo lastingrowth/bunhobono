@@ -220,7 +220,10 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
 
     return {
       parkingNo: getGateParkingNo(gate) ?? null,
-      parkingName: getGateParkingName(gate) ?? "-"
+      parkingName: getGateParkingName(gate) ?? "-",
+      gateNo: getGateNo(gate) ?? null,
+      gateName: getField(gate, "gateName", "gate_name") ?? "-",
+      gateType: getField(gate, "gateType", "gate_type") ?? null
     };
   };
 
@@ -228,12 +231,14 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
   const addMovementType = (cameraData) => {
     const movementType = getMovementType(cameraData);
     const parking = getCameraParking(cameraData);
+    const relatedCarLog = findRelatedCarLog(cameraData);
 
     return {
       ...cameraData,
       ...parking,
       movementType,
-      movementTypeText : getMovementTypeText(movementType)
+      movementTypeText : getMovementTypeText(movementType),
+      processed: Boolean(relatedCarLog)
     };
   };
 

@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class GateDTO {
-    private int gateNo;
+    private int gateNo, gateStatus;
     private String gateName, gateType, parkingName, parkingLocation;
 
     //외래키

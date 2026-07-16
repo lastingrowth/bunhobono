@@ -42,6 +42,18 @@ public class CameraDataController {
         return cameraDataService.ocr(cameraNo, carNo,confidenceScore, file);
     }
 
+    @PostMapping("/{cameraDataNo}/open-gate")
+    public ResponseEntity<String> openGate(
+            @PathVariable int cameraDataNo
+    ) {
+        cameraDataService.processManualPassage(
+                cameraDataNo
+        );
+
+        return ResponseEntity.ok(
+                "게이트 열기 처리가 완료되었습니다."
+        );
+    }
 
     @GetMapping("/{cameraDataNo}/detail")
     public CameraDataDTO getCameraData(@PathVariable int cameraDataNo) {

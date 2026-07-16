@@ -14,6 +14,14 @@ public class GateController {
 
     @Resource
     GateService gateService;
+
+    //게이트 작동
+    @PutMapping("/{gateNo}/status")
+    public int updateStatus(
+            @PathVariable int gateNo, @RequestBody GateDTO dto) {
+        dto.setGateNo(gateNo);
+        return gateService.updateStatus(dto);
+    }
     //목록
     @GetMapping("")
     public List<GateDTO> list(GateDTO dto){

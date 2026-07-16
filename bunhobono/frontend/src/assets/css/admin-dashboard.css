@@ -42,6 +42,88 @@
   gap: 8px;
 }
 
+.gate-open-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: 80vh;
+  padding: 22px;
+  border: 0;
+  border-radius: 12px;
+  color: var(--text-color);
+  background: var(--bg-header);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+}
+
+.gate-open-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.gate-dialog-header {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.gate-dialog-header h3,
+.gate-dialog-header p {
+  margin: 0;
+}
+
+.gate-dialog-header p {
+  margin-top: 5px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.gate-dialog-close,
+.gate-approve-button {
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gate-dialog-close {
+  color: var(--text-color);
+  background: var(--bg-main);
+}
+
+.gate-approve-button {
+  color: #ffffff;
+  background: #16a34a;
+}
+
+.gate-approve-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.gate-dialog-table-wrap {
+  max-height: 56vh;
+  overflow: auto;
+}
+
+.gate-open-dialog table {
+  width: 100%;
+}
+
+.gate-open-dialog th,
+.gate-open-dialog td {
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.gate-number {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
 .dashboard-maintenance {
   padding: 8px 14px;
   border: none;
@@ -225,25 +307,14 @@ button.dashboard-card:hover {
 .parking-status-strip {
   width: 100%;
   min-width: 0;
-  padding: 18px 12px 14px;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 5px;
-  cursor: pointer;
   color: inherit;
-  background: var(--bg-main);
-  box-shadow: 0 6px 16px rgba(35, 52, 66, 0.08);
-}
-
-.parking-status-strip:hover {
-  border-color: transparent;
-  box-shadow: 0 9px 20px rgba(68, 101, 127, 0.13);
-}
-
-.parking-status-strip:hover .parking-zone-name {
-  color: var(--dashboard-blue);
+  background: transparent;
 }
 
 .parking-zone-status,
@@ -259,6 +330,60 @@ button.dashboard-card:hover {
   text-align: center;
   color: inherit;
   background: transparent;
+}
+
+.parking-zone-status {
+  min-height: 185px;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: var(--bg-main);
+  box-shadow: 0 6px 16px rgba(35, 52, 66, 0.08);
+}
+
+.content .parking-zone-status:disabled {
+  cursor: default;
+  color: inherit;
+  opacity: 1;
+  filter: none;
+}
+
+.parking-zone-status.has-gate-request {
+  cursor: pointer;
+  border-color: rgba(22, 163, 74, 0.42);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.18);
+}
+
+.parking-zone-status.has-gate-request:hover {
+  border-color: #16a34a;
+  transform: translateY(-2px);
+}
+
+.parking-zone-status.has-gate-request .parking-zone-name {
+  color: #15803d;
+}
+
+.parking-zone-status.has-gate-request .parking-zone-donut {
+  background:
+    radial-gradient(
+      circle,
+      var(--bg-main) 56%,
+      transparent 58%
+    ),
+    conic-gradient(
+      #22c55e var(--parking-rate),
+      #dfe6eb 0
+    );
+}
+
+.parking-gate-request-count {
+  margin-top: 7px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  background: #16a34a;
 }
 
 .parking-zone-name {

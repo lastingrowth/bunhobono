@@ -194,6 +194,26 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         });
     });
 
+    // 입차 카메라에 감지됐지만 자동 통과하지 않은 수동 승인 대상 차량
+    const manualApprovalVehicles = computed(() => {
+        return [...cameraDataStore.displayList]
+            .filter((data) => {
+                if (!data.cameraDataNo || data.movementType !== "IN" || data.processed) {
+                    return false;
+                }
+
+                if (!data.vehicleCarNo) {
+                    return true;
+                }
+
+                return data.vehicleStatus !== "APPROVED";
+            })
+            .sort((a, b) => {
+                return new Date(b.captureTime ?? 0).getTime()
+                    - new Date(a.captureTime ?? 0).getTime();
+            });
+    });
+
     const clearOcrImageUrls = () => {
         Object.values(ocrImageUrls.value).forEach((url) => {
             if (url) {
@@ -457,6 +477,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         ocrFailCount,
         ocrSuccessRate,
         parkingStatusWithOcr,
+        manualApprovalVehicles,
         weeklyEntryStats,
         currentCarlogPage,
         carlogTotalPages,

@@ -3,6 +3,7 @@ import api.notice_p.NoticeMapper;
 import api.trash_p.TrashService;
 
 import api.cameradata_p.CameraDataDTO;
+import api.gate_p.GateDTO;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -24,14 +25,9 @@ public class CarLogService {
 
 
     // camera_data 저장 직후 호출: 게이트 유형에 따라 입차 생성 또는 출차 처리
-    public void processCameraData(CameraDataDTO cameraData) {
+    public void processCameraData(CameraDataDTO cameraData, GateDTO gate) {
         if (cameraData.getCarNo() == null || cameraData.getCarNo().isBlank()) {
             return;
-        }
-
-        CarLogDTO gate = carLogMapper.findGateByCameraNo(cameraData.getCameraNo());
-        if (gate == null) {
-            throw new IllegalArgumentException("카메라에 연결된 게이트를 찾을 수 없습니다.");
         }
 
         if ("In".equalsIgnoreCase(gate.getGateType())) {

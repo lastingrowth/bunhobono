@@ -40,3 +40,8 @@ export const getCameraDataImage = (cameraDataNo) => {
 export const deleteCameraData = (cameraDataNo) => {
   return api.delete(`/camera-data/${cameraDataNo}/delete`);
 };
+
+// 관리자 수동 입차 승인
+export const openGateForCameraData = (cameraDataNo) => {
+  return api.post(`/camera-data/${cameraDataNo}/open-gate`);
+};
