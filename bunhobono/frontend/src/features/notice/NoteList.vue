@@ -50,7 +50,7 @@
 
         <tbody>
           <tr
-            v-for="(notice, index) in sortedNotices"
+            v-for="(notice, index) in paginatedItems"
             :key="notice.noticeNo ?? notice.notice_no"
             class="notice-row"
             @click="goDetail(notice)"
@@ -62,7 +62,7 @@
               :title="formatValue(getValue(notice, column), column)"
             >
               <span v-if="column.key === 'noticeNo'">
-                {{ index + 1 }}
+                {{ (currentPage - 1) * pageSize + index + 1 }}
               </span>
 
               <span v-else-if="column.key === 'alertStat'">
@@ -84,6 +84,11 @@
           </tr>
         </tbody>
       </table>
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :page-numbers="pageNumbers"
+        @change-page="setPage"/>
     </div>
   </main>
 </template>
@@ -93,6 +98,8 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useNoticeStore } from "./noticeStore";
 import { storeToRefs } from "pinia";
+import { usePagination } from "@/shared/pagination/usePagination";
+import Pagination from "@/shared/pagination/Pagination.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -151,6 +158,18 @@ const sortedNotices = computed(() => {
     return sortOrder.value === "desc" ? bNo - aNo : aNo - bNo;
   });
 });
+
+// 한 페이지에 10개씩
+const pageSize = 10;
+
+const {
+  currentPage,
+  totalPages,
+  pageNumbers,
+  paginatedItems,
+  setPage
+} = usePagination(sortedNotices, pageSize);
+
 
 const formatDate = (value) => {
   const date = new Date(value);

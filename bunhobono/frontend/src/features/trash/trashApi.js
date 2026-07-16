@@ -9,6 +9,14 @@ export const getTrashList = (dataType) => {
     });
 };
 
+export const searchTrashByCarNo = (carNo) => {
+    return api.get("/trash/search", {
+        params: {
+            carNo,
+        },
+    });
+};
+
 // 휴지통 상세
 export const getTrashDetail = (trashNo) => {
     return api.get(`/trash/${trashNo}`);

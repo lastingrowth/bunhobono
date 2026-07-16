@@ -13,6 +13,10 @@ public interface TrashMapper {
     // 휴지통 전체 또는 유형별 목록 조회
     @Select("<script>" +
             "SELECT trash_no, data_type, original_no, " +
+            "COALESCE(data_json ->> 'captured_car_no', data_json ->> 'car_no', " +
+            "data_json ->> 'snapshot_car_no', data_json ->> 'snapshot_captured_car_no', " +
+            "(SELECT cd.car_no FROM camera_data cd " +
+            "WHERE cd.camera_data_no = NULLIF(data_json ->> 'camera_data_no', '')::int)) AS \"carNo\", " +
             "data_json::text AS data_json, delete_type, deleted_at, purge_at " +
             "FROM trash_bin " +
             "<if test='dataType != null and dataType != \"\"'>" +
@@ -26,6 +30,10 @@ public interface TrashMapper {
 
     // 휴지통 상세 조회
     @Select("SELECT trash_no, data_type, original_no, " +
+            "COALESCE(data_json ->> 'captured_car_no', data_json ->> 'car_no', " +
+            "data_json ->> 'snapshot_car_no', data_json ->> 'snapshot_captured_car_no', " +
+            "(SELECT cd.car_no FROM camera_data cd " +
+            "WHERE cd.camera_data_no = NULLIF(data_json ->> 'camera_data_no', '')::int)) AS \"carNo\", " +
             "data_json::text AS data_json, delete_type, deleted_at, purge_at " +
             "FROM trash_bin " +
             "WHERE trash_no = #{trashNo}")
@@ -45,8 +53,12 @@ public interface TrashMapper {
     // car_log를 JSON으로 변환해 휴지통에 저장
     @Insert("INSERT INTO trash_bin " +
             "(data_type, original_no, data_json, delete_type) " +
-            "SELECT 'CAR_LOG', cl.car_log_no, to_jsonb(cl), #{deleteType} " +
+            "SELECT 'CAR_LOG', cl.car_log_no, " +
+            "to_jsonb(cl) || jsonb_build_object(" +
+            "'captured_car_no', COALESCE(cd.car_no, cl.snapshot_car_no)), " +
+            "#{deleteType} " +
             "FROM car_log cl " +
+            "LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no " +
             "WHERE cl.car_log_no = #{carLogNo}")
     int saveCarLog(
             @Param("carLogNo") int carLogNo,
@@ -68,4 +80,23 @@ public interface TrashMapper {
     @Delete("DELETE FROM trash_bin " +
             "WHERE trash_no = #{trashNo}")
     int deleteTrash(long trashNo);
+
+    //검색
+    @Select("SELECT trash_no, data_type, original_no, " +
+            "COALESCE(data_json ->> 'captured_car_no', data_json ->> 'car_no', " +
+            "data_json ->> 'snapshot_car_no', data_json ->> 'snapshot_captured_car_no', " +
+            "(SELECT cd.car_no FROM camera_data cd " +
+            "WHERE cd.camera_data_no = NULLIF(data_json ->> 'camera_data_no', '')::int)) AS \"carNo\", " +
+            "data_json::text AS data_json, delete_type, deleted_at, purge_at " +
+            "FROM trash_bin " +
+            "WHERE COALESCE(" +
+            "data_json ->> 'captured_car_no', " +
+            "data_json ->> 'car_no', " +
+            "data_json ->> 'snapshot_car_no', " +
+            "data_json ->> 'snapshot_captured_car_no', " +
+            "(SELECT cd.car_no FROM camera_data cd " +
+            "WHERE cd.camera_data_no = NULLIF(data_json ->> 'camera_data_no', '')::int)" +
+            ") LIKE CONCAT('%', #{carNo}, '%') " +
+            "ORDER BY deleted_at DESC")
+    List<TrashDTO> searchByCarNo(@Param("carNo") String carNo);
 }

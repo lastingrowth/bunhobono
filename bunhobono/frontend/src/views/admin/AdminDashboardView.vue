@@ -304,7 +304,7 @@
             <button
               type="button"
               :disabled="currentCarlogPage === 1"
-              @click="setCarlogPage(currentCarlogPage - 1)"
+              @click="setCarlogPage(carlogPageNumbers[0] - 1)"
             >
               이전
             </button>
@@ -322,7 +322,7 @@
             <button
               type="button"
               :disabled="currentCarlogPage === carlogTotalPages"
-              @click="setCarlogPage(currentCarlogPage + 1)"
+              @click="setCarlogPage(carlogPageNumbers[carlogPageNumbers.length -1] + 1)"
             >
               다음
             </button>

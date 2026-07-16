@@ -8,6 +8,12 @@
 
         <h2 class="login-title">입주민 회원가입</h2>
 
+        <p v-if="availabilityLoading" class="availability-guide">가입 가능한 세대를 확인하고 있습니다.</p>
+        <p v-else-if="availabilityError" class="availability-guide availability-error">{{ availabilityError }}</p>
+        <p v-else-if="!hasAvailableUnits" class="availability-guide availability-error">
+            현재 가입 가능한 세대가 없습니다. 관리사무소에 문의해주세요.
+        </p>
+
         <form class="signup-form" @submit.prevent="signupGo">
             <label class="form-field">
                 <span>이름</span>
@@ -17,23 +23,24 @@
             <div class="form-row">
                 <label class="form-field">
                     <span>동</span>
-                    <!-- 입주민 회원가입에서 101~108동 셀렉트로 선택. -->
-                    <select v-model.number="member.memDong" required>
+                    <!-- 서버가 확인한 가입 가능 세대의 동만 표시한다. -->
+                    <select v-model.number="member.memDong" :disabled="!hasAvailableUnits" required @change="member.memHo = ''">
                         <option disabled value="">동을 선택하세요</option>
-                        <option v-for="dong in dongOptions" :key="dong" :value="dong">{{ dong }}</option>
+                        <option v-for="dong in availableDongs" :key="dong" :value="dong">{{ dong }}동</option>
                     </select>
                 </label>
 
                 <label class="form-field">
                     <span>호수</span>
-                    <input
-                        type="text"
-                        inputmode="numeric"
-                        :value="member.memHo"
-                        placeholder="숫자만 입력하세요"
-                        required
-                        @input="handleHoInput"
-                    >
+                    <select v-model.number="member.memHo" :disabled="!member.memDong" required>
+                        <option disabled value="">호수를 선택하세요</option>
+                        <optgroup label="1·2라인">
+                            <option v-for="ho in line12HoOptions" :key="ho" :value="ho">{{ ho }}호</option>
+                        </optgroup>
+                        <optgroup label="3·4라인">
+                            <option v-for="ho in line34HoOptions" :key="ho" :value="ho">{{ ho }}호</option>
+                        </optgroup>
+                    </select>
                 </label>
             </div>
 
@@ -61,7 +68,7 @@
                 <input type="password" inputmode="numeric" :value="member.loginPwd" minlength="4" maxlength="20" autocomplete="new-password" placeholder="숫자 4~20자" required @input="handlePasswordInput">
             </label>
 
-            <button class="login-submit" type="submit">회원가입</button>
+            <button class="login-submit" type="submit" :disabled="!hasAvailableUnits || availabilityLoading">회원가입</button>
         </form>
 
         <div class="signup-guide">
@@ -72,13 +79,14 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
 
 const router = useRouter();
 const store = useMemStore();
-const dongOptions = [101, 102, 103, 104, 105, 106, 107, 108];
+const availabilityLoading = ref(true);
+const availabilityError = ref("");
 
 const member = ref({
     // 외부 회원가입은 관리자 승인 전까지 PENDING 역할로 고정한다.
@@ -95,6 +103,37 @@ const member = ref({
 const idChecked = ref(false);
 const checkedLoginId = ref("");
 const phoneParts = reactive({ first: "", middle: "", last: "" });
+
+const hasAvailableUnits = computed(() => store.availableSignupUnits.length > 0);
+const availableDongs = computed(() => [
+    ...new Set(store.availableSignupUnits.map((unit) => Number(unit.memDong)))
+].sort((left, right) => left - right));
+const selectedDongUnits = computed(() => store.availableSignupUnits.filter(
+    (unit) => Number(unit.memDong) === Number(member.value.memDong)
+));
+const line12HoOptions = computed(() => selectedDongUnits.value
+    .map((unit) => Number(unit.memHo))
+    .filter((ho) => [1, 2].includes(ho % 100))
+    .sort((left, right) => left - right));
+const line34HoOptions = computed(() => selectedDongUnits.value
+    .map((unit) => Number(unit.memHo))
+    .filter((ho) => [3, 4].includes(ho % 100))
+    .sort((left, right) => left - right));
+
+const loadAvailableUnits = async () => {
+    availabilityLoading.value = true;
+    availabilityError.value = "";
+    try {
+        await store.loadAvailableSignupUnits();
+    } catch (error) {
+        console.error(error);
+        availabilityError.value = "가입 가능한 세대를 불러오지 못했습니다.";
+    } finally {
+        availabilityLoading.value = false;
+    }
+};
+
+onMounted(loadAvailableUnits);
 
 // =====
 // 아이디는 영문과 숫자를 모두 포함하고 비밀번호는 숫자만 허용한다.
@@ -122,17 +161,6 @@ const validateSignupFields = () => {
     return true;
 };
 // =====
-
-// 호수에 문자가 입력되면 제거하고 숫자 입력 안내를 표시.
-const handleHoInput = (event) => {
-    const inputValue = event.target.value;
-    const numericValue = inputValue.replace(/\D/g, "");
-    if (inputValue !== numericValue) {
-        alert("숫자만 입력하세요.");
-    }
-    event.target.value = numericValue;
-    member.value.memHo = numericValue === "" ? "" : Number(numericValue);
-};
 
 // 연락처 세 칸에는 정해진 길이만큼 숫자만 입력한다.
 const handlePhoneInput = (event, part, maxLength) => {
@@ -198,7 +226,10 @@ const signupGo = async () => {
         router.push("/login");
     } catch (e) {
         console.error(e);
-        alert("회원등록 실패");
+        alert(e.response?.data?.message || e.response?.data?.error || "회원등록 실패");
+        member.value.memDong = "";
+        member.value.memHo = "";
+        await loadAvailableUnits();
     }
 };
 </script>
@@ -217,6 +248,19 @@ const signupGo = async () => {
     display: flex;
     flex-direction: column;
     gap: 18px;
+}
+
+.availability-guide {
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    background: #f8fafc;
+}
+
+.availability-error {
+    color: #dc2626;
+    background: #fef2f2;
 }
 
 .form-row {

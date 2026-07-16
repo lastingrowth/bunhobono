@@ -71,6 +71,11 @@ export const idCheckMember = (loginId) => {
     });
 };
 
+// 전출 처리되어 공개 회원가입이 가능한 세대 조회
+export const getAvailableSignupUnits = () => {
+    return api.get("/signup/available-units");
+};
+
 // 로그인 입주민 정보와 차량·최근 입출차 기록을 한 번에 조회한다.
 export const getResidentDashboard = () => {
     return api.get("/resident/mypage/dashboard");

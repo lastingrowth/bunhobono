@@ -5,6 +5,7 @@ import {
   deleteMember,
   getMemberDetail,
   getMemberList,
+  getAvailableSignupUnits,
   getResidentDashboard,
   idCheckMember,
   permanentlyDeleteWithdrawnMembers,
@@ -23,6 +24,7 @@ export const useMemStore =  defineStore("member", () => {
 
   const memberList = ref ([]);
   const member = ref({});
+  const availableSignupUnits = ref([]);
   const memberArchiveAlerts = ref([]);
   const loading = ref(false);
   const errorMessage = ref("");
@@ -90,6 +92,11 @@ export const useMemStore =  defineStore("member", () => {
     await signupMember(memberData);
   };
 
+  const loadAvailableSignupUnits = async () => {
+    const res = await getAvailableSignupUnits();
+    availableSignupUnits.value = res.data || [];
+  };
+
     // 입주민 로그인 시, 마이페이지
   const loadMypage = async () => {
     const res = await residentMypage();
@@ -155,6 +162,7 @@ export const useMemStore =  defineStore("member", () => {
   return {
     memberList,
     member,
+    availableSignupUnits,
     memberArchiveAlerts,
     loading,
     errorMessage,
@@ -169,6 +177,7 @@ export const useMemStore =  defineStore("member", () => {
     approveMembers,
     removeMember,
     signup,
+    loadAvailableSignupUnits,
 
     loadMypage,
     editResident,

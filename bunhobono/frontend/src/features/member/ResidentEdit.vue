@@ -148,11 +148,19 @@ const update = async () => {
         return;
     }
 
+    const passwordChanged = showPasswordField.value;
+    
     // 입주민 본인은 연락처와 새 비밀번호만 수정 요청으로 전달한다.
     await store.editResident({
         memPhone: member.memPhone,
-        loginPwd: showPasswordField.value ? member.loginPwd : null
+        loginPwd: passwordChanged ? member.loginPwd : null
     });
+
+    if(passwordChanged){
+        alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
+        jwtStore.logout();
+        return;
+    }
     alert("수정되었습니다.");
     router.push("/resident/mypage");
 };

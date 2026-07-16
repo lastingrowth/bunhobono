@@ -122,4 +122,10 @@ public class MemberController {
         return service.checkLoginId(loginId);
     }
 
+    // 전출 처리되어 공개 회원가입이 가능한 세대의 동·호수만 반환한다.
+    @GetMapping("/signup/available-units")
+    public List<MemberDTO> availableSignupUnits() {
+        return service.availableSignupUnits();
+    }
+
 }

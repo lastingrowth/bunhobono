@@ -36,7 +36,7 @@ export const adminMenu = [
     path: '/admin/gates'
   },
   {
-    title: '휴지통',
+    title: '지난기록',
     path: '/admin/trash'
   }
 

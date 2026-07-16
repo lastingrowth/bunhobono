@@ -9,5 +9,5 @@ public class VehicleDTO {
     private int vehicleCarNo, displayNo;
     private String vehicleType, carNo, vehicleStatus, approvedMemberName;
     private LocalDateTime startDate, endDate, approvedAt, inTime, outTime, realEndDate;
-    private Integer memberNo;
+    private Integer memberNo, memDong, memHo;
 }

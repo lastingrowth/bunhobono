@@ -382,23 +382,19 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     // 현재 페이지를 기준으로 최대 5개의 페이지 번호 표시
     const carlogPageNumbers = computed(() => {
-        const totalPages = carlogTotalPages.value;
+        const pageGroupSize = 5;
 
-        let startPage = Math.max(
-            currentCarlogPage.value - 2,
-            1
+        const currentGroup = Math.ceil(
+            currentCarlogPage.value / pageGroupSize
         );
+
+        let startPage = (currentGroup - 1) * pageGroupSize + 1;
 
         let endPage = Math.min(
-            startPage + 4,
-            totalPages
+            startPage + pageGroupSize - 1,
+            carlogTotalPages.value
         );
-
-        startPage = Math.max(
-            endPage - 4,
-            1
-        );
-
+        
         return Array.from(
             {
                 length: endPage - startPage + 1

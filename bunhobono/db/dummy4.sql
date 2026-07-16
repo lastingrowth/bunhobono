@@ -19,28 +19,34 @@ INSERT INTO member
 VALUES
     ('admin1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '관리자1', '010-1111-1111', 'ADMIN', NOW(), NULL, '근무'),
     ('admin2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '관리자2', '010-1111-2222', 'ADMIN', NOW(), NULL, '근무'),
-    ('res1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1001, '입주민1', '010-2222-1001', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1002, '입주민2', '010-2222-1002', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res3', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1003, '입주민3', '010-2222-1003', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res4', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1004, '입주민4', '010-2222-1004', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res5', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1005, '입주민5', '010-2222-1005', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res6', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1006, '입주민6', '010-2222-1006', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res7', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1007, '입주민7', '010-2222-1007', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res8', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1008, '입주민8', '010-2222-1008', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res9', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1009, '입주민9', '010-2222-1009', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res10', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1010, '입주민10', '010-2222-1010', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res11', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2001, '입주민11', '010-2222-2001', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res12', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2002, '입주민12', '010-2222-2002', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res13', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2003, '입주민13', '010-2222-2003', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res14', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2004, '입주민14', '010-2222-2004', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res15', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2005, '입주민15', '010-2222-2005', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res16', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2006, '입주민16', '010-2222-2006', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res17', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2007, '입주민17', '010-2222-2007', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res18', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2008, '입주민18', '010-2222-2008', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res19', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2009, '입주민19', '010-2222-2009', 'RESIDENT', NOW(), NULL, '거주'),
-    ('res20', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 2010, '입주민20', '010-2222-2010', 'RESIDENT', NOW(), NULL, '거주'),
-    ('pending1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 103, 3001, '승인대기1', '010-3333-3001', 'PENDING', NOW(), NULL, '거주'),
-    ('pending2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 103, 3002, '승인대기2', '010-3333-3002', 'PENDING', NOW(), NULL, '거주');
+    -- 101~104동, 1~15층, 1~4라인 안에서 사용하는 정상 거주 세대
+    ('res1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 101, '입주민1', '010-2222-0101', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 102, '입주민2', '010-2222-0102', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res3', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 103, '입주민3', '010-2222-0103', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res4', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 104, '입주민4', '010-2222-0104', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res5', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 201, '입주민5', '010-2222-0201', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res6', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 202, '입주민6', '010-2222-0202', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res7', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 203, '입주민7', '010-2222-0203', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res8', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 204, '입주민8', '010-2222-0204', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res9', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 301, '입주민9', '010-2222-0301', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res10', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 302, '입주민10', '010-2222-0302', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res11', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 303, '입주민11', '010-2222-0303', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res12', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 304, '입주민12', '010-2222-0304', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res13', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 103, 401, '입주민13', '010-2222-0401', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res14', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 103, 402, '입주민14', '010-2222-0402', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res15', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 103, 403, '입주민15', '010-2222-0403', 'RESIDENT', NOW(), NULL, '거주'),
+    ('res16', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 103, 404, '입주민16', '010-2222-0404', 'RESIDENT', NOW(), NULL, '거주'),
+
+    -- 전출됐지만 같은 세대에 승인대기 회원이 있어 공개 가입 목록에는 나오지 않는 사례
+    ('res17', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 104, 501, '입주민17', '010-2222-0501', 'RESIDENT', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', '전출'),
+    ('res18', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 104, 502, '입주민18', '010-2222-0502', 'RESIDENT', NOW() - INTERVAL '5 days', NOW() - INTERVAL '4 days', '전출'),
+
+    -- 승인대기 회원이 없어 공개 가입 화면에 표시되는 사례(104동 503호, 504호)
+    ('res19', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 104, 503, '입주민19', '010-2222-0503', 'RESIDENT', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', '전출'),
+    ('res20', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 104, 504, '입주민20', '010-2222-0504', 'RESIDENT', NOW() - INTERVAL '5 days', NOW() - INTERVAL '4 days', '전출'),
+
+    ('pending1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 104, 501, '승인대기1', '010-3333-0501', 'PENDING', NOW(), NULL, '거주'),
+    ('pending2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 104, 502, '승인대기2', '010-3333-0502', 'PENDING', NOW(), NULL, '거주');
 
 -- =====================================================
 -- PARKING
@@ -88,29 +94,29 @@ VALUES
     ('visit', '101하1001', 'APPROVED', '2026-07-06 10:00:00', '2026-07-20 10:00:00', 5, '2026-07-06 10:00:00'),
     ('visit', '101하1002', 'APPROVED', '2026-07-06 10:10:00', '2026-07-20 10:10:00', 9, '2026-07-06 10:10:00'),
     ('visit', '103호1003', 'APPROVED', '2026-07-06 10:20:00', '2026-07-20 10:20:00', 14, '2026-07-06 10:20:00'),
-    ('visit', '102허1004', 'EXPIRED', '2026-07-02 10:30:00', '2026-07-05 10:30:00', 9, '2026-07-02 10:30:00'),
+    ('visit', '102허1004', 'EXPIRED', '2026-07-02 10:30:00', '2026-07-05 10:30:00', NULL, '2026-07-02 10:30:00'),
     ('visit', '201하2001', 'APPROVED', '2026-07-06 11:00:00', '2026-07-20 11:00:00', 20, '2026-07-06 11:00:00'),
     ('visit', '203호2003', 'APPROVED', '2026-07-06 11:10:00', '2026-07-20 11:10:00', 13, '2026-07-06 11:10:00'),
     ('visit', '204하2004', 'APPROVED', '2026-07-06 11:20:00', '2026-07-20 11:20:00', 11, '2026-07-06 11:20:00'),
     ('visit', '201하2005', 'APPROVED', '2026-07-06 11:30:00', '2026-07-20 11:30:00', 7, '2026-07-06 11:30:00'),
-    ('visit', '202허2002', 'EXPIRED', '2026-07-02 11:40:00', '2026-07-05 11:40:00', 3, '2026-07-02 11:40:00'),
+    ('visit', '202허2002', 'EXPIRED', '2026-07-02 11:40:00', '2026-07-05 11:40:00', NULL, '2026-07-02 11:40:00'),
     ('visit', '301허3001', 'APPROVED', '2026-07-06 12:00:00', '2026-07-20 12:00:00', 4, '2026-07-06 12:00:00'),
     ('visit', '301허3003', 'APPROVED', '2026-07-06 12:10:00', '2026-07-20 12:10:00', 19, '2026-07-06 12:10:00'),
     ('visit', '303하3004', 'APPROVED', '2026-07-06 12:20:00', '2026-07-20 12:20:00', 15, '2026-07-06 12:20:00'),
     ('visit', '304허3005', 'APPROVED', '2026-07-06 12:30:00', '2026-07-20 12:30:00', 8, '2026-07-06 12:30:00'),
-    ('visit', '302호3002', 'EXPIRED', '2026-07-02 12:40:00', '2026-07-05 12:40:00', 10, '2026-07-02 12:40:00'),
+    ('visit', '302호3002', 'EXPIRED', '2026-07-02 12:40:00', '2026-07-05 12:40:00', NULL, '2026-07-02 12:40:00'),
     ('visit', '357하2468', 'APPROVED', '2026-07-06 13:00:00', '2026-07-20 13:00:00', 18, '2026-07-06 13:00:00'),
     ('visit', '403허4001', 'APPROVED', '2026-07-06 13:10:00', '2026-07-20 13:10:00', 12, '2026-07-06 13:10:00'),
     ('visit', '404호4002', 'APPROVED', '2026-07-06 13:20:00', '2026-07-20 13:20:00', 3, '2026-07-06 13:20:00'),
     ('visit', '401호4003', 'APPROVED', '2026-07-06 13:30:00', '2026-07-20 13:30:00', 6, '2026-07-06 13:30:00'),
     ('visit', '401호4004', 'APPROVED', '2026-07-06 13:40:00', '2026-07-20 13:40:00', 17, '2026-07-06 13:40:00'),
-    ('visit', '402하4005', 'EXPIRED', '2026-07-02 13:50:00', '2026-07-05 13:50:00', 14, '2026-07-02 13:50:00'),
-    ('visit', '501하5001', 'EXPIRED', '2026-06-25 09:00:00', '2026-06-28 09:00:00', 7, '2026-06-25 09:00:00'),
-    ('visit', '502허5002', 'EXPIRED', '2026-06-26 10:00:00', '2026-06-29 10:00:00', 17, '2026-06-26 10:00:00'),
-    ('visit', '503호5003', 'EXPIRED', '2026-06-28 11:00:00', '2026-07-01 11:00:00', 10, '2026-06-28 11:00:00'),
-    ('visit', '504하5004', 'EXPIRED', '2026-06-30 12:00:00', '2026-07-03 12:00:00', 4, '2026-06-30 12:00:00'),
-    ('visit', '505허5005', 'EXPIRED', '2026-07-01 13:00:00', '2026-07-04 13:00:00', 20, '2026-07-01 13:00:00'),
-    ('normal', '601가6001', 'EXPIRED', '2026-05-30 00:00:00', '2026-06-29 23:59:59', 4, '2026-05-30 09:00:00'),
+    ('visit', '402하4005', 'EXPIRED', '2026-07-02 13:50:00', '2026-07-05 13:50:00', NULL, '2026-07-02 13:50:00'),
+    ('visit', '501하5001', 'EXPIRED', '2026-06-25 09:00:00', '2026-06-28 09:00:00', NULL, '2026-06-25 09:00:00'),
+    ('visit', '502허5002', 'EXPIRED', '2026-06-26 10:00:00', '2026-06-29 10:00:00', NULL, '2026-06-26 10:00:00'),
+    ('visit', '503호5003', 'EXPIRED', '2026-06-28 11:00:00', '2026-07-01 11:00:00', NULL, '2026-06-28 11:00:00'),
+    ('visit', '504하5004', 'EXPIRED', '2026-06-30 12:00:00', '2026-07-03 12:00:00', NULL, '2026-06-30 12:00:00'),
+    ('visit', '505허5005', 'EXPIRED', '2026-07-01 13:00:00', '2026-07-04 13:00:00', NULL, '2026-07-01 13:00:00'),
+    ('normal', '601가6001', 'EXPIRED', '2026-05-30 00:00:00', '2026-06-29 23:59:59', NULL, '2026-05-30 09:00:00'),
     ('normal', '602나6002', 'EXPIRED', '2026-05-30 00:00:00', '2026-06-29 23:59:59', 19, '2026-05-30 09:10:00'),
 
     -- [추가] 세대별 사용 중 차량 제한 반영: normal 최대 2대, visit 최대 1대
@@ -140,12 +146,12 @@ VALUES
     ('visit', '803호8003', 'APPROVED', '2026-07-15 09:20:00', '2026-07-22 09:20:00', 21, '2026-07-15 09:20:00'),
     ('visit', '804하8004', 'APPROVED', '2026-07-15 09:30:00', '2026-07-22 09:30:00', 22, '2026-07-15 09:30:00'),
 
-    -- [추가] 만료 차량은 세대별 사용 중 제한 수에 포함하지 않는다.
-    ('normal', '901가9001', 'EXPIRED', '2026-05-01 00:00:00', '2026-05-31 23:59:59', 3, '2026-05-01 09:00:00'),
-    ('normal', '902나9002', 'EXPIRED', '2026-05-01 00:00:00', '2026-05-31 23:59:59', 3, '2026-05-01 09:10:00'),
-    ('visit', '903하9003', 'EXPIRED', '2026-06-01 10:00:00', '2026-06-03 10:00:00', 5, '2026-06-01 10:00:00'),
-    ('visit', '904허9004', 'EXPIRED', '2026-06-02 10:00:00', '2026-06-04 10:00:00', 5, '2026-06-02 10:00:00'),
-    ('visit', '905호9005', 'EXPIRED', '2026-06-03 10:00:00', '2026-06-05 10:00:00', 10, '2026-06-03 10:00:00'),
+    -- 과거 입출차 참조용 만료 차량은 특정 회원의 현재 차량 대수에 포함되지 않게 연결을 해제한다.
+    ('normal', '901가9001', 'EXPIRED', '2026-05-01 00:00:00', '2026-05-31 23:59:59', NULL, '2026-05-01 09:00:00'),
+    ('normal', '902나9002', 'EXPIRED', '2026-05-01 00:00:00', '2026-05-31 23:59:59', NULL, '2026-05-01 09:10:00'),
+    ('visit', '903하9003', 'EXPIRED', '2026-06-01 10:00:00', '2026-06-03 10:00:00', NULL, '2026-06-01 10:00:00'),
+    ('visit', '904허9004', 'EXPIRED', '2026-06-02 10:00:00', '2026-06-04 10:00:00', NULL, '2026-06-02 10:00:00'),
+    ('visit', '905호9005', 'EXPIRED', '2026-06-03 10:00:00', '2026-06-05 10:00:00', NULL, '2026-06-03 10:00:00'),
     ('normal', '906다9006', 'EXPIRED', '2026-05-10 00:00:00', '2026-06-09 23:59:59', 21, '2026-05-10 09:00:00');
 
 -- =====================================================
