@@ -48,22 +48,6 @@ VALUES
     ('pending1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 104, 501, '승인대기1', '010-3333-0501', 'PENDING', NOW(), NULL, '거주'),
     ('pending2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 104, 502, '승인대기2', '010-3333-0502', 'PENDING', NOW(), NULL, '거주');
 
--- 관리자 수는 늘리지 않고 입주민만 27명 추가(res4~res30)
-INSERT INTO member
-    (login_id, login_pwd, mem_dong, mem_ho, mem_name, mem_phone,
-     role, create_at, delete_at, mem_status)
-SELECT
-    'res' || i,
-    '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6',
-    101 + ((i - 1) / 10),
-    1000 + i,
-    '입주민' || i,
-    '010-' || LPAD((2200 + i)::text, 4, '0') || '-' || LPAD((1000 + i)::text, 4, '0'),
-    'RESIDENT',
-    TIMESTAMP '2026-07-01 09:00:00' + (i * INTERVAL '1 minute'),
-    NULL,
-    '거주'
-FROM generate_series(4, 30) AS s(i);
 
 -- 기존과 동일한 주차장 4개
 INSERT INTO parking (parking_name, parking_spaces, parking_location)

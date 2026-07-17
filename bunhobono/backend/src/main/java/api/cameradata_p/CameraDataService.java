@@ -1,5 +1,5 @@
 package api.cameradata_p;
-import api.gate_p.GateService;
+import api.carlog_p.CarLogService;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +26,7 @@ public class CameraDataService {
     CameraDataMapper cameraDataMapper;
 
     @Resource
-    GateService gateService;
+    CarLogService carLogService;
 
     @Resource
     TrashService trashService;
@@ -93,11 +93,10 @@ public class CameraDataService {
             Integer vehicleCarNo = cameraDataMapper.findVehicleCarNo(carNo);
             dto.setVehicleCarNo(vehicleCarNo);
 
-            // 9. 촬영 데이터는 항상 저장하고, 승인 및 중복 검사는 GateService에서 처리한다.
+            // 9. camera_data 저장 후 기존 입출차 로그 처리
             int insertCount = cameraDataMapper.insert(dto);
             if (insertCount == 1) {
-                CameraDataDTO savedData = cameraDataMapper.detail(dto.getCameraDataNo());
-                gateService.processAutomaticPassage(savedData);
+                carLogService.processCameraData(dto);
             }
             return insertCount;
 

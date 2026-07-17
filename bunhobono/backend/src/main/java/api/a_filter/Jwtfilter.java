@@ -1,8 +1,6 @@
 package api.a_filter;
 
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +41,10 @@ public class Jwtfilter extends OncePerRequestFilter {
 
         String auth = request.getHeader("Authorization");
 
+        System.out.println("JwtFilter : " + auth);
+
+        System.out.println("👉 Authorization: " + auth);
+
         if (auth == null) {
             System.out.println("⚠️ No token");
         }
@@ -51,30 +53,22 @@ public class Jwtfilter extends OncePerRequestFilter {
 
             String token = auth.substring(7);
 
-            try {
-                String loginId = jwtUtil.getLoginId(token);
-                String role = jwtUtil.getRole(token);
-                String memStatus = jwtUtil.getMemStatus(token);
+            String loginId = jwtUtil.getLoginId(token);
+            String role = jwtUtil.getRole(token);
+            String memStatus = jwtUtil.getMemStatus(token);
 
-                List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority(role),
-                        new SimpleGrantedAuthority(memStatus)
-                );
+            List<SimpleGrantedAuthority> authorities = List.of(
+                    new SimpleGrantedAuthority(role),
+                    new SimpleGrantedAuthority(memStatus)
+            );
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                loginId,
-                                null,
-                                authorities);
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            loginId,
+                            null,
+                            authorities);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            } catch (ExpiredJwtException e) {
-                writeUnauthorized(response, "로그인이 만료되었습니다.");
-                return;
-            } catch (JwtException | IllegalArgumentException e) {
-                writeUnauthorized(response, "유효하지 않은 인증 토큰입니다.");
-                return;
-            }
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
 
         }
@@ -83,12 +77,4 @@ public class Jwtfilter extends OncePerRequestFilter {
 
     }
 
-    private void writeUnauthorized(HttpServletResponse response, String message)
-            throws IOException {
-        SecurityContextHolder.clearContext();
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setCharacterEncoding("UTF-8");
-        response.setContentType("application/json");
-        response.getWriter().write("{\"error\":\"" + message + "\"}");
-    }
 }

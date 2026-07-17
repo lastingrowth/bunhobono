@@ -2,7 +2,6 @@ package api.carlog_p;
 import api.trash_p.TrashService;
 
 import api.cameradata_p.CameraDataDTO;
-import api.gate_p.GateDTO;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,19 +20,25 @@ public class CarLogService {
         return carLogMapper.list(dto);
     }
 
-    public boolean isAlreadyParking(CameraDataDTO cameraData) {
-        return carLogMapper.existsOpenLog(cameraData);
-    }
+    // camera_data 저장 직후 호출: 연결된 게이트 유형에 따라 입차 생성 또는 출차 처리
+    public void processCameraData(CameraDataDTO cameraData) {
+        if (cameraData.getCarNo() == null || cameraData.getCarNo().isBlank()) {
+            return;
+        }
 
-    // 게이트가 열린 뒤에만 입차 로그를 생성하거나 출차 로그를 완료한다.
-    public int processCameraData(CameraDataDTO cameraData, GateDTO gate) {
+        CarLogDTO gate = carLogMapper.findGateByCameraNo(cameraData.getCameraNo());
+        if (gate == null) {
+            return;
+        }
+
         if ("In".equalsIgnoreCase(gate.getGateType())) {
-            return carLogMapper.insertEntry(cameraData, gate.getGateNo());
+            boolean alreadyParking = carLogMapper.existsOpenLog(cameraData);
+            if (alreadyParking) { return; }
+            carLogMapper.insertEntry(cameraData, gate.getGateNo());
 
         } else if ("Out".equalsIgnoreCase(gate.getGateType())) {
-            return carLogMapper.completeExit(cameraData, gate.getGateNo());
+            carLogMapper.completeExit(cameraData, gate.getGateNo());
         }
-        return 0;
     }
 
     // 테스트용: 매분 실행

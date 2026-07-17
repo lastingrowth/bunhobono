@@ -11,27 +11,11 @@ public interface GateMapper {
     //리스트 전체보기
     @Select("SELECT ROW_NUMBER() OVER (ORDER BY g.gate_no) AS display_no, " +
             "       g.gate_no, g.parking_no, p.parking_name, " +
-            "       g.gate_name, g.gate_type, g.gate_status " +
+            "       g.gate_name, g.gate_type " +
             "FROM gate g " +
             "LEFT JOIN parking p ON g.parking_no = p.parking_no " +
             "ORDER BY g.gate_no")
     List<GateDTO> list(GateDTO dto);
-
-    @Select("SELECT gate_no, parking_no, gate_name, gate_type, gate_status " +
-            "FROM gate WHERE gate_no = #{gateNo}")
-    GateDTO findByGateNo(int gateNo);
-
-    @Select("SELECT g.gate_no, g.parking_no, g.gate_name, g.gate_type, g.gate_status " +
-            "FROM camera c JOIN gate g ON c.gate_no = g.gate_no " +
-            "WHERE c.camera_no = #{cameraNo}")
-    GateDTO findByCameraNo(int cameraNo);
-
-    @Update("UPDATE gate SET gate_status = 1 " +
-            "WHERE gate_no = #{gateNo} AND gate_status = 0")
-    int open(int gateNo);
-
-    @Update("UPDATE gate SET gate_status = 0 WHERE gate_no = #{gateNo}")
-    int close(int gateNo);
 
     //생성
     @Insert("INSERT INTO gate (parking_no, gate_name, gate_type) " +
