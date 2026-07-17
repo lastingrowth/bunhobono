@@ -24,3 +24,9 @@ export const deleteGate = (gateNo) => {
 export const updateGateStatus = (gateNo, gateStatus) => {
   return api.put(`/gates/${gateNo}/status`, {gateStatus});
 };
+
+// 게이트 열기
+// 백엔드에서 게이트를 열고 5초 뒤 자동 닫힘을 예약한다
+export const openGate = (gateNo) => {
+  return api.put(`/gates/${gateNo}/open`);
+};
