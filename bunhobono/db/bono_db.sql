@@ -1,13 +1,17 @@
+-- 권한 허용 
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bono_user;
+
+GRANT ALL PRIVILEGES
+ON ALL SEQUENCES IN SCHEMA public
+TO bono_user;
+
+
 BEGIN;
 
 -- =====================================================
 -- DROP TABLES
 -- =====================================================
 DROP TABLE IF EXISTS trash_bin;
-DROP TABLE IF EXISTS parking_payment;
-DROP TABLE IF EXISTS parking_charge;
-DROP TABLE IF EXISTS parking_fee_policy;
-DROP TABLE IF EXISTS wrong_car;
 DROP TABLE IF EXISTS notice;
 DROP TABLE IF EXISTS car_log;
 DROP TABLE IF EXISTS camera_data;
@@ -54,8 +58,10 @@ CREATE TABLE gate (
     gate_no SERIAL PRIMARY KEY,
     parking_no INT NOT NULL,
     gate_name VARCHAR(100) NOT NULL,
-    gate_type VARCHAR(10) NOT NULL
+    gate_type VARCHAR(10) NOT NULL,
         CHECK (gate_type IN ('In', 'Out', 'Both')),
+	gate_status INT NOT NULL DEFAULT 0
+		CHECK (gate_status IN (0, 1)),
 
     CONSTRAINT fk_gate_parking
         FOREIGN KEY (parking_no)

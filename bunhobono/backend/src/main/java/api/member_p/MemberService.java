@@ -72,7 +72,8 @@ public class MemberService {
     }
 
     private void validateAvailableSignupUnit(int dong, int ho) {
-        if (dong < 101 || dong > 104 || ho / 100 < 1 || ho / 100 > 15
+        if (!Set.of(101, 102, 201, 202, 301, 302, 401, 402).contains(dong)
+                || ho / 100 < 1 || ho / 100 > 15
                 || ho % 100 < 1 || ho % 100 > 4) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 동·호수입니다.");
         }
