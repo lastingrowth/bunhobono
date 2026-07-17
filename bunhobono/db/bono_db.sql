@@ -56,8 +56,6 @@ CREATE TABLE gate (
     gate_name VARCHAR(100) NOT NULL,
     gate_type VARCHAR(10) NOT NULL
         CHECK (gate_type IN ('In', 'Out', 'Both')),
-	gate_status INT NOT NULL DEFAULT 0
-    CHECK (gate_status IN (0, 1)),
 
     CONSTRAINT fk_gate_parking
         FOREIGN KEY (parking_no)
