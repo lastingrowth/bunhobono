@@ -138,7 +138,7 @@
 
           <!-- A/B/C/D 주차장별 최신 OCR 사진 -->
           <div class="parking-ocr-row">
-            <button
+            <article
               v-for="parking in parkingStatusWithOcr"
               :key="`ocr-${parking.parkingNo}`"
               type="button"
@@ -146,23 +146,38 @@
               :disabled="!parking.ocr.cameraDataNo"
               @click="parking.ocr.cameraDataNo && goCameraDataList(parking.parkingNo)"
             >
-              <div class="parking-ocr-frame">
-                <img
-                  v-if="parking.ocr.imageUrl"
-                  :src="parking.ocr.imageUrl"
-                  :alt="`${parking.parkingName} ${parking.ocr.carNoText} 차량 사진`"
-                >
+              <button 
+                type="button"
+                class="parking-ocr-link"
+                :disabled="!parkinng.ocr.cameraDataNo"
+                @click="parking.ocr.cameraDataNo && goCameraDataList(parking.parkingNo)">
+              
+                <div class="parking-ocr-frame">
+                  <img
+                    v-if="parking.ocr.imageUrl"
+                    :src="parking.ocr.imageUrl"
+                    :alt="`${parking.parkingName} ${parking.ocr.carNoText} 차량 사진`"
+                  >
 
-                <span v-else>사진 없음</span>
-              </div>
+                  <span v-else>사진 없음</span>
+                </div>
 
-              <span class="parking-ocr-zone">{{ parking.parkingName }}</span>
-              <strong>{{ parking.ocr.carNoText }}</strong>
-              <span class="parking-ocr-movement">
-                {{ parking.ocr.movementText }}
-              </span>
-              <span class="parking-ocr-rate">인식률 {{ parking.ocr.confidenceText }}</span>
-            </button>
+                <span class="parking-ocr-zone">{{ parking.parkingName }}</span>
+                <strong>{{ parking.ocr.carNoText }}</strong>
+                <span class="parking-ocr-movement">
+                  {{ parking.ocr.movementText }}
+                </span>
+                <span class="parking-ocr-rate">인식률 {{ parking.ocr.confidenceText }}</span>
+              </button>
+
+              <button
+                v-if="parking.ocr.cameraDataNo && !parking.ocr.vehicleCarNo"
+                type="button"
+                class="ocr-gate-open-button"
+                @click="openGate(parking.ocr.cameraDataNo)">
+                게이트 열기
+              </button>
+            </article>
           </div>
         </div>
 
@@ -376,6 +391,12 @@ const goCameraDataList = (parkingNo) => {
       parkingNo
     }
   })
+}
+
+// 미등록 차량 게이트 열기
+// 대시보드 OCR 카드에서 관리자가 확인 후 게이트를 열 때 사용한다
+const openGate = async (cameraDataNo) => {
+  await dashboardStore.openGateByOcr(cameraDataNo)
 }
 
 // 주차장 현황 카드를 누르면 주차장 관리 화면으로 이동

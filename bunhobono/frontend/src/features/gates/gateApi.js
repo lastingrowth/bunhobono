@@ -19,3 +19,8 @@ export const updateGate = (gateNo, data) => {
 export const deleteGate = (gateNo) => {
   return api.delete(`/gates/${gateNo}/delete`);
 };
+
+// 게이트 상태 변경
+export const updateGateStatus = (gateNo, gateStatus) => {
+  return api.put(`/gates/${gateNo}/status`, {gateStatus});
+};

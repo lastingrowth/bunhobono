@@ -9,7 +9,7 @@ import { toCarLogView } from "@/features/carlog/carlogFormat";
 import { useCameraDataStore } from "@/features/camera-data/cameraDataStore";
 import { useCameraStore } from "@/features/camera/cameraStore";
 import { useGateStore } from "@/features/gates/gateStore";
-import { getCameraDataDetail, getCameraDataImage } from "@/features/camera-data/cameraDataApi";
+import { getCameraDataDetail, getCameraDataImage, openGateByCameraData } from "@/features/camera-data/cameraDataApi";
 
 
 export const useAdminDashboardStore = defineStore("adminDashboard", () => {
@@ -271,6 +271,25 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         await loadOcrImages();
     }
 
+    // 관리자 수동 게이트 열기
+    // 미등록 차량처럼 자동 통과되지 않은 OCR 데이터를 관리자가 확인한 뒤 통과시킴
+    const openGateByOcr = async (cameraDataNo) => {
+        if (!cameraDataNo) {
+            return;
+        }
+
+        await openGateByCameraData(cameraDataNo);
+
+        // 게이트를 열면 carlog가 새로 생길 수 있으므로 대시보드 데이터를 다시 조회
+        await Promise.all([
+            loadDashboardCarlogs(),
+            cameraDataStore.loadList(),
+            parkingStore.loadList()
+        ]);
+
+        await loadOcrImages();
+    }
+
     // 날짜를 YYYY-MM-DD 형식으로 변환
     const getDateKey = (date) => {
         const year = date.getFullYear();
@@ -493,6 +512,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         paginatedCarlogs,
         setCarlogPage,
         refreshOcrCards,
+        openGateByOcr,
         refreshOcrImages,
         loadDashboard
     };

@@ -1,5 +1,7 @@
 package api.cameradata_p;
 import api.carlog_p.CarLogService;
+import api.gate_p.GateDTO;
+import api.gate_p.GateService;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +29,9 @@ public class CameraDataService {
 
     @Resource
     CarLogService carLogService;
+
+    @Resource
+    GateService gateService;
 
     @Resource
     TrashService trashService;
@@ -93,10 +98,29 @@ public class CameraDataService {
             Integer vehicleCarNo = cameraDataMapper.findVehicleCarNo(carNo);
             dto.setVehicleCarNo(vehicleCarNo);
 
-            // 9. camera_data 저장 후 기존 입출차 로그 처리
+            // 9. camera_data 저장
+            // 카메라 인식 기록이므로 등록/미등록 관계 없이 먼저 저장
             int insertCount = cameraDataMapper.insert(dto);
+
             if (insertCount == 1) {
-                carLogService.processCameraData(dto);
+                // 데이터를 촬영한 카메라가 어느 게이트에 연결되어 있는지 확인
+                GateDTO gate = gateService.findByCameraNo(cameraNo);
+
+                // 카메라와 연결된 게이트가 없으면 입출차 처리를 진행하지 않는다
+                if (gate == null) {
+                    return insertCount;
+                }
+
+                // 등록 차량이면 자동으로 게이트를 열고 입출차 로그를 처리한다
+                // vehicleCarNo 가 Null이 아니면 vehicle_car 테이블에 존재하는 차량
+                if (vehicleCarNo != null) {
+                    gateService.open(gate.getGateNo());
+                    carLogService.processCameraData(dto);
+                    gateService.scheduleClose(gate.getGateNo());
+                }
+
+                // 미등록 차량이면 camera_data만 저장하고 멈춤
+                // 이후 관리자 대시보드에서 확인 후 수동으로 게이트를 열도록 처리
             }
             return insertCount;
 
@@ -108,6 +132,43 @@ public class CameraDataService {
 
     public CameraDataDTO getCameraData(int cameraDataNo) {
         return cameraDataMapper.detail(cameraDataNo);
+    }
+
+    // 관리자 수동 게이트 열기
+    // 미등록 차량처럼 자동 통과되지 않은 camera_data를 관리자가 확인한 뒤 통과시킴
+    @Transactional
+    public int openGateByCameraData(int cameraDataNo) {
+        // 1. camera_data 상세 정보를 조회한다
+        CameraDataDTO dto = cameraDataMapper.detail(cameraDataNo);
+
+        if (dto == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라 데이터가 존재하지 않습니다"
+            );
+        }
+
+        // 2. camera_data 에 저장된 cameraNo 로 연결된 게이트를 찾는다
+        GateDTO gate = gateService.findByCameraNo(dto.getCameraNo());
+
+        if (gate == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라와 연결된 게이트가 없습니다"
+            );
+        }
+
+        // 3. 게이트를 연다
+        gateService.open(gate.getGateNo());
+
+        // 4. 실제 통과 기록을 car_log에 반영
+        // IN 게이트면 입차 로그 생성, OUT 게이트면 출차 처리
+        carLogService.processCameraData(dto);
+
+        // 5. 일정 시간이 지나면 게이트를 자동으로 닫는다
+        gateService.scheduleClose(gate.getGateNo());
+
+        return 1;
     }
 
     public List<CameraDataDTO> searchByCarNo(String keyword) {

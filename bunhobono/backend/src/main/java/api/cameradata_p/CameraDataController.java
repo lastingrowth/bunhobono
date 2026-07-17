@@ -47,6 +47,13 @@ public class CameraDataController {
         return cameraDataService.getCameraData(cameraDataNo);
     }
 
+    // 관리자 수동 게이트 열기
+    // 자동 통과되지 않은 camera_data를 관리자가 확인한 뒤 게이트를 열 때 호출
+    @PostMapping("/{cameraDataNo}/open-gate")
+    public int openGate(@PathVariable int cameraDataNo) {
+        return cameraDataService.openGateByCameraData(cameraDataNo);
+    }
+
     // 차량번호 검색 API
     @GetMapping("/search")
     public List<CameraDataDTO> search(@RequestParam String carNo) {
