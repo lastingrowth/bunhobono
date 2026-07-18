@@ -35,7 +35,7 @@
             <td>{{ g.parkingName ?? '-' }}</td>
             <td><span class="type-badge">{{ g.gateType }}</span></td>
             <td>
-              <span class="g.gateStatus === 1 ? 'status-badge open' : 'status-badge closed'">
+              <span :class="g.gateStatus === 1 ? 'status-badge open' : 'status-badge closed'">
                 {{ g.gateStatus === 1 ? '열림' : '닫힘' }}
               </span>
             </td>
