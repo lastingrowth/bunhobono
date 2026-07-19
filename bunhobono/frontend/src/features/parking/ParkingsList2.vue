@@ -9,6 +9,7 @@
           <th>주차가용 수</th>
           <th>주차장위치</th>
           <th>주차중</th>
+          <th>비고</th>
         </tr>
       </thead>
       <tbody>
@@ -22,8 +23,6 @@
           </td>
           <td>
             <button @click="goEdit(p.parkingNo)">수정</button>
-          </td>
-          <td>
             <button @click="pStore.remove(p.parkingNo)">삭제</button>
           </td>
         </tr>

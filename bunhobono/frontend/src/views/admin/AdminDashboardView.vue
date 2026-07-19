@@ -1,455 +1,378 @@
 <template>
-  <section class="admin-dashboard">
-    <div class="dashboard-header">
-      <div>
-        <h2>관리자 대시보드</h2>
-        <p>주차 관리 현황을 한눈에 확인하세요.</p>
-      </div>
-
-      <div class="dashboard-header-actions">
-        <button
-          type="button"
-          class="dashboard-maintenance"
-          @click="startMaintenanceMode">
-          점검 시작
-        </button>
-
-        <button
-          type="button"
-          class="dashboard-refresh"
-          @click="loadDashboard">
-          새로고침
-        </button>
-      </div>
-
-    </div>
-
-    <!-- 데이터 조회 상태 -->
-    <p v-if="loading"
-      class="dashboard-message">
-      현황을 불러오는 중입니다.
-    </p>
-
-    <p v-else-if="errorMessage"
-      class="dashboard-error" >
-      {{ errorMessage }}
-    </p>
-
-    <!-- 상단 현황 카드 -->
-    <div class="dashboard-grid">
-      <!-- 미처리 알림 -->
-      <button
-        type="button"
-        class="dashboard-card notice-card"
-        @click="router.push('/admin/notice')"
-      >
-        <div class="card-heading">
-          <span>미처리 알림</span>
+    <section class="admin-dashboard"> 
+        <!-- 관리자 대시보드 제목 영역 -->
+        <div class="dashboard-header">
+            <div>
+                <h2>관리자 대시보드</h2>
+            </div>
         </div>
 
-        <strong class="card-value">
-          {{ unresolvedNoticeCount }}
-          <small>건</small>
-        </strong>
+        <!-- 데이터 조회 상태 -->
+        <p v-if="loading" class="dashboard-message">
+            대시보드 정보를 불러오는 중입니다
+        </p>
 
-        <span class="card-description">
-          확인이 필요한 알림
-        </span>
-      </button>
+        <p v-else-if="errorMessage" class="dashboard-error">
+            {{ errorMessage }}
+        </p>
 
-      <!-- 차량 현황 -->
-      <button
-        type="button"
-        class="dashboard-card vehicle-card"
-        @click="router.push('/admin/vehicles?mode=approve')"
-      >
-        <div class="card-heading">
-          <span>차량 현황</span>
-        </div>
-
-        <div class="card-vehicle-summary">
-          <div class="vehicle-summary-item">
-            <span>승인 대기</span>
-            <strong>
-              {{ waitingVehicleCount }}
-              <small>대</small>
-            </strong>
-          </div>
-
-          <div class="vehicle-summary-item">
-            <span>오늘 방문</span>
-            <strong>
-              {{ todayVisitVehicleCount }}
-              <small>대</small>
-            </strong>
-          </div>
-        </div>
-      </button>
-
-      <!-- 실시간 카메라 영상 -->
-      <article class="dashboard-card parking-overview-card">
-        <div class="card-heading">
-          <span>실시간 카메라 영상</span>
-        </div>
-
-        <div class="parking-overview-content">
-          <!-- 
-            주차장 선택 버튼
-            gateStore.list 안에 들어있는 parkingName 값과 같은 이름을 사용
-            ex) A 주차장, B 주차장, C 주차장, D 주차장
-          -->
-          <div class="parking-camera-tabs">
-            <button
-              v-for="parking in cameraParkingTabs"
-              :key="parking.name"
-              type="button"
-              :class="{ active : selectedParkingName === parking.name }"
-              @click="selectedParkingName = parking.name">
-              {{ parking.label }}
-            </button>
-          </div>
-
-          <!-- 
-            선택한 주차장의 입차/출차 영상 영역
-            실제 영상이 준비되면 camera-video-placeholder 안쪽에
-            video, img, iframe 등을 넣으면 된다
-          -->
-          <div class="dashboard-camera-grid">
-            <section
-              v-for="panel in cameraPanels"
-              :key="panel.type" 
-              class="dashboard-camera-panel">
-              
-              <div class="camera-video-placeholder">
-                <span class="camera-video-label">
-                  {{ panel.cameraLabel }}
+        <!-- 차량 등록과 알림을 하나의 카드 안에 한 줄로 배치 -->
+        <div class="dashboard-top-strip">
+            <!-- 관리자 차량 등록 영역 -->
+            <!-- 현재 백엔드 정책상 등록 시 WAITING 상태로 저장 -->
+            <form 
+                class="quick-register-inline"
+                @submit.prevent="submitQuickVehicle">
+                
+                <span class="quick-register-label">
+                    차량 등록
                 </span>
-                <strong>{{ panel.title }}</strong>
-              
-                <p v-if="panel.gate">
-                  {{ panel.gate.gateName }}
-                  상태:
-                  {{ panel.gate.gateStatus === 1 ? '열림' : '닫힘' }}
-                </p>
-                <p v-else>연결된 게이트 없음</p>
 
-                <!-- 
-                  해당 주차장의 IN/OUT 게이트가 있으면 게이트 열기 가능
-                  gate 정보가 없으면 버튼을 비활성화
-                -->
+                <input
+                    v-model="quickVehicle.carNo"
+                    type="text"
+                    placeholder="차량번호" />
+
+                <select v-model="quickVehicle.memDong">
+                    <option value="">동</option>
+                    <option 
+                        v-for="dong in dongOptions"
+                        :key="dong"
+                        :value="dong">
+                        {{ dongText(dong) }}
+                    </option>
+                </select>
+
+                <select v-model="quickVehicle.memHo">
+                    <option value="">호</option>
+                    <option 
+                        v-for="ho in hoOptions"
+                        :key="ho"
+                        :value="ho">
+                        {{ hoText(ho) }}
+                    </option>
+                </select>  
+
+                <select v-model.number="quickVehicle.memberNo">
+                    <option :value="null">입주민</option>
+                    <option
+                        v-for="member in filteredMembers"
+                        :key="member.memberNo"
+                        :value="member.memberNo">
+                        {{ memberLabel(member) }}
+                    </option>
+                </select>
+
+                <button type="submit">
+                    등록
+                </button>              
+            </form>
+
+            <!-- 상단 알림 영역 -->
+            <div class="dashboard-alert-chips">
                 <button
-                  type="button"
-                  class="camera-gate-button"
-                  :disabled="!panel.gate"
-                  @click="openManualGate(panel.gate)">
-                  게이트 열기
+                    v-for="alert in dashboardAlerts"
+                    :key="alert.key"
+                    type="button"
+                    class="alert-chip"
+                    @click="router.push(alert.path)">
+                    <span>{{ alert.title }}</span>
+                    <strong>{{ alert.count }}</strong>
                 </button>
-              </div>
+            </div>
+        </div>
+ 
 
+        <!-- 메인 영역 : 왼쪽은 영상, 오른쪽은 입출차 로그와 상세 정보 -->
+        <div class="admin-control-layout">
+            <!-- 주차장 모니터링 영역 -->
+            <article class="dashboard-card monitoring-card">
+                <div class="section-heading">
+                    <h3>주차장 모니터링</h3>
+                </div>
+
+                <!-- A/B/C/D 주차장 카드 v-for로 반복해서 표시 -->
+                <div class="parking-monitor-grid">
+                    <section
+                        v-for="panel in parkingMonitorPanels"
+                        :key="panel.parkingNo"
+                        class="parking-monitor-card"
+                        @click="openParkingDialog(panel)">
+
+                        <div class="parking-monitor-header">
+                            <div>
+                                <strong>{{ panel.parkingName }}</strong>
+                                <span class="parking-location">
+                                    {{ panel.parkingLocation || '-' }}
+                                </span>
+                            </div>
+
+                            <!-- 입차/출차 화면 전환 버튼 -->
+                            <button
+                                type="button"
+                                class="camera-mode-badge"
+                                :class="panel.modeClass"
+                                @click.stop="toggleParkingCamera(panel.parkingName)">
+                                {{ panel.modeText }}
+                            </button>
+                        </div>
+
+                        <!-- 실제 영상이 준비되면 이 영역 안에 video, img, iframe 등을 넣는다 -->
+                        <div class="parking-video-box">
+                            <div class="parking-video-placeholder">
+                                <strong> {{ panel.parkingName }} {{ panel.modeText }}영상</strong>
+
+                                <span
+                                    v-if="panel.gate"
+                                    class="video-gate-status"
+                                    :class="{ open: panel.gate.gateStatus === 1, closed: panel.gate.gateStatus !== 1 }">
+                                    {{ panel.gate.gateStatus === 1 ? '열림' : '닫힘' }}
+                                </span>
+
+                                <span v-else class="video-gate-status closed">
+                                    게이트 없음
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="parking-monitor-footer">
+                            <!-- 선택된 화면에 연결된 게이트를 연다 -->
+                            <button
+                                type="button"
+                                class="camera-gate-button"
+                                :disabled="!panel.gate"
+                                @click.stop="openManualGate(panel.gate)">
+                                게이트 열기
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </article>
+
+            <!-- 오른쪽 입출차 로그 + 선택 상세 영역 -->
+            <section class="admin-control-right">
+                <article class="dashboard-card carlog-preview-card">
+                    <div class="section-heading">
+                        <h3>입출차 로그</h3>
+                    </div>
+
+                    <div class="carlog-table-wrap">
+                        <table class="dashboard-log-table">
+                            <thead>
+                                <tr>
+                                    <th>차량번호</th>
+                                    <th>구분</th>
+                                    <th>상태</th>
+                                    <th>입차</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr
+                                    v-for="log in recentCarlogs"
+                                    :key="log.carLogNo"
+                                    :class="{ selected: selectedCarlog?.carLogNo === log.carLogNo }"
+                                    @click="selectCarlog(log)">
+                                    <td>{{ log.carNo || '미인식' }}</td>
+                                    <td>{{ log.carKindText }}</td>
+                                    <td>
+                                        <span
+                                            class="state-badge"
+                                            :class="parkingStateClass(log)">
+                                            {{ log.parkingStateText }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.inTimeText }}</td>
+                                </tr>
+
+                                <tr v-if="recentCarlogs.length === 0">
+                                    <td colspan="4">
+                                        입출차 로그가 없습니다
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="dashboard-card selected-log-card">
+                    <div class="section-heading">
+                        <h3>선택 로그 상세 정보</h3>
+                    </div>
+
+                    <div v-if="selectedCarlog" class="selected-log-content">
+                        <!-- 나중에 FastAPI에서 넘겨준 원본 이미지와 크롭 이미지를 넣을 자리 -->
+                        <div class="selected-log-images">
+                            <div class="capture-image-box">
+                                <span>캡쳐 이미지</span>
+                                <div class="crop-image-box">
+                                    크롭 이미지
+                                </div>
+                            </div>
+                        </div>
+
+                        <dl class="selected-log-info">
+                            <div>
+                                <dt>차량번호</dt>
+                                <dd>{{ selectedCarlog.carNo || '미인식' }}</dd>
+                            </div>
+
+                            <div>
+                                <dt>차량 구분</dt>
+                                <dd>{{ selectedCarlog.carKindText }}</dd>
+                            </div>
+
+                            <div>
+                                <dt>주차 상태</dt>
+                                <dd>{{ selectedCarlog.parkingStateText }}</dd>
+                            </div>
+
+                            <div>
+                                <dt>입차 시간</dt>
+                                <dd>{{ selectedCarlog.inTimeText }}</dd>
+                            </div>
+
+                            <div>
+                                <dt>출차 시간</dt>
+                                <dd>{{ selectedCarlog.outTime ? selectedCarlog.outTimeText : '-' }}</dd>
+                            </div>
+
+                            <div>
+                                <dt>입차 게이트</dt>
+                                <dd>{{ selectedCarlog.inGateText }}</dd>
+                            </div>
+
+                            <div>
+                                <dt>출차 게이트</dt>
+                                <dd>{{ selectedCarlog.outGateText }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div v-else class="selected-log-empty">
+                        입출차 로그를 선택하세요
+                    </div>
+                </article>
             </section>
-          </div>
         </div>
 
-      
+        <!-- 주차장 카드를 클릭했을 때 크게 보여주는 dialog 화면 -->
+        <dialog
+            ref="parkingDialog"
+            class="parking-dialog"
+            @close="closeParkingPanel">
 
-      </article>
-    </div>
+            <div v-if="selectedParkingPanel" class="parking-dialog-content">
+                <div class="parking-dialog-header">
+                    <div>
+                        <span>{{ selectedParkingPanel.modeText }} 화면</span>
+                        <h3>{{ selectedParkingPanel.parkingName }}</h3>
+                    </div>
 
-    <!-- 주간 입차 그래프와 입출차 목록 -->
-    <article class="recent-carlogs">
-      <div class="section-heading">
-        <h3>입출차 현황</h3>
+                    <button
+                        type="button"
+                        class="parking-dialog-close"
+                        @click="closeParkingDialog">
+                        ×
+                    </button>
+                </div>
 
-        <button
-          type="button"
-          @click="router.push('/admin/carlogs')" >
-          전체보기
-        </button>
-      </div>
+                <!-- 나중에 실제 영상이 들어올 자리 -->
+                <div class="parking-dialog-video">
+                    <div class="parking-video-placeholder">
+                        <strong>
+                            {{ selectedParkingPanel.parkingName }} {{ selectedParkingPanel.modeText }} 화면
+                        </strong>
 
-      <div class="carlog-dashboard-content">
+                        <span
+                            v-if="selectedParkingPanel.gate"
+                            class="video-gate-status"
+                            :class="{ open: selectedParkingPanel.gate.gateStatus === 1, closed: selectedParkingPanel.gate.gateStatus !== 1 }">
+                            {{ selectedParkingPanel.gate.gateStatus === 1 ? '열림' : '닫힘' }}
+                        </span>
 
-        <!-- 페이지네이션 입출차 목록 -->
-        <section class="carlog-list-panel">
-          <div class="carlog-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>차량번호</th>
-                  <th>차량종류</th>
-                  <th>주차상태</th>
-                  <th>입차시간</th>
-                  <th>출차시간</th>
-                </tr>
-              </thead>
+                        <span v-else class="video-gate-status closed">
+                            게이트 없음
+                        </span>
+                    </div>
+                </div>
 
-              <tbody>
-                <tr
-                  v-for="log in paginatedCarlogs"
-                  :key="log.carLogNo ?? log.displayNo"
-                >
-                  <td>{{ log.carNo || '미인식' }}</td>
+                <div class="parking-dialog-actions">
+                    <!-- 확대 화면에서도 입차/출차 화면을 바꿀 수 있게 둔다 -->
+                    <button
+                        type="button"
+                        class="camera-mode-badge"
+                        :class="selectedParkingPanel.modeClass"
+                        @click="toggleParkingCamera(selectedParkingPanel.parkingName)">
+                        {{ selectedParkingPanel.modeText }}
+                    </button>
 
-                  <td>
-                    {{ log.carKindText || log.carKind || '-' }}
-                  </td>
-
-                  <td>
-                    <!-- 주차 상태를 색상 배지로 표시 -->
-                    <span class="carlog-state-badge"
-                          :class="{ parking : log.parkingState === 'PARKING',
-                                    out : log.parkingState === 'OUT' }">
-                      {{ log.parkingStateText || log.parkingState || '-' }}
-                    </span>
-                  </td>
-
-                  <td>
-                    {{ log.inTimeText || log.inTime || '-' }}
-                  </td>
-
-                  <td>
-                    {{ log.outTime ? log.outTimeText || log.outTime : '-' }}
-                  </td>
-                </tr>
-
-                <tr v-if="paginatedCarlogs.length === 0">
-                  <td colspan="5">
-                    조회된 입출차 기록이 없습니다.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- 입출차 목록 페이지 번호 -->
-          <div class="carlog-pagination">
-            <button
-              type="button"
-              :disabled="currentCarlogPage === 1"
-              @click="setCarlogPage(carlogPageNumbers[0] - 1)"
-            >
-              이전
-            </button>
-
-            <button
-              v-for="page in carlogPageNumbers"
-              :key="page"
-              type="button"
-              :class="{ active: currentCarlogPage === page }"
-              @click="setCarlogPage(page)"
-            >
-              {{ page }}
-            </button>
-
-            <button
-              type="button"
-              :disabled="currentCarlogPage === carlogTotalPages"
-              @click="setCarlogPage(carlogPageNumbers[carlogPageNumbers.length -1] + 1)"
-            >
-              다음
-            </button>
-          </div>
-        </section>
-
-        <!-- 최근 7일 입차 막대그래프 -->
-        <section class="weekly-entry-panel">
-          <!-- 그래프 제목과 막대 색상 설명 -->
-          <div class="weekly-entry-header">
-          
-            <h4 class="weekly-entry-title">
-              최근 7일 입차 기록
-            </h4>
-
-            <div class="weekly-entry-legend">
-              <span class="resident">입주민</span>
-              <span class="visit">방문객</span>
+                    <!-- 백엔드 open API 호출. 자동 닫힘은 백엔드 scheduleClose에서 처리 -->
+                    <button
+                        type="button"
+                        class="camera-gate-button"
+                        :disabled="!selectedParkingPanel.gate"
+                        @click="openManualGate(selectedParkingPanel.gate)">
+                        게이트 열기
+                    </button>
+                </div>
             </div>
-          </div>
+        </dialog>
 
-          <div class="weekly-entry-chart">
-            <div
-              v-for="day in weeklyEntryStats"
-              :key="day.dateKey"
-              class="weekly-entry-item"
-            >
-          
-              <!-- 입주민과 방문객 입차 합계 -->
-              <span class="weekly-entry-count">
-                {{ day.residentCount + day.visitCount }}건
-              </span>
-
-              <!-- 요일별 입주민/방문객 입차 막대 -->
-              <div class="weekly-entry-track grouped">
-                <div
-                  class="weekly-entry-bar resident"
-                  :style="{'--bar-height': `${day.residentBarHeight}%`}" />
-
-                <div
-                  class="weekly-entry-bar visit"
-                  :style="{'--bar-height': `${day.visitBarHeight}%`}" />
-              </div>
-
-              <span class="weekly-entry-date">
-                {{ day.dateLabel }}
-              </span>
-
-              <span class="weekly-entry-day">
-                {{ day.dayLabel }}
-              </span>
-            </div>
-          </div>
-        </section>
-
-      </div>
-    </article>
-  </section>
+    </section>
 </template>
 
 <script setup>
-import { useGateStore } from '@/features/gates/gateStore'
-import { useAdminDashboardStore } from '@/stores/adminDashboard'
-import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useAdminDashboardStore } from '@/stores/adminDashboard';
+import { storeToRefs } from 'pinia';
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+
 
 const router = useRouter()
 const dashboardStore = useAdminDashboardStore()
-const gateStore = useGateStore();
+const parkingDialog = ref(null)
 
-// store의 상태와 계산 결과를 반응성을 유지한 상태로 사용
+// storeToRefs 를 사용하면 store 안의 ref/computed 반응성이 유지된다
 const {
-  loading,
-  errorMessage,
-  unresolvedNoticeCount,
-  waitingVehicleCount,
-  todayVisitVehicleCount,
-  weeklyEntryStats,
-  currentCarlogPage,
-  carlogTotalPages,
-  carlogPageNumbers,
-  paginatedCarlogs
+    loading,
+    errorMessage,
+    quickVehicle,
+    dongOptions,
+    hoOptions,
+    filteredMembers,
+    dashboardAlerts,
+    parkingMonitorPanels,
+    selectedParkingPanel,
+    recentCarlogs,
+    selectedCarlog,
 } = storeToRefs(dashboardStore)
 
-let ocrRefreshTimer = null
-let ocrRefreshing = false
+const {
+    dongText,
+    hoText,
+    memberLabel,
+    submitQuickVehicle,
+    toggleParkingCamera,
+    selectParkingPanel,
+    closeParkingPanel,
+    selectCarlog,
+    parkingStateClass,
+    openManualGate,
+    loadDashboard,
+} = dashboardStore
 
-// 새로고침 버튼과 최초 화면 진입 시 사용
-const loadDashboard = async () => {
-  await dashboardStore.loadDashboard()
+const openParkingDialog = (panel) => {
+    selectParkingPanel(panel)
+    parkingDialog.value?.showModal()
 }
 
-// 관리자 대시보드에서 점검 화면을 테스트하기 위한 임시 트리거
-// 백엔드 점검 API가 연결되면 window.startMaintenance() 대신 API 호출로 변경한다.
-const startMaintenanceMode = () => {
-  if (window.startMaintenance) {
-    window.startMaintenance()
-  }
+const closeParkingDialog = () => {
+    closeParkingPanel()
+    parkingDialog.value?.close()
 }
-
-// 입출차 목록 페이지 변경
-const setCarlogPage = (page) => {
-  dashboardStore.setCarlogPage(page)
-}
-
-// 버튼은 A/B/C/D 만 보여주고
-// 실제 게이트 연결은 백엔드에서 넘어오는 pakingName 값으로 찾는다
-const cameraParkingTabs = [
-  {
-    label : 'A',
-    name : 'A 주차장'
-  },
-  {
-    label : 'B',
-    name : 'B 주차장'
-  },
-  {
-    label : 'C',
-    name : 'C 주차장'
-  },
-  {
-    label : 'D',
-    name : 'D 주차장'
-  }
-]
-
-// 처음 대시보드에 들어왔을 때 기본으로 보여줄 주차장
-const selectedParkingName = ref('A 주차장')
-
-// 선택한 주차장 이름과 게이트 타입으로 게이트를 찾는다
-// gateType이 IN 이면 입차 게이트, OUT 이면 출차 게이트를 찾는다
-const findGateByParking = (gateType) => {
-  return gateStore.list.find((gate) => {
-    return gate.parkingName === selectedParkingName.value
-      && String(gate.gateType).toUpperCase() === gateType
-  })
-}
-
-// 현재 선택한 주차장에 맞춰 입차/출차 영상 영역을 만든다
-// 실제 영상은 아직 없으므로 지금은 영상 자리와 게이트 버튼만 준비한다
-const cameraPanels = computed(() => {
-  return [
-    {
-      type : 'IN',
-      cameraLabel : '입차 영상 연결 예정',
-      title : `${selectedParkingName.value} 입차 게이트`,
-      gate : findGateByParking('IN')
-    },
-    {
-      type : 'OUT',
-      cameraLabel : '출차 영상 연결 예정',
-      title : `${selectedParkingName.value} 출차 게이트`,
-      gate : findGateByParking('OUT')
-    },
-  ]
-})
-
-// 관리자가 직접 게이트를 여는 함수
-const openManualGate = async (gate) => {
-  if (!gate) {
-    alert('연결된 게이트가 없습니다')
-    return
-  }
-
-  await gateStore.open(gate.gateNo)
-  alert(`${gate.parkingName} ${gate.gateName} 게이트를 열었습니다`)
-}
-
-// OCR 업로드 후 대시보드가 자동으로 바뀌도록 주기적으로 최신 데이터 조회
-const refreshDashboardImages = async () => {
-  // 이전 갱신이 끝나지 않았으면 중복 요청하지 않음
-  if (ocrRefreshing) {
-    return
-  }
-
-  ocrRefreshing = true
-
-  try {
-    // 카메라 목록 갱신 후 카메라 번호별 OCR 이미지 갱신
-    await dashboardStore.refreshOcrImages()
-  } catch (error) {
-    console.error('OCR 대시보드 자동 갱신 실패', error)
-  } finally {
-    ocrRefreshing = false
-  }
-}
-
-// 처음 진입했을 때 전체 대시보드를 조회하고 3초마다 OCR 자동 갱신 시작
+// 화면에 처음 들어왔을 때 상단 카드에 필요한 데이터를 조회
 onMounted(async () => {
-  await loadDashboard()
-
-  // 게이트 목록  조회
-  await gateStore.loadList()
-
-  ocrRefreshTimer = window.setInterval(() => {
-    refreshDashboardImages()
-  }, 3000)
-})
-
-// 화면에서 나가면 자동 갱신 중지
-onUnmounted(() => {
-  if (ocrRefreshTimer) {
-    window.clearInterval(ocrRefreshTimer)
-    ocrRefreshTimer = null
-  }
+    await loadDashboard()
 })
 </script>
