@@ -160,34 +160,27 @@ public interface MemberMapper {
         """)
     int permanentlyDeleteWithdrawnMembers(@Param("memberNos") List<Long> memberNos);
 
-    // 선택한 탈퇴 회원을 거주 상태로 복원하고 탈퇴일을 제거한다.
-    @Update("""
-        <script>
-        UPDATE member
-        SET mem_status = '거주',
-            delete_at = NULL
-        WHERE delete_at IS NOT NULL
-          AND member_no IN
-        <foreach collection="memberNos" item="memberNo" open="(" separator="," close=")">
-            #{memberNo}
-        </foreach>
-        </script>
-        """)
-    int restoreMembers(@Param("memberNos") List<Long> memberNos);
 
-    // 관리자 화면의 회원 삭제는 즉시 제거하지 않고 탈퇴 상태와 최초 탈퇴일을 기록한다.
+    @Delete("""
+        DELETE FROM vehicle_car
+        WHERE member_no = #{memberNo}
+        """)
+    int deleteVehiclesByMemberNo(@Param("memberNo") int memberNo);
+
+    // 기존 delete는 유지하되 반환형을 int로 변경 가능
     @Update("""
-    UPDATE member
-    SET login_id = CONCAT('unit_', mem_dong, '_', mem_ho),
-        login_pwd = 'EMPTY',
-        mem_name = '미등록',
-        mem_phone = '미등록',
-        role = 'RESIDENT',
-        mem_status = '전출',
-        delete_at = CURRENT_TIMESTAMP
-    WHERE member_no = #{memberNo}
-""")
-    void delete(int memberNo);
+        UPDATE member
+        SET login_id = CONCAT('unit_', mem_dong, '_', mem_ho),
+            login_pwd = 'EMPTY',
+            mem_name = '미등록',
+            mem_phone = '미등록',
+            role = 'RESIDENT',
+            mem_status = '전출',
+            delete_at = CURRENT_TIMESTAMP
+        WHERE member_no = #{memberNo}
+        """)
+    int delete(@Param("memberNo") int memberNo);
+
 
     // 입주민 마이페이지
     @Select("SELECT m.*, " +

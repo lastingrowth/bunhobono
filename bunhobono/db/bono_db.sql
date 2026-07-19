@@ -1,11 +1,3 @@
--- 권한 허용 
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bono_user;
-
-GRANT ALL PRIVILEGES
-ON ALL SEQUENCES IN SCHEMA public
-TO bono_user;
-
-
 BEGIN;
 
 -- =====================================================
@@ -28,8 +20,8 @@ CREATE TABLE member (
     member_no SERIAL PRIMARY KEY,
     login_id VARCHAR(30),
     login_pwd VARCHAR(100),
-    mem_dong INT,
-    mem_ho INT,
+	mem_dong INT NOT NULL,
+	mem_ho INT NOT NULL,
     mem_name VARCHAR(30),
     mem_phone VARCHAR(30),
     role VARCHAR(30) NOT NULL
@@ -38,6 +30,7 @@ CREATE TABLE member (
     delete_at TIMESTAMP,
     mem_status VARCHAR(30)
 );
+
 
 -- =====================================================
 -- PARKING
@@ -235,3 +228,15 @@ CREATE INDEX idx_trash_purge_at
     ON trash_bin(purge_at);
 
 COMMIT;
+
+-- 테이블을 모두 생성한 뒤 애플리케이션 계정에 권한을 부여한다.
+GRANT USAGE ON SCHEMA public TO bono_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bono_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO bono_user;
+
+-- 이후 같은 실행 계정으로 생성되는 테이블과 시퀀스에도 자동으로 권한을 부여한다.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT ALL PRIVILEGES ON TABLES TO bono_user;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT ALL PRIVILEGES ON SEQUENCES TO bono_user;
