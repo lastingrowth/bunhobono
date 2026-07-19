@@ -26,6 +26,34 @@ public class TrashService {
         return trashMapper.detail(trashNo);
     }
 
+    @Transactional
+    public TrashDTO restore(long trashNo) {
+        TrashDTO trash = trashMapper.detail(trashNo);
+        if (trash == null) {
+            throw new IllegalArgumentException("휴지통 기록을 찾을 수 없습니다.");
+        }
+
+        int restored = switch (trash.getDataType()) {
+            case "CAMERA_DATA" -> trashMapper.restoreCameraData(trashNo);
+            case "CAR_LOG" -> trashMapper.restoreCarLog(trashNo);
+            case "NOTICE" -> trashMapper.restoreNotice(trashNo);
+            default -> throw new IllegalArgumentException("복원할 수 없는 데이터 유형입니다: " + trash.getDataType());
+        };
+
+        if (restored != 1) {
+            throw new IllegalStateException("원본 기록 복원에 실패했습니다.");
+        }
+        if (trashMapper.deleteTrash(trashNo) != 1) {
+            throw new IllegalStateException("복원 후 휴지통 기록 삭제에 실패했습니다.");
+        }
+
+        TrashDTO response = new TrashDTO();
+        response.setSuccess(true);
+        response.setDataType(trash.getDataType());
+        response.setRestoredNo(trash.getOriginalNo());
+        return response;
+    }
+
 
     // 휴지통 저장과 원본 삭제를 하나의 작업으로 처리
     // 중간에 실패하면 모든 DB 변경을 롤백
