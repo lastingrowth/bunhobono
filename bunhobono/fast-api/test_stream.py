@@ -9,15 +9,19 @@ import httpx
 
 from yolo_detect import PlateDetector
 from plate_ocr import PlateOCR
+from plate_preprocess_standard_v2 import make_candidates
+from ocr_selector import select_best_ocr
 
 
 BASE_DIR = Path(__file__).resolve().parent
 VIDEO_DIR = BASE_DIR / "runtime" / "videos"
 FRAME_DIR = BASE_DIR / "runtime" / "test_stream_frames"
 CROP_DIR = BASE_DIR / "runtime" / "test_stream_crops"
+PREPROCESS_DIR = BASE_DIR / "runtime" / "test_stream_preprocess"
 
 FRAME_DIR.mkdir(parents=True, exist_ok=True)
 CROP_DIR.mkdir(parents=True, exist_ok=True)
+PREPROCESS_DIR.mkdir(parents=True, exist_ok=True)
 
 SPRING_URL = os.getenv(
     "SPRING_URL",
@@ -68,10 +72,12 @@ TEST_STREAMS = [
     },
 ]
 
-FRAME_STEP = 30
+FRAME_STEP = 10
 CROP_COUNT = 1
 NO_DETECTION_RESET_COUNT = 2
 PLAYBACK_SPEED = 0.25
+CCTV_OCR_DIRECT_ACCEPT_SCORE = 0.98
+CCTV_OCR_MAX_CANDIDATES = 3
 MIN_OCR_SCORE = 0.5
 SEND_COOLDOWN_SECONDS = 10
 DETECTION_DISPLAY_SECONDS = 2
@@ -114,6 +120,9 @@ class TestStreamWorker:
         self.no_detection_count = 0
         self.auto_paused = False
         self.pause_reason = None
+        self.ocr_event_id = 0
+        self.last_ocr_car_no = None
+        self.pending_camera_data_no = None
 
     def pause(self):
         self.pause_event.set()
@@ -131,6 +140,23 @@ class TestStreamWorker:
         self.pause_reason = "WAITING_FOR_BACKEND"
         self.pause_event.set()
         print(f"[{self.camera_name}] paused: waiting for backend")
+
+    def complete_pending(self):
+        self.pending_camera_data_no = None
+        self.resume()
+
+    def restart_playback(self):
+        previous_thread = self.thread
+
+        if previous_thread is not None and previous_thread.is_alive():
+            previous_thread.join(timeout=1.0)
+
+        self.pause_event.clear()
+        self.video_finished = False
+        self.auto_paused = False
+        self.pause_reason = None
+        self.pending_camera_data_no = None
+        return self.start()
 
     def stop(self):
         self.running = False
@@ -174,7 +200,20 @@ class TestStreamWorker:
 
     def update_latest_frame(self, frame):
         with self.latest_frame_lock:
-            display_frame = frame.copy()
+            frame_height, frame_width = frame.shape[:2]
+            crop_left = 0
+
+            # 테스트 영상은 중앙의 정사각형 영상 양옆에 검은 여백이 포함되어 있다.
+            # 탐지에는 원본 프레임을 사용하고, 브라우저로 보낼 화면만 중앙 크롭한다.
+            if frame_width > frame_height:
+                crop_left = (frame_width - frame_height) // 2
+                display_frame = frame[
+                    :,
+                    crop_left:crop_left + frame_height,
+                ].copy()
+            else:
+                display_frame = frame.copy()
+
             height, width = display_frame.shape[:2]
 
             cv2.rectangle(
@@ -200,6 +239,13 @@ class TestStreamWorker:
                 and time.time() < self.latest_detection_until
             ):
                 x1, y1, x2, y2 = self.latest_detection_box
+                x1 = max(0, x1 - crop_left)
+                x2 = min(width - 1, x2 - crop_left)
+
+                if x2 <= x1:
+                    self.latest_frame = display_frame
+                    return
+
                 cv2.rectangle(
                     display_frame,
                     (x1, y1),
@@ -357,8 +403,10 @@ class TestStreamWorker:
         self.vehicle_active = True
         self.pause_for_backend()
 
-        with self.model_lock:
-            ocr_result = self.ocr_reader.read(best["cropPath"])
+        ocr_result = self.read_with_preprocessing(
+            best["cropPath"],
+            best["frameNo"],
+        )
 
         car_no = ocr_result.get("text", "")
         score = float(ocr_result.get("score", 0))
@@ -367,7 +415,8 @@ class TestStreamWorker:
             f"[{self.camera_name}] OCR selected "
             f"frame={best['frameNo']}, carNo={car_no}, "
             f"det={best['detScore'] * 100:.1f}%, "
-            f"ocr={score * 100:.1f}%"
+            f"ocr={score * 100:.1f}%, "
+            f"mode={ocr_result.get('mode', '-')}"
         )
 
         if not car_no or score < MIN_OCR_SCORE:
@@ -383,12 +432,29 @@ class TestStreamWorker:
         original_path = self.save_original_frame(
             best["frame"], car_no, best["frameNo"]
         )
-        self.save_best_crop(
+        saved_crop_path = self.save_best_crop(
             best["cropPath"], car_no, best["frameNo"]
         )
 
-        if self.send_to_spring(car_no, score, original_path):
+        spring_result = self.send_to_spring(
+            car_no,
+            score,
+            original_path,
+            saved_crop_path,
+        )
+        if spring_result:
             self.last_send_time[self.cooldown_key(car_no)] = time.time()
+            self.ocr_event_id += 1
+            self.last_ocr_car_no = car_no
+            gate_opened = bool(spring_result.get("gateOpened", False))
+
+            if gate_opened:
+                self.pending_camera_data_no = None
+                self.resume()
+            else:
+                self.pending_camera_data_no = spring_result.get(
+                    "cameraDataNo"
+                )
 
     def _process_frame_legacy(self, frame, frame_no):
         filename = f"{self.camera_name}_{frame_no}.jpg"
@@ -410,8 +476,7 @@ class TestStreamWorker:
         crop_path = Path(detect_result["crop_path"])
         self.show_detection(detect_result["box"])
 
-        with self.model_lock:
-            ocr_result = self.ocr_reader.read(crop_path)
+        ocr_result = self.read_with_preprocessing(crop_path, frame_no)
 
         car_no = ocr_result.get("text", "")
         score = float(ocr_result.get("score", 0))
@@ -437,6 +502,76 @@ class TestStreamWorker:
         if len(self.candidates) >= CROP_COUNT:
             self.finish_candidates()
 
+    def read_with_preprocessing(self, crop_path, frame_no):
+        raw_candidates = [{
+            "mode": "raw",
+            "path": str(crop_path),
+        }]
+
+        with self.model_lock:
+            ocr_candidates = self.ocr_reader.read_candidates(raw_candidates)
+
+        selected = select_best_ocr(ocr_candidates)
+
+        if (
+            selected.get("is_valid_plate", False)
+            and float(selected.get("score", 0)) >= CCTV_OCR_DIRECT_ACCEPT_SCORE
+        ):
+            print(
+                f"[{self.camera_name}] OCR 빠른 확정 "
+                f"mode={selected.get('mode', '-')}, "
+                f"carNo={selected.get('text', '')}"
+            )
+            return selected
+
+        output_dir = PREPROCESS_DIR / f"camera{self.camera_no}"
+
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        preprocess_candidates = make_candidates(
+            image_path=crop_path,
+            output_dir=output_dir,
+            prefix=f"camera{self.camera_no}_frame{frame_no}",
+        )
+
+        mode_priority = {
+            "standard_soft_h96": 0,
+            "gray_h96": 1,
+            "illum_norm_h96": 2,
+            "shadow_standard_h112": 3,
+            "glare_standard_h96": 4,
+            "standard_soft_h112": 5,
+            "gray_h112": 6,
+        }
+
+        additional_candidates = sorted(
+            (
+                candidate for candidate in preprocess_candidates
+                if candidate.get("mode") != "raw"
+            ),
+            key=lambda candidate: mode_priority.get(
+                candidate.get("mode"), 99
+            ),
+        )[:CCTV_OCR_MAX_CANDIDATES - 1]
+
+        with self.model_lock:
+            ocr_candidates.extend(
+                self.ocr_reader.read_candidates(additional_candidates)
+            )
+
+        selected = select_best_ocr(ocr_candidates)
+
+        print(
+            f"[{self.camera_name}] 전처리 OCR "
+            f"candidates={len(ocr_candidates)}, "
+            f"selected={selected.get('mode', '-')}, "
+            f"carNo={selected.get('text', '')}"
+        )
+
+        return selected
+
     def finish_candidates(self):
         best = max(self.candidates, key=lambda item: item["score"])
         self.candidates = []
@@ -460,11 +595,17 @@ class TestStreamWorker:
         original_path = self.save_original_frame(
             best["frame"], car_no, best["frameNo"]
         )
-        self.save_best_crop(
+        saved_crop_path = self.save_best_crop(
             best["cropPath"], car_no, best["frameNo"]
         )
 
-        if self.send_to_spring(car_no, score, original_path):
+        spring_result = self.send_to_spring(
+            car_no,
+            score,
+            original_path,
+            saved_crop_path,
+        )
+        if spring_result:
             self.last_send_time[self.cooldown_key(car_no)] = time.time()
 
     def cooldown_key(self, car_no):
@@ -495,7 +636,13 @@ class TestStreamWorker:
         shutil.copyfile(crop_path, destination)
         return destination
 
-    def send_to_spring(self, car_no, score, original_path):
+    def send_to_spring(
+        self,
+        car_no,
+        score,
+        original_path,
+        crop_path,
+    ):
         data = {
             "cameraNo": str(self.camera_no),
             "carNo": car_no,
@@ -503,7 +650,10 @@ class TestStreamWorker:
         }
 
         try:
-            with open(original_path, "rb") as image_file:
+            with (
+                open(original_path, "rb") as image_file,
+                open(crop_path, "rb") as crop_file,
+            ):
                 response = httpx.post(
                     SPRING_URL,
                     data=data,
@@ -512,7 +662,12 @@ class TestStreamWorker:
                             original_path.name,
                             image_file,
                             "image/jpeg",
-                        )
+                        ),
+                        "cropFile": (
+                            crop_path.name,
+                            crop_file,
+                            "image/jpeg",
+                        ),
                     },
                     timeout=10.0,
                 )
@@ -521,10 +676,13 @@ class TestStreamWorker:
                 f"[{self.camera_name}] Spring 전송 "
                 f"status={response.status_code}, body={response.text}"
             )
-            return response.is_success
+            if not response.is_success:
+                return None
+
+            return response.json()
         except Exception as error:
             print(f"[{self.camera_name}] Spring 전송 실패: {error}")
-            return False
+            return None
 
 
 def main():

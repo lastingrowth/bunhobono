@@ -111,6 +111,7 @@ CREATE TABLE camera_data (
     car_no VARCHAR(50),
     capture_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     image_path TEXT,
+    crop_image_path TEXT,
     recognition_state BOOLEAN,
     confidence_score NUMERIC(5,2),
 

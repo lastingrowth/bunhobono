@@ -3,6 +3,7 @@ import asyncio
 import os
 from pathlib import Path
 import shutil
+import threading
 
 import httpx
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -12,6 +13,8 @@ from fastapi.responses import StreamingResponse
 from plate_ocr import PlateOCR
 from plate_preprocess_standard_v2 import make_candidates
 from ocr_selector import select_best_ocr
+from test_stream import TEST_STREAMS, TestStreamWorker
+from yolo_detect import PlateDetector
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -165,6 +168,9 @@ def cctv_status(camera_no: int):
         "pauseReason": worker.pause_reason,
         "viewerCount": worker.viewer_count,
         "videoFinished": worker.video_finished,
+        "ocrEventId": worker.ocr_event_id,
+        "lastOcrCarNo": worker.last_ocr_car_no,
+        "pendingCameraDataNo": worker.pending_camera_data_no,
     }
 
 
@@ -178,6 +184,31 @@ def pause_stream(camera_no: int):
 def resume_stream(camera_no: int):
     get_worker(camera_no).resume()
     return {"success": True, "cameraNo": camera_no, "paused": False}
+
+
+@app.post("/cctv/{camera_no}/complete")
+def complete_pending_stream(camera_no: int):
+    worker = get_worker(camera_no)
+    worker.complete_pending()
+    return {
+        "success": True,
+        "cameraNo": camera_no,
+        "pendingCameraDataNo": None,
+        "paused": False,
+    }
+
+
+@app.post("/cctv/{camera_no}/restart")
+def restart_stream(camera_no: int):
+    worker = get_worker(camera_no)
+    worker.restart_playback()
+    return {
+        "success": True,
+        "cameraNo": camera_no,
+        "restarted": True,
+        "paused": False,
+        "videoFinished": False,
+    }
 
 
 @app.post("/detect-test")

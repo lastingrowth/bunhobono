@@ -1,4 +1,6 @@
 import { useCarlogStore } from "@/features/carlog/carlogStore";
+import { openGateByCameraData } from "@/features/camera-data/cameraDataApi";
+import { getCameraDataList } from "@/features/camera-data/cameraDataApi";
 import { useGateStore } from "@/features/gates/gateStore";
 import { useMemStore } from "@/features/member/memStore";
 import { useNoticeStore } from "@/features/notice/noticeStore";
@@ -43,6 +45,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
 
     // 오른쪽 입출차 로그에서 선택한 로그
     const selectedCarlog = ref(null)
+    const cameraDataLogs = ref([])
 
     // 차량 번호 확인용 정규식
     // 예 : 12가3456, 서울12가 3456
@@ -148,9 +151,10 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
     // A/B/C/D 주차장 모니터링 카드 목록
     // parkingStore.list에 있는 실제 주차장 정보를 기준으로 만든다
     const parkingMonitorPanels = computed(() => {
-        return parkingStore.list.slice(0,4).map((parking) => {
+        return parkingStore.list.slice(0,4).map((parking, index) => {
             const mode = parkingCameraModes.value[parking.parkingName] ?? 'IN'
             const gate = findGateByParking(parking.parkingName, mode)
+            const cameraNo = (index * 2) + (mode === 'IN' ? 1 : 2)
 
             return {
                 parkingNo : parking.parkingNo,
@@ -159,6 +163,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
                 mode,
                 modeText : mode === 'IN' ? '입차' : '출차',
                 modeClass : mode === 'IN' ? 'in' : 'out',
+                cameraNo,
                 gate,
             }
         })
@@ -186,7 +191,15 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
 
                 return rightTime - leftTime
             })
-            .slice(0,7)
+            .slice(0,3)
+    })
+
+    const recentCameraData = computed(() => {
+        return [...cameraDataLogs.value]
+            .sort((left, right) => {
+                return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0)
+            })
+            .slice(0, 3)
     })
 
     // 입차/출차 버튼을 눌렀을 때 해당 주차장의 화면 상태를 바꾼다
@@ -216,6 +229,24 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
         selectedCarlog.value = log
     }
 
+    // OCR 처리 직후 목록만 갱신하고 사용자가 선택한 행은 가능하면 유지한다.
+    const refreshCarlogs = async () => {
+        const selectedNo = selectedCarlog.value?.carLogNo
+
+        const [, cameraDataResponse] = await Promise.all([
+            carlogStore.loadCarLogs(),
+            getCameraDataList(),
+        ])
+
+        cameraDataLogs.value = Array.isArray(cameraDataResponse.data)
+            ? cameraDataResponse.data
+            : []
+
+        selectedCarlog.value = carlogStore.carLogs.find((log) => {
+            return Number(log.carLogNo) === Number(selectedNo)
+        }) ?? recentCarlogs.value[0] ?? null
+    }
+
     // 주차 상태별 색상 class를 정한다.
     const parkingStateClass = (log) => {
         if (log.parkingState === 'PARKING') {
@@ -231,7 +262,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
 
     // 관리자가 수동으로 게이트를 여는 함수
     // 백엔드 open API가 5초 뒤 자동 닫힘까지 처리
-    const openManualGate = async (gate) => {
+    const openManualGate = async (gate, cameraDataNo = null) => {
         if (!gate) {
             alert('연결된 게이트가 없습니다')
             return
@@ -239,17 +270,40 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
 
         // 백엔드 /open API를 호출한다.
         // 백엔드에서 게이트를 열고, scheduleClose로 자동 닫힘까지 예약한다.
-        await gateStore.open(gate.gateNo)
+        let opened = false
 
-        // 열림 상태를 대시보드에 바로 반영한다.
-        await gateStore.loadList()
-        refreshSelectedParkingPanel()
+        if (cameraDataNo) {
+            const response = await openGateByCameraData(cameraDataNo)
+            opened = response.data === 1
+        } else {
+            opened = await gateStore.open(gate.gateNo)
+        }
+
+        if (!opened) {
+            return false
+        }
+
+        // 게이트 개방 성공을 먼저 반환해 CCTV가 즉시 재생되게 한다.
+        // 화면 데이터 갱신 실패가 영상 재생을 막지 않도록 별도로 처리한다.
+        Promise.all([
+            gateStore.loadList(),
+            refreshCarlogs(),
+        ]).then(() => {
+            refreshSelectedParkingPanel()
+        }).catch((error) => {
+            console.error('게이트 개방 후 화면 갱신 실패', error)
+        })
 
         // 백엔드 자동 닫힘 시간이 지난 뒤 다시 조회해서 닫힘 상태를 화면에 반영한다.
-        setTimeout(async () => {
-            await gateStore.loadList()
-            refreshSelectedParkingPanel()
+        setTimeout(() => {
+            gateStore.loadList()
+                .then(refreshSelectedParkingPanel)
+                .catch((error) => {
+                    console.error('게이트 닫힘 상태 갱신 실패', error)
+                })
         }, 5500)
+
+        return true
     }
 
     // 동 표시 형식
@@ -338,7 +392,12 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
                 memberStore.loadmemberList(),
                 parkingStore.loadList(),
                 gateStore.loadList(),
-                carlogStore.loadCarLogs()
+                carlogStore.loadCarLogs(),
+                getCameraDataList().then((response) => {
+                    cameraDataLogs.value = Array.isArray(response.data)
+                        ? response.data
+                        : []
+                })
             ])
 
             selectedCarlog.value = recentCarlogs.value[0] ?? null
@@ -362,6 +421,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
         parkingMonitorPanels,
         selectedParkingPanel,
         recentCarlogs,
+        recentCameraData,
         selectedCarlog,
 
         dongText,
@@ -372,6 +432,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
         selectParkingPanel,
         closeParkingPanel,
         selectCarlog,
+        refreshCarlogs,
         parkingStateClass,
         openManualGate,
         loadDashboard,

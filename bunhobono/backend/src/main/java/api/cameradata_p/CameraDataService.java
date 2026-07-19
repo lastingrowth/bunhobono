@@ -46,10 +46,11 @@ public class CameraDataService {
 
     //ocr
     @Transactional
-    public OcrResponse ocr(int cameraNo,
+    public CameraDataDTO ocr(int cameraNo,
                            String carNo,
                            Double confidenceScore,
-                           MultipartFile file) {
+                           MultipartFile file,
+                           MultipartFile cropFile) {
         try{
             //1. 저장 폴더 없으면 생성
             Files.createDirectories(Paths.get(uploadDir));
@@ -81,12 +82,36 @@ public class CameraDataService {
             // 7. 원본 이미지 파일 저장
             Files.copy(file.getInputStream(), savePath);
 
+            // 7-1. 번호판 크롭 이미지가 함께 전달되면 별도 파일로 저장
+            Path cropSavePath = null;
+
+            if (cropFile != null && !cropFile.isEmpty()) {
+                String cropOriginalFilename = cropFile.getOriginalFilename();
+                String cropExt = ".jpg";
+
+                if (cropOriginalFilename != null
+                        && cropOriginalFilename.contains(".")) {
+                    cropExt = cropOriginalFilename.substring(
+                            cropOriginalFilename.lastIndexOf(".")
+                    );
+                }
+
+                String cropSavedFilename =
+                        timeText + "_" + okCarNo + "_crop" + cropExt;
+
+                cropSavePath = Paths.get(uploadDir, cropSavedFilename);
+                Files.copy(cropFile.getInputStream(), cropSavePath);
+            }
+
             // 8. DB에 저장할 DTO 생성
             CameraDataDTO dto = new CameraDataDTO();
             dto.setCameraNo(cameraNo);
             dto.setCarNo(carNo);
             dto.setCaptureTime(Timestamp.valueOf(now));
             dto.setImagePath(savePath.toString());
+            dto.setCropImagePath(
+                    cropSavePath != null ? cropSavePath.toString() : null
+            );
             dto.setRecognitionState(carNo != null && !carNo.isBlank());
             dto.setConfidenceScore(confidenceScore);
 
@@ -113,33 +138,46 @@ public class CameraDataService {
 
                 // 카메라와 연결된 게이트가 없으면 입출차 처리를 진행하지 않는다
                 if (gate == null) {
-                    return new OcrResponse(
-                            true,
-                            registered,
-                            false,
-                            null
-                    );
+                    dto.setSaved(true);
+                    dto.setRegistered(registered);
+                    dto.setGateOpened(false);
+                    dto.setGateNo(null);
+                    return dto;
                 }
 
                 gateNo = gate.getGateNo();
 
                 // 등록 차량이면 자동으로 게이트를 열고 입출차 로그를 처리한다
                 // vehicleCarNo 가 Null이 아니면 vehicle_car 테이블에 존재하는 차량
-                if (registered) {
+                boolean isEntryGate =
+                        "In".equalsIgnoreCase(gate.getGateType());
+                boolean isExitGate =
+                        "Out".equalsIgnoreCase(gate.getGateType());
+
+                boolean currentlyParked =
+                        isExitGate && carLogService.isCurrentlyParked(dto);
+
+                boolean canOpenAutomatically =
+                        (isEntryGate && registered) ||
+                        (isExitGate && currentlyParked);
+
+                if (canOpenAutomatically) {
                     gateOpened = gateService.open(gate.getGateNo()) == 1;
-                    carLogService.processCameraData(dto);
-                    gateService.scheduleClose(gate.getGateNo());
+
+                    if (gateOpened) {
+                        carLogService.processCameraData(dto);
+                        gateService.scheduleClose(gate.getGateNo());
+                    }
                 }
 
                 // 미등록 차량이면 camera_data만 저장하고 멈춤
                 // 이후 관리자 대시보드에서 확인 후 수동으로 게이트를 열도록 처리
             }
-            return new OcrResponse(
-                    saved,
-                    registered,
-                    gateOpened,
-                    gateNo
-            );
+            dto.setSaved(saved);
+            dto.setRegistered(registered);
+            dto.setGateOpened(gateOpened);
+            dto.setGateNo(gateNo);
+            return dto;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -244,6 +282,30 @@ public class CameraDataService {
                     "이미지 파일이 없습니다."
             );
         }
+        return path;
+    }
+
+    public Path getCameraCropImagePath(int cameraDataNo) {
+        CameraDataDTO dto = cameraDataMapper.detail(cameraDataNo);
+
+        if (dto == null ||
+                dto.getCropImagePath() == null ||
+                dto.getCropImagePath().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "번호판 크롭 이미지 경로가 없습니다."
+            );
+        }
+
+        Path path = Paths.get(dto.getCropImagePath());
+
+        if (!Files.exists(path) || !Files.isReadable(path)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "번호판 크롭 이미지 파일이 없습니다."
+            );
+        }
+
         return path;
     }
 }

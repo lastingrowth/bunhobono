@@ -170,27 +170,37 @@
 }
 
 .monitoring-card {
-  padding: 16px;
+  padding: 14px;
+  border-color: #737980;
+  border-radius: 0;
+  background: #555b61;
+  box-shadow: none;
+}
+
+.monitoring-card .section-heading {
+  margin-bottom: 10px;
+  color: #f1f5f9;
 }
 
 .parking-monitor-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 1px;
+  padding: 1px;
+  background: #899097;
 }
 
 .parking-monitor-card {
   min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   cursor: pointer;
-  background: #ffffff;
+  background: #3e444a;
 }
 
 .parking-monitor-card:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.1);
+  box-shadow: inset 0 0 0 2px #94a3b8;
 }
 
 .parking-monitor-header {
@@ -237,13 +247,15 @@
 }
 
 .parking-video-box {
+  position: relative;
   width: 100%;
-  height: 230px;
+  height: auto;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 0;
   background: linear-gradient(135deg, #111827, #1f2937);
 }
 
@@ -261,6 +273,254 @@
   color: #cbd5e1;
 }
 
+.parking-video-placeholder small {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.parking-stream {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: #000;
+  filter: contrast(1.04) saturate(0.9);
+}
+
+.parking-video-box::after,
+.parking-dialog-video::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.018) 0,
+    rgba(255, 255, 255, 0.018) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+.cctv-overlay {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  padding: 14px;
+  pointer-events: none;
+  color: #f8fafc;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px #000, 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.cctv-mode-control {
+  position: absolute;
+  z-index: 5;
+  top: 38px;
+  right: 14px;
+  height: 29px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 3px;
+  cursor: pointer;
+  color: #e2e8f0;
+  background: rgba(2, 6, 23, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 2px 8px rgba(0, 0, 0, 0.45);
+  font-family: Consolas, "Courier New", monospace;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.cctv-mode-control:hover {
+  border-color: #f8fafc;
+  background: rgba(15, 23, 42, 0.94);
+}
+
+.cctv-mode-control i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 7px #22c55e;
+}
+
+.cctv-mode-control.out i {
+  background: #38bdf8;
+  box-shadow: 0 0 7px #38bdf8;
+}
+
+.cctv-mode-control span {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.cctv-mode-control small {
+  padding-left: 6px;
+  border-left: 1px solid rgba(148, 163, 184, 0.4);
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dialog-mode-control {
+  top: 48px;
+  right: 20px;
+  height: 36px;
+  padding: 0 12px;
+}
+
+.approval-wait-overlay {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.48);
+  backdrop-filter: blur(1.5px);
+}
+
+.approval-wait-panel {
+  width: min(290px, 88%);
+  padding: 16px;
+  border: 1px solid rgba(251, 191, 36, 0.85);
+  border-radius: 4px;
+  color: #f8fafc;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.93);
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.15), 0 12px 30px rgba(0, 0, 0, 0.5);
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.approval-wait-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fbbf24;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.approval-wait-title i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+  animation: approval-wait-blink 0.9s steps(1) infinite;
+}
+
+.approval-wait-panel strong {
+  display: block;
+  margin-top: 10px;
+  color: #ffffff;
+  font-size: 24px;
+  letter-spacing: 0.06em;
+}
+
+.approval-wait-panel p {
+  margin: 8px 0 12px;
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.approval-wait-panel button {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #fbbf24;
+  border-radius: 0;
+  cursor: pointer;
+  color: #111827;
+  font-weight: 900;
+  background: #fbbf24;
+}
+
+.approval-wait-panel button:hover { background: #f59e0b; }
+.approval-wait-panel button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.dialog-approval-wait .approval-wait-panel {
+  width: min(380px, 82%);
+  padding: 24px;
+}
+
+.dialog-approval-wait .approval-wait-panel strong {
+  font-size: 34px;
+}
+
+@keyframes approval-wait-blink {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0.25; }
+}
+
+.cctv-overlay-top,
+.cctv-overlay-bottom {
+  position: absolute;
+  right: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cctv-overlay-top { top: 12px; }
+.cctv-overlay-bottom { bottom: 11px; }
+
+.cctv-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #fca5a5;
+}
+
+.cctv-live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+  animation: cctv-rec-blink 1.2s steps(1) infinite;
+}
+
+.cctv-live.paused { color: #cbd5e1; }
+.cctv-live.paused i {
+  background: #94a3b8;
+  box-shadow: none;
+  animation: none;
+}
+
+.cctv-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  opacity: 0.65;
+}
+
+.cctv-corner.top-left { top: 35px; left: 14px; border-top: 1px solid #fff; border-left: 1px solid #fff; }
+.cctv-corner.top-right { top: 35px; right: 14px; border-top: 1px solid #fff; border-right: 1px solid #fff; }
+.cctv-corner.bottom-left { bottom: 34px; left: 14px; border-bottom: 1px solid #fff; border-left: 1px solid #fff; }
+.cctv-corner.bottom-right { right: 14px; bottom: 34px; border-right: 1px solid #fff; border-bottom: 1px solid #fff; }
+
+.dialog-overlay {
+  padding: 20px;
+  font-size: 14px;
+}
+
+@keyframes cctv-rec-blink {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0.25; }
+}
+
 .video-gate-status {
   font-size: 34px;
   font-weight: 900;
@@ -275,9 +535,50 @@
 }
 
 .parking-monitor-footer {
-  margin-top: 10px;
+  margin-top: 0;
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid #697078;
+  background: #343a40;
+}
+
+.footer-gate-status {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #cbd5e1;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.footer-gate-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.footer-gate-status.open { color: #86efac; }
+.footer-gate-status.open i {
+  background: #22c55e;
+  box-shadow: 0 0 7px #22c55e;
+}
+
+.footer-gate-status.closed { color: #fca5a5; }
+.footer-gate-status.closed i {
+  background: #ef4444;
+  box-shadow: 0 0 7px #ef4444;
+}
+
+.camera-play-button {
+  background: #475569 !important;
+}
+
+.camera-play-button:hover {
+  background: #334155 !important;
 }
 
 .camera-gate-button,
@@ -285,7 +586,7 @@
   height: 36px;
   padding: 0 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: 0;
   cursor: pointer;
   font-size: 14px;
   font-weight: 900;
@@ -307,11 +608,12 @@
 .admin-control-right {
   min-width: 0;
   display: grid;
-  grid-template-rows: minmax(280px, 0.95fr) minmax(360px, 1.05fr);
+  grid-template-rows: minmax(190px, auto) minmax(190px, auto) minmax(360px, 1fr);
   gap: 14px;
 }
 
 .carlog-preview-card,
+.camera-data-preview-card,
 .selected-log-card {
   min-width: 0;
   padding: 16px;
@@ -392,13 +694,15 @@
 
 .selected-log-content {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(170px, 0.95fr);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
 }
 
 .capture-image-box {
   position: relative;
-  height: 230px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -409,26 +713,138 @@
   background: #e5e7eb;
 }
 
-.crop-image-box {
+.selected-capture-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #111827;
+  cursor: zoom-in;
+}
+
+.capture-image-empty {
+  padding: 20px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.capture-crop-overlay {
   position: absolute;
   left: 12px;
   top: 12px;
-  width: 150px;
-  height: 56px;
+  min-width: 92px;
+  min-height: 32px;
+}
+
+.capture-crop-image {
+  display: block;
+  width: clamp(165px, 42%, 285px);
+  max-height: 108px;
+  object-fit: contain;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  background: #111827;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  cursor: zoom-in;
+}
+
+.image-preview-dialog {
+  width: min(94vw, 1200px);
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: visible;
+  color: #ffffff;
+  background: transparent;
+}
+
+.image-preview-dialog::backdrop {
+  background: rgba(2, 6, 23, 0.88);
+}
+
+.image-preview-content {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  border: 2px solid #ffffff;
+  gap: 10px;
+}
+
+.image-preview-composite {
+  position: relative;
+  max-width: 94vw;
+  max-height: 86vh;
+}
+
+.image-preview-vehicle {
+  display: block;
+  max-width: 94vw;
+  max-height: 86vh;
+  object-fit: contain;
   border-radius: 8px;
+  background: #111827;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.55);
+}
+
+.image-preview-crop {
+  position: absolute;
+  left: 2%;
+  top: 2%;
+  width: 42%;
+  max-width: 420px;
+}
+
+.image-preview-crop img {
+  display: block;
+  width: 100%;
+  max-height: 22vh;
+  object-fit: contain;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  background: #111827;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.image-preview-content p {
+  margin: 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.image-preview-close {
+  position: absolute;
+  z-index: 1;
+  top: -18px;
+  right: -18px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 34px;
+  background: rgba(15, 23, 42, 0.92);
+}
+
+.capture-image-label {
+  display: inline-block;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 3px;
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
+  font-family: Consolas, "Courier New", monospace;
   background: rgba(15, 23, 42, 0.75);
 }
 
 .selected-log-info {
   min-width: 0;
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   align-content: start;
 }
@@ -504,7 +920,11 @@
 }
 
 .parking-dialog-video {
-  height: 520px;
+  position: relative;
+  width: min(100%, 70vh);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -518,6 +938,11 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.parking-dialog-actions .footer-gate-status {
+  margin-right: auto;
+  padding-left: 4px;
 }
 
 @media (max-width: 1100px) {
@@ -561,5 +986,9 @@
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;  
+  }
+
+  .selected-log-info {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

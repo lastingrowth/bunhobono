@@ -1,11 +1,13 @@
 package api.cameradata_p;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class
 CameraDataDTO {
     private Integer vehicleCarNo;
@@ -23,4 +25,13 @@ CameraDataDTO {
 
     //외래키
     private int cameraNo;
+
+    // OCR 저장 처리 결과
+    private Boolean saved;
+    private Boolean registered;
+    private Boolean gateOpened;
+    private Integer gateNo;
+
+    //crop 이미지 저장
+    private String cropImagePath;
 }

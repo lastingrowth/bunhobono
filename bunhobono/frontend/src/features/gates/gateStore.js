@@ -94,7 +94,6 @@ export const useGateStore =  defineStore("gate", () => {
     } else {
       alert("게이트 열기 실패");
       return false;
-      alert("게이트 열기 실패");
     }
   };
 

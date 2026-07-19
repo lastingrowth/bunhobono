@@ -18,20 +18,20 @@ public interface CameraDataMapper {
     @Select("SELECT vehicle_car_no FROM vehicle_car WHERE car_no = #{carNo} ORDER BY vehicle_car_no DESC LIMIT 1")
     Integer findVehicleCarNo(String carNo);
 
-    @Insert("INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, capture_time, image_path, recognition_state, confidence_score) " +
-            "VALUES (#{cameraNo}, #{vehicleCarNo}, #{carNo}, #{captureTime}, #{imagePath}, #{recognitionState}, #{confidenceScore})")
+    @Insert("INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, capture_time, image_path, crop_image_path, recognition_state, confidence_score) " +
+            "VALUES (#{cameraNo}, #{vehicleCarNo}, #{carNo}, #{captureTime}, #{imagePath}, #{cropImagePath}, #{recognitionState}, #{confidenceScore})")
     @Options(useGeneratedKeys = true, keyProperty = "cameraDataNo")
     int insert(CameraDataDTO dto);
 
     @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
-            "cd.image_path, cd.recognition_state, cd.confidence_score, " +
+            "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.camera_data_no = #{cameraDataNo}")
     CameraDataDTO detail(int cameraDataNo);
 
     @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
-            "cd.image_path, cd.recognition_state, cd.confidence_score, " +
+            "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.car_no LIKE CONCAT('%', #{keyword}, '%') " +
