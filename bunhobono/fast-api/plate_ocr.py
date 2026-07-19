@@ -1,6 +1,7 @@
 # plate_ocr.py
 
 from pathlib import Path
+import os
 import re
 
 from paddleocr import TextRecognition
@@ -8,11 +9,11 @@ from paddleocr import TextRecognition
 
 BASE_DIR = Path(__file__).resolve().parent
 
-OCR_MODEL_DIR = (
-    BASE_DIR
-    / "model"
-    / "ppocrv5_kor1_deploy"
-    / "inference"
+OCR_MODEL_DIR = Path(
+    os.getenv(
+        "OCR_MODEL_DIR",
+        str(BASE_DIR / "model" / "ppocrv5_kor1_deploy" / "inference"),
+    )
 )
 
 

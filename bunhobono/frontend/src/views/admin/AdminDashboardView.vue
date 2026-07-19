@@ -7,85 +7,42 @@
       </div>
 
       <div class="dashboard-header-actions">
-        <button type="button" class="dashboard-maintenance" @click="startMaintenanceMode">
+        <button
+          type="button"
+          class="dashboard-maintenance"
+          @click="startMaintenanceMode">
           점검 시작
         </button>
 
-        <button type="button" class="dashboard-refresh" @click="loadDashboard">
+        <button
+          type="button"
+          class="dashboard-refresh"
+          @click="loadDashboard">
           새로고침
         </button>
       </div>
 
     </div>
 
-<<<<<<< HEAD
-    <dialog ref="gateDialog" class="gate-open-dialog">
-      <div class="gate-dialog-header">
-        <div>
-          <h3>수동 입차 승인</h3>
-          <p>
-            {{ selectedGateParkingName }}게이트를 열 차량을 확인해주세요.
-          </p>
-        </div>
-        <button type="button" class="gate-dialog-close" @click="closeGateDialog">
-          닫기
-        </button>
-      </div>
-
-      <div class="gate-dialog-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>주차장</th>
-              <th>게이트</th>
-              <th>차량번호</th>
-              <th>차량상태</th>
-              <th>촬영시각</th>
-              <th>처리</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="vehicle in dialogApprovalVehicles" :key="vehicle.cameraDataNo">
-              <td>{{ vehicle.parkingName || '-' }}</td>
-              <td>
-                {{ vehicle.gateName || '-' }}
-                <small v-if="vehicle.gateNo" class="gate-number">
-                  #{{ vehicle.gateNo }}
-                </small>
-              </td>
-              <td>{{ vehicle.carNo || '미인식' }}</td>
-              <td>{{ getManualVehicleStatusText(vehicle) }}</td>
-              <td>{{ formatGateRequestTime(vehicle.captureTime) }}</td>
-              <td>
-                <button type="button" class="gate-approve-button" :disabled="openingCameraDataNo !== null"
-                  @click="confirmGateOpen(vehicle)">
-                  {{ openingCameraDataNo === vehicle.cameraDataNo ? '처리 중...' : '입차 승인' }}
-                </button>
-              </td>
-            </tr>
-            <tr v-if="dialogApprovalVehicles.length === 0">
-              <td colspan="6">수동 승인 대기 차량이 없습니다.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </dialog>
-
-=======
->>>>>>> main
     <!-- 데이터 조회 상태 -->
-    <p v-if="loading" class="dashboard-message">
+    <p v-if="loading"
+      class="dashboard-message">
       현황을 불러오는 중입니다.
     </p>
 
-    <p v-else-if="errorMessage" class="dashboard-error">
+    <p v-else-if="errorMessage"
+      class="dashboard-error" >
       {{ errorMessage }}
     </p>
 
     <!-- 상단 현황 카드 -->
     <div class="dashboard-grid">
       <!-- 미처리 알림 -->
-      <button type="button" class="dashboard-card notice-card" @click="router.push('/admin/notice')">
+      <button
+        type="button"
+        class="dashboard-card notice-card"
+        @click="router.push('/admin/notice')"
+      >
         <div class="card-heading">
           <span>미처리 알림</span>
         </div>
@@ -101,7 +58,11 @@
       </button>
 
       <!-- 차량 현황 -->
-      <button type="button" class="dashboard-card vehicle-card" @click="router.push('/admin/vehicles?mode=approve')">
+      <button
+        type="button"
+        class="dashboard-card vehicle-card"
+        @click="router.push('/admin/vehicles?mode=approve')"
+      >
         <div class="card-heading">
           <span>차량 현황</span>
         </div>
@@ -131,48 +92,6 @@
           <span>실시간 카메라 영상</span>
         </div>
 
-<<<<<<< HEAD
-        <div v-if="parkingStatusWithOcr.length > 0" class="parking-overview-content">
-          <!-- A/B/C/D 주차장 사용률 -->
-          <div class="parking-status-strip">
-
-            <button v-for="parking in parkingStatusWithOcr" :key="`status-${parking.parkingNo}`" type="button"
-              class="parking-zone-status" :class="{ 'has-gate-request': hasManualRequest(parking.parkingNo) }"
-              :disabled="!hasManualRequest(parking.parkingNo)" @click="openGateDialog(parking.parkingNo)">
-
-              <strong class="parking-zone-name">
-                {{ parking.parkingName }}
-              </strong>
-
-              <div class="parking-zone-donut" :style="{
-                '--parking-rate': `${parking.usageRate}%`
-              }">
-                <strong>{{ parking.usageRate }}%</strong>
-              </div>
-
-              <span class="parking-zone-count">
-                {{ parking.occupied }} / {{ parking.total }}면
-              </span>
-
-              <span class="parking-zone-available">
-                주차 가능 {{ parking.available }}면
-              </span>
-
-              <span v-if="manualRequestCount(parking.parkingNo) > 0" class="parking-gate-request-count">
-                게이트 요청 {{ manualRequestCount(parking.parkingNo) }}건
-              </span>
-            </button>
-          </div>
-
-          <!-- A/B/C/D 주차장별 최신 OCR 사진 -->
-          <div class="parking-ocr-row">
-            <button v-for="parking in parkingStatusWithOcr" :key="`ocr-${parking.parkingNo}`" type="button"
-              class="parking-ocr-preview" :disabled="!parking.ocr.cameraDataNo"
-              @click="parking.ocr.cameraDataNo && goCameraDataList(parking.parkingNo)">
-              <div class="parking-ocr-frame">
-                <img v-if="parking.ocr.imageUrl" :src="parking.ocr.imageUrl"
-                  :alt="`${parking.parkingName} ${parking.ocr.carNoText} 차량 사진`">
-=======
         <div class="parking-overview-content">
           <!-- 
             주차장 선택 버튼
@@ -202,6 +121,27 @@
               class="dashboard-camera-panel">
               
               <div class="camera-video-placeholder">
+                <img
+                  v-if="isCameraPlaying(panel.cameraNo)"
+                  class="camera-stream-image"
+                  :src="`http://127.0.0.1:8000/cctv/${panel.cameraNo}/stream`"
+                  :alt="`CCTV ${panel.cameraNo}`"
+                />
+                <div v-else class="camera-stream-paused">
+                  일시정지
+                </div>
+                <div class="camera-stream-title">
+                  {{ selectedParkingName }}
+                  {{ panel.type === 'IN' ? '입차' : '출차' }}
+                  · CCTV {{ panel.cameraNo }}
+                </div>
+                <button
+                  type="button"
+                  class="camera-stream-toggle"
+                  @click="toggleCamera(panel.cameraNo)"
+                >
+                  {{ isCameraPlaying(panel.cameraNo) ? '일시정지' : '재생' }}
+                </button>
                 <span class="camera-video-label">
                   {{ panel.cameraLabel }}
                 </span>
@@ -213,72 +153,38 @@
                   {{ panel.gate.gateStatus === 1 ? '열림' : '닫힘' }}
                 </p>
                 <p v-else>연결된 게이트 없음</p>
->>>>>>> main
 
                 <!-- 
                   해당 주차장의 IN/OUT 게이트가 있으면 게이트 열기 가능
                   gate 정보가 없으면 버튼을 비활성화
                 -->
+                <div class="camera-gate-controls">
+                  <span
+                    class="camera-gate-status"
+                    :class="{ open: panel.gate?.gateStatus === 1 }"
+                  >
+                    {{ panel.gate
+                      ? (panel.gate.gateStatus === 1 ? '게이트 열림' : '게이트 닫힘')
+                      : '게이트 미연결' }}
+                  </span>
+
                 <button
                   type="button"
                   class="camera-gate-button"
                   :disabled="!panel.gate"
-                  @click="openManualGate(panel.gate)">
+                  @click="openManualGate(panel)">
                   게이트 열기
                 </button>
+                </div>
               </div>
 
             </section>
           </div>
         </div>
 
-<<<<<<< HEAD
-        <p v-else class="parking-empty">
-          등록된 주차장이 없습니다.
-        </p>
-=======
       
 
->>>>>>> main
       </article>
-      <div class="cctv-stream-row">
-        <article
-          v-for="camera in cctvCameras"
-          :key="camera.cameraNo"
-          class="cctv-stream-card"
-        >
-          <div class="cctv-stream-header">
-            <strong>{{ camera.title }}</strong>
-
-            <div class="cctv-stream-actions">
-              <span>{{ cctvPaused[camera.cameraNo] ? 'PAUSED' : 'LIVE' }}</span>
-
-              <button
-                type="button"
-                :disabled="cctvLoading[camera.cameraNo] || cctvPaused[camera.cameraNo]"
-                @click="pauseCctv(camera.cameraNo)"
-              >
-                {{ cctvLoading[camera.cameraNo] ? '처리 중...' : '일시정지' }}
-              </button>
-
-              <button
-                type="button"
-                :disabled="cctvLoading[camera.cameraNo] || !cctvPaused[camera.cameraNo]"
-                @click="resumeCctv(camera.cameraNo)"
-              >
-                재생
-              </button>
-            </div>
-          </div>
-
-          <div class="cctv-stream-frame">
-            <img
-              :src="getCctvStreamUrl(camera.cameraNo)"
-              :alt="camera.title"
-            >
-          </div>
-        </article>
-      </div>
     </div>
 
     <!-- 주간 입차 그래프와 입출차 목록 -->
@@ -286,7 +192,9 @@
       <div class="section-heading">
         <h3>입출차 현황</h3>
 
-        <button type="button" @click="router.push('/admin/carlogs')">
+        <button
+          type="button"
+          @click="router.push('/admin/carlogs')" >
           전체보기
         </button>
       </div>
@@ -308,7 +216,10 @@
               </thead>
 
               <tbody>
-                <tr v-for="log in paginatedCarlogs" :key="log.carLogNo ?? log.displayNo">
+                <tr
+                  v-for="log in paginatedCarlogs"
+                  :key="log.carLogNo ?? log.displayNo"
+                >
                   <td>{{ log.carNo || '미인식' }}</td>
 
                   <td>
@@ -317,10 +228,9 @@
 
                   <td>
                     <!-- 주차 상태를 색상 배지로 표시 -->
-                    <span class="carlog-state-badge" :class="{
-                      parking: log.parkingState === 'PARKING',
-                      out: log.parkingState === 'OUT'
-                    }">
+                    <span class="carlog-state-badge"
+                          :class="{ parking : log.parkingState === 'PARKING',
+                                    out : log.parkingState === 'OUT' }">
                       {{ log.parkingStateText || log.parkingState || '-' }}
                     </span>
                   </td>
@@ -345,17 +255,29 @@
 
           <!-- 입출차 목록 페이지 번호 -->
           <div class="carlog-pagination">
-            <button type="button" :disabled="currentCarlogPage === 1" @click="setCarlogPage(carlogPageNumbers[0] - 1)">
+            <button
+              type="button"
+              :disabled="currentCarlogPage === 1"
+              @click="setCarlogPage(carlogPageNumbers[0] - 1)"
+            >
               이전
             </button>
 
-            <button v-for="page in carlogPageNumbers" :key="page" type="button"
-              :class="{ active: currentCarlogPage === page }" @click="setCarlogPage(page)">
+            <button
+              v-for="page in carlogPageNumbers"
+              :key="page"
+              type="button"
+              :class="{ active: currentCarlogPage === page }"
+              @click="setCarlogPage(page)"
+            >
               {{ page }}
             </button>
 
-            <button type="button" :disabled="currentCarlogPage === carlogTotalPages"
-              @click="setCarlogPage(carlogPageNumbers[carlogPageNumbers.length - 1] + 1)">
+            <button
+              type="button"
+              :disabled="currentCarlogPage === carlogTotalPages"
+              @click="setCarlogPage(carlogPageNumbers[carlogPageNumbers.length -1] + 1)"
+            >
               다음
             </button>
           </div>
@@ -365,7 +287,7 @@
         <section class="weekly-entry-panel">
           <!-- 그래프 제목과 막대 색상 설명 -->
           <div class="weekly-entry-header">
-
+          
             <h4 class="weekly-entry-title">
               최근 7일 입차 기록
             </h4>
@@ -377,8 +299,12 @@
           </div>
 
           <div class="weekly-entry-chart">
-            <div v-for="day in weeklyEntryStats" :key="day.dateKey" class="weekly-entry-item">
-
+            <div
+              v-for="day in weeklyEntryStats"
+              :key="day.dateKey"
+              class="weekly-entry-item"
+            >
+          
               <!-- 입주민과 방문객 입차 합계 -->
               <span class="weekly-entry-count">
                 {{ day.residentCount + day.visitCount }}건
@@ -386,9 +312,13 @@
 
               <!-- 요일별 입주민/방문객 입차 막대 -->
               <div class="weekly-entry-track grouped">
-                <div class="weekly-entry-bar resident" :style="{ '--bar-height': `${day.residentBarHeight}%` }" />
+                <div
+                  class="weekly-entry-bar resident"
+                  :style="{'--bar-height': `${day.residentBarHeight}%`}" />
 
-                <div class="weekly-entry-bar visit" :style="{ '--bar-height': `${day.visitBarHeight}%` }" />
+                <div
+                  class="weekly-entry-bar visit"
+                  :style="{'--bar-height': `${day.visitBarHeight}%`}" />
               </div>
 
               <span class="weekly-entry-date">
@@ -411,9 +341,8 @@
 import { useGateStore } from '@/features/gates/gateStore'
 import { useAdminDashboardStore } from '@/stores/adminDashboard'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import '@/assets/css/cctv.css'
 
 const router = useRouter()
 const dashboardStore = useAdminDashboardStore()
@@ -433,48 +362,6 @@ const {
   paginatedCarlogs
 } = storeToRefs(dashboardStore)
 
-<<<<<<< HEAD
-const gateDialog = ref(null)
-const openingCameraDataNo = ref(null)
-const selectedGateParkingNo = ref(null)
-
-const CCTV_API_URL = 'http://localhost:8000'
-
-const cctvCameras = [
-  { cameraNo: 1, title: 'A 주차장 입차 카메라' },
-  { cameraNo: 3, title: 'B 주차장 입차 카메라' },
-  { cameraNo: 5, title: 'C 주차장 입차 카메라' },
-  { cameraNo: 7, title: 'D 주차장 입차 카메라' },
-  { cameraNo: 2, title: 'A 주차장 출차 카메라' },
-  { cameraNo: 4, title: 'B 주차장 출차 카메라' },
-  { cameraNo: 6, title: 'C 주차장 출차 카메라' },
-  { cameraNo: 8, title: 'D 주차장 출차 카메라' }
-]
-
-const cctvPaused = ref(
-  Object.fromEntries(
-    cctvCameras.map((camera) => [camera.cameraNo, true])
-  )
-)
-
-const cctvLoading = ref(
-  Object.fromEntries(
-    cctvCameras.map((camera) => [camera.cameraNo, false])
-  )
-)
-
-// MJPEG 8개를 동일 호스트에 연결하면 브라우저 연결 제한에 걸릴 수 있어
-// 카메라 1~4와 5~8의 스트림 호스트를 나누어 사용한다.
-const getCctvStreamUrl = (cameraNo) => {
-  const streamHost = cameraNo <= 4
-    ? 'http://localhost:8000'
-    : 'http://127.0.0.1:8000'
-
-  return `${streamHost}/cctv/${cameraNo}/stream`
-}
-
-=======
->>>>>>> main
 let ocrRefreshTimer = null
 let ocrRefreshing = false
 
@@ -483,138 +370,6 @@ const loadDashboard = async () => {
   await dashboardStore.loadDashboard()
 }
 
-<<<<<<< HEAD
-const dialogApprovalVehicles = computed(() => {
-  if (selectedGateParkingNo.value === null) {
-    return manualApprovalVehicles.value
-  }
-
-  return manualApprovalVehicles.value.filter((vehicle) => {
-    return Number(vehicle.parkingNo) === Number(selectedGateParkingNo.value)
-  })
-})
-
-const selectedGateParkingName = computed(() => {
-  if (selectedGateParkingNo.value === null) return ''
-
-  const parking = parkingStatusWithOcr.value.find((item) => {
-    return Number(item.parkingNo) === Number(selectedGateParkingNo.value)
-  })
-
-  return parking?.parkingName ? `${parking.parkingName} 주차장 ` : ''
-})
-
-const manualRequestCount = (parkingNo) => {
-  return manualApprovalVehicles.value.filter((vehicle) => {
-    return Number(vehicle.parkingNo) === Number(parkingNo)
-  }).length
-}
-
-const hasManualRequest = (parkingNo) => {
-  return manualRequestCount(parkingNo) > 0
-}
-
-const openGateDialog = (parkingNo = null) => {
-  selectedGateParkingNo.value = parkingNo
-  gateDialog.value?.showModal()
-}
-
-const closeGateDialog = () => {
-  gateDialog.value?.close()
-  selectedGateParkingNo.value = null
-}
-
-const getManualVehicleStatusText = (vehicle) => {
-  if (!vehicle.vehicleCarNo) return '미등록'
-  if (vehicle.vehicleStatus === 'WAITING') return '승인 대기'
-  if (vehicle.vehicleStatus === 'EXPIRED') return '만료'
-  if (vehicle.vehicleStatus === 'UNKNOWN') return '미확인'
-  return vehicle.vehicleStatus || '-'
-}
-
-const formatGateRequestTime = (value) => {
-  if (!value) return '-'
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-
-  return date.toLocaleString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const confirmGateOpen = async (vehicle) => {
-  const confirmed = window.confirm(
-    `${vehicle.carNo || '미인식'} 차량의 `
-    + `${vehicle.gateName || '연결된 게이트'}를 열겠습니까?`
-  )
-
-  if (!confirmed || openingCameraDataNo.value !== null) return
-
-  openingCameraDataNo.value = vehicle.cameraDataNo
-
-  try {
-    await openGateForCameraData(vehicle.cameraDataNo)
-    window.alert('입차 승인이 완료되었습니다.')
-    await dashboardStore.refreshOcrImages()
-
-    if (dialogApprovalVehicles.value.length === 0) {
-      closeGateDialog()
-    }
-  } catch (error) {
-    const status = error.response?.status
-
-    if (status === 409) {
-      window.alert('이미 처리됐거나 게이트가 열려 있습니다.')
-    } else {
-      window.alert('게이트 열기 처리에 실패했습니다.')
-    }
-  } finally {
-    openingCameraDataNo.value = null
-  }
-}
-
-const changeCctvState = async (cameraNo, action) => {
-  if (cctvLoading.value[cameraNo]) return
-
-  cctvLoading.value[cameraNo] = true
-
-  try {
-    const response = await fetch(
-      `${CCTV_API_URL}/cctv/${cameraNo}/${action}`,
-      { method: 'POST' }
-    )
-
-    if (!response.ok) {
-      throw new Error(`CCTV ${action} 실패: ${response.status}`)
-    }
-
-    cctvPaused.value[cameraNo] = action === 'pause'
-  } catch (error) {
-    console.error('CCTV 제어 오류', error)
-    window.alert(
-      action === 'pause'
-        ? 'CCTV 영상을 일시정지하지 못했습니다.'
-        : 'CCTV 영상을 재생하지 못했습니다.'
-    )
-  } finally {
-    cctvLoading.value[cameraNo] = false
-  }
-}
-
-const pauseCctv = (cameraNo) => {
-  return changeCctvState(cameraNo, 'pause')
-}
-
-const resumeCctv = (cameraNo) => {
-  return changeCctvState(cameraNo, 'resume')
-}
-
-=======
->>>>>>> main
 // 관리자 대시보드에서 점검 화면을 테스트하기 위한 임시 트리거
 // 백엔드 점검 API가 연결되면 window.startMaintenance() 대신 API 호출로 변경한다.
 const startMaintenanceMode = () => {
@@ -654,6 +409,28 @@ const selectedParkingName = ref('A 주차장')
 
 // 선택한 주차장 이름과 게이트 타입으로 게이트를 찾는다
 // gateType이 IN 이면 입차 게이트, OUT 이면 출차 게이트를 찾는다
+const playingCameraNos = ref(new Set())
+
+const isCameraPlaying = (cameraNo) => {
+  return playingCameraNos.value.has(cameraNo)
+}
+
+const toggleCamera = (cameraNo) => {
+  const next = new Set(playingCameraNos.value)
+
+  if (next.has(cameraNo)) {
+    next.delete(cameraNo)
+  } else {
+    next.add(cameraNo)
+  }
+
+  playingCameraNos.value = next
+}
+
+watch(selectedParkingName, () => {
+  playingCameraNos.value = new Set()
+})
+
 const findGateByParking = (gateType) => {
   return gateStore.list.find((gate) => {
     return gate.parkingName === selectedParkingName.value
@@ -664,15 +441,22 @@ const findGateByParking = (gateType) => {
 // 현재 선택한 주차장에 맞춰 입차/출차 영상 영역을 만든다
 // 실제 영상은 아직 없으므로 지금은 영상 자리와 게이트 버튼만 준비한다
 const cameraPanels = computed(() => {
+  const parkingIndex = cameraParkingTabs.findIndex(
+    (parking) => parking.name === selectedParkingName.value
+  )
+  const inCameraNo = parkingIndex >= 0 ? parkingIndex * 2 + 1 : 1
+
   return [
     {
       type : 'IN',
+      cameraNo : inCameraNo,
       cameraLabel : '입차 영상 연결 예정',
       title : `${selectedParkingName.value} 입차 게이트`,
       gate : findGateByParking('IN')
     },
     {
       type : 'OUT',
+      cameraNo : inCameraNo + 1,
       cameraLabel : '출차 영상 연결 예정',
       title : `${selectedParkingName.value} 출차 게이트`,
       gate : findGateByParking('OUT')
@@ -681,13 +465,29 @@ const cameraPanels = computed(() => {
 })
 
 // 관리자가 직접 게이트를 여는 함수
-const openManualGate = async (gate) => {
+const openManualGate = async (panel) => {
+  const gate = panel.gate
+
   if (!gate) {
     alert('연결된 게이트가 없습니다')
     return
   }
 
-  await gateStore.open(gate.gateNo)
+  const opened = await gateStore.open(gate.gateNo)
+
+  if (!opened) {
+    return
+  }
+
+  const response = await fetch(
+    `http://127.0.0.1:8000/cctv/${panel.cameraNo}/resume`,
+    { method: 'POST' }
+  )
+
+  if (!response.ok) {
+    alert('게이트는 열렸지만 CCTV 영상을 재생하지 못했습니다.')
+    return
+  }
   alert(`${gate.parkingName} ${gate.gateName} 게이트를 열었습니다`)
 }
 
@@ -730,5 +530,3 @@ onUnmounted(() => {
   }
 })
 </script>
-
-

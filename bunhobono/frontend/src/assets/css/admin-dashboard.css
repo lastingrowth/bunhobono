@@ -292,6 +292,60 @@ button.dashboard-card:hover {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
+.camera-stream-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.camera-stream-title {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.82);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.camera-stream-paused {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  background: #101722;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.camera-stream-toggle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.82);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.camera-stream-toggle:hover {
+  background: rgba(37, 99, 235, 0.92);
+}
+
 /* 영상 영역 위쪽 작은 설명 */
 .camera-video-label {
   margin-bottom: 8px;
@@ -315,10 +369,34 @@ button.dashboard-card:hover {
 }
 
 /* 게이트 열기 버튼 */
-.camera-gate-button {
+.camera-gate-controls {
   position: absolute;
   right: 18px;
   bottom: 18px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.camera-gate-status {
+  padding: 8px 11px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  border-radius: 999px;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.82);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.camera-gate-status.open {
+  border-color: rgba(74, 222, 128, 0.75);
+  color: #dcfce7;
+  background: rgba(22, 101, 52, 0.9);
+}
+
+.camera-gate-button {
   padding: 11px 20px;
   border: 0;
   border-radius: 9px;
