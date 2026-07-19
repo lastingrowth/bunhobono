@@ -1,0 +1,57 @@
+전처리 모듈
+plate_preprocess_standard_v2.py
+
+원본 차량 이미지
+→ YOLO가 번호판 영역 crop
+→ plate_preprocess_standard_v2.py가 crop 상태 분석
+→ 여러 전처리 후보 생성
+→ PaddleOCR이 후보별로 번호판 읽음
+→ ocr_selector.py가 최종 carNo 선택
+
+
+raw
+원본 crop 그대로. 이미 잘 보이는 번호판은 건드리지 않는 게 제일 좋음.
+
+gray_h96 / gray_h112
+그레이스케일 + 크기 표준화. 우리 테스트에서 기본 gray가 의외로 많이 잘 읽혔음.
+
+standard_soft_h96 / standard_soft_h112
+전체 밝기와 대비를 성공 이미지 기준에 가깝게 부드럽게 맞춤.
+너무 강한 이진화 없이 OCR이 좋아하는 자연스러운 형태를 유지함.
+
+illum_norm_h96 / illum_norm_h112
+조명 불균일, 그림자, 반사 때문에 한쪽만 어둡거나 밝은 crop을 보정함.
+
+shadow_standard_h112
+그림자 심한 번호판에서 배경과 글자 차이를 더 살리기 위한 후보.
+
+local_binary_h96 / local_binary_h112
+배경은 밝게, 글자는 어둡게 분리하려는 이진화 계열 후보.
+다만 너무 강하면 글자가 깨져서 selector에서 가중치를 낮게 둠.
+
+hard_local_binary_h128
+진짜 어려운 이미지용 강한 후보. 평소에는 위험해서 낮은 우선순위.
+---------------------------------------------------------------------------------
+최종선택
+ocr_selector.py
+
+OCR text
+OCR score
+번호판 형식
+같은 예측값 반복 횟수
+어떤 전처리 mode에서 나온 결과인지
+
+OCR score만 믿지 않는다.
+반복되는 후보와 번호판 형식을 같이 본다.
+전처리 mode마다 신뢰도를 다르게 준다.
+
+최종선택 하는이유
+
+정답 후보가 5개 중 4개 있어도
+오답 1개의 OCR score가 더 높으면
+score만 보는 방식은 오답을 고름
+
+---------------------------------------------
+전처리 = 후보 생성
+OCR = 후보별 읽기
+selector = 최종 판단

@@ -21,6 +21,19 @@ public class VehicleController {
         return vehicleService.listservice();
     }
 
+    // 차량 등록 화면에서 선택 가능한 회원 검색
+    // 기존 GET /api/vehicles는 건드리지 않고 /api/vehicles/search만 추가한다.
+    // normal: 등록차량 2대 미만인 회원 조회
+    // visit + RESIDENT: 유효한 방문차량이 없는 입주민 조회
+    // visit + ADMIN: 관리자 회원 조회
+    @GetMapping("/search")
+    public List<VehicleDTO> search(
+            @RequestParam String vehicleType,
+            @RequestParam String role
+    ) {
+        return vehicleService.search(vehicleType, role);
+    }
+
     // RESIDENT 본인 차량 목록 조회
     // 토큰의 loginId를 기준으로 본인 normal 차량 + 본인이 신청한 visit 차량만 조회된다.
     @GetMapping("/resident")
@@ -28,9 +41,9 @@ public class VehicleController {
         return vehicleService.residentList(authentication.getName());
     }
 
-    // ADMIN 차량 등록 신청
+    // ADMIN 차량 등록
     // URL은 기존 프론트 호환을 위해 /signUp 유지
-    // normal, visit 모두 가능하지만 등록 즉시 APPROVED가 아니라 WAITING으로 들어간다.
+    // 관리자가 등록하면 승인대기 없이 바로 APPROVED로 등록된다.
     @PostMapping("/signUp")
     public int adminRequest(@RequestBody VehicleDTO dto) {
         return vehicleService.adminRequest(dto);
