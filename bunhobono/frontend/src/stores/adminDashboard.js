@@ -4,18 +4,19 @@ import { defineStore } from "pinia";
 import { useNoticeStore } from "@/features/notice/noticeStore";
 import { useVehicleStore } from "@/features/vehicle/vehicleStore";
 import { useParkingsStore } from "@/features/parking/parkingsStore";
-import { useCarlogStore } from "@/features/carlog/carlogStore";
+import { getCarLogs } from "@/features/carlog/carlogApi";
+import { toCarLogView } from "@/features/carlog/carlogFormat";
 import { useCameraDataStore } from "@/features/camera-data/cameraDataStore";
 import { useCameraStore } from "@/features/camera/cameraStore";
 import { useGateStore } from "@/features/gates/gateStore";
-import { getCameraDataDetail, getCameraDataImage } from "@/features/camera-data/cameraDataApi";
+import { getCameraDataDetail, getCameraDataImage, openGateByCameraData } from "@/features/camera-data/cameraDataApi";
+
 
 export const useAdminDashboardStore = defineStore("adminDashboard", () => {
   
     const noticeStore = useNoticeStore();
     const vehicleStore = useVehicleStore();
     const parkingStore = useParkingsStore();
-    const carlogStore = useCarlogStore();
     const cameraDataStore = useCameraDataStore();
     const cameraStore = useCameraStore();
     const gateStore = useGateStore();
@@ -30,6 +31,10 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     // 한 페이지에 표시할 입출차 기록 수
     const carlogPageSize = 5;
+
+    // 관리자 대시보드에서만 사용할 입출차 기록
+    // carlog 페이지의 검색 조건과 섞이지 않도록 별도로 관리한다
+    const dashboardCarlogs = ref([]);
 
     // 확인하지 않은 알림 수
     const unresolvedNoticeCount = computed(() => {
@@ -173,18 +178,24 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         const confidenceScore = detail.confidenceScore ?? data.confidenceScore;
         const vehicleStatus = detail.vehicleStatus ?? data.vehicleStatus;
         const vehicleCarNo = detail.vehicleCarNo ?? data.vehicleCarNo;
+        const relatedCarLog = data.relatedCarLog;
         const waitingForApproval = data.movementType === "IN"
             && !data.processed
             && (!vehicleCarNo || vehicleStatus === "WAITING" || vehicleStatus === "UNKNOWN");
+        const movementText = data.processedMovementType === "IN"
+            ? "입차"
+            : data.processedMovementType === "OUT"
+                ? "출차"
+                : waitingForApproval
+                    ? "대기중"
+                    : "처리 안 됨";
 
         return {
             ...data,
             ...detail,
             imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
-            carNoText: detail.carNo || data.carNo || "미인식",
-            movementText: waitingForApproval
-                ? "대기중"
-                : data.movementTypeText ?? "확인 불가",
+            carNoText: relatedCarLog?.carNo || detail.carNo || data.carNo || "미인식",
+            movementText,
             confidenceText: confidenceScore == null
                 ? "-"
                 : `${Number(confidenceScore).toFixed(1)}%`
@@ -199,26 +210,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 ocr: getParkingOcrCard(parking)
             };
         });
-    });
-
-    // 입차 카메라에 감지됐지만 자동 통과하지 않은 수동 승인 대상 차량
-    const manualApprovalVehicles = computed(() => {
-        return [...cameraDataStore.displayList]
-            .filter((data) => {
-                if (!data.cameraDataNo || data.movementType !== "IN" || data.processed) {
-                    return false;
-                }
-
-                if (!data.vehicleCarNo) {
-                    return true;
-                }
-
-                return data.vehicleStatus !== "APPROVED";
-            })
-            .sort((a, b) => {
-                return new Date(b.captureTime ?? 0).getTime()
-                    - new Date(a.captureTime ?? 0).getTime();
-            });
     });
 
     const clearOcrImageUrls = () => {
@@ -280,6 +271,25 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         await loadOcrImages();
     }
 
+    // 관리자 수동 게이트 열기
+    // 미등록 차량처럼 자동 통과되지 않은 OCR 데이터를 관리자가 확인한 뒤 통과시킴
+    const openGateByOcr = async (cameraDataNo) => {
+        if (!cameraDataNo) {
+            return;
+        }
+
+        await openGateByCameraData(cameraDataNo);
+
+        // 게이트를 열면 carlog가 새로 생길 수 있으므로 대시보드 데이터를 다시 조회
+        await Promise.all([
+            loadDashboardCarlogs(),
+            cameraDataStore.loadList(),
+            parkingStore.loadList()
+        ]);
+
+        await loadOcrImages();
+    }
+
     // 날짜를 YYYY-MM-DD 형식으로 변환
     const getDateKey = (date) => {
         const year = date.getFullYear();
@@ -292,6 +302,21 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         ).padStart(2, "0");
 
         return `${year}-${month}-${day}`;
+    };
+
+    // 관리자 대시보드는 항상 최신 입출차 기록을 기준으로 조회한다.
+    // carlogStore.search를 사용하지 않기 때문에 carlog 페이지의 검색/정렬 상태에 영향을 받지 않는다.
+    const loadDashboardCarlogs = async () => {
+        const res = await getCarLogs({
+            gateNo: null,
+            parkingNo: null,
+            parkingState: "",
+            carKind: "",
+            carNo: "",
+            sort: "latest"
+        });
+
+        dashboardCarlogs.value = res.data.map(toCarLogView);
     };
 
     // 오늘을 포함한 최근 7일 입차 건수
@@ -318,7 +343,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             const dateKey = getDateKey(date);
 
             // 해당 날짜에 입차한 기록 수
-            const dayLogs = carlogStore.carLogs.filter((log) => {
+            const dayLogs = dashboardCarlogs.value.filter((log) => {
                 if (!log.inTime) {
                     return false;
                 }
@@ -369,7 +394,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     const carlogTotalPages = computed(() => {
         return Math.max(
             Math.ceil(
-                carlogStore.carLogs.length / carlogPageSize
+                dashboardCarlogs.value.length / carlogPageSize
             ),
             1
         );
@@ -384,7 +409,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
         const end = start + carlogPageSize;
 
-        return carlogStore.carLogs.slice(start, end);
+        return dashboardCarlogs.value.slice(start, end);
     });
 
     // 현재 페이지를 기준으로 최대 5개의 페이지 번호 표시
@@ -428,7 +453,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         try {
             await Promise.all([
                 parkingStore.loadList(),
-                carlogStore.loadCarLogs(),
+                loadDashboardCarlogs(),
                 cameraDataStore.loadList()
             ]);
 
@@ -447,7 +472,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             noticeStore.loadNotices(),
             vehicleStore.loadVehicleList(),
             parkingStore.loadList(),
-            carlogStore.loadCarLogs(),
+            loadDashboardCarlogs(),
             cameraStore.loadList(),
             gateStore.loadList(),
             cameraDataStore.loadList()
@@ -480,7 +505,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         ocrFailCount,
         ocrSuccessRate,
         parkingStatusWithOcr,
-        manualApprovalVehicles,
         weeklyEntryStats,
         currentCarlogPage,
         carlogTotalPages,
@@ -488,6 +512,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         paginatedCarlogs,
         setCarlogPage,
         refreshOcrCards,
+        openGateByOcr,
         refreshOcrImages,
         loadDashboard
     };

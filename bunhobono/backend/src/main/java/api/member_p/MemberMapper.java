@@ -8,10 +8,22 @@ import java.util.List;
 public interface MemberMapper {
     // 회원가입
     // 외부 회원가입은 PENDING 역할로 저장하고 가입일은 실제 가입 시각을 기록한다.
-    @Insert("insert into member(login_id, login_pwd, mem_dong, mem_ho, mem_name, mem_phone, role, mem_status, create_at) values" +
-            "(#{loginId},#{loginPwd},#{memDong}, #{memHo},#{memName},#{memPhone},#{role},#{memStatus}," +
-            "CURRENT_TIMESTAMP)")
-    int signup (MemberDTO dto);
+    @Update("""
+    UPDATE member
+    SET login_id = #{loginId},
+        login_pwd = #{loginPwd},
+        mem_name = #{memName},
+        mem_phone = #{memPhone},
+        role = 'PENDING',
+        mem_status = '거주',
+        create_at = CURRENT_TIMESTAMP,
+        delete_at = NULL
+    WHERE mem_dong = #{memDong}
+      AND mem_ho = #{memHo}
+      AND UPPER(TRIM(role)) = 'RESIDENT'
+      AND TRIM(mem_status) = '전출'
+""")
+    int signup(MemberDTO dto);
 
     // 전출 이력이 있고 현재 거주·승인대기 회원이 없는 세대만 공개 회원가입 대상으로 조회한다.
     @Select("""
@@ -19,7 +31,7 @@ public interface MemberMapper {
         FROM member departed
         WHERE UPPER(TRIM(departed.role)) = 'RESIDENT'
           AND TRIM(departed.mem_status) = '전출'
-          AND departed.mem_dong BETWEEN 101 AND 104
+          AND departed.mem_dong IN (101, 102, 201, 202, 301, 302, 401, 402)
           AND (departed.mem_ho / 100) BETWEEN 1 AND 15
           AND MOD(departed.mem_ho, 100) BETWEEN 1 AND 4
           AND NOT EXISTS (
@@ -148,33 +160,27 @@ public interface MemberMapper {
         """)
     int permanentlyDeleteWithdrawnMembers(@Param("memberNos") List<Long> memberNos);
 
-    // 선택한 탈퇴 회원을 거주 상태로 복원하고 탈퇴일을 제거한다.
-    @Update("""
-        <script>
-        UPDATE member
-        SET mem_status = '거주',
-            delete_at = NULL
-        WHERE delete_at IS NOT NULL
-          AND member_no IN
-        <foreach collection="memberNos" item="memberNo" open="(" separator="," close=")">
-            #{memberNo}
-        </foreach>
-        </script>
-        """)
-    int restoreMembers(@Param("memberNos") List<Long> memberNos);
 
-    // 관리자 화면의 회원 삭제는 즉시 제거하지 않고 탈퇴 상태와 최초 탈퇴일을 기록한다.
-    @Update("""
-        UPDATE member
-        SET mem_status = CASE
-                WHEN UPPER(TRIM(role)) = 'ADMIN' THEN '퇴사'
-                WHEN UPPER(TRIM(role)) = 'RESIDENT' THEN '전출'
-                ELSE '가입취소'
-            END,
-            delete_at = COALESCE(delete_at, CURRENT_TIMESTAMP)
+    @Delete("""
+        DELETE FROM vehicle_car
         WHERE member_no = #{memberNo}
         """)
-    void delete(int memberNo);
+    int deleteVehiclesByMemberNo(@Param("memberNo") int memberNo);
+
+    // 기존 delete는 유지하되 반환형을 int로 변경 가능
+    @Update("""
+        UPDATE member
+        SET login_id = CONCAT('unit_', mem_dong, '_', mem_ho),
+            login_pwd = 'EMPTY',
+            mem_name = '미등록',
+            mem_phone = '미등록',
+            role = 'RESIDENT',
+            mem_status = '전출',
+            delete_at = CURRENT_TIMESTAMP
+        WHERE member_no = #{memberNo}
+        """)
+    int delete(@Param("memberNo") int memberNo);
+
 
     // 입주민 마이페이지
     @Select("SELECT m.*, " +

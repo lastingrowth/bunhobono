@@ -30,14 +30,6 @@ public class MemberService {
     @Resource
     PasswordEncoder passwordEncoder;
 
-    public int restoreMembers(List<Long> memberNos) {
-        if (memberNos == null || memberNos.isEmpty()) {
-            throw new IllegalArgumentException("복원할 회원을 선택해 주세요.");
-        }
-        int restoredCount = mapper.restoreMembers(memberNos);
-        return restoredCount;
-    }
-
     public int permanentlyDeleteWithdrawnMembers(List<Long> memberNos) {
         if (memberNos == null || memberNos.isEmpty()) {
             throw new IllegalArgumentException("영구 삭제할 회원을 선택해 주세요.");
@@ -72,7 +64,8 @@ public class MemberService {
     }
 
     private void validateAvailableSignupUnit(int dong, int ho) {
-        if (dong < 101 || dong > 104 || ho / 100 < 1 || ho / 100 > 15
+        if (!Set.of(101, 102, 201, 202, 301, 302, 401, 402).contains(dong)
+                || ho / 100 < 1 || ho / 100 > 15
                 || ho % 100 < 1 || ho % 100 > 4) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 동·호수입니다.");
         }
@@ -129,25 +122,47 @@ public class MemberService {
         }
         return mapper.search(type, keyword, dong, ho);
     }
-
-    // 관리자 회원 수정: 새 비밀번호만 암호화하고 허용된 항목을 저장
+    @Transactional
     public void update(MemberDTO dto, String currentLoginId) {
-        MemberDTO savedMember = mapper.detail((int) dto.getMemberNo());
+        MemberDTO savedMember =
+                mapper.detail((int) dto.getMemberNo());
+
         if (savedMember == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다.");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "회원을 찾을 수 없습니다."
+            );
         }
+
         if (savedMember.getLoginId().equals(currentLoginId)
                 && "ADMIN".equalsIgnoreCase(savedMember.getRole())
                 && "퇴사".equals(dto.getMemStatus())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "로그인한 관리자는 본인 계정을 퇴사 처리할 수 없습니다.");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "로그인한 관리자는 본인 계정을 퇴사 처리할 수 없습니다."
+            );
         }
-        if (dto.getLoginPwd() == null || dto.getLoginPwd().isBlank()) {
-            // 비밀번호 입력이 없으면 기존 암호화 비밀번호를 그대로 유지한다.
+
+        // 입주민 전출이면 일반 수정 대신 차량 삭제·공실 처리
+        if ("RESIDENT".equalsIgnoreCase(savedMember.getRole())
+                && "전출".equals(dto.getMemStatus())) {
+
+            delete((int) dto.getMemberNo(), currentLoginId);
+            return;
+        }
+
+        // 그 외에는 일반 수정
+        if (dto.getLoginPwd() == null
+                || dto.getLoginPwd().isBlank()) {
             dto.setLoginPwd(savedMember.getLoginPwd());
-        } else if (!dto.getLoginPwd().equals(savedMember.getLoginPwd())) {
-            // 초기화 또는 직접 변경한 새 비밀번호만 BCrypt로 암호화한다.
-            dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
+
+        } else if (!dto.getLoginPwd()
+                .equals(savedMember.getLoginPwd())) {
+            dto.setLoginPwd(
+                    passwordEncoder.encode(dto.getLoginPwd())
+            );
         }
+
         mapper.update(dto);
     }
 
@@ -159,16 +174,39 @@ public class MemberService {
         mapper.approvePendingMembers(memberNos);
     }
 
-    // 관리자 회원 삭제는 탈퇴 상태와 탈퇴일만 기록하며, 영구 삭제는 3일 경과 후 별도로 처리한다.
+    // 전출 하고나면 차량을 삭제한다.
+    @Transactional
     public void delete(int memberNo, String currentLoginId) {
         MemberDTO savedMember = mapper.detail(memberNo);
+
         if (savedMember == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다.");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "회원을 찾을 수 없습니다."
+            );
         }
-        if (savedMember.getLoginId().equals(currentLoginId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "로그인한 관리자는 본인 계정을 탈퇴 처리할 수 없습니다.");
+
+        if (savedMember.getLoginId() != null
+                && savedMember.getLoginId().equals(currentLoginId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "로그인한 관리자는 본인 계정을 전출 처리할 수 없습니다."
+            );
         }
-        mapper.delete(memberNo);
+
+        // 차량 삭제
+        // 관련 카메라·입출차 FK는 DB에서 자동 NULL 처리
+        mapper.deleteVehiclesByMemberNo(memberNo);
+
+        // 회원을 전출·공실 상태로 변경
+        int updated = mapper.delete(memberNo);
+
+        if (updated == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "전출 처리할 회원이 없습니다."
+            );
+        }
     }
 
     // 입주민 마이페이지

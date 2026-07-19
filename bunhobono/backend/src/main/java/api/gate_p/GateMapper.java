@@ -9,6 +9,7 @@ import java.util.List;
 public interface GateMapper {
 
     //리스트 전체보기
+    // gate_status 추가
     @Select("SELECT ROW_NUMBER() OVER (ORDER BY g.gate_no) AS display_no, " +
             "       g.gate_no, g.parking_no, p.parking_name, " +
             "       g.gate_name, g.gate_type, g.gate_status " +
@@ -17,25 +18,10 @@ public interface GateMapper {
             "ORDER BY g.gate_no")
     List<GateDTO> list(GateDTO dto);
 
-    @Select("SELECT g.gate_no, g.gate_name, g.gate_type, g.gate_status " +
-            "FROM camera c " +
-            "JOIN gate g " +
-            "  ON c.gate_no = g.gate_no " +
-            "WHERE c.camera_no = #{cameraNo} ")
-    GateDTO findByCameraNo(int cameraNo);
-
-    @Update("UPDATE gate SET gate_status = #{gateStatus} " +
-            "WHERE gate_no = #{gateNo} ")
-    int updateStatus(GateDTO dto);
-
-    @Update("UPDATE gate SET gate_status = 1 " +
-            "WHERE gate_no = #{gateNo} " +
-            "AND gate_status = 0")
-    int open(GateDTO dto);
-
     //생성
-    @Insert("INSERT INTO gate (parking_no, gate_name, gate_type) " +
-            "VALUES (#{parkingNo}, #{gateName}, #{gateType})")
+    // gate_status 추가
+    @Insert("INSERT INTO gate (parking_no, gate_name, gate_type, gate_status) " +
+            "VALUES (#{parkingNo}, #{gateName}, #{gateType}, 0)")
 //    @Options(useGeneratedKeys = true, keyProperty = "gateNo")  //시리얼자동증가값 필요하면 쓸것
     int insert(GateDTO dto);
 
@@ -61,4 +47,18 @@ public interface GateMapper {
             "    gate_type = #{gateType} " +
             "WHERE gate_no = #{gateNo}")
     int update(GateDTO dto);
+
+    // 게이트 상태 변경
+    @Update("UPDATE gate " +
+            " SET gate_status = #{gateStatus} " +
+            " WHERE gate_no = #{gateNo} ")
+    int updateStatus(GateDTO dto);
+
+    // 카메라 번호로 연결된 게이트 조회
+    // OCR 데이터가 어느 게이트에서 들어온 것인지 확인할 때 사용
+    @Select("SELECT g.gate_no, g.parking_no, g.gate_name, g.gate_type, g.gate_status " +
+            " FROM camera c " +
+            " JOIN gate g ON c.gate_no = g.gate_no " +
+            " WHERE c.camera_no = #{cameraNo}")
+    GateDTO findByCameraNo(int cameraNo);
 }

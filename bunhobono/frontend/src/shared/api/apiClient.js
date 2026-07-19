@@ -128,6 +128,7 @@ api.interceptors.response.use(
 
             if (status === 401) {
                 console.error("🚨 인증 실패 (로그인 필요)");
+
             }
 
             if (status === 403) {

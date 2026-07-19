@@ -58,10 +58,10 @@
 
         <tbody>
           <tr
-            v-for="item in trashStore.trashList"
+            v-for="(item, index) in paginatedItems"
             :key="item.trashNo"
           >
-            <td>{{ item.trashNo }}</td>
+            <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
 
             <td>
               {{ getDataTypeText(item.dataType) }}
@@ -87,19 +87,24 @@
             </td>
           </tr>
 
-          <tr v-if="trashStore.trashList.length === 0">
+          <tr v-if="trashList.length === 0">
             <td colspan="6" class="empty-message">
               지난기록에 데이터가 없습니다.
             </td>
           </tr>
         </tbody>
       </table>
+      <Pagination 
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :page-numbers="pageNumbers"
+        @change-page="setPage" />
     </div>
   </main>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
 import { useTrashStore } from "./trashStore";
@@ -109,9 +114,25 @@ import {
   getDeleteTypeText,
   formatDate,
 } from "./trashFormat";
+import Pagination from "@/shared/pagination/Pagination.vue";
+import { usePagination } from "@/shared/pagination/usePagination";
 
 const router = useRouter();
 const trashStore = useTrashStore();
+
+const pageSize = 10;
+
+const trashList = computed(() => {
+  return trashStore.trashList;
+})
+
+const {
+  currentPage,
+  totalPages,
+  pageNumbers,
+  paginatedItems,
+  setPage
+} = usePagination(trashList, pageSize);
 
 const getTrashCarNo = (item) => {
   if (item.carNo) {

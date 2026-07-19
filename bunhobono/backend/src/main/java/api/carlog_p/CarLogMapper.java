@@ -76,6 +76,12 @@ public interface CarLogMapper {
     """)
     List<CarLogDTO> list(CarLogDTO dto);
 
+    @Select("SELECT g.gate_no, g.gate_type " +
+            "FROM camera c " +
+            "JOIN gate g ON c.gate_no = g.gate_no " +
+            "WHERE c.camera_no = #{cameraNo}")
+    CarLogDTO findGateByCameraNo(int cameraNo);
+
     @Select("""
         <script>
         SELECT EXISTS (

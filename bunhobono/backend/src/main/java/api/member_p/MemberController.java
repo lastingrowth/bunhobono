@@ -49,11 +49,6 @@ public class MemberController {
         return service.list();
     }
 
-    // 탈퇴 회원을 거주 상태의 승인 회원으로 복원한다.
-    @PutMapping("/members/restore")
-    public int restoreMembers(@RequestBody List<Long> memberNos) {
-        return service.restoreMembers(memberNos);
-    }
 
     // 탈퇴 처리된 선택 회원을 영구 삭제한다.
     @DeleteMapping("/members/withdrawn")

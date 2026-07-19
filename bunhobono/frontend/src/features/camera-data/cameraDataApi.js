@@ -41,7 +41,8 @@ export const deleteCameraData = (cameraDataNo) => {
   return api.delete(`/camera-data/${cameraDataNo}/delete`);
 };
 
-// 관리자 수동 입차 승인
-export const openGateForCameraData = (cameraDataNo) => {
-  return api.post(`/camera-data/${cameraDataNo}/open-gate`);
-};
+// 관리자 수동 게이트 열기
+// 자동 통과되지 않은 OCR 데이터를 관리자가 확인한 뒤 게이트를 열 때 사용
+export const openGateByCameraData = (cameraDataNo) => {
+  return api.post(`/camera-data/${cameraDataNo}/open-gate`)
+}

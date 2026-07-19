@@ -18,6 +18,7 @@
 
     </div>
 
+<<<<<<< HEAD
     <dialog ref="gateDialog" class="gate-open-dialog">
       <div class="gate-dialog-header">
         <div>
@@ -70,6 +71,8 @@
       </div>
     </dialog>
 
+=======
+>>>>>>> main
     <!-- 데이터 조회 상태 -->
     <p v-if="loading" class="dashboard-message">
       현황을 불러오는 중입니다.
@@ -122,12 +125,13 @@
         </div>
       </button>
 
-      <!-- 주차장별 현황 -->
+      <!-- 실시간 카메라 영상 -->
       <article class="dashboard-card parking-overview-card">
         <div class="card-heading">
-          <span>주차장 현황</span>
+          <span>실시간 카메라 영상</span>
         </div>
 
+<<<<<<< HEAD
         <div v-if="parkingStatusWithOcr.length > 0" class="parking-overview-content">
           <!-- A/B/C/D 주차장 사용률 -->
           <div class="parking-status-strip">
@@ -168,23 +172,74 @@
               <div class="parking-ocr-frame">
                 <img v-if="parking.ocr.imageUrl" :src="parking.ocr.imageUrl"
                   :alt="`${parking.parkingName} ${parking.ocr.carNoText} 차량 사진`">
+=======
+        <div class="parking-overview-content">
+          <!-- 
+            주차장 선택 버튼
+            gateStore.list 안에 들어있는 parkingName 값과 같은 이름을 사용
+            ex) A 주차장, B 주차장, C 주차장, D 주차장
+          -->
+          <div class="parking-camera-tabs">
+            <button
+              v-for="parking in cameraParkingTabs"
+              :key="parking.name"
+              type="button"
+              :class="{ active : selectedParkingName === parking.name }"
+              @click="selectedParkingName = parking.name">
+              {{ parking.label }}
+            </button>
+          </div>
 
-                <span v-else>사진 없음</span>
+          <!-- 
+            선택한 주차장의 입차/출차 영상 영역
+            실제 영상이 준비되면 camera-video-placeholder 안쪽에
+            video, img, iframe 등을 넣으면 된다
+          -->
+          <div class="dashboard-camera-grid">
+            <section
+              v-for="panel in cameraPanels"
+              :key="panel.type" 
+              class="dashboard-camera-panel">
+              
+              <div class="camera-video-placeholder">
+                <span class="camera-video-label">
+                  {{ panel.cameraLabel }}
+                </span>
+                <strong>{{ panel.title }}</strong>
+              
+                <p v-if="panel.gate">
+                  {{ panel.gate.gateName }}
+                  상태:
+                  {{ panel.gate.gateStatus === 1 ? '열림' : '닫힘' }}
+                </p>
+                <p v-else>연결된 게이트 없음</p>
+>>>>>>> main
+
+                <!-- 
+                  해당 주차장의 IN/OUT 게이트가 있으면 게이트 열기 가능
+                  gate 정보가 없으면 버튼을 비활성화
+                -->
+                <button
+                  type="button"
+                  class="camera-gate-button"
+                  :disabled="!panel.gate"
+                  @click="openManualGate(panel.gate)">
+                  게이트 열기
+                </button>
               </div>
 
-              <span class="parking-ocr-zone">{{ parking.parkingName }}</span>
-              <strong>{{ parking.ocr.carNoText }}</strong>
-              <span class="parking-ocr-movement">
-                {{ parking.ocr.movementText }}
-              </span>
-              <span class="parking-ocr-rate">인식률 {{ parking.ocr.confidenceText }}</span>
-            </button>
+            </section>
           </div>
         </div>
 
+<<<<<<< HEAD
         <p v-else class="parking-empty">
           등록된 주차장이 없습니다.
         </p>
+=======
+      
+
+>>>>>>> main
       </article>
       <div class="cctv-stream-row">
         <article
@@ -353,8 +408,8 @@
 </template>
 
 <script setup>
+import { useGateStore } from '@/features/gates/gateStore'
 import { useAdminDashboardStore } from '@/stores/adminDashboard'
-import { openGateForCameraData } from '@/features/camera-data/cameraDataApi'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -362,6 +417,7 @@ import '@/assets/css/cctv.css'
 
 const router = useRouter()
 const dashboardStore = useAdminDashboardStore()
+const gateStore = useGateStore();
 
 // store의 상태와 계산 결과를 반응성을 유지한 상태로 사용
 const {
@@ -370,8 +426,6 @@ const {
   unresolvedNoticeCount,
   waitingVehicleCount,
   todayVisitVehicleCount,
-  parkingStatusWithOcr,
-  manualApprovalVehicles,
   weeklyEntryStats,
   currentCarlogPage,
   carlogTotalPages,
@@ -379,6 +433,7 @@ const {
   paginatedCarlogs
 } = storeToRefs(dashboardStore)
 
+<<<<<<< HEAD
 const gateDialog = ref(null)
 const openingCameraDataNo = ref(null)
 const selectedGateParkingNo = ref(null)
@@ -418,6 +473,8 @@ const getCctvStreamUrl = (cameraNo) => {
   return `${streamHost}/cctv/${cameraNo}/stream`
 }
 
+=======
+>>>>>>> main
 let ocrRefreshTimer = null
 let ocrRefreshing = false
 
@@ -426,6 +483,7 @@ const loadDashboard = async () => {
   await dashboardStore.loadDashboard()
 }
 
+<<<<<<< HEAD
 const dialogApprovalVehicles = computed(() => {
   if (selectedGateParkingNo.value === null) {
     return manualApprovalVehicles.value
@@ -555,6 +613,8 @@ const resumeCctv = (cameraNo) => {
   return changeCctvState(cameraNo, 'resume')
 }
 
+=======
+>>>>>>> main
 // 관리자 대시보드에서 점검 화면을 테스트하기 위한 임시 트리거
 // 백엔드 점검 API가 연결되면 window.startMaintenance() 대신 API 호출로 변경한다.
 const startMaintenanceMode = () => {
@@ -568,16 +628,68 @@ const setCarlogPage = (page) => {
   dashboardStore.setCarlogPage(page)
 }
 
-// OCR 사진 카드를 누르면 해당 주차장의 카메라 데이터 목록으로 이동
-const goCameraDataList = (parkingNo) => {
-  router.push({
-    name: 'CameraDataList',
-    query: {
-      parkingNo
-    }
+// 버튼은 A/B/C/D 만 보여주고
+// 실제 게이트 연결은 백엔드에서 넘어오는 pakingName 값으로 찾는다
+const cameraParkingTabs = [
+  {
+    label : 'A',
+    name : 'A 주차장'
+  },
+  {
+    label : 'B',
+    name : 'B 주차장'
+  },
+  {
+    label : 'C',
+    name : 'C 주차장'
+  },
+  {
+    label : 'D',
+    name : 'D 주차장'
+  }
+]
+
+// 처음 대시보드에 들어왔을 때 기본으로 보여줄 주차장
+const selectedParkingName = ref('A 주차장')
+
+// 선택한 주차장 이름과 게이트 타입으로 게이트를 찾는다
+// gateType이 IN 이면 입차 게이트, OUT 이면 출차 게이트를 찾는다
+const findGateByParking = (gateType) => {
+  return gateStore.list.find((gate) => {
+    return gate.parkingName === selectedParkingName.value
+      && String(gate.gateType).toUpperCase() === gateType
   })
 }
 
+// 현재 선택한 주차장에 맞춰 입차/출차 영상 영역을 만든다
+// 실제 영상은 아직 없으므로 지금은 영상 자리와 게이트 버튼만 준비한다
+const cameraPanels = computed(() => {
+  return [
+    {
+      type : 'IN',
+      cameraLabel : '입차 영상 연결 예정',
+      title : `${selectedParkingName.value} 입차 게이트`,
+      gate : findGateByParking('IN')
+    },
+    {
+      type : 'OUT',
+      cameraLabel : '출차 영상 연결 예정',
+      title : `${selectedParkingName.value} 출차 게이트`,
+      gate : findGateByParking('OUT')
+    },
+  ]
+})
+
+// 관리자가 직접 게이트를 여는 함수
+const openManualGate = async (gate) => {
+  if (!gate) {
+    alert('연결된 게이트가 없습니다')
+    return
+  }
+
+  await gateStore.open(gate.gateNo)
+  alert(`${gate.parkingName} ${gate.gateName} 게이트를 열었습니다`)
+}
 
 // OCR 업로드 후 대시보드가 자동으로 바뀌도록 주기적으로 최신 데이터 조회
 const refreshDashboardImages = async () => {
@@ -601,6 +713,9 @@ const refreshDashboardImages = async () => {
 // 처음 진입했을 때 전체 대시보드를 조회하고 3초마다 OCR 자동 갱신 시작
 onMounted(async () => {
   await loadDashboard()
+
+  // 게이트 목록  조회
+  await gateStore.loadList()
 
   ocrRefreshTimer = window.setInterval(() => {
     refreshDashboardImages()

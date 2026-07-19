@@ -36,13 +36,13 @@ public class JwtUtil {
 
 
     public String getRole(String token) {
-        JwtParser parser = Jwts.parser()              // JWT 파서 준비
-                .verifyWith(key)                      // 서명 검증용 비밀키 등록
-                .build();                             // 파서 생성
+        JwtParser parser = Jwts.parser()
+                .verifyWith(key)
+                .build();
 
-        return parser.parseSignedClaims(token)        // 토큰 해석 및 검증
-                .getPayload()                         // Payload 추출
-                .get("role", String.class);           // role claim만 꺼내기
+        return parser.parseSignedClaims(token)
+                .getPayload()
+                .get("role", String.class);
     }
 
     public String getMemStatus(String token) {
@@ -60,6 +60,5 @@ public class JwtUtil {
                 .getPayload()
                 .getSubject();
     }
-
 
 }
