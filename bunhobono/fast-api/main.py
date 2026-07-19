@@ -3,10 +3,11 @@ import os
 from pathlib import Path
 import shutil
 
-from fastapi import FastAPI, UploadFile, File, Form
 import httpx
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
-from yolo_detect import PlateDetector
 from plate_ocr import PlateOCR
 from plate_preprocess_standard_v2 import make_candidates
 from ocr_selector import select_best_ocr
@@ -16,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 SPRING_URL = os.getenv(
     "SPRING_URL",
-    "http://localhost:80/api/camera-data/ocr"
+    "http://localhost:80/api/camera-data/ocr",
 )
 
 PREPROCESS_DIR = BASE_DIR / "runtime" / "preprocess"
@@ -25,25 +26,52 @@ PREPROCESS_DIR.mkdir(parents=True, exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    timeout = httpx.Timeout(10.0, connect=3.0)
-
     app.state.spring_client = httpx.AsyncClient(
-        timeout=timeout
+        timeout=httpx.Timeout(10.0, connect=3.0)
     )
-
     app.state.plate_detector = PlateDetector()
-
-    # 제출/테스트는 CPU 기준
     app.state.plate_ocr = PlateOCR(device="cpu")
+
+    model_lock = threading.Lock()
+    workers = {}
+    threads = []
+
+    for stream in TEST_STREAMS:
+        worker = TestStreamWorker(
+            stream=stream,
+            detector=app.state.plate_detector,
+            ocr_reader=app.state.plate_ocr,
+            model_lock=model_lock,
+        )
+
+        for camera in stream["cameras"]:
+            workers[camera["cameraNo"]] = worker
+
+        thread = threading.Thread(target=worker.run, daemon=True)
+        thread.start()
+        threads.append(thread)
+
+    app.state.stream_workers = workers
+    app.state.stream_threads = threads
+    print("스트리밍 카메라 시작:", list(workers.keys()))
 
     yield
 
+    for worker in set(workers.values()):
+        worker.stop()
+    for thread in threads:
+        thread.join(timeout=3)
     await app.state.spring_client.aclose()
 
 
-app = FastAPI(
-    title="Parking API test",
-    lifespan=lifespan
+app = FastAPI(title="Parking API", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -78,42 +106,73 @@ def run_ocr_pipeline(crop_path: str):
 @app.get("/")
 def home():
     return {
-        "msg": "Fast Api",
-        "spring_url": SPRING_URL
+        "msg": "Fast API",
+        "spring_url": SPRING_URL,
+        "cameras": list(app.state.stream_workers.keys()),
     }
 
 
-@app.post("/detect-test")
-async def detect_test(
-    file: UploadFile = File(...)
-):
-    # 차량 이미지 업로드
-    img = await file.read()
+def generate_mjpeg(worker):
+    while worker.running:
+        jpeg = worker.get_jpeg_frame()
+        if jpeg is None:
+            time.sleep(0.05)
+            continue
 
-    # YOLO 번호판 검출 + crop 저장
-    detector = app.state.plate_detector
+        yield (
+            b"--frame\r\n"
+            b"Content-Type: image/jpeg\r\n\r\n"
+            + jpeg
+            + b"\r\n"
+        )
+        time.sleep(0.03)
 
-    result = detector.detect_and_crop(
-        image_bytes=img,
-        filename=file.filename
+
+def get_worker(camera_no):
+    worker = app.state.stream_workers.get(camera_no)
+    if worker is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"카메라 {camera_no}번을 찾을 수 없습니다.",
+        )
+    return worker
+
+
+@app.get("/cctv/{camera_no}/stream")
+def cctv_stream(camera_no: int):
+    return StreamingResponse(
+        generate_mjpeg(get_worker(camera_no)),
+        media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
-    return result
+
+@app.post("/cctv/{camera_no}/pause")
+def pause_stream(camera_no: int):
+    get_worker(camera_no).pause()
+    return {"success": True, "cameraNo": camera_no, "paused": True}
+
+
+@app.post("/cctv/{camera_no}/resume")
+def resume_stream(camera_no: int):
+    get_worker(camera_no).resume()
+    return {"success": True, "cameraNo": camera_no, "paused": False}
+
+
+@app.post("/detect-test")
+async def detect_test(file: UploadFile = File(...)):
+    image = await file.read()
+    return app.state.plate_detector.detect_and_crop(
+        image_bytes=image,
+        filename=file.filename,
+    )
 
 
 @app.post("/ocr-test")
-async def ocr_test(
-    file: UploadFile = File(...)
-):
-    # 1. 차량 이미지 업로드
-    img = await file.read()
-
-    # 2. YOLO 번호판 검출 + crop 저장
-    detector = app.state.plate_detector
-
-    detect_result = detector.detect_and_crop(
-        image_bytes=img,
-        filename=file.filename
+async def ocr_test(file: UploadFile = File(...)):
+    image = await file.read()
+    detect_result = app.state.plate_detector.detect_and_crop(
+        image_bytes=image,
+        filename=file.filename,
     )
 
     if not detect_result["success"]:
@@ -121,7 +180,7 @@ async def ocr_test(
             "success": False,
             "message": "번호판 검출 실패",
             "detect": detect_result,
-            "ocr": None
+            "ocr": None,
         }
 
     # 3. crop 전처리 후보 생성 + OCR + 최종 선택
@@ -147,17 +206,12 @@ async def ocr_test(
 @app.post("/ocr")
 async def ocr(
     file: UploadFile = File(...),
-    cameraNo: int = Form(...)
+    cameraNo: int = Form(...),
 ):
-    # 1. 차량 이미지 업로드
-    img = await file.read()
-
-    # 2. YOLO 번호판 검출 + crop 저장
-    detector = app.state.plate_detector
-
-    detect_result = detector.detect_and_crop(
-        image_bytes=img,
-        filename=file.filename
+    image = await file.read()
+    detect_result = app.state.plate_detector.detect_and_crop(
+        image_bytes=image,
+        filename=file.filename,
     )
 
     if not detect_result["success"]:
@@ -165,13 +219,14 @@ async def ocr(
             "success": False,
             "message": "번호판 검출 실패",
             "cameraNo": cameraNo,
-            "detect": detect_result
+            "detect": detect_result,
         }
 
     # 3. crop 전처리 후보 생성 + OCR + 최종 선택
     pipeline_result = run_ocr_pipeline(
         detect_result["crop_path"]
     )
+    car_no = ocr_result["text"]
 
     ocr_result = pipeline_result["result"]
     carNo = ocr_result["text"]
@@ -198,22 +253,32 @@ async def ocr(
 
     response = await client.post(
         SPRING_URL,
-        data=data,
-        files=files
+        data={
+            "cameraNo": str(cameraNo),
+            "carNo": car_no,
+            "confidenceScore": str(ocr_result["score"] * 100),
+        },
+        files={
+            "file": (
+                file.filename,
+                image,
+                file.content_type or "application/octet-stream",
+            )
+        },
     )
 
     return {
         "success": True,
         "msg": "YOLO + 전처리 OCR 처리 후 Spring OCR 전송 완료",
         "cameraNo": cameraNo,
-        "carNo": carNo,
+        "carNo": car_no,
         "ocr_score": ocr_result["score"],
         "selected_mode": ocr_result.get("mode"),
         "selector_score": ocr_result.get("selector_score"),
         "detect": detect_result,
         "ocr": ocr_result,
         "spring_status": response.status_code,
-        "spring_result": response.text
+        "spring_result": response.text,
     }
 
 

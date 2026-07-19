@@ -1,0 +1,365 @@
+from pathlib import Path
+import os
+import shutil
+import threading
+import time
+
+import cv2
+import httpx
+
+from yolo_detect import PlateDetector
+from plate_ocr import PlateOCR
+
+
+BASE_DIR = Path(__file__).resolve().parent
+VIDEO_DIR = BASE_DIR / "runtime" / "videos"
+FRAME_DIR = BASE_DIR / "runtime" / "test_stream_frames"
+CROP_DIR = BASE_DIR / "runtime" / "test_stream_crops"
+
+FRAME_DIR.mkdir(parents=True, exist_ok=True)
+CROP_DIR.mkdir(parents=True, exist_ok=True)
+
+SPRING_URL = os.getenv(
+    "SPRING_URL",
+    "http://localhost:80/api/camera-data/ocr",
+)
+
+# 영상과 실제 카메라 번호 연결
+TEST_STREAMS = [
+    {
+        "videoName": "cctv1",
+        "source": str(VIDEO_DIR / "cctv1.mp4"),
+        "cameras": [{"cameraNo": 1, "name": "A-IN"}],
+    },
+    {
+        "videoName": "cctv2",
+        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "cameras": [{"cameraNo": 3, "name": "B-IN"}],
+    },
+    {
+        "videoName": "cctv3",
+        "source": str(VIDEO_DIR / "cctv3.mp4"),
+        "cameras": [{"cameraNo": 5, "name": "A-IN"}],
+    },
+    {
+        "videoName": "cctv4",
+        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "cameras": [{"cameraNo": 7, "name": "B-IN"}],
+    },
+    {
+        "videoName": "cctv5",
+        "source": str(VIDEO_DIR / "cctv1.mp4"),
+        "cameras": [{"cameraNo": 2, "name": "A-OUT"}],
+    },
+    {
+        "videoName": "cctv6",
+        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "cameras": [{"cameraNo": 4, "name": "B-OUT"}],
+    },
+    {
+        "videoName": "cctv7",
+        "source": str(VIDEO_DIR / "cctv3.mp4"),
+        "cameras": [{"cameraNo": 6, "name": "A-OUT"}],
+    },
+    {
+        "videoName": "cctv8",
+        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "cameras": [{"cameraNo": 8, "name": "B-OUT"}],
+    },
+]
+
+FRAME_STEP = 90
+CROP_COUNT = 2
+MIN_OCR_SCORE = 0.5
+SEND_COOLDOWN_SECONDS = 10
+OCR_DEVICE = "cpu"
+
+
+class TestStreamWorker:
+    def __init__(self, stream, detector, ocr_reader, model_lock):
+        self.video_name = stream["videoName"]
+        self.source = stream["source"]
+        self.cameras = stream["cameras"]
+
+        self.detector = detector
+        self.ocr_reader = ocr_reader
+        self.model_lock = model_lock
+
+        self.camera_index = 0
+        self.camera_no = self.cameras[0]["cameraNo"]
+        self.camera_name = self.cameras[0]["name"]
+
+        self.running = True
+        self.pause_event = threading.Event()
+
+        self.pause_event.set()
+
+        self.latest_frame = None
+        self.latest_frame_lock = threading.Lock()
+
+        self.candidates = []
+        self.last_send_time = {}
+
+    def pause(self):
+        self.pause_event.set()
+        print(f"[{self.camera_name}] 영상 일시정지")
+
+    def resume(self):
+        self.pause_event.clear()
+        print(f"[{self.camera_name}] 영상 재생")
+
+    def stop(self):
+        self.running = False
+        self.pause_event.clear()
+
+    def update_latest_frame(self, frame):
+        with self.latest_frame_lock:
+            self.latest_frame = frame.copy()
+
+    def get_jpeg_frame(self):
+        with self.latest_frame_lock:
+            if self.latest_frame is None:
+                return None
+            frame = self.latest_frame.copy()
+
+        success, buffer = cv2.imencode(
+            ".jpg",
+            frame,
+            [cv2.IMWRITE_JPEG_QUALITY, 80],
+        )
+        return buffer.tobytes() if success else None
+
+    def run(self):
+        while self.running:
+            camera = self.cameras[self.camera_index]
+            self.camera_no = camera["cameraNo"]
+            self.camera_name = camera["name"]
+
+            print(
+                f"[{self.camera_name}] 영상 시작: {self.source}"
+            )
+            self.run_video_once()
+
+            if not self.running:
+                break
+
+            self.camera_index = (
+                self.camera_index + 1
+            ) % len(self.cameras)
+
+    def run_video_once(self):
+        cap = cv2.VideoCapture(self.source)
+
+        if not cap.isOpened():
+            print(f"[{self.camera_name}] 영상 열기 실패")
+            time.sleep(3)
+            return
+
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        frame_delay = 1 / fps if fps > 0 else 1 / 30
+
+        print(
+            f"[{self.camera_name}] fps={fps}, "
+            f"totalFrame={total_frames}"
+        )
+
+        frame_no = 0
+        self.candidates = []
+
+        try:
+            while self.running:
+                if self.pause_event.is_set():
+                    time.sleep(0.05)
+                    continue
+
+                started_at = time.perf_counter()
+                success, frame = cap.read()
+
+                if not success:
+                    print(f"[{self.camera_name}] 영상 종료 후 반복")
+                    break
+
+                frame_no += 1
+                self.update_latest_frame(frame)
+
+                if frame_no % FRAME_STEP == 0:
+                    self.process_frame(frame, frame_no)
+
+                elapsed = time.perf_counter() - started_at
+                remaining = frame_delay - elapsed
+                if remaining > 0:
+                    time.sleep(remaining)
+        finally:
+            cap.release()
+
+    def process_frame(self, frame, frame_no):
+        filename = f"{self.camera_name}_{frame_no}.jpg"
+
+        with self.model_lock:
+            detect_result = self.detector.detect_and_crop_frame(
+                frame=frame,
+                filename=filename,
+            )
+
+        if not detect_result.get("success"):
+            if frame_no % 300 == 0:
+                print(
+                    f"[{self.camera_name}] 번호판 탐지 실패 "
+                    f"frame={frame_no}"
+                )
+            return
+
+        crop_path = Path(detect_result["crop_path"])
+
+        with self.model_lock:
+            ocr_result = self.ocr_reader.read(crop_path)
+
+        car_no = ocr_result.get("text", "")
+        score = float(ocr_result.get("score", 0))
+
+        print(
+            f"[{self.camera_name}] 후보 frame={frame_no}, "
+            f"carNo={car_no}, ocr={score * 100:.1f}%"
+        )
+
+        if not car_no:
+            return
+
+        self.candidates.append(
+            {
+                "frameNo": frame_no,
+                "frame": frame.copy(),
+                "carNo": car_no,
+                "score": score,
+                "cropPath": crop_path,
+            }
+        )
+
+        if len(self.candidates) >= CROP_COUNT:
+            self.finish_candidates()
+
+    def finish_candidates(self):
+        best = max(self.candidates, key=lambda item: item["score"])
+        self.candidates = []
+
+        car_no = best["carNo"]
+        score = best["score"]
+
+        print(
+            f"[{self.camera_name}] 최종 선택 "
+            f"carNo={car_no}, score={score * 100:.1f}%"
+        )
+
+        if score < MIN_OCR_SCORE:
+            print(f"[{self.camera_name}] OCR 신뢰도가 낮아 전송하지 않음")
+            return
+
+        if self.is_cooldown(car_no):
+            print(f"[{self.camera_name}] 중복 전송 방지: {car_no}")
+            return
+
+        original_path = self.save_original_frame(
+            best["frame"], car_no, best["frameNo"]
+        )
+        self.save_best_crop(
+            best["cropPath"], car_no, best["frameNo"]
+        )
+
+        if self.send_to_spring(car_no, score, original_path):
+            self.last_send_time[self.cooldown_key(car_no)] = time.time()
+
+    def cooldown_key(self, car_no):
+        return f"{self.camera_no}_{car_no}"
+
+    def is_cooldown(self, car_no):
+        last_time = self.last_send_time.get(self.cooldown_key(car_no))
+        return last_time is not None and (
+            time.time() - last_time < SEND_COOLDOWN_SECONDS
+        )
+
+    def save_original_frame(self, frame, car_no, frame_no):
+        path = FRAME_DIR / (
+            f"camera{self.camera_no}_{self.camera_name}_"
+            f"{car_no}_frame{frame_no}_{int(time.time())}.jpg"
+        )
+        success, encoded = cv2.imencode(".jpg", frame)
+        if not success:
+            raise ValueError("원본 프레임 저장 실패")
+        encoded.tofile(str(path))
+        return path
+
+    def save_best_crop(self, crop_path, car_no, frame_no):
+        destination = CROP_DIR / (
+            f"camera{self.camera_no}_{self.camera_name}_"
+            f"{car_no}_frame{frame_no}_best_crop.jpg"
+        )
+        shutil.copyfile(crop_path, destination)
+        return destination
+
+    def send_to_spring(self, car_no, score, original_path):
+        data = {
+            "cameraNo": str(self.camera_no),
+            "carNo": car_no,
+            "confidenceScore": str(score * 100),
+        }
+
+        try:
+            with open(original_path, "rb") as image_file:
+                response = httpx.post(
+                    SPRING_URL,
+                    data=data,
+                    files={
+                        "file": (
+                            original_path.name,
+                            image_file,
+                            "image/jpeg",
+                        )
+                    },
+                    timeout=10.0,
+                )
+
+            print(
+                f"[{self.camera_name}] Spring 전송 "
+                f"status={response.status_code}, body={response.text}"
+            )
+            return response.is_success
+        except Exception as error:
+            print(f"[{self.camera_name}] Spring 전송 실패: {error}")
+            return False
+
+
+def main():
+    detector = PlateDetector()
+    ocr_reader = PlateOCR(device=OCR_DEVICE)
+    model_lock = threading.Lock()
+
+    workers = {}
+    threads = []
+
+    for stream in TEST_STREAMS:
+        worker = TestStreamWorker(
+            stream, detector, ocr_reader, model_lock
+        )
+
+        for camera in stream["cameras"]:
+            workers[camera["cameraNo"]] = worker
+
+        thread = threading.Thread(target=worker.run, daemon=True)
+        thread.start()
+        threads.append(thread)
+
+    print("등록된 카메라:", list(workers.keys()))
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        for worker in set(workers.values()):
+            worker.stop()
+        for thread in threads:
+            thread.join(timeout=3)
+
+
+if __name__ == "__main__":
+    main()
