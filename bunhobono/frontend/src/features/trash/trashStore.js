@@ -3,6 +3,7 @@ import { ref } from "vue";
 import {
     getTrashDetail,
     getTrashList,
+    restoreTrash,
     searchTrashByCarNo,
 } from "./trashApi";
 
@@ -58,6 +59,22 @@ export const useTrashStore = defineStore("trash", () => {
         await loadTrashList();
     };
 
+    const restoreTrashItem = async (trashNo) => {
+        const response = await restoreTrash(trashNo);
+
+        if (response.data?.success) {
+            trashList.value = trashList.value.filter(
+                (item) => item.trashNo !== trashNo
+            );
+
+            if (trashDetail.value?.trashNo === trashNo) {
+                trashDetail.value = null;
+            }
+        }
+
+        return response.data;
+    };
+
     
 
     return {
@@ -71,5 +88,6 @@ export const useTrashStore = defineStore("trash", () => {
         changeDataType,
         searchByCarNo,
         resetTrashList,
+        restoreTrashItem,
     };
 });

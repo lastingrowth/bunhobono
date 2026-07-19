@@ -57,13 +57,28 @@
 
         <pre>{{ formatJson(trashStore.trashDetail.dataJson) }}</pre>
       </details>
+
+      <div class="detail-actions">
+        <button type="button" @click="goList">
+          목록으로
+        </button>
+
+        <button
+          type="button"
+          class="restore-button"
+          :disabled="restoring"
+          @click="handleRestore"
+        >
+          {{ restoring ? "복원 중..." : "이 기록 복원" }}
+        </button>
+      </div>
     </template>
     </section>
   </main>
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useTrashStore } from "./trashStore";
@@ -83,6 +98,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const trashStore = useTrashStore();
+const restoring = ref(false);
 
 const originalData = computed(() => {
   return parseDataJson(
@@ -292,6 +308,35 @@ const goList = () => {
   router.push("/admin/trash");
 };
 
+const handleRestore = async () => {
+  const trashNo = Number(route.params.trashNo);
+
+  if (!window.confirm("이 기록을 복원하시겠습니까?")) {
+    return;
+  }
+
+  restoring.value = true;
+
+  try {
+    const result = await trashStore.restoreTrashItem(trashNo);
+
+    if (!result?.success) {
+      throw new Error("복원 응답을 확인할 수 없습니다.");
+    }
+
+    window.alert("기록이 복원되었습니다.");
+    router.push("/admin/trash");
+  } catch (error) {
+    window.alert(
+      error.response?.data?.message
+      ?? error.message
+      ?? "기록 복원에 실패했습니다."
+    );
+  } finally {
+    restoring.value = false;
+  }
+};
+
 onMounted(async () => {
   await trashStore.loadTrashDetail(
     route.params.trashNo
@@ -350,5 +395,22 @@ onMounted(async () => {
 .loading {
   padding: 40px 24px;
   text-align: center;
+}
+
+.detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 24px 24px;
+}
+
+.restore-button {
+  background: #2563eb;
+  color: #fff;
+}
+
+.restore-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 </style>

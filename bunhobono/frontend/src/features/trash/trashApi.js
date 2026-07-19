@@ -21,3 +21,8 @@ export const searchTrashByCarNo = (carNo) => {
 export const getTrashDetail = (trashNo) => {
     return api.get(`/trash/${trashNo}`);
 };
+
+// 휴지통 기록 한 건 복원
+export const restoreTrash = (trashNo) => {
+    return api.post(`/trash/${trashNo}/restore`);
+};

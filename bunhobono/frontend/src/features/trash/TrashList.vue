@@ -78,12 +78,23 @@
             </td>
 
             <td>
-              <button
-                type="button"
-                @click="goDetail(item.trashNo)"
-              >
-                상세보기
-              </button>
+              <div class="trash-actions">
+                <button
+                  type="button"
+                  @click="goDetail(item.trashNo)"
+                >
+                  상세보기
+                </button>
+
+                <button
+                  type="button"
+                  class="restore-button"
+                  :disabled="restoringTrashNo === item.trashNo"
+                  @click="handleRestore(item)"
+                >
+                  {{ restoringTrashNo === item.trashNo ? "복원 중..." : "복원" }}
+                </button>
+              </div>
             </td>
           </tr>
 
@@ -104,7 +115,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { useTrashStore } from "./trashStore";
@@ -119,6 +130,7 @@ import { usePagination } from "@/shared/pagination/usePagination";
 
 const router = useRouter();
 const trashStore = useTrashStore();
+const restoringTrashNo = ref(null);
 
 const pageSize = 10;
 
@@ -162,7 +174,51 @@ const goDetail = (trashNo) => {
   router.push(`/admin/trash/${trashNo}`);
 };
 
+const handleRestore = async (item) => {
+  if (!window.confirm("이 기록을 복원하시겠습니까?")) {
+    return;
+  }
+
+  restoringTrashNo.value = item.trashNo;
+
+  try {
+    const result = await trashStore.restoreTrashItem(item.trashNo);
+
+    if (!result?.success) {
+      throw new Error("복원 응답을 확인할 수 없습니다.");
+    }
+
+    window.alert("기록이 복원되었습니다.");
+  } catch (error) {
+    window.alert(
+      error.response?.data?.message
+      ?? error.message
+      ?? "기록 복원에 실패했습니다."
+    );
+  } finally {
+    restoringTrashNo.value = null;
+  }
+};
+
 onMounted(async () => {
   await trashStore.loadTrashList();
 });
 </script>
+
+<style scoped>
+.trash-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.restore-button {
+  background: #2563eb;
+  color: #fff;
+}
+
+.restore-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+</style>
