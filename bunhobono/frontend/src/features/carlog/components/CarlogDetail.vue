@@ -17,8 +17,8 @@
     </thead>
 
     <tbody>
-      <tr v-for="log in paginatedItems" :key="log.carLogNo">
-        <td>{{ log.displayNo }}</td>
+      <tr v-for="(log, index) in paginatedItems" :key="log.carLogNo">
+        <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
         <td>{{ log.carNo || '미인식' }}</td>
         <td>{{ log.parkingStateText }}</td>
         <td>{{ log.carKindText }}</td>

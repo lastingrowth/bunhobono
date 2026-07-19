@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { deleteGate, getList, signUpGate, updateGate } from "./gateApi";
+import { deleteGate, getList, signUpGate, updateGate, updateGateStatus, openGate } from "./gateApi";
 
 export const useGateStore =  defineStore("gate", () => {
 
@@ -71,7 +71,29 @@ export const useGateStore =  defineStore("gate", () => {
     }
   };
 
+  // 게이트 상태 변경
+  // 관리자 화면에서 열기/닫기 버튼을 눌렀을 때 사용
+  const changeStatus = async (gateNo, gateStatus) => {
+    const res = await updateGateStatus(gateNo, gateStatus);
 
+    if (res.data === 1) {
+      await loadList();
+    } else {
+      alert("게이트 상태 변경 실패");
+    }
+  };
+
+  // 게이트 열기
+  // 백엔드 open API를 호출하면 백엔드에서 5초 뒤 자동 닫힘까지 처리
+  const open =  async (gateNo) => {
+    const res = await openGate(gateNo);
+
+    if (res.data === 1) {
+      await loadList();
+    } else {
+      alert("게이트 열기 실패");
+    }
+  };
 
   return {
     list,
@@ -79,7 +101,10 @@ export const useGateStore =  defineStore("gate", () => {
     loadList,
     signup,
     update,
-    remove
+    remove,
+
+    changeStatus,
+    open
   };
 
 });

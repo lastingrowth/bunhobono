@@ -42,7 +42,6 @@
   gap: 8px;
 }
 
-
 .dashboard-maintenance {
   padding: 8px 14px;
   border: none;
@@ -138,6 +137,38 @@ button.dashboard-card:hover {
   font-weight: 700;
 }
 
+/* 미처리 알림 카드 */
+.notice-card {
+  padding-right: 26px;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.notice-card .card-heading {
+  justify-content: flex-end;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.notice-card .card-value {
+  margin: auto 0;
+  font-size: 42px;
+  line-height: 1;
+  color: var(--dashboard-red);
+}
+
+.notice-card .card-value small {
+  margin-left: 3px;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.notice-card .card-description {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* 차량 현황 카드 */
 .card-vehicle-summary {
   margin: auto 0;
   display: grid;
@@ -177,242 +208,138 @@ button.dashboard-card:hover {
   font-size: 13px;
 }
 
-.notice-card {
-  padding-right: 26px;
-  align-items: flex-end;
-  text-align: right;
-}
-
-.notice-card .card-heading {
-  justify-content: flex-end;
-  font-size: 17px;
-  font-weight: 800;
-}
-
-.notice-card .card-value {
-  margin: auto 0;
-  font-size: 42px;
-  line-height: 1;
-  color: var(--dashboard-red);
-}
-
-.notice-card .card-value small {
-  margin-left: 3px;
-  font-size: 14px;
-  color: var(--text-color);
-}
-
-.notice-card .card-description {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-/* 주차장별 현황 카드 */
+/* 실시간 카메라 영상 카드 */
 .parking-overview-card {
   grid-column: 2 / -1;
   grid-row: 1 / 3;
   min-height: 462px;
 }
 
+/* 실시간 카메라 영상 내부 배치 */
+/* 예전 주차장 현황처럼 위/아래 2줄로 나누지 않고, 버튼과 영상이 위에서부터 자연스럽게 붙도록 한다. */
 .parking-overview-content {
   min-height: 0;
   margin-top: 12px;
-  display: grid;
-  grid-template-rows: 185px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   flex: 1;
 }
 
-.parking-status-strip {
-  width: 100%;
-  min-width: 0;
-  padding: 12px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  border: 0;
-  border-radius: 5px;
-  color: inherit;
-  background: var(--bg-main);
-  box-shadow: 0 6px 16px rgba(35, 52, 66, 0.08);
-  cursor: pointer;
-}
-
-.parking-status-strip:focus-visible {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 3px;
-}
-
-.parking-zone-status,
-.parking-ocr-preview {
-  width: 100%;
-  min-width: 0;
-  padding: 0;
+/* A/B/C/D 주차장 선택 버튼 묶음 */
+.parking-camera-tabs {
   display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* A/B/C/D 주차장 버튼 */
+.parking-camera-tabs button {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #64748b;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* 현재 선택된 주차장 버튼 */
+.parking-camera-tabs button.active {
+  color: #ffffff;
+  border-color: #2f80ed;
+  background: #2f80ed;
+}
+
+/* 입차/출차 영상 영역 */
+.dashboard-camera-grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  flex: 1;
+}
+
+/* 영상 한 칸 */
+.dashboard-camera-panel {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 나중에 영상이 들어갈 영역 */
+.camera-video-placeholder {
+  position: relative;
+  min-height: 360px;
+  height: 100%;
+  padding: 28px;
+  display: flex;
+  justify-content: center;
   align-items: center;
   flex-direction: column;
-  border: 0;
-  justify-content: center;
   text-align: center;
-  color: inherit;
-  background: transparent;
-}
-
-.parking-zone-status {
-  min-height: 161px;
-  padding: 0 12px;
-}
-
-.parking-zone-name {
-  max-width: 100%;
-  margin-bottom: 8px;
   overflow: hidden;
-  font-size: 13px;
-  color: #9ca3af;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.parking-zone-donut {
-  width: 68px;
-  height: 68px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: 10px;
+  color: #e8eef7;
   background:
-    radial-gradient(
-      circle,
-      var(--bg-main) 56%,
-      transparent 58%
-    ),
-    conic-gradient(
-      #38bdf8 var(--parking-rate),
-      #dfe6eb 0
-    );
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    #101722;
+  background-size: 22px 22px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.parking-zone-donut strong {
-  font-size: 17px;
-  color: var(--text-color);
-}
-
-.parking-zone-count {
-  margin-top: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-color);
-}
-
-.parking-zone-available {
-  margin-top: 2px;
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-.parking-ocr-row {
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.parking-ocr-preview {
-  min-height: 0;
-  padding: 10px;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  background: var(--bg-main);
-  box-shadow: 0 6px 16px rgba(35, 52, 66, 0.08);
-}
-
-.parking-ocr-preview:not(:disabled) {
-  cursor: pointer;
-}
-
-.parking-ocr-preview:hover:not(:disabled) {
-  border-color: transparent;
-  box-shadow: 0 9px 20px rgba(68, 101, 127, 0.13);
-}
-
-.parking-ocr-preview:hover:not(:disabled) strong {
-  color: var(--dashboard-blue);
-}
-
-.parking-ocr-preview:disabled {
-  cursor: default;
-}
-
-.parking-ocr-frame {
-  width: 100%;
-  height: 128px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  border-radius: 3px;
-  font-size: 12px;
-  color: var(--text-muted);
-  background: #e5e7eb;
-}
-
-.parking-ocr-frame img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.parking-ocr-zone {
-  width: 100%;
-  margin-top: 8px;
-  overflow: hidden;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--text-muted);
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.parking-ocr-preview strong {
-  width: 100%;
-  margin-top: 3px;
-  overflow: hidden;
-  font-size: 15px;
-  color: #9ca3af;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.parking-ocr-movement {
-  width: 100%;
-  margin-top: 4px;
-  display: block;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--dashboard-blue);
-  text-align: left;
-}
-
-.parking-ocr-rate {
-  width: 100%;
-  margin-top: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--dashboard-green);
-  text-align: left;
-}
-
-.parking-empty {
-  margin: auto;
+/* 영상 영역 위쪽 작은 설명 */
+.camera-video-label {
+  margin-bottom: 8px;
+  color: #9fb2c8;
   font-size: 13px;
-  color: var(--text-muted);
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
-/* 주간 입차 그래프와 입출차 목록 영역 */
+/* 입차 게이트 / 출차 게이트 제목 */
+.camera-video-placeholder strong {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+/* 게이트 이름 또는 연결 없음 표시 */
+.camera-video-placeholder p {
+  margin: 10px 0 0;
+  color: #8191a6;
+  font-size: 14px;
+}
+
+/* 게이트 열기 버튼 */
+.camera-gate-button {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  color: #ffffff;
+  background: #2f80ed;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(47, 128, 237, 0.28);
+}
+
+.camera-gate-button:hover:not(:disabled) {
+  background: #1f6fd1;
+}
+
+.camera-gate-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* 입출차 현황 영역 */
 .recent-carlogs {
   min-height: auto;
   margin-top: 12px;
@@ -454,6 +381,97 @@ button.dashboard-card:hover {
   align-items: stretch;
 }
 
+/* 입출차 목록 */
+.carlog-list-panel {
+  min-width: 0;
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.carlog-table-wrap {
+  min-height: auto;
+  overflow-x: visible;
+  flex: none;
+}
+
+.recent-carlogs table {
+  width: 100%;
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.recent-carlogs th,
+.recent-carlogs td {
+  padding: 7px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 입출차 목록 주차 상태 배지 */
+.carlog-state-badge {
+  min-width: 58px;
+  padding: 4px 8px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 현재 주차중 */
+.carlog-state-badge.parking {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+/* 출차 완료 */
+.carlog-state-badge.out {
+  color: #0369a1;
+  background: #e0f2fe;
+}
+
+/* 입출차 목록 페이지 버튼 */
+.carlog-pagination {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.carlog-pagination button {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-color);
+  background: var(--bg-header);
+}
+
+.carlog-pagination button:hover:not(:disabled) {
+  border-color: var(--bg-sidebar);
+  color: var(--bg-sidebar);
+}
+
+.carlog-pagination button.active {
+  border-color: var(--bg-sidebar);
+  color: var(--text-white);
+  background: var(--bg-sidebar);
+  box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18);
+}
+
+.carlog-pagination button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 /* 최근 7일 입차 막대그래프 */
 .weekly-entry-panel {
   min-width: 0;
@@ -467,18 +485,18 @@ button.dashboard-card:hover {
   box-shadow: 0 6px 16px rgba(35, 52, 66, 0.08);
 }
 
-.weekly-entry-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-color);
-}
-
 .weekly-entry-header {
   margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.weekly-entry-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-color);
 }
 
 .weekly-entry-legend {
@@ -581,97 +599,6 @@ button.dashboard-card:hover {
   color: var(--text-color);
 }
 
-/* 페이지네이션이 적용되는 입출차 목록 */
-.carlog-list-panel {
-  min-width: 0;
-  min-height: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.carlog-table-wrap {
-  min-height: auto;
-  overflow-x: visible;
-  flex: none;
-}
-
-.recent-carlogs table {
-  width: 100%;
-  border-radius: 4px;
-  box-shadow: none;
-}
-
-.recent-carlogs th,
-.recent-carlogs td {
-  padding: 7px 10px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-/* 입출차 목록의 주차상태 배지 */
-.carlog-state-badge {
-  min-width: 58px;
-  padding: 4px 8px;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* 현재 주차중 */
-.carlog-state-badge.parking {
-  color: #15803d;
-  background: #dcfce7;
-}
-
-/* 출차 완료 */
-.carlog-state-badge.out {
-  color: #0369a1;
-  background: #e0f2fe;
-}
-
-/* 입출차 목록 페이지 버튼 */
-.carlog-pagination {
-  margin-top: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-}
-
-.carlog-pagination button {
-  min-width: 30px;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 7px;
-  cursor: pointer;
-  font-size: 11px;
-  color: var(--text-color);
-  background: var(--bg-header);
-}
-
-.carlog-pagination button:hover:not(:disabled) {
-  border-color: var(--bg-sidebar);
-  color: var(--bg-sidebar);
-}
-
-.carlog-pagination button.active {
-  border-color: var(--bg-sidebar);
-  color: var(--text-white);
-  background: var(--bg-sidebar);
-  box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18);
-}
-
-.carlog-pagination button:disabled {
-  cursor: default;
-  opacity: 0.45;
-}
-
 /* 태블릿 */
 @media (max-width: 1200px) {
   .admin-dashboard {
@@ -698,9 +625,16 @@ button.dashboard-card:hover {
 
   .parking-overview-card {
     grid-column: 1 / -1;
-    min-height: 220px;
+    min-height: 420px;
   }
 
+  .camera-video-placeholder {
+    min-height: 300px;
+  }
+
+  .carlog-dashboard-content {
+    grid-template-columns: 1fr;
+  }
 
   .recent-carlogs {
     min-height: auto;
@@ -717,7 +651,6 @@ button.dashboard-card:hover {
   }
 }
 
-
 /* 모바일 */
 @media (max-width: 700px) {
   .dashboard-header {
@@ -731,23 +664,15 @@ button.dashboard-card:hover {
 
   .parking-overview-card {
     grid-column: auto;
-  }
-
-  .parking-overview-card {
     height: auto;
   }
 
-  .parking-overview-content {
-    grid-template-rows: auto auto;
+  .dashboard-camera-grid {
+    grid-template-columns: 1fr;
   }
 
-  .parking-status-strip,
-  .parking-ocr-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .ocr-detail {
-    gap: 14px;
+  .camera-video-placeholder {
+    min-height: 260px;
   }
 
   .recent-carlogs {
@@ -762,5 +687,5 @@ button.dashboard-card:hover {
     border-radius: 12px;
     background: var(--bg-header);
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-  } 
+  }
 }

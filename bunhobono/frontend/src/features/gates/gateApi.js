@@ -19,3 +19,14 @@ export const updateGate = (gateNo, data) => {
 export const deleteGate = (gateNo) => {
   return api.delete(`/gates/${gateNo}/delete`);
 };
+
+// 게이트 상태 변경
+export const updateGateStatus = (gateNo, gateStatus) => {
+  return api.put(`/gates/${gateNo}/status`, {gateStatus});
+};
+
+// 게이트 열기
+// 백엔드에서 게이트를 열고 5초 뒤 자동 닫힘을 예약한다
+export const openGate = (gateNo) => {
+  return api.put(`/gates/${gateNo}/open`);
+};

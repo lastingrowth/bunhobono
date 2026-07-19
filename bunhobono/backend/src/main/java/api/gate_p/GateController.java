@@ -44,4 +44,26 @@ public class GateController {
         dto.setGateNo(gateNo);
         return gateService.updateGate(dto);
     }
+
+    // 게이트 상태 변경
+    // 관리자 화면에서 수동으로 열기/닫기 버튼을 눌렀을 때 호출
+    @PutMapping("/{gateNo}/status")
+    public int updateGateStatus(@PathVariable int gateNo,
+                                @RequestBody GateDTO dto) {
+        dto.setGateNo(gateNo);
+        return gateService.updateStatus(dto);
+    }
+
+    // 게이트 열기
+    // 관리자가 수동으로 게이트를 열 때 사용한다
+    // 게이트를 연 뒤 GateService의 자동 닫힘 예약을 호출
+    @PutMapping("/{gateNo}/open")
+    public int openGate(@PathVariable int gateNo) {
+        int result = gateService.open(gateNo);
+
+        if (result == 1) {
+            gateService.scheduleClose(gateNo);
+        }
+        return result;
+    }
 }
