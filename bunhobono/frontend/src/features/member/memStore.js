@@ -2,9 +2,11 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import {
   approvePendingMembers,
+  changeResidentPassword,
   deleteMember,
   getMemberDetail,
   getMemberList,
+  getResidentSecurityChallenge,
   getAvailableSignupUnits,
   getResidentDashboard,
   idCheckMember,
@@ -16,6 +18,7 @@ import {
   searchMember,
   signupMember,
   updateMember,
+  verifyResidentWithdrawal,
 } from "./memApi";
 import { getParkingsList } from "../parking/parkingsApi";
 import { toVehicleView } from "../vehicle/vehicleFormat";
@@ -110,9 +113,23 @@ export const useMemStore =  defineStore("member", () => {
     await loadMypage();
   };
   
-    // 입주민 로그인 시, 입주민 본인이 직접 회원 탈퇴
-  const removeResident = async () => {
-    await residentDelete(member.value.loginId);
+  const loadSecurityChallenge = async () => {
+    const res = await getResidentSecurityChallenge();
+    return res.data;
+  };
+
+  // 현재 비밀번호와 보안문자를 포함해 입주민 본인 탈퇴를 요청한다.
+  const removeResident = async (securityData) => {
+    await residentDelete(securityData);
+  };
+
+  // 회원 상태를 바꾸기 전에 비밀번호와 보안문자의 일치 여부만 확인한다.
+  const verifyWithdrawal = async (securityData) => {
+    await verifyResidentWithdrawal(securityData);
+  };
+
+  const updateResidentPassword = async (securityData) => {
+    await changeResidentPassword(securityData);
   };
 
   // 아이디 중복확인
@@ -181,7 +198,10 @@ export const useMemStore =  defineStore("member", () => {
 
     loadMypage,
     editResident,
+    loadSecurityChallenge,
+    verifyWithdrawal,
     removeResident,
+    updateResidentPassword,
     idCheck,
 
     loadDashboard,

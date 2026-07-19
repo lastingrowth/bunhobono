@@ -6,8 +6,13 @@ import java.util.List;
 
 @Mapper
 public interface MemberMapper {
+
+    // =====================================================
+    // 회원가입 및 가입 가능한 세대 확인
+    // =====================================================
+
     // 회원가입
-    // 외부 회원가입은 PENDING 역할로 저장하고 가입일은 실제 가입 시각을 기록한다.
+    // 외부 회원가입은 PENDING으로 저장 / 가입일 = 실제 회원가입한 시각.
     @Update("""
     UPDATE member
     SET login_id = #{loginId},
@@ -24,6 +29,10 @@ public interface MemberMapper {
       AND TRIM(mem_status) = '전출'
 """)
     int signup(MemberDTO dto);
+
+    // 회원가입 전에 입력한 아이디가 이미 사용 중인지 확인한다.
+    @Select("SELECT EXISTS (SELECT 1 FROM member WHERE login_id = #{loginId})" )
+    boolean checkLoginId(String loginId);
 
     // 전출 이력이 있고 현재 거주·승인대기 회원이 없는 세대만 공개 회원가입 대상으로 조회한다.
     @Select("""
@@ -71,6 +80,10 @@ public interface MemberMapper {
           AND delete_at IS NULL
         """)
     int countActiveMembersAtUnit(@Param("dong") int dong, @Param("ho") int ho);
+
+    // =====================================================
+    // 관리자 회원 목록·상세·검색·수정·승인·삭제
+    // =====================================================
 
     // 회원목록
     @Select("SELECT ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) AS display_no, " +
@@ -182,6 +195,10 @@ public interface MemberMapper {
     int delete(@Param("memberNo") int memberNo);
 
 
+    // =====================================================
+    // 입주민 마이페이지·차량·입출차 조회
+    // =====================================================
+
     // 입주민 마이페이지
     @Select("SELECT m.*, " +
             "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
@@ -244,7 +261,11 @@ public interface MemberMapper {
         """)
     List<MemberDTO.ResidentCarLog> residentCarLogs(String loginId);
 
-    // 입주민은 마이페이지에서 연락처와 새 비밀번호만 변경할 수 있다.
+    // =====================================================
+    // 입주민 정보 수정·비밀번호 확인·탈퇴
+    // =====================================================
+
+    // 입주민은 마이페이지에서 '연락처'와 '비밀번호'만 변경할 수 있다.
     @Update("""
         <script>
         UPDATE member
@@ -257,19 +278,33 @@ public interface MemberMapper {
         """)
     void residentMypageEdit(MemberDTO dto);
 
-    // 입주민이 직접 탈퇴하면 전출 상태와 최초 탈퇴 시각을 기록한다.
-    @Update("""
-        UPDATE member
-        SET mem_status = '전출',
-            delete_at = COALESCE(delete_at, CURRENT_TIMESTAMP)
-        WHERE login_id = #{loginId}
-          AND UPPER(TRIM(role)) = 'RESIDENT'
-        """)
-    int residentDelete(String loginId);
+    // [pw변경시/회원탈퇴시] 현재 로그인한 입주민의 암호화된 비밀번호를 한번 더 조회.
+    @Select("SELECT login_pwd " +
+            "FROM member " +
+            "WHERE login_id = #{loginId} " +
+            "AND UPPER(TRIM(role)) = 'RESIDENT' " +
+            "AND delete_at IS NULL")
+    String findResPw(String loginId);
 
-    // 아이디 중복확인
-    @Select("SELECT EXISTS (SELECT 1 FROM member WHERE login_id = #{loginId})" )
-    boolean checkLoginId(String LoginId);
+    // 현재 비밀번호가 확인된 입주민의 비밀번호를 변경함.
+    @Update("UPDATE member " +
+            "SET login_pwd = #{encodedPassword} " +
+            "WHERE login_id = #{loginId} " +
+            "AND UPPER(TRIM(role)) = 'RESIDENT' " +
+            "AND delete_at IS NULL")
+    int changeResidentPassword(
+            @Param("loginId") String loginId,
+            @Param("encodedPassword") String encodedPassword
+    );
+
+    // 입주민이 직접 회원탈퇴하면 stauts를 '전출'로 변경 '탈퇴 시각'을 기록함.
+    @Update("UPDATE member " +
+            "SET mem_status = '전출', " +
+            "delete_at = COALESCE(delete_at, CURRENT_TIMESTAMP) " +
+            "WHERE login_id = #{loginId} " +
+            "AND UPPER(TRIM(role)) = 'RESIDENT' " +
+            "AND delete_at IS NULL")
+    int residentDelete(String loginId);
 
 }
 
