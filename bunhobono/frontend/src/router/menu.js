@@ -57,6 +57,10 @@ export const residentMenu = [
     path: '/resident/parkings'
   },
   {
+    title: '알림내역',
+    path: '/resident/notice'
+  },
+  {
     title: '마이페이지',
     path: '/resident/mypage'
   }

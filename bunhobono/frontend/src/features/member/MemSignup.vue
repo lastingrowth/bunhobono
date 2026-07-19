@@ -37,9 +37,6 @@
                         <optgroup label="1·2라인">
                             <option v-for="ho in line12HoOptions" :key="ho" :value="ho">{{ ho }}호</option>
                         </optgroup>
-                        <optgroup label="3·4라인">
-                            <option v-for="ho in line34HoOptions" :key="ho" :value="ho">{{ ho }}호</option>
-                        </optgroup>
                     </select>
                 </label>
             </div>
@@ -115,10 +112,6 @@ const line12HoOptions = computed(() => selectedDongUnits.value
     .map((unit) => Number(unit.memHo))
     .filter((ho) => [1, 2].includes(ho % 100))
     .sort((left, right) => left - right));
-const line34HoOptions = computed(() => selectedDongUnits.value
-    .map((unit) => Number(unit.memHo))
-    .filter((ho) => [3, 4].includes(ho % 100))
-    .sort((left, right) => left - right));
 
 const loadAvailableUnits = async () => {
     availabilityLoading.value = true;
@@ -135,8 +128,7 @@ const loadAvailableUnits = async () => {
 
 onMounted(loadAvailableUnits);
 
-// =====
-// 아이디는 영문과 숫자를 모두 포함하고 비밀번호는 숫자만 허용한다.
+// 공개 회원가입 화면의 이름·아이디·비밀번호 입력 규칙을 검사한다.
 const loginIdPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{3,20}$/;
 const passwordPattern = /^\d{4,20}$/;
 const namePattern = /^(?=.*[가-힣])(?=.*\d)[가-힣\d]{2,20}$/;
@@ -160,7 +152,6 @@ const validateSignupFields = () => {
     }
     return true;
 };
-// =====
 
 // 연락처 세 칸에는 정해진 길이만큼 숫자만 입력한다.
 const handlePhoneInput = (event, part, maxLength) => {

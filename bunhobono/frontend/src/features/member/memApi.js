@@ -55,13 +55,26 @@ export const residentEdit = (data) => {
     return api.put(`/resident/mypage/edit`, data);
 };
 
-// 입주민 로그인 시, 직접 회원 정보 삭제
-export const residentDelete = (loginId) => {
+// 민감한 작업에 사용할 일회용 이미지 보안문자를 발급한다.
+export const getResidentSecurityChallenge = () => {
+    return api.get("/resident/security-challenge");
+};
+
+// 현재 비밀번호와 보안문자를 확인한 뒤 입주민 본인을 탈퇴 처리한다.
+export const residentDelete = (data) => {
     return api.delete("/resident/mypage/delete", {
-        data: {
-            loginId: loginId
-        }
+        data
     });
+};
+
+// 실제 탈퇴 전에 현재 비밀번호와 보안문자의 일치 여부만 확인한다.
+export const verifyResidentWithdrawal = (data) => {
+    return api.post("/resident/mypage/delete/verify", data);
+};
+
+// 현재 비밀번호와 보안문자를 확인한 뒤 비밀번호를 변경한다.
+export const changeResidentPassword = (data) => {
+    return api.put("/resident/mypage/password", data);
 };
 
 // 아이디 중복확인

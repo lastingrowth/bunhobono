@@ -93,8 +93,7 @@ const checkedLoginId = ref("");
 const dongOptions = [0, 101, 102, 103, 104, 105, 106, 107, 108];
 const phoneParts = reactive({ first: "", middle: "", last: "" });
 
-// =====
-// 아이디는 영문과 숫자를 모두 포함하고 비밀번호는 숫자만 허용한다.
+// 관리자 회원추가 화면의 이름·아이디·비밀번호 입력 규칙을 검사한다.
 const loginIdPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{3,20}$/;
 const passwordPattern = /^\d{4,20}$/;
 const namePattern = /^(?=.*[가-힣])(?=.*\d)[가-힣\d]{2,20}$/;
@@ -118,7 +117,6 @@ const validateSignupFields = () => {
     }
     return true;
 };
-// =====
 
 const member = reactive({
     role: "RESIDENT",

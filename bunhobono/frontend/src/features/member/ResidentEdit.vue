@@ -3,7 +3,6 @@
 
     <div>
         <button @click="goHome">홈</button>
-        <button @click="update">수정완료</button>
     </div>
 
     <table border="">
@@ -43,21 +42,31 @@
             <tr>
                 <th>비밀번호</th>
                 <td>
-                    <!-- 버튼을 누른 경우에만 새 비밀번호 입력란을 노출한다. -->
                     <button type="button" @click="togglePasswordChange">
                         {{ showPasswordField ? "변경 취소" : "비밀번호 변경" }}
                     </button>
-                    <input
-                        v-if="showPasswordField"
-                        type="password"
-                        :value="member.loginPwd"
-                        inputmode="numeric"
-                        minlength="4"
-                        maxlength="20"
-                        autocomplete="off"
-                        placeholder="숫자 4~20자"
-                        @input="handlePasswordInput"
-                    />
+                    <div v-if="showPasswordField" class="password-change-fields">
+                        <input v-model="currentPassword" type="password" autocomplete="current-password" placeholder="현재 비밀번호">
+                        <input
+                            type="password"
+                            :value="member.loginPwd"
+                            inputmode="numeric"
+                            minlength="4"
+                            maxlength="20"
+                            autocomplete="new-password"
+                            placeholder="새 비밀번호(숫자 4~20자)"
+                            @input="handlePasswordInput"
+                        >
+                        <input v-model="newPasswordConfirm" type="password" inputmode="numeric" maxlength="20" autocomplete="new-password" placeholder="새 비밀번호 확인">
+                        <div class="captcha-box">
+                            <img :src="challengeImage" alt="보안문자">
+                            <button type="button" @click="loadChallenge">새로고침</button>
+                        </div>
+                        <p class="captcha-timer" :class="{ expired: challengeRemainingSeconds === 0 }">
+                            보안문자 유효시간: {{ challengeTimeLabel }}
+                        </p>
+                        <input v-model.trim="challengeAnswer" type="text" maxlength="5" autocomplete="off" placeholder="보안문자 입력" :disabled="challengeRemainingSeconds === 0">
+                    </div>
                 </td>
             </tr>
             <tr>
@@ -66,10 +75,14 @@
             </tr>
         </tbody>
     </table>
+
+    <div class="form-actions">
+        <button type="button" @click="update">수정완료</button>
+    </div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
 import { useJwtStore } from "@/features/login/jwtStore";
@@ -81,7 +94,42 @@ const jwtStore = useJwtStore();
 
 const loginId = jwtStore.userId;
 const showPasswordField = ref(false);
+const currentPassword = ref("");
+const newPasswordConfirm = ref("");
+const challengeId = ref("");
+const challengeImage = ref("");
+const challengeAnswer = ref("");
+const challengeRemainingSeconds = ref(0);
+let challengeTimer = null;
 const phoneParts = reactive({ first: "", middle: "", last: "" });
+
+const challengeTimeLabel = computed(() => {
+    if (challengeRemainingSeconds.value <= 0) return "만료됨";
+    const minutes = Math.floor(challengeRemainingSeconds.value / 60);
+    const seconds = challengeRemainingSeconds.value % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+});
+
+const stopChallengeTimer = () => {
+    if (challengeTimer !== null) {
+        clearInterval(challengeTimer);
+        challengeTimer = null;
+    }
+};
+
+const startChallengeTimer = (expiresIn) => {
+    stopChallengeTimer();
+    challengeRemainingSeconds.value = Number(expiresIn) || 180;
+    challengeTimer = setInterval(() => {
+        if (challengeRemainingSeconds.value <= 1) {
+            challengeRemainingSeconds.value = 0;
+            challengeAnswer.value = "";
+            stopChallengeTimer();
+            return;
+        }
+        challengeRemainingSeconds.value -= 1;
+    }, 1000);
+};
 
 const member = reactive({
     memberNo:"",
@@ -128,11 +176,29 @@ const goHome = () => {
     router.push("/resident");
 };
 
-const togglePasswordChange = () => {
-    // 변경 취소 시 입력 중인 새 비밀번호가 서버로 전달되지 않도록 초기화한다.
+const loadChallenge = async () => {
+    try {
+        const challenge = await store.loadSecurityChallenge();
+        challengeId.value = challenge.challengeId;
+        challengeImage.value = challenge.imageData;
+        challengeAnswer.value = "";
+        startChallengeTimer(challenge.expiresIn);
+    } catch (error) {
+        alert(error.response?.data?.detail || error.response?.data?.message || "보안문자를 불러오지 못했습니다.");
+    }
+};
+
+const togglePasswordChange = async () => {
     showPasswordField.value = !showPasswordField.value;
-    if (!showPasswordField.value) {
-        member.loginPwd = "";
+    currentPassword.value = "";
+    member.loginPwd = "";
+    newPasswordConfirm.value = "";
+    challengeAnswer.value = "";
+    if (showPasswordField.value) {
+        await loadChallenge();
+    } else {
+        challengeRemainingSeconds.value = 0;
+        stopChallengeTimer();
     }
 };
 
@@ -148,22 +214,47 @@ const update = async () => {
         return;
     }
 
-    const passwordChanged = showPasswordField.value;
-    
-    // 입주민 본인은 연락처와 새 비밀번호만 수정 요청으로 전달한다.
-    await store.editResident({
-        memPhone: member.memPhone,
-        loginPwd: passwordChanged ? member.loginPwd : null
-    });
-
-    if(passwordChanged){
-        alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
-        jwtStore.logout();
+    if (!showPasswordField.value) {
+        await store.editResident({ memPhone: member.memPhone, loginPwd: null });
+        alert("수정되었습니다.");
+        router.push("/resident/mypage");
         return;
     }
-    alert("수정되었습니다.");
-    router.push("/resident/mypage");
+
+    if (!currentPassword.value) {
+        alert("현재 비밀번호를 입력하세요.");
+        return;
+    }
+    if (member.loginPwd !== newPasswordConfirm.value) {
+        alert("새 비밀번호가 일치하지 않습니다.");
+        return;
+    }
+    if (challengeRemainingSeconds.value === 0) {
+        alert("보안문자가 만료되었습니다. 새로고침해 주세요.");
+        return;
+    }
+    if (!challengeAnswer.value) {
+        alert("보안문자를 입력하세요.");
+        return;
+    }
+
+    try {
+        await store.editResident({ memPhone: member.memPhone, loginPwd: null });
+        await store.updateResidentPassword({
+            currentPassword: currentPassword.value,
+            newPassword: member.loginPwd,
+            challengeId: challengeId.value,
+            challengeAnswer: challengeAnswer.value
+        });
+        alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
+        jwtStore.logout();
+    } catch (error) {
+        alert(error.response?.data?.detail || error.response?.data?.message || error.response?.data?.error || "비밀번호 변경에 실패했습니다.");
+        await loadChallenge();
+    }
 };
+
+onBeforeUnmount(stopChallengeTimer);
 </script>
 
 <style scoped>
@@ -177,4 +268,12 @@ const update = async () => {
     width: 72px;
     text-align: center;
 }
+
+.password-change-fields { margin-top: 10px; display: grid; gap: 8px; max-width: 360px; }
+.password-change-fields input { min-height: 40px; padding: 0 10px; }
+.captcha-box { display: flex; align-items: center; gap: 10px; }
+.captcha-box img { width: 180px; height: 60px; border: 1px solid #cbd5e1; border-radius: 8px; }
+.captcha-timer { margin: 0; color: #2563eb; font-size: 14px; }
+.captcha-timer.expired { color: #dc2626; font-weight: 700; }
+.form-actions { margin-top: 16px; display: flex; justify-content: flex-end; }
 </style>
