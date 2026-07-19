@@ -68,10 +68,14 @@ TEST_STREAMS = [
     },
 ]
 
-FRAME_STEP = 90
-CROP_COUNT = 2
+FRAME_STEP = 30
+CROP_COUNT = 1
+NO_DETECTION_RESET_COUNT = 2
+PLAYBACK_SPEED = 0.25
 MIN_OCR_SCORE = 0.5
 SEND_COOLDOWN_SECONDS = 10
+DETECTION_DISPLAY_SECONDS = 2
+DETECTION_ZONE_TOP_RATIO = 1 / 3
 OCR_DEVICE = "cpu"
 
 
@@ -90,31 +94,138 @@ class TestStreamWorker:
         self.camera_name = self.cameras[0]["name"]
 
         self.running = True
+        self.video_finished = False
         self.pause_event = threading.Event()
-
         self.pause_event.set()
+
+        self.viewer_count = 0
+        self.viewer_lock = threading.Lock()
+        self.thread_lock = threading.Lock()
+        self.thread = None
 
         self.latest_frame = None
         self.latest_frame_lock = threading.Lock()
+        self.latest_detection_box = None
+        self.latest_detection_until = 0.0
 
         self.candidates = []
         self.last_send_time = {}
+        self.vehicle_active = False
+        self.no_detection_count = 0
+        self.auto_paused = False
+        self.pause_reason = None
 
     def pause(self):
         self.pause_event.set()
+        self.pause_reason = "MANUAL"
         print(f"[{self.camera_name}] 영상 일시정지")
 
     def resume(self):
         self.pause_event.clear()
+        self.auto_paused = False
+        self.pause_reason = None
         print(f"[{self.camera_name}] 영상 재생")
+
+    def pause_for_backend(self):
+        self.auto_paused = True
+        self.pause_reason = "WAITING_FOR_BACKEND"
+        self.pause_event.set()
+        print(f"[{self.camera_name}] paused: waiting for backend")
 
     def stop(self):
         self.running = False
         self.pause_event.clear()
 
+    def start(self):
+        with self.thread_lock:
+            if self.thread is not None and self.thread.is_alive():
+                return self.thread
+
+            self.running = True
+            self.video_finished = False
+            self.vehicle_active = False
+            self.no_detection_count = 0
+            self.candidates = []
+            self.auto_paused = False
+            self.pause_reason = None
+            self.thread = threading.Thread(target=self.run, daemon=True)
+            self.thread.start()
+            return self.thread
+
+    def add_viewer(self):
+        should_restart = False
+
+        with self.viewer_lock:
+            self.viewer_count += 1
+            should_restart = self.video_finished
+            if self.viewer_count == 1:
+                self.pause_event.clear()
+                self.auto_paused = False
+                self.pause_reason = None
+
+        if should_restart:
+            self.start()
+
+    def remove_viewer(self):
+        with self.viewer_lock:
+            self.viewer_count = max(0, self.viewer_count - 1)
+            if self.viewer_count == 0:
+                self.pause_event.set()
+
     def update_latest_frame(self, frame):
         with self.latest_frame_lock:
-            self.latest_frame = frame.copy()
+            display_frame = frame.copy()
+            height, width = display_frame.shape[:2]
+
+            cv2.rectangle(
+                display_frame,
+                (0, int(height * DETECTION_ZONE_TOP_RATIO)),
+                (width - 1, height - 1),
+                (255, 180, 0),
+                2,
+            )
+            cv2.putText(
+                display_frame,
+                "DETECTION ZONE",
+                (12, int(height * DETECTION_ZONE_TOP_RATIO) + 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (255, 180, 0),
+                2,
+                cv2.LINE_AA,
+            )
+
+            if (
+                self.latest_detection_box is not None
+                and time.time() < self.latest_detection_until
+            ):
+                x1, y1, x2, y2 = self.latest_detection_box
+                cv2.rectangle(
+                    display_frame,
+                    (x1, y1),
+                    (x2, y2),
+                    (0, 0, 255),
+                    3,
+                )
+                cv2.putText(
+                    display_frame,
+                    "PLATE DETECTED",
+                    (x1, max(30, y1 - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 0, 255),
+                    2,
+                    cv2.LINE_AA,
+                )
+
+            self.latest_frame = display_frame
+
+    def show_detection(self, box):
+        with self.latest_frame_lock:
+            self.latest_detection_box = [int(value) for value in box]
+            self.latest_detection_until = (
+                time.time() + DETECTION_DISPLAY_SECONDS
+            )
 
     def get_jpeg_frame(self):
         with self.latest_frame_lock:
@@ -143,9 +254,10 @@ class TestStreamWorker:
             if not self.running:
                 break
 
-            self.camera_index = (
-                self.camera_index + 1
-            ) % len(self.cameras)
+            self.video_finished = True
+            self.pause_event.set()
+            print(f"[{self.camera_name}] playback finished")
+            break
 
     def run_video_once(self):
         cap = cv2.VideoCapture(self.source)
@@ -157,7 +269,11 @@ class TestStreamWorker:
 
         fps = cap.get(cv2.CAP_PROP_FPS)
         total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-        frame_delay = 1 / fps if fps > 0 else 1 / 30
+        frame_delay = (
+            (1 / fps) / PLAYBACK_SPEED
+            if fps > 0
+            else (1 / 30) / PLAYBACK_SPEED
+        )
 
         print(
             f"[{self.camera_name}] fps={fps}, "
@@ -166,6 +282,12 @@ class TestStreamWorker:
 
         frame_no = 0
         self.candidates = []
+
+        # Keep a preview frame ready so the first viewer does not wait on startup.
+        success, preview_frame = cap.read()
+        if success:
+            frame_no = 1
+            self.update_latest_frame(preview_frame)
 
         try:
             while self.running:
@@ -203,6 +325,81 @@ class TestStreamWorker:
             )
 
         if not detect_result.get("success"):
+            self.candidates = []
+
+            if self.vehicle_active:
+                self.no_detection_count += 1
+                if self.no_detection_count >= NO_DETECTION_RESET_COUNT:
+                    self.vehicle_active = False
+                    self.no_detection_count = 0
+            return
+
+        self.show_detection(detect_result["box"])
+        self.no_detection_count = 0
+
+        if self.vehicle_active:
+            return
+
+        self.candidates.append(
+            {
+                "frameNo": frame_no,
+                "frame": frame.copy(),
+                "cropPath": Path(detect_result["crop_path"]),
+                "detScore": float(detect_result["det_conf"]),
+            }
+        )
+
+        if len(self.candidates) < CROP_COUNT:
+            return
+
+        best = max(self.candidates, key=lambda item: item["detScore"])
+        self.candidates = []
+        self.vehicle_active = True
+        self.pause_for_backend()
+
+        with self.model_lock:
+            ocr_result = self.ocr_reader.read(best["cropPath"])
+
+        car_no = ocr_result.get("text", "")
+        score = float(ocr_result.get("score", 0))
+
+        print(
+            f"[{self.camera_name}] OCR selected "
+            f"frame={best['frameNo']}, carNo={car_no}, "
+            f"det={best['detScore'] * 100:.1f}%, "
+            f"ocr={score * 100:.1f}%"
+        )
+
+        if not car_no or score < MIN_OCR_SCORE:
+            self.vehicle_active = False
+            self.resume()
+            return
+
+        if self.is_cooldown(car_no):
+            print(f"[{self.camera_name}] duplicate blocked: {car_no}")
+            self.resume()
+            return
+
+        original_path = self.save_original_frame(
+            best["frame"], car_no, best["frameNo"]
+        )
+        self.save_best_crop(
+            best["cropPath"], car_no, best["frameNo"]
+        )
+
+        if self.send_to_spring(car_no, score, original_path):
+            self.last_send_time[self.cooldown_key(car_no)] = time.time()
+
+    def _process_frame_legacy(self, frame, frame_no):
+        filename = f"{self.camera_name}_{frame_no}.jpg"
+
+        with self.model_lock:
+            detect_result = self.detector.detect_and_crop_frame(
+                frame=frame,
+                filename=filename,
+            )
+
+        if not detect_result.get("success"):
             if frame_no % 300 == 0:
                 print(
                     f"[{self.camera_name}] 번호판 탐지 실패 "
@@ -211,6 +408,7 @@ class TestStreamWorker:
             return
 
         crop_path = Path(detect_result["crop_path"])
+        self.show_detection(detect_result["box"])
 
         with self.model_lock:
             ocr_result = self.ocr_reader.read(crop_path)

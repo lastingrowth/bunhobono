@@ -46,10 +46,10 @@ public class CameraDataService {
 
     //ocr
     @Transactional
-    public int ocr(int cameraNo,
-                   String carNo,
-                   Double confidenceScore,
-                   MultipartFile file) {
+    public OcrResponse ocr(int cameraNo,
+                           String carNo,
+                           Double confidenceScore,
+                           MultipartFile file) {
         try{
             //1. 저장 폴더 없으면 생성
             Files.createDirectories(Paths.get(uploadDir));
@@ -102,19 +102,31 @@ public class CameraDataService {
             // 카메라 인식 기록이므로 등록/미등록 관계 없이 먼저 저장
             int insertCount = cameraDataMapper.insert(dto);
 
-            if (insertCount == 1) {
+            boolean saved = insertCount == 1;
+            boolean registered = vehicleCarNo != null;
+            boolean gateOpened = false;
+            Integer gateNo = null;
+
+            if (saved) {
                 // 데이터를 촬영한 카메라가 어느 게이트에 연결되어 있는지 확인
                 GateDTO gate = gateService.findByCameraNo(cameraNo);
 
                 // 카메라와 연결된 게이트가 없으면 입출차 처리를 진행하지 않는다
                 if (gate == null) {
-                    return insertCount;
+                    return new OcrResponse(
+                            true,
+                            registered,
+                            false,
+                            null
+                    );
                 }
+
+                gateNo = gate.getGateNo();
 
                 // 등록 차량이면 자동으로 게이트를 열고 입출차 로그를 처리한다
                 // vehicleCarNo 가 Null이 아니면 vehicle_car 테이블에 존재하는 차량
-                if (vehicleCarNo != null) {
-                    gateService.open(gate.getGateNo());
+                if (registered) {
+                    gateOpened = gateService.open(gate.getGateNo()) == 1;
                     carLogService.processCameraData(dto);
                     gateService.scheduleClose(gate.getGateNo());
                 }
@@ -122,7 +134,12 @@ public class CameraDataService {
                 // 미등록 차량이면 camera_data만 저장하고 멈춤
                 // 이후 관리자 대시보드에서 확인 후 수동으로 게이트를 열도록 처리
             }
-            return insertCount;
+            return new OcrResponse(
+                    saved,
+                    registered,
+                    gateOpened,
+                    gateNo
+            );
 
         } catch (Exception e) {
             e.printStackTrace();

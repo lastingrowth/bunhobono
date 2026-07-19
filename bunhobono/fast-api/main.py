@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import asyncio
 import os
 from pathlib import Path
 import shutil
@@ -47,8 +48,7 @@ async def lifespan(app: FastAPI):
         for camera in stream["cameras"]:
             workers[camera["cameraNo"]] = worker
 
-        thread = threading.Thread(target=worker.run, daemon=True)
-        thread.start()
+        thread = worker.start()
         threads.append(thread)
 
     app.state.stream_workers = workers
@@ -59,8 +59,9 @@ async def lifespan(app: FastAPI):
 
     for worker in set(workers.values()):
         worker.stop()
-    for thread in threads:
-        thread.join(timeout=3)
+    for worker in set(workers.values()):
+        if worker.thread is not None:
+            worker.thread.join(timeout=3)
     await app.state.spring_client.aclose()
 
 
@@ -112,20 +113,28 @@ def home():
     }
 
 
-def generate_mjpeg(worker):
-    while worker.running:
-        jpeg = worker.get_jpeg_frame()
-        if jpeg is None:
-            time.sleep(0.05)
-            continue
+async def generate_mjpeg(worker):
+    worker.add_viewer()
+    try:
+        while worker.running:
+            jpeg = worker.get_jpeg_frame()
+            if jpeg is None:
+                await asyncio.sleep(0.05)
+                continue
 
-        yield (
-            b"--frame\r\n"
-            b"Content-Type: image/jpeg\r\n\r\n"
-            + jpeg
-            + b"\r\n"
-        )
-        time.sleep(0.03)
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n"
+                + jpeg
+                + b"\r\n"
+            )
+
+            if worker.video_finished:
+                break
+
+            await asyncio.sleep(0.03)
+    finally:
+        worker.remove_viewer()
 
 
 def get_worker(camera_no):
@@ -139,11 +148,24 @@ def get_worker(camera_no):
 
 
 @app.get("/cctv/{camera_no}/stream")
-def cctv_stream(camera_no: int):
+async def cctv_stream(camera_no: int):
     return StreamingResponse(
         generate_mjpeg(get_worker(camera_no)),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
+
+
+@app.get("/cctv/{camera_no}/status")
+def cctv_status(camera_no: int):
+    worker = get_worker(camera_no)
+    return {
+        "cameraNo": camera_no,
+        "paused": worker.pause_event.is_set(),
+        "autoPaused": worker.auto_paused,
+        "pauseReason": worker.pause_reason,
+        "viewerCount": worker.viewer_count,
+        "videoFinished": worker.video_finished,
+    }
 
 
 @app.post("/cctv/{camera_no}/pause")
