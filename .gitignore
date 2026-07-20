@@ -167,3 +167,4 @@ coverage/
 # Miscellaneous Cache
 # ==========================================================
 .cache/tools/
+tools/
