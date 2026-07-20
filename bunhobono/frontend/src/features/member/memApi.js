@@ -5,12 +5,13 @@ export const getMemberList = () => {
     return api.get("/members");
 };
 
-// 선택한 탈퇴 회원을 승인 회원으로 복원한다.
+// 선택한 전출 신청 회원을 거주 상태로 복원
 export const restoreWithdrawnMembers = (memberNos) => {
     return api.put('/members/restore', memberNos);
 };
 
-// 탈퇴 처리된 선택 회원을 영구 삭제한다.
+// 선택한 전출 신청 회원을 전출 확정 처리
+// 실제 member 삭제가 아니라 member_archive에 보관 후 member 원본을 미등록 상태로 비움
 export const permanentlyDeleteWithdrawnMembers = (memberNos) => {
     return api.delete('/members/withdrawn', { data: memberNos });
 };

@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS camera;
 DROP TABLE IF EXISTS vehicle_car;
 DROP TABLE IF EXISTS gate;
 DROP TABLE IF EXISTS parking;
+DROP TABLE IF EXISTS member_archive;
 DROP TABLE IF EXISTS member;
 
 -- =====================================================
@@ -29,6 +30,27 @@ CREATE TABLE member (
     create_at TIMESTAMP,
     delete_at TIMESTAMP,
     mem_status VARCHAR(30)
+);
+
+-- =====================================================
+-- MEMBER ARCHIVE
+-- =====================================================
+CREATE TABLE member_archive (
+    archive_no BIGSERIAL PRIMARY KEY,
+    original_member_no BIGINT NOT NULL,
+
+    login_id VARCHAR(50),
+    mem_name VARCHAR(50),
+    mem_phone VARCHAR(20),
+    role VARCHAR(20),
+    mem_status VARCHAR(20),
+
+    mem_dong INTEGER,
+    mem_ho INTEGER,
+
+    create_at TIMESTAMP,
+    delete_at TIMESTAMP,
+    archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 

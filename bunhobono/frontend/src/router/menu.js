@@ -12,6 +12,10 @@ export const adminMenu = [
     path: '/admin/members'
   },
   {
+    title: '전출 회원 관리',
+    path: '/admin/member-archive'
+  },
+  {
     title: '차량 관리',
     path: '/admin/vehicles'
   },

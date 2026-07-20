@@ -86,11 +86,23 @@ public interface MemberMapper {
     // =====================================================
 
     // 회원목록
-    @Select("SELECT ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) AS display_no, " +
-            "m.*, m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
-            "FROM member m ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC")
-    List<MemberDTO> list();
 
+    @Select("""
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) display_no,
+        m.*,
+        m.create_at mem_create_at,
+        m.delete_at mem_delete_at,
+        EXISTS (
+            SELECT 1
+            FROM member_archive ma
+            WHERE ma.original_member_no = m.member_no
+              AND ma.archived_at > m.create_at
+        ) archived
+    FROM member m
+    ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC
+    """)
+    List<MemberDTO> list();
     // 회원상세
     @Select("SELECT m.*, " +
             "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
@@ -160,19 +172,57 @@ public interface MemberMapper {
         """)
     int approvePendingMembers(@Param("memberNos") List<Long> memberNos);
 
-    // 탈퇴 처리된 선택 회원을 영구 삭제한다.
-    @Delete("""
-        <script>
-        DELETE FROM member
-        WHERE delete_at IS NOT NULL
-          AND member_no IN
-        <foreach collection="memberNos" item="memberNo" open="(" separator="," close=")">
-            #{memberNo}
-        </foreach>
-        </script>
+    // 전출 처리 전, 현재 회원 정보를 member_archive에 복사한다.
+    // member 테이블은 동/호수 자리를 유지해야 하므로 실제 삭제하지 않고,
+    // 삭제 당시의 회원 정보만 archive 테이블에 이력으로 남긴다.
+    @Insert("""
+        INSERT INTO member_archive (
+            original_member_no,
+            login_id,
+            mem_name,
+            mem_phone,
+            role,
+            mem_status,
+            mem_dong,
+            mem_ho,
+            create_at,
+            delete_at
+        )
+        SELECT
+            member_no,
+            login_id,
+            mem_name,
+            mem_phone,
+            role,
+            mem_status,
+            mem_dong,
+            mem_ho,
+            create_at,
+            CURRENT_TIMESTAMP
+        FROM member
+        WHERE member_no = #{memberNo}
         """)
-    int permanentlyDeleteWithdrawnMembers(@Param("memberNos") List<Long> memberNos);
+    int saveMemberArchive(@Param("memberNo") int memberNo);
 
+    // 탈퇴 신청 상태의 회원을 다시 거주 상태로 복원한다.
+    // 아직 member_archive로 이동하기 전 단계에서 사용하는 복원 기능이다.
+    @Update("""
+        UPDATE member
+        SET mem_status = '거주',
+            delete_at = NULL
+        WHERE member_no = #{memberNo}
+        """)
+    int restoreWithdrawnMember(@Param("memberNo") int memberNo);
+
+    // 회원을 탈퇴 신청 상태로 변경한다.
+    // 이 단계에서는 archive 저장, 차량 삭제, 회원 정보 초기화를 하지 않는다.
+    @Update("""
+        UPDATE member
+        SET mem_status = '전출',
+            delete_at = CURRENT_TIMESTAMP
+        WHERE member_no = #{memberNo}
+        """)
+    int requestWithdrawnMember(@Param("memberNo") int memberNo);
 
     @Delete("""
         DELETE FROM vehicle_car
@@ -180,7 +230,8 @@ public interface MemberMapper {
         """)
     int deleteVehiclesByMemberNo(@Param("memberNo") int memberNo);
 
-    // 기존 delete는 유지하되 반환형을 int로 변경 가능
+    // 전출 확정 후 member 원본 행을 미등록 상태로 비운다.
+    // member 행 자체는 삭제하지 않고 동/호수 자리만 유지한다.
     @Update("""
         UPDATE member
         SET login_id = CONCAT('unit_', mem_dong, '_', mem_ho),

@@ -135,7 +135,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
                 key : 'member-approve',
                 title : '회원가입승인',
                 count : waitingMemberCount.value,
-                path : '/admin/members',
+                path : '/admin/members?section=pending',
             },
         ]
     })
