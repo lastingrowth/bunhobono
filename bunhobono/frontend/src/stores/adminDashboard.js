@@ -9,388 +9,370 @@ import { useVehicleStore } from "@/features/vehicle/vehicleStore";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-export const useAdminDashboardStore = defineStore('adminDashboard', () => {
-    
-    const noticeStore = useNoticeStore()
-    const vehicleStore = useVehicleStore()
-    const memberStore = useMemStore()
+export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
-    const gateStore = useGateStore()
-    const parkingStore = useParkingsStore()
+    const noticeStore = useNoticeStore();
+    const vehicleStore = useVehicleStore();
+    const memberStore = useMemStore();
 
-    const carlogStore = useCarlogStore()
+    const gateStore = useGateStore();
+    const parkingStore = useParkingsStore();
 
-    const loading = ref(false)
-    const errorMessage = ref('')
+    const carlogStore = useCarlogStore();
 
-    // 관리자 대시보드 상단의 차량 등록 입력값
-    // 관리자가 대시보드에서 등록한 입주민 차량은 승인 과정 없이 바로 APPROVED 상태로 저장된다.
+    const loading = ref(false);
+    const errorMessage = ref("");
+
+    // 관리자 대시보드 상단 차량 등록 입력값
     const quickVehicle = ref({
-        carNo : '',
-        memDong : '',
-        memHo : '',
-        memberNo : null,
-    })
+        carNo: "",
+        vehicleType: "normal",
+        role: "RESIDENT",
+        periodValue: 1,
+        memberNo: null,
+    });
 
-    // 주차장 카드별 현재 화면 상태
+    // 등록차량이면 개월, 방문차량이면 시간 선택지를 보여준다.
+    const quickPeriodOptions = computed(() => {
+        if (quickVehicle.value.vehicleType === "normal") {
+            return [
+                { value: 1, text: "1개월" },
+                { value: 3, text: "3개월" },
+                { value: 6, text: "6개월" },
+                { value: 12, text: "12개월" },
+            ];
+        }
+
+        return [
+            { value: 2, text: "2시간" },
+            { value: 4, text: "4시간" },
+            { value: 6, text: "6시간" },
+            { value: 8, text: "8시간" },
+            { value: 12, text: "12시간" },
+        ];
+    });
+
+    // /vehicles/search 로 가져온 등록 가능한 회원 목록
+    const quickRegisterMembers = computed(() => {
+        return vehicleStore.registerMembers;
+    });
+
+    // 차량종류/회원구분에 맞는 회원 목록 조회
+    const loadQuickRegisterMembers = async () => {
+        await vehicleStore.loadRegisterMembers({
+            vehicleType: quickVehicle.value.vehicleType,
+            role: quickVehicle.value.role,
+        });
+    };
+
     const parkingCameraModes = ref({
-        'A 주차장' : 'IN',
-        'B 주차장' : 'IN',
-        'C 주차장' : 'IN',
-        'D 주차장' : 'IN'
-    })
+        "A 주차장": "IN",
+        "B 주차장": "IN",
+        "C 주차장": "IN",
+        "D 주차장": "IN",
+    });
 
-    // dialog 로 확대해서 보고 있는 주차장 카드
-    const selectedParkingPanel = ref(null)
+    const selectedParkingPanel = ref(null);
+    const selectedCarlog = ref(null);
+    const cameraDataLogs = ref([]);
 
-    // 오른쪽 입출차 로그에서 선택한 로그
-    const selectedCarlog = ref(null)
-    const cameraDataLogs = ref([])
+    // 예: 12가3456, 123가4567, 서울12가3456
+    const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/;
 
-    // 차량 번호 확인용 정규식
-    // 예 : 12가3456, 서울12가 3456
-    const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
-
-    // 회원 목록에서 동 목록만 중복 제거해서 만든다
-    const dongOptions = computed(() => {
-        return [...new Set(
-            memberStore.memberList
-                .map((member) => member.memDong)
-                .filter((dong) => dong !== null && dong !== undefined && dong !== '')
-                .map((dong) => String(dong))
-        )].sort((a,b) => Number(a) - Number(b))
-    })
-
-    // 선택한 동에 해당하는 호수 목록만 보여준다
-    const hoOptions = computed(() => {
-        return [...new Set(
-            memberStore.memberList
-                .filter((member) => {
-                    return !quickVehicle.value.memDong 
-                        || String(member.memDong ?? '') === quickVehicle.value.memDong
-                })
-                .map((member) => member.memHo)
-                .filter((ho) => ho !== null && ho != undefined && ho !== '')
-                .map((ho) => String(ho))        
-        )].sort((a,b) => Number(a) - Number(b))
-    })
-
-    // 선택한 동/호수에 맞는 입주민만 보여준다
-    const filteredMembers = computed(() => {
-        return memberStore.memberList.filter((member) => {
-            const dongMatched = !quickVehicle.value.memDong
-                || String(member.memDong ?? '') === quickVehicle.value.memDong
-            
-            const hoMatched = !quickVehicle.value.memHo
-                || String(member.memHo ?? '') === quickVehicle.value.memHo
-
-            const isResident = member.role === 'RESIDENT' || member.role === 'resident'
-            const isLiving = member.memStatus === '거주' || member.memStatus === 'APPROVED'
-
-            return dongMatched && hoMatched && isResident && isLiving
-        })
-    })
-
-    // 장기 주차 알림 수
-    // 현재는 notice에서 처리되지 않은 알림을 장기 주차 알림으로 표시한다
     const longParkingNoticeCount = computed(() => {
         return noticeStore.notices.filter((notice) => {
-            const status = notice.alertStat ?? notice.alert_stat
+            const status = notice.alertStat ?? notice.alert_stat;
+            return status === "Unresolved";
+        }).length;
+    });
 
-            return status === 'Unresolved'
-        }).length
-    })
-
-    // 방문 차량 승인 대기 수
     const waitingVisitVehicleCount = computed(() => {
         return vehicleStore.vehicleList.filter((vehicle) => {
-            return vehicle.vehicleType === 'visit'
-                && vehicle.vehicleStatus === 'WAITING'
-        }).length
-    })
+            return vehicle.vehicleType === "visit"
+                && vehicle.vehicleStatus === "WAITING";
+        }).length;
+    });
 
-    // 회원가입 승인 대기 수
     const waitingMemberCount = computed(() => {
         return memberStore.memberList.filter((member) => {
-            return member.role === 'PENDING'
-        }).length
-    })
+            return member.role === "PENDING";
+        }).length;
+    });
 
-    // 화면에서 v-for로 알림 칩을 출력하기 위한 배열
     const dashboardAlerts = computed(() => {
         return [
             {
-                key : 'long-parking',
-                title : '장기주차',
-                count : longParkingNoticeCount.value,
-                path : '/admin/notice',
+                key: "long-parking",
+                title: "장기주차",
+                count: longParkingNoticeCount.value,
+                path: "/admin/notice",
             },
             {
-                key : 'visit-approve',
-                title : '방문승인',
-                count : waitingVisitVehicleCount.value,
-                path : '/admin/vehicles?mode=approve',
+                key: "visit-approve",
+                title: "방문승인",
+                count: waitingVisitVehicleCount.value,
+                path: "/admin/vehicles?mode=approve",
             },
-                        {
-                key : 'member-approve',
-                title : '회원가입승인',
-                count : waitingMemberCount.value,
-                path : '/admin/members?section=pending',
+            {
+                key: "member-approve",
+                title: "회원가입승인",
+                count: waitingMemberCount.value,
+                path: "/admin/members?section=pending",
             },
-        ]
-    })
+        ];
+    });
 
-    // 주차장 이름과 현재 화면 상태에 맞는 게이트를 찾는다
     const findGateByParking = (parkingName, gateType) => {
         return gateStore.list.find((gate) => {
             return gate.parkingName === parkingName
-                && String(gate.gateType).toUpperCase() === gateType
-        })
-    }
+                && String(gate.gateType).toUpperCase() === gateType;
+        });
+    };
 
-    // A/B/C/D 주차장 모니터링 카드 목록
-    // parkingStore.list에 있는 실제 주차장 정보를 기준으로 만든다
     const parkingMonitorPanels = computed(() => {
-        return parkingStore.list.slice(0,4).map((parking, index) => {
-            const mode = parkingCameraModes.value[parking.parkingName] ?? 'IN'
-            const gate = findGateByParking(parking.parkingName, mode)
-            const cameraNo = (index * 2) + (mode === 'IN' ? 1 : 2)
+        return parkingStore.list.slice(0, 4).map((parking, index) => {
+            const mode = parkingCameraModes.value[parking.parkingName] ?? "IN";
+            const gate = findGateByParking(parking.parkingName, mode);
+            const cameraNo = (index * 2) + (mode === "IN" ? 1 : 2);
 
             return {
-                parkingNo : parking.parkingNo,
-                parkingName : parking.parkingName,
-                parkingLocation : parking.parkingLocation,
+                parkingNo: parking.parkingNo,
+                parkingName: parking.parkingName,
+                parkingLocation: parking.parkingLocation,
                 mode,
-                modeText : mode === 'IN' ? '입차' : '출차',
-                modeClass : mode === 'IN' ? 'in' : 'out',
+                modeText: mode === "IN" ? "입차" : "출차",
+                modeClass: mode === "IN" ? "in" : "out",
                 cameraNo,
                 gate,
-            }
-        })
-    })
+            };
+        });
+    });
 
-    // dialog가 열려 있을 때, 갱신된 주차장/게이트 정보로 선택 패널을 다시 맞춘다.
     const refreshSelectedParkingPanel = () => {
         if (!selectedParkingPanel.value) {
-            return
+            return;
         }
 
         const latestPanel = parkingMonitorPanels.value.find((panel) => {
-            return Number(panel.parkingNo) === Number(selectedParkingPanel.value.parkingNo)
-        })
+            return Number(panel.parkingNo) === Number(selectedParkingPanel.value.parkingNo);
+        });
 
-        selectedParkingPanel.value = latestPanel ?? selectedParkingPanel.value
-    }
+        selectedParkingPanel.value = latestPanel ?? selectedParkingPanel.value;
+    };
 
     const refreshGateStatuses = async () => {
-        await gateStore.loadList()
-        refreshSelectedParkingPanel()
-    }
+        await gateStore.loadList();
+        refreshSelectedParkingPanel();
+    };
 
-    // 대시 보드 오른쪽에 보여줄 최신 입출차 로그
     const recentCarlogs = computed(() => {
         return [...carlogStore.carLogs]
-            .sort((left,right) => {
-                const rightTime = new Date(right.outTime ?? right.inTime ?? 0)
-                const leftTime = new Date(left.outTime ?? left.inTime ?? 0)
+            .sort((left, right) => {
+                const rightTime = new Date(right.outTime ?? right.inTime ?? 0);
+                const leftTime = new Date(left.outTime ?? left.inTime ?? 0);
 
-                return rightTime - leftTime
+                return rightTime - leftTime;
             })
-            .slice(0,3)
-    })
+            .slice(0, 3);
+    });
 
     const recentCameraData = computed(() => {
         return [...cameraDataLogs.value]
             .sort((left, right) => {
-                return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0)
+                return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0);
             })
-            .slice(0, 3)
-    })
+            .slice(0, 3);
+    });
 
-    // 입차/출차 버튼을 눌렀을 때 해당 주차장의 화면 상태를 바꾼다
     const toggleParkingCamera = (parkingName) => {
-        const currentMode = parkingCameraModes.value[parkingName] ?? 'IN'
+        const currentMode = parkingCameraModes.value[parkingName] ?? "IN";
 
         parkingCameraModes.value = {
             ...parkingCameraModes.value,
-            [parkingName] : currentMode === 'IN' ? 'OUT' : 'IN'
-        }
+            [parkingName]: currentMode === "IN" ? "OUT" : "IN",
+        };
 
-        refreshSelectedParkingPanel()
-    }
+        refreshSelectedParkingPanel();
+    };
 
-    // 주차장 카드를 클릭하면 dialog에 표시할 데이터를 저장한다
     const selectParkingPanel = (panel) => {
-        selectedParkingPanel.value = panel
-    }
+        selectedParkingPanel.value = panel;
+    };
 
-    // dialog를 닫을 때 선택된 주차장 데이터를 비운다
     const closeParkingPanel = () => {
-        selectedParkingPanel.value = null
-    }
+        selectedParkingPanel.value = null;
+    };
 
-    // 입출차 로그 행을 클릭했을 때 상세 정보에 표시한다
     const selectCarlog = (log) => {
-        selectedCarlog.value = log
-    }
+        selectedCarlog.value = log;
+    };
 
-    // OCR 처리 직후 목록만 갱신하고 사용자가 선택한 행은 가능하면 유지한다.
     const refreshCarlogs = async () => {
-        const selectedNo = selectedCarlog.value?.carLogNo
+        const selectedNo = selectedCarlog.value?.carLogNo;
 
         const [, cameraDataResponse] = await Promise.all([
             carlogStore.loadCarLogs(),
             getCameraDataList(),
-        ])
+        ]);
 
         cameraDataLogs.value = Array.isArray(cameraDataResponse.data)
             ? cameraDataResponse.data
-            : []
+            : [];
 
         selectedCarlog.value = carlogStore.carLogs.find((log) => {
-            return Number(log.carLogNo) === Number(selectedNo)
-        }) ?? recentCarlogs.value[0] ?? null
-    }
+            return Number(log.carLogNo) === Number(selectedNo);
+        }) ?? recentCarlogs.value[0] ?? null;
+    };
 
-    // 주차 상태별 색상 class를 정한다.
     const parkingStateClass = (log) => {
-        if (log.parkingState === 'PARKING') {
-            return 'parking'
+        if (log.parkingState === "PARKING") {
+            return "parking";
         }
 
-        if (log.parkingState === 'OUT') {
-            return 'out'
+        if (log.parkingState === "OUT") {
+            return "out";
         }
 
-        return 'unknown'
-    }
+        return "unknown";
+    };
 
-    // 관리자가 수동으로 게이트를 여는 함수
-    // 백엔드 open API가 5초 뒤 자동 닫힘까지 처리
     const openManualGate = async (gate, cameraDataNo = null) => {
         if (!gate) {
-            alert('연결된 게이트가 없습니다')
-            return
+            alert("연결된 게이트가 없습니다");
+            return false;
         }
 
-        // 백엔드 /open API를 호출한다.
-        // 백엔드에서 게이트를 열고, scheduleClose로 자동 닫힘까지 예약한다.
-        let opened = false
+        let opened = false;
 
         if (cameraDataNo) {
-            const response = await openGateByCameraData(cameraDataNo)
-            opened = response.data === 1
+            const response = await openGateByCameraData(cameraDataNo);
+            opened = response.data === 1;
         } else {
-            opened = await gateStore.open(gate.gateNo)
+            opened = await gateStore.open(gate.gateNo);
         }
 
         if (!opened) {
-            return false
+            return false;
         }
 
-        // 게이트 개방 성공을 먼저 반환해 CCTV가 즉시 재생되게 한다.
-        // 화면 데이터 갱신 실패가 영상 재생을 막지 않도록 별도로 처리한다.
         Promise.all([
             gateStore.loadList(),
             refreshCarlogs(),
         ]).then(() => {
-            refreshSelectedParkingPanel()
+            refreshSelectedParkingPanel();
         }).catch((error) => {
-            console.error('게이트 개방 후 화면 갱신 실패', error)
-        })
+            console.error("게이트 개방 후 화면 갱신 실패", error);
+        });
 
-        // 백엔드 자동 닫힘 시간이 지난 뒤 다시 조회해서 닫힘 상태를 화면에 반영한다.
         setTimeout(() => {
             gateStore.loadList()
                 .then(refreshSelectedParkingPanel)
                 .catch((error) => {
-                    console.error('게이트 닫힘 상태 갱신 실패', error)
-                })
-        }, 5500)
+                    console.error("게이트 닫힘 상태 갱신 실패", error);
+                });
+        }, 5500);
 
-        return true
-    }
+        return true;
+    };
 
-    // 동 표시 형식
     const dongText = (dong) => {
-        if (String(dong) === '0') {
-            return '관리동'
+        if (String(dong) === "0") {
+            return "관리동";
         }
 
-        return `${dong}동`
-    }
+        return `${dong}동`;
+    };
 
-    // 호수 표시 형식
     const hoText = (ho) => {
-        if (String(ho) === '0') {
-            return '관리실'
+        if (String(ho) === "0") {
+            return "관리실";
         }
 
-        return `${ho}호`
-    }
+        return `${ho}호`;
+    };
 
-    // 입주민 select에 표시할 문구
     const memberLabel = (member) => {
-        return `${dongText(member.memDong)} ${hoText(member.memHo)} / ${member.memName}`
-    }
+        return `${dongText(member.memDong)} ${hoText(member.memHo)} / ${member.memName}`;
+    };
 
-    // 차량 등록 입력값 초기화
     const resetQuickVehicle = () => {
         quickVehicle.value = {
-            carNo : '',
-            memDong : '',
-            memHo : '',
-            memberNo : null,            
-        }
-    }
+            carNo: "",
+            vehicleType: "normal",
+            role: "RESIDENT",
+            periodValue: 1,
+            memberNo: null,
+        };
+    };
 
-    // 관리자 대시보드에서 입주민 차량을 등록
-    // 관리자가 등록하는 입주민 차량은 normal 타입으로 보내고, 백엔드에서 APPROVED 상태로 저장한다.
     const submitQuickVehicle = async () => {
-        const normalizedCarNo = quickVehicle.value.carNo.trim().replace(/\s/g, '')
+        const normalizedCarNo = quickVehicle.value.carNo.trim().replace(/\s/g, "");
 
-        if (normalizedCarNo === '') {
-            alert('차량번호를 입력하세요')
-            return
+        if (normalizedCarNo === "") {
+            alert("차량번호를 입력하세요");
+            return;
         }
 
         if (!carNoPattern.test(normalizedCarNo)) {
-            alert('차량번호 형식이 올바르지 않습니다. 예: 12가3456')
-            return
+            alert("차량번호 형식이 올바르지 않습니다. 예: 12가3456");
+            return;
         }
 
         if (!quickVehicle.value.memberNo) {
-            alert('입주민을 선택하세요')
-            return
+            alert("회원을 선택하세요");
+            return;
+        }
+
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+
+        if (quickVehicle.value.vehicleType === "normal") {
+            endDate.setMonth(endDate.getMonth() + Number(quickVehicle.value.periodValue));
+        } else {
+            endDate.setHours(endDate.getHours() + Number(quickVehicle.value.periodValue));
         }
 
         try {
             await vehicleStore.addVehicle({
-                carNo : normalizedCarNo,
-                vehicleType : 'normal',
-                memberNo : quickVehicle.value.memberNo,
-            })
+                carNo: normalizedCarNo,
+                vehicleType: quickVehicle.value.vehicleType,
+                vehicleStatus: "APPROVED",
+                memberNo: quickVehicle.value.memberNo,
+                startDate: formatDateTimeValue(startDate),
+                endDate: formatDateTimeValue(endDate),
+            });
 
-            await vehicleStore.loadVehicleList()
+            await vehicleStore.loadVehicleList();
+            await loadQuickRegisterMembers();
 
-            alert('차량이 등록되었습니다')
-            resetQuickVehicle()
+            alert("차량이 등록되었습니다");
+            resetQuickVehicle();
         } catch (e) {
-            console.error(e)
+            console.error(e);
 
             if (e.response?.status === 409) {
-                alert('이미 등록 또는 승인 대기 중인 차량번호입니다')
-                return
+                alert("차량 등록 조건에 맞지 않습니다");
+                return;
             }
 
-            alert('차량 등록 중 오류가 발생했습니다')
+            alert("차량 등록 중 오류가 발생했습니다");
         }
+    };
+
+    function formatDateTimeValue(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const dd = String(date.getDate()).padStart(2, "0");
+        const hh = String(date.getHours()).padStart(2, "0");
+        const mi = String(date.getMinutes()).padStart(2, "0");
+        const ss = String(date.getSeconds()).padStart(2, "0");
+
+        return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`;
     }
 
-    // 대시보드 진입 시 상단 카드에 필요한 데이터를 조회한다
     const loadDashboard = async () => {
-        loading.value = true
-        errorMessage.value = ''
+        loading.value = true;
+        errorMessage.value = "";
 
         try {
             await Promise.all([
@@ -400,30 +382,31 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
                 parkingStore.loadList(),
                 gateStore.loadList(),
                 carlogStore.loadCarLogs(),
+                loadQuickRegisterMembers(),
                 getCameraDataList().then((response) => {
                     cameraDataLogs.value = Array.isArray(response.data)
                         ? response.data
-                        : []
-                })
-            ])
+                        : [];
+                }),
+            ]);
 
-            selectedCarlog.value = recentCarlogs.value[0] ?? null
+            selectedCarlog.value = recentCarlogs.value[0] ?? null;
         } catch (e) {
-            console.log(e)
-            errorMessage.value = '대시보드 정보를 불러오지 못했습니다'
+            console.log(e);
+            errorMessage.value = "대시보드 정보를 불러오지 못했습니다";
         } finally {
-            loading.value = false
+            loading.value = false;
         }
-    }
+    };
 
     return {
         loading,
         errorMessage,
 
         quickVehicle,
-        dongOptions,
-        hoOptions,
-        filteredMembers,
+        quickPeriodOptions,
+        quickRegisterMembers,
+
         dashboardAlerts,
         parkingMonitorPanels,
         selectedParkingPanel,
@@ -431,10 +414,10 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
         recentCameraData,
         selectedCarlog,
 
-        dongText,
-        hoText,
         memberLabel,
         submitQuickVehicle,
+        loadQuickRegisterMembers,
+
         toggleParkingCamera,
         selectParkingPanel,
         closeParkingPanel,
@@ -444,5 +427,5 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
         openManualGate,
         refreshGateStatuses,
         loadDashboard,
-    }
-})
+    };
+});

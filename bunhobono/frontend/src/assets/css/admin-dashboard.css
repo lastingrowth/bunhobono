@@ -105,6 +105,7 @@
 }
 
 .quick-register-inline button {
+  min-width: 72px;
   height: 42px;
   padding: 0 16px;
   border: 1px solid var(--dashboard-blue);
@@ -991,4 +992,9 @@
   .selected-log-info {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+.admin-dashboard dd.danger-text,
+.admin-dashboard td.danger-text {
+  color: #dc2626 !important;
+  font-weight: 800;
 }
