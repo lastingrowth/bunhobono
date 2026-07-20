@@ -1,54 +1,426 @@
 <template>
-  <div>
-    <h2>주차장 목록(관리자용)</h2>
-    <table border="1">
-      <thead>
-        <tr>
-          <th>주차장번호</th>
-          <th>주차장이름</th>
-          <th>주차가용 수</th>
-          <th>주차장위치</th>
-          <th>주차중</th>
-          <th>비고</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="p in pStore.list" :key="p.parkingNo">
-          <td>{{ p.displayNo }}</td>
-          <td>{{ p.parkingName }}</td>
-          <td>{{ p.parkingSpaces }}</td>
-          <td>{{ p.parkingLocation }}</td>
-          <td>
-            {{ p.parkingSpaces - p.availableSpaces }}/{{ p.parkingSpaces }}
-          </td>
-          <td>
-            <button @click="goEdit(p.parkingNo)">수정</button>
-            <button @click="pStore.remove(p.parkingNo)">삭제</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <button @click="goSignUp">주차장 등록</button>
-  </div>
+  <section class="parking-page">
+    <!-- 주차장 목록 제목 + 등록 버튼 -->
+    <div class="page-heading">
+      <div>
+        <h2>주차장 목록</h2>
+        <p>주차장 구역과 전체 주차 면수를 관리합니다</p>
+      </div>
+
+      <button
+        class="register-button"
+        type="button"
+        @click="openDialog">
+        + 주차장 등록
+      </button>
+    </div>
+    
+    <!-- 주차장 목록 -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>주차장번호</th>
+            <th>주차장이름</th>
+            <th>주차가용 수</th>
+            <th>주차장위치</th>
+            <th>주차중</th>
+            <th>관리</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="p in pStore.list" :key="p.parkingNo">
+            <td>{{ p.displayNo }}</td>
+            <td>{{ p.parkingName }}</td>
+            <td>{{ p.parkingSpaces }}</td>
+            <td>{{ p.parkingLocation }}</td>
+            <td>
+              {{ p.parkingSpaces - p.availableSpaces }}/{{ p.parkingSpaces }}
+            </td>
+            <td>
+              <button class="edit-button" type="button" @click="goEdit(p.parkingNo)">수정</button>
+              <button class="delete-button" type="button" @click="pStore.remove(p.parkingNo)">삭제</button>
+            </td>
+          </tr>
+
+          <tr v-if="pStore.list.length === 0">
+            <td class="empty-row" colspan="6">
+              등록된 주차장이 없습니다.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 주차장 등록 다이얼로그 -->
+    <dialog
+      ref="registerDialog"
+      class="parking-dialog"
+      @close="resetForm"
+      @click="closeOnBackdrop">
+      <form
+        class="dialog-form"
+        @submit.prevent="signupGo">
+        
+        <!-- 다이얼로그 제목 -->
+        <div class="dialog-heading">
+          <div>
+            <h3>새 주차장 등록</h3>
+            <p>주차장 이름, 면수, 위치를 입력해 주세요</p>
+          </div>
+
+          <button
+            class="dialog-close"
+            type="button"
+            aria-label="등록 창 닫기"
+            @click="closeDialog">
+            ✕
+          </button>
+        </div>
+
+        <!-- 주차장 등록 입력 영역 -->
+        <div class="form-grid parking-form-grid">
+          <label>
+            <span>주차장 이름</span>
+            <input
+              v-model.trim="parking.parkingName" 
+              type="text"
+              placeholder="예 : A 주차장"
+              required />
+          </label>
+
+          <label>
+            <span>전체 주차 면수</span>
+            <input
+              v-model.number="parking.parkingSpaces" 
+              type="number"
+              min="0"
+              placeholder="예 : 100"
+              required />
+          </label>
+
+          <label>
+            <span>주차장 위치</span>
+            <input
+              v-model.trim="parking.parkingLocation" 
+              type="text"
+              placeholder="예 : A동 지상"
+              required />
+          </label>
+        </div>
+
+        <!-- 다이얼로그 하단 버튼 -->
+        <div class="form-actions">
+          <button
+            class="cancel-button"
+            type="button"
+            @click="closeDialog">    
+            취소
+          </button>
+
+          <button
+            class="submit-button"
+            type="submit">    
+            등록
+          </button>
+        </div>
+      </form>
+    </dialog>
+  </section>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useParkingsStore } from './parkingsStore';
-import { useRouter } from 'vue-router';
 
 const pStore = useParkingsStore();
-const router = useRouter();
+
+const registerDialog = ref(null)
+
+// 빈 주차장 등록 정보 생성
+const createEmptyParking = () => ({
+  parkingName: '',
+  parkingSpaces: '',
+  parkingLocation: '',
+})
+
+const parking = ref(createEmptyParking())
+
+// 주차장 등록 다이얼로그 열기
+const openDialog = () => {
+  parking.value = createEmptyParking()
+  registerDialog.value.showModal()
+}
+
+// 주차장 등록 다이얼로그 닫기
+const closeDialog = () => {
+  registerDialog.value.close()
+}
+
+// 다이얼로그가 닫히면 입력값 초기화
+const resetForm = () => {
+  parking.value = createEmptyParking()
+}
+
+// 검은 배경 영역을 클릭하면 다이얼로그 닫기
+const closeOnBackdrop = (event) => {
+  if (event.target === registerDialog.value) {
+    closeDialog()
+  }
+}
+
+// 주차장 등록
+const signupGo = async () => {
+  try {
+    await pStore.signup(parking.value)
+    await pStore.loadList()
+    closeDialog()
+    alert('주차장 등록 완료')
+  } catch (error) {
+    console.error(error)
+    alert('주차장 등록 실패')
+  }
+}
 
 onMounted(() => {
   pStore.loadList();
 });
 
-const goSignUp = () => {
-  router.push("/admin/parkings/signUp"); // 등록 컴포넌트 라우트로 이동
-};
-
-const goEdit = (parkingNo) => {
-  router.push(`/admin/parkings/${parkingNo}/edit`);
-};
 </script>
+
+<style scoped>
+.parking-page {
+  padding: 8px 0 32px;
+  color: #253047;
+}
+
+.page-heading {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-heading h2 {
+  margin: 0 0 6px;
+  font-size: 26px;
+}
+
+.page-heading p,
+.dialog-heading p {
+  margin: 0;
+  color: #778197;
+  font-size: 14px;
+}
+
+.register-button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #2d8cff;
+  border-radius: 10px;
+  background: #2d8cff;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.register-button:hover {
+  background: #1677e8;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid #d8e1ec;
+  border-radius: 14px;
+  background: #fff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e1e8f0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  background: #f8fafc;
+  color: #1f2f46;
+  font-weight: 800;
+}
+
+td {
+  color: #26384f;
+}
+
+tbody tr:hover {
+  background: #f7fbff;
+}
+
+.empty-row {
+  padding: 40px 16px;
+  color: #8a96a8;
+  text-align: center;
+}
+
+.delete-button {
+  padding: 8px 14px;
+  border: 1px solid #d6e0eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #1f2f46;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  border-color: #ff6b6b;
+  color: #e03131;
+}
+
+/* 주차장 등록 다이얼로그 */
+.parking-dialog {
+  width: min(560px, calc(100% - 32px));
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.parking-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.dialog-form {
+  padding: 22px 18px 18px;
+}
+
+.dialog-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.dialog-heading h3 {
+  margin: 0 0 6px;
+  color: #1f2f46;
+  font-size: 22px;
+}
+
+/* 카메라/게이트 등록창과 같은 닫기 버튼 스타일 */
+.parking-dialog button.dialog-close {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #778197;
+  background: #f1f3f7;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.parking-dialog button.dialog-close:hover {
+  color: #253047;
+  background: #e5e9f0;
+  transform: none;
+}
+
+.form-grid {
+  display: grid;
+  gap: 16px;
+}
+
+/* 주차장 등록 입력칸을 게이트 등록처럼 가로 한 줄로 배치 */
+.parking-form-grid {
+  grid-template-columns: 1fr 0.8fr 1fr;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.form-grid span {
+  color: #34445c;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.form-grid input {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d3deeb;
+  border-radius: 10px;
+  color: #1f2f46;
+  font-size: 15px;
+}
+
+.form-grid input:focus {
+  outline: none;
+  border-color: #2d8cff;
+  box-shadow: 0 0 0 3px rgba(45, 140, 255, 0.14);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cancel-button,
+.submit-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cancel-button {
+  border: 1px solid #d6e0eb;
+  background: #fff;
+  color: #4d5b70;
+}
+
+.submit-button {
+  border: 1px solid #2d8cff;
+  background: #2d8cff;
+  color: #fff;
+}
+
+.cancel-button:hover {
+  background: #f5f7fa;
+}
+
+.submit-button:hover {
+  background: #1677e8;
+}
+
+@media (max-width: 720px) {
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .parking-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

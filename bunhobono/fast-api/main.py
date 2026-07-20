@@ -25,8 +25,6 @@ SPRING_URL = os.getenv(
     "http://localhost:80/api/camera-data/ocr",
 )
 
-OCR_CONFIRM_SCORE = 0.95
-
 PREPROCESS_DIR = BASE_DIR / "runtime" / "preprocess"
 ERROR_DIR = BASE_DIR / "runtime" / "errors"
 
@@ -130,10 +128,10 @@ def make_empty_ocr_result(mode: str = "ocr_pipeline_error"):
     }
 
 
-def is_confirmed_ocr(ocr_result: dict) -> bool:
+def is_readable_ocr(ocr_result: dict) -> bool:
     return (
         ocr_result.get("is_valid_plate", False)
-        and float(ocr_result.get("score", 0.0)) >= OCR_CONFIRM_SCORE
+        and bool(str(ocr_result.get("text", "")).strip())
     )
 
 
@@ -212,7 +210,6 @@ def home():
     return {
         "msg": "Fast API",
         "spring_url": SPRING_URL,
-        "ocr_confirm_score": OCR_CONFIRM_SCORE,
         "cameras": list(app.state.stream_workers.keys()),
     }
 
@@ -419,7 +416,7 @@ async def ocr_test(file: UploadFile = File(...)):
     raw_car_no = ocr_result.get("text", "")
     score = float(ocr_result.get("score", 0.0))
 
-    if not is_confirmed_ocr(ocr_result):
+    if not is_readable_ocr(ocr_result):
         error_image_path = save_error_image(
             image_bytes=image,
             reason="unrecognized_plate",
@@ -433,7 +430,6 @@ async def ocr_test(file: UploadFile = File(...)):
             "carNo": "미인식",
             "rawCarNo": raw_car_no,
             "ocr_score": score,
-            "ocr_confirm_score": OCR_CONFIRM_SCORE,
             "selected_mode": ocr_result.get("mode"),
             "selector_score": ocr_result.get("selector_score"),
             "detect": detect_result,
@@ -447,7 +443,6 @@ async def ocr_test(file: UploadFile = File(...)):
         "carNo": raw_car_no,
         "rawCarNo": raw_car_no,
         "ocr_score": score,
-        "ocr_confirm_score": OCR_CONFIRM_SCORE,
         "selected_mode": ocr_result.get("mode"),
         "selector_score": ocr_result.get("selector_score"),
         "detect": detect_result,
@@ -565,7 +560,7 @@ async def ocr(
     raw_car_no = ocr_result.get("text", "")
     score = float(ocr_result.get("score", 0.0))
 
-    if is_confirmed_ocr(ocr_result):
+    if is_readable_ocr(ocr_result):
         car_no = raw_car_no
         success = True
         message = "YOLO + 전처리 OCR 처리 후 Spring OCR 전송 완료"
@@ -601,7 +596,6 @@ async def ocr(
         "carNo": car_no,
         "rawCarNo": raw_car_no,
         "ocr_score": score,
-        "ocr_confirm_score": OCR_CONFIRM_SCORE,
         "selected_mode": ocr_result.get("mode"),
         "selector_score": ocr_result.get("selector_score"),
         "error_image_path": error_image_path,

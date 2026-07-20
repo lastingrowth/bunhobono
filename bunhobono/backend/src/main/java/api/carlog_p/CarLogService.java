@@ -31,6 +31,16 @@ public class CarLogService {
         return carLogMapper.existsOpenLog(cameraData);
     }
 
+    public CarLogDTO findCurrentlyParked(CameraDataDTO cameraData) {
+        if (cameraData == null ||
+                cameraData.getCarNo() == null ||
+                cameraData.getCarNo().isBlank()) {
+            return null;
+        }
+
+        return carLogMapper.findOpenLog(cameraData);
+    }
+
     // camera_data 저장 직후 호출: 연결된 게이트 유형에 따라 입차 생성 또는 출차 처리
     public void processCameraData(CameraDataDTO cameraData) {
         if (cameraData.getCarNo() == null || cameraData.getCarNo().isBlank()) {
