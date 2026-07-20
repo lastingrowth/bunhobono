@@ -7,22 +7,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class MemberService {
 
+    private static final String CAPTCHA_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int CAPTCHA_LENGTH = 5;
+    private static final int CAPTCHA_EXPIRE_MINUTES = 3;
+    private final SecureRandom secureRandom = new SecureRandom();
+    private final Map<String, CaptchaData> captchaStore = new ConcurrentHashMap<>();
 
-    // 회원가입 계정은 영문·숫자·특수기호 조합, 이름은 한글만 허용한다.
-    private static final Pattern LOGIN_ID_PATTERN = Pattern.compile(
-            "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{3,20}$"
-    );
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-            "^\\d{4,20}$"
-    );
-    private static final Pattern NAME_PATTERN = Pattern.compile("^(?=.*[가-힣])(?=.*\\d)[가-힣\\d]{2,20}$");
+    private record CaptchaData(String answer, LocalDateTime expiresAt) {}
 
 
     @Resource MemberMapper mapper;
@@ -30,18 +39,87 @@ public class MemberService {
     @Resource
     PasswordEncoder passwordEncoder;
 
+    // 전출 신청된 회원을 복원한다.
+// member_archive로 이동하기 전 단계에서 탈퇴 신청을 취소하는 기능이다.
+    @Transactional
+    public void restoreWithdrawnMember(int memberNo) {
+        MemberDTO savedMember = mapper.detail(memberNo);
+
+        if (savedMember == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "회원을 찾을 수 없습니다."
+            );
+        }
+
+        int restored = mapper.restoreWithdrawnMember(memberNo);
+
+        if (restored == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "복원할 수 없는 회원입니다."
+            );
+        }
+    }
+
+    // 전출 신청된 회원을 확정 처리한다.
+    // 회원 정보는 member_archive에 복사하고, member 원본은 동/호수 자리만 남기도록 초기화한다.
+    @Transactional
+    public void confirmWithdrawnMember(int memberNo) {
+        MemberDTO savedMember = mapper.detail(memberNo);
+
+        if (savedMember == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "회원을 찾을 수 없습니다."
+            );
+        }
+
+        mapper.saveMemberArchive(memberNo);
+
+        mapper.deleteVehiclesByMemberNo(memberNo);
+
+        int updated = mapper.delete(memberNo);
+
+        if (updated == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "전출 확정 처리에 실패했습니다."
+            );
+        }
+    }
+    // 선택한 탈퇴 신청 회원들을 다시 거주 상태로 복원한다.
+    @Transactional
+    public int restoreWithdrawnMembers(List<Long> memberNos) {
+        if (memberNos == null || memberNos.isEmpty()) {
+            throw new IllegalArgumentException("복원할 회원을 선택해 주세요.");
+        }
+
+        for (Long memberNo : memberNos) {
+            restoreWithdrawnMember(memberNo.intValue());
+        }
+
+        return memberNos.size();
+    }
+
+    // 선택한 탈퇴 신청 회원들을 전출 확정 처리한다.
+    // 실제 member 삭제가 아니라 archive 보관 후 member 원본을 미등록 상태로 비운다.
+    @Transactional
     public int permanentlyDeleteWithdrawnMembers(List<Long> memberNos) {
         if (memberNos == null || memberNos.isEmpty()) {
-            throw new IllegalArgumentException("영구 삭제할 회원을 선택해 주세요.");
+            throw new IllegalArgumentException("전출 확정할 회원을 선택해 주세요.");
         }
-        return mapper.permanentlyDeleteWithdrawnMembers(memberNos);
+
+        for (Long memberNo : memberNos) {
+            confirmWithdrawnMember(memberNo.intValue());
+        }
+
+        return memberNos.size();
     }
 
     // 회원가입
     @Transactional
     public void signup(MemberDTO dto) {
-        validateSignup(dto);
-
         // 프론트 입력값과 관계없이 DB 권한 형식을 대문자로 통일한다.
         if (dto.getRole() != null) {
             dto.setRole(dto.getRole().toUpperCase());
@@ -76,34 +154,6 @@ public class MemberService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 거주 중이거나 가입 신청이 접수된 세대입니다.");
         }
     }
-
-    // 회원가입 요청을 서버에서도 검증해 잘못된 값의 저장을 차단.
-    private void validateSignup(MemberDTO dto) {
-        if (!matches(NAME_PATTERN, dto.getMemName())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "이름은 한글과 숫자를 조합해 2~20자로 입력하세요."
-            );
-        }
-        if (!matches(LOGIN_ID_PATTERN, dto.getLoginId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "아이디는 영문과 숫자를 조합해 3~20자로 입력하세요."
-            );
-        }
-        if (!matches(PASSWORD_PATTERN, dto.getLoginPwd())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "비밀번호는 숫자 4~20자로 입력하세요."
-            );
-        }
-    }
-
-    // 정규식 검증 전 빈 값을 함께 차단한다.
-    private boolean matches(Pattern pattern, String value) {
-        return value != null && pattern.matcher(value).matches();
-    }
-
 
     // 회원 전체 조회
     public List<MemberDTO> list(){
@@ -174,7 +224,8 @@ public class MemberService {
         mapper.approvePendingMembers(memberNos);
     }
 
-    // 전출 하고나면 차량을 삭제한다.
+    // 회원을 탈퇴 신청 상태로 변경한다.
+    // 이 단계에서는 archive 저장, 차량 삭제, 회원 정보 초기화를 하지 않는다.
     @Transactional
     public void delete(int memberNo, String currentLoginId) {
         MemberDTO savedMember = mapper.detail(memberNo);
@@ -194,17 +245,12 @@ public class MemberService {
             );
         }
 
-        // 차량 삭제
-        // 관련 카메라·입출차 FK는 DB에서 자동 NULL 처리
-        mapper.deleteVehiclesByMemberNo(memberNo);
-
-        // 회원을 전출·공실 상태로 변경
-        int updated = mapper.delete(memberNo);
+        int updated = mapper.requestWithdrawnMember(memberNo);
 
         if (updated == 0) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "전출 처리할 회원이 없습니다."
+                    "전출 신청 처리할 회원이 없습니다."
             );
         }
     }
@@ -241,9 +287,164 @@ public class MemberService {
         mapper.residentMypageEdit(dto);
     }
 
-    // 입주민 본인 회원 탈퇴
-    public void residentDelete(String loginId) {
-        mapper.residentDelete(loginId);
+    // 보안문자 정답은 서버에만 저장하고 화면에는 PNG 이미지만 전달한다.
+    public Map<String, String> issueSecurityChallenge() {
+        String challengeId = UUID.randomUUID().toString();
+        String answer = createCaptchaAnswer();
+        captchaStore.put(challengeId, new CaptchaData(
+                answer,
+                LocalDateTime.now().plusMinutes(CAPTCHA_EXPIRE_MINUTES)
+        ));
+
+        return Map.of(
+                "challengeId", challengeId,
+                "imageData", createCaptchaImage(answer),
+                "expiresIn", "180"
+        );
+    }
+
+    private String createCaptchaAnswer() {
+        StringBuilder answer = new StringBuilder();
+        for (int index = 0; index < CAPTCHA_LENGTH; index++) {
+            answer.append(CAPTCHA_CHARS.charAt(secureRandom.nextInt(CAPTCHA_CHARS.length())));
+        }
+        return answer.toString();
+    }
+
+    private String createCaptchaImage(String answer) {
+        try {
+            int width = 180;
+            int height = 60;
+            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = image.createGraphics();
+            graphics.setColor(new Color(245, 248, 252));
+            graphics.fillRect(0, 0, width, height);
+
+            for (int index = 0; index < 8; index++) {
+                graphics.setColor(new Color(
+                        secureRandom.nextInt(180),
+                        secureRandom.nextInt(180),
+                        secureRandom.nextInt(180)
+                ));
+                graphics.drawLine(
+                        secureRandom.nextInt(width), secureRandom.nextInt(height),
+                        secureRandom.nextInt(width), secureRandom.nextInt(height)
+                );
+            }
+
+            graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 32));
+            for (int index = 0; index < answer.length(); index++) {
+                graphics.setColor(new Color(
+                        secureRandom.nextInt(100),
+                        secureRandom.nextInt(100),
+                        secureRandom.nextInt(150)
+                ));
+                graphics.drawString(
+                        String.valueOf(answer.charAt(index)),
+                        20 + index * 30,
+                        40 + secureRandom.nextInt(10) - 5
+                );
+            }
+            graphics.dispose();
+
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", output);
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(output.toByteArray());
+        } catch (Exception exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "보안문자 생성에 실패했습니다."
+            );
+        }
+    }
+
+    private void verifySecurityChallenge(String challengeId, String challengeAnswer) {
+        verifySecurityChallenge(challengeId, challengeAnswer, true);
+    }
+
+    private void verifySecurityChallenge(String challengeId, String challengeAnswer, boolean consume) {
+        if (challengeId == null || challengeAnswer == null || challengeAnswer.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "보안문자를 입력해주세요.");
+        }
+
+        CaptchaData captcha = consume
+                ? captchaStore.remove(challengeId)
+                : captchaStore.get(challengeId);
+        if (captcha == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "보안문자가 존재하지 않거나 이미 사용되었습니다."
+            );
+        }
+        if (LocalDateTime.now().isAfter(captcha.expiresAt())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "보안문자가 만료되었습니다.");
+        }
+        if (!captcha.answer().equalsIgnoreCase(challengeAnswer.trim())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "보안문자가 일치하지 않습니다.");
+        }
+    }
+
+    // 실제 탈퇴 전에 비밀번호와 보안문자만 확인하고 회원 상태는 변경하지 않는다.
+    public void verifyResidentWithdrawal(
+            String loginId,
+            String currentPassword,
+            String challengeId,
+            String challengeAnswer
+    ) {
+        verifySecurityChallenge(challengeId, challengeAnswer, false);
+        verifyResidentPassword(loginId, currentPassword);
+    }
+
+    private String verifyResidentPassword(String loginId, String currentPassword) {
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호를 입력해주세요.");
+        }
+
+        String savedPassword = mapper.findResPw(loginId);
+        if (savedPassword == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "입주민 계정을 찾을 수 없습니다.");
+        }
+        if (!passwordEncoder.matches(currentPassword, savedPassword)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "현재 비밀번호가 일치하지 않습니다.");
+        }
+        return savedPassword;
+    }
+
+    @Transactional
+    public void residentDelete(
+            String loginId,
+            String currentPassword,
+            String challengeId,
+            String challengeAnswer
+    ) {
+        verifySecurityChallenge(challengeId, challengeAnswer);
+        verifyResidentPassword(loginId, currentPassword);
+        if (mapper.residentDelete(loginId) != 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "회원탈퇴에 실패했습니다.");
+        }
+    }
+
+    @Transactional
+    public void changeResidentPassword(
+            String loginId,
+            String currentPassword,
+            String newPassword,
+            String challengeId,
+            String challengeAnswer
+    ) {
+        verifySecurityChallenge(challengeId, challengeAnswer);
+        String savedPassword = verifyResidentPassword(loginId, currentPassword);
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "새 비밀번호를 입력하세요.");
+        }
+        if (passwordEncoder.matches(newPassword, savedPassword)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호와 다른 비밀번호를 입력하세요.");
+        }
+
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        if (mapper.changeResidentPassword(loginId, encodedPassword) != 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호 변경에 실패했습니다.");
+        }
     }
 
     // 아이디 중복확인

@@ -1,17 +1,45 @@
 package api.member_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RequestMapping("/api")
 @RestController
 public class MemberController {
 
+    public record ResidentSecurityRequest(
+            String currentPassword,
+            String newPassword,
+            String challengeId,
+            String challengeAnswer
+    ) {}
+
     @Resource
     MemberService service;
+
+    private String authenticatedLoginId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        return authentication.getName();
+    }
+
+    // 비밀번호·보안문자 검증 실패 사유를 화면에서 그대로 안내할 수 있도록 응답한다.
+    private ResponseEntity<Map<String, String>> securityFailure(ResponseStatusException exception) {
+        String message = exception.getReason() == null
+                ? "요청을 처리하지 못했습니다."
+                : exception.getReason();
+        return ResponseEntity
+                .status(exception.getStatusCode())
+                .body(Map.of("message", message));
+    }
 
     // 회원가입
     @PostMapping("/members")
@@ -49,8 +77,14 @@ public class MemberController {
         return service.list();
     }
 
+    // 선택한 탈퇴 신청 회원들을 다시 거주 상태로 복원한다.
+    @PutMapping("/members/restore")
+    public int restoreWithdrawnMembers(@RequestBody List<Long> memberNos) {
+        return service.restoreWithdrawnMembers(memberNos);
+    }
 
-    // 탈퇴 처리된 선택 회원을 영구 삭제한다.
+    // 선택한 탈퇴 신청 회원들을 전출 확정 처리한다.
+    // 실제 member 삭제가 아니라 member_archive에 보관 후 member 원본을 미등록 상태로 비운다.
     @DeleteMapping("/members/withdrawn")
     public int permanentlyDeleteWithdrawnMembers(@RequestBody List<Long> memberNos) {
         return service.permanentlyDeleteWithdrawnMembers(memberNos);
@@ -76,6 +110,20 @@ public class MemberController {
     @DeleteMapping("/members/{memberNo}/delete")
     public void delete(@PathVariable int memberNo, Authentication authentication) {
         service.delete(memberNo, authentication.getName());
+    }
+
+    // 탈퇴 신청된 회원을 다시 거주 상태로 복원한다.
+    // 관리자가 탈퇴 신청을 취소할 때 사용한다.
+    @PutMapping("/members/{memberNo}/restore")
+    public void restoreWithdrawnMember(@PathVariable int memberNo) {
+        service.restoreWithdrawnMember(memberNo);
+    }
+
+    // 탈퇴 신청된 회원을 전출 확정 처리한다.
+    // 회원 정보를 member_archive에 보관하고 member 원본은 미등록 상태로 비운다.
+    @PutMapping("/members/{memberNo}/confirm-withdrawn")
+    public void confirmWithdrawnMember(@PathVariable int memberNo) {
+        service.confirmWithdrawnMember(memberNo);
     }
 
     // 입주민 마이페이지
@@ -105,10 +153,69 @@ public class MemberController {
         service.residentMypageEdit(dto);
     }
 
+    // 로그인 입주민이 민감한 작업에 사용할 일회용 보안문자를 발급한다.
+    @GetMapping("/resident/security-challenge")
+    public Map<String, String> issueSecurityChallenge(Authentication authentication) {
+        authenticatedLoginId(authentication);
+        return service.issueSecurityChallenge();
+    }
+
     // 입주민 본인 회원 탈퇴
+    @PostMapping("/resident/mypage/delete/verify")
+    public ResponseEntity<Map<String, String>> verifyResidentWithdrawal(
+            Authentication authentication,
+            @RequestBody ResidentSecurityRequest request
+    ) {
+        try {
+            service.verifyResidentWithdrawal(
+                    authenticatedLoginId(authentication),
+                    request.currentPassword(),
+                    request.challengeId(),
+                    request.challengeAnswer()
+            );
+            return ResponseEntity.noContent().build();
+        } catch (ResponseStatusException exception) {
+            return securityFailure(exception);
+        }
+    }
+
+    // 비밀번호와 보안문자 확인 후 최종 동의를 받은 입주민 본인 회원 탈퇴
     @DeleteMapping("/resident/mypage/delete")
-    public void residentDelete(@RequestBody MemberDTO dto) {
-        service.residentDelete(dto.getLoginId());
+    public ResponseEntity<Map<String, String>> residentDelete(
+            Authentication authentication,
+            @RequestBody ResidentSecurityRequest request
+    ) {
+        try {
+            service.residentDelete(
+                    authenticatedLoginId(authentication),
+                    request.currentPassword(),
+                    request.challengeId(),
+                    request.challengeAnswer()
+            );
+            return ResponseEntity.noContent().build();
+        } catch (ResponseStatusException exception) {
+            return securityFailure(exception);
+        }
+    }
+
+    // 입주민이 현재 비밀번호와 보안문자를 확인한 뒤 비밀번호를 변경한다.
+    @PutMapping("/resident/mypage/password")
+    public ResponseEntity<Map<String, String>> changeResidentPassword(
+            Authentication authentication,
+            @RequestBody ResidentSecurityRequest request
+    ) {
+        try {
+            service.changeResidentPassword(
+                    authenticatedLoginId(authentication),
+                    request.currentPassword(),
+                    request.newPassword(),
+                    request.challengeId(),
+                    request.challengeAnswer()
+            );
+            return ResponseEntity.noContent().build();
+        } catch (ResponseStatusException exception) {
+            return securityFailure(exception);
+        }
     }
 
     // 아이디 중복 확인

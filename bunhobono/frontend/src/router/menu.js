@@ -12,6 +12,10 @@ export const adminMenu = [
     path: '/admin/members'
   },
   {
+    title: '전출 회원 관리',
+    path: '/admin/member-archive'
+  },
+  {
     title: '차량 관리',
     path: '/admin/vehicles'
   },
@@ -55,6 +59,10 @@ export const residentMenu = [
   {
     title: '주차현황',
     path: '/resident/parkings'
+  },
+  {
+    title: '알림내역',
+    path: '/resident/notice'
   },
   {
     title: '마이페이지',

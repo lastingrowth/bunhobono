@@ -1,128 +1,162 @@
 <template>
-  <div>
+  <div class="vehicle-management-section">
     <h3>차량 등록</h3>
 
-    <div>
-      <input
-        v-model="carNo"
-        placeholder="차량번호 예: 12가3456"
-      >
+    <form @submit.prevent="add">
+      <table border="">
+        <tbody>
+          <tr>
+            <th>차량번호</th>
+            <td>
+              <input
+                v-model="carNo"
+                placeholder="차량번호 예: 12가3456"
+                required
+              >
+            </td>
+          </tr>
 
-      <select v-model="vehicleType">
-        <option value="normal">등록차량</option>
-        <option value="visit">방문차량</option>
-      </select>
+          <tr>
+            <th>차량종류</th>
+            <td>
+              <select v-model="vehicleType" required>
+                <option value="normal">등록차량</option>
+                <option value="visit">방문차량</option>
+              </select>
+            </td>
+          </tr>
 
-      <select v-model="selectedDong">
-        <option value="">동 선택</option>
-        <option
-          v-for="dong in dongOptions"
-          :key="dong"
-          :value="dong"
-        >
-          {{ dongText(dong) }}
-        </option>
-      </select>
+          <tr>
+            <th>회원구분</th>
+            <td>
+              <select v-model="role" required>
+                <option value="RESIDENT">입주민</option>
+                <option value="ADMIN">관리자</option>
+              </select>
+            </td>
+          </tr>
 
-      <select v-model="selectedHo">
-        <option value="">호수 선택</option>
-        <option
-          v-for="ho in hoOptions"
-          :key="ho"
-          :value="ho"
-        >
-          {{ hoText(ho) }}
-        </option>
-      </select>
+          <tr>
+            <th>{{ periodLabel }}</th>
+            <td>
+              <select v-model.number="periodValue" required>
+                <option
+                  v-for="option in periodOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.text }}
+                </option>
+              </select>
+            </td>
+          </tr>
 
-      <select v-model.number="memberNo">
-        <option :value="null">입주민 선택</option>
-        <option
-          v-for="member in filteredMembers"
-          :key="member.memberNo"
-          :value="member.memberNo"
-        >
-          {{ memberLabel(member) }}
-        </option>
-      </select>
+          <tr>
+            <th>회원 선택</th>
+            <td>
+              <select v-model.number="memberNo" required>
+                <option :value="null">회원 선택</option>
+                <option
+                  v-for="member in vehicleStore.registerMembers"
+                  :key="member.memberNo"
+                  :value="member.memberNo"
+                >
+                  {{ memberLabel(member) }}
+                </option>
+              </select>
+            </td>
+          </tr>
 
-      <button @click="add">등록</button>
-      <button @click="reset">초기화</button>
-    </div>
+          <tr>
+            <td colspan="2" align="right">
+              <button type="submit">등록</button>
+              <button type="button" @click="reset">초기화</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useMemStore } from '../../member/memStore'
 import { useVehicleStore } from '../vehicleStore'
 
 const vehicleStore = useVehicleStore()
-const memberStore = useMemStore()
 
 const carNo = ref('')
 const vehicleType = ref('normal')
-const selectedDong = ref('')
-const selectedHo = ref('')
+const role = ref('RESIDENT')
+const periodValue = ref(1)
 const memberNo = ref(null)
 
 const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
 
-const filteredMembers = computed(() => {
-  return memberStore.memberList.filter((member) => {
-    const dongMatched = !selectedDong.value
-      || String(member.memDong ?? '') === selectedDong.value
-
-    const hoMatched = !selectedHo.value
-      || String(member.memHo ?? '') === selectedHo.value
-
-    const isSelectableMember =
-      member.memStatus === 'APPROVED'
-      || member.role === 'resident'
-      || member.role === 'RESIDENT'
-      || member.role === 'admin'
-      || member.role === 'ADMIN'
-
-    return dongMatched && hoMatched && isSelectableMember
-  })
-})
-
-const dongOptions = computed(() => {
-  return [...new Set(
-    memberStore.memberList
-      .map((member) => member.memDong)
-      .filter((dong) => dong !== null && dong !== undefined && dong !== '')
-      .map((dong) => String(dong))
-  )].sort((a, b) => Number(a) - Number(b))
-})
-
-const hoOptions = computed(() => {
-  return [...new Set(
-    memberStore.memberList
-      .filter((member) => {
-        return !selectedDong.value
-          || String(member.memDong ?? '') === selectedDong.value
-      })
-      .map((member) => member.memHo)
-      .filter((ho) => ho !== null && ho !== undefined && ho !== '')
-      .map((ho) => String(ho))
-  )].sort((a, b) => Number(a) - Number(b))
-})
-
-watch(selectedDong, () => {
-  selectedHo.value = ''
-  memberNo.value = null
-})
-
-watch(selectedHo, () => {
-  memberNo.value = null
-})
-
-onMounted(async () => {
-  if (memberStore.memberList.length === 0) {
-    await memberStore.loadmemberList()
+const periodLabel = computed(() => {
+  if (vehicleType.value === 'normal') {
+    return '등록기간'
   }
+
+  return '방문시간'
 })
+
+const periodOptions = computed(() => {
+  if (vehicleType.value === 'normal') {
+    return [
+      { value: 1, text: '1개월' },
+      { value: 3, text: '3개월' },
+      { value: 6, text: '6개월' },
+      { value: 12, text: '12개월' }
+    ]
+  }
+
+  return [
+    { value: 2, text: '2시간' },
+    { value: 4, text: '4시간' },
+    { value: 6, text: '6시간' },
+    { value: 8, text: '8시간' },
+    { value: 12, text: '12시간' }
+  ]
+})
+
+const startDate = computed(() => {
+  return new Date()
+})
+
+const endDate = computed(() => {
+  const date = new Date(startDate.value)
+
+  if (vehicleType.value === 'normal') {
+    date.setMonth(date.getMonth() + Number(periodValue.value))
+  } else {
+    date.setHours(date.getHours() + Number(periodValue.value))
+  }
+
+  return date
+})
+
+watch(vehicleType, () => {
+  periodValue.value = vehicleType.value === 'normal' ? 1 : 2
+  memberNo.value = null
+  loadRegisterMembers()
+})
+
+watch(role, () => {
+  memberNo.value = null
+  loadRegisterMembers()
+})
+
+onMounted(() => {
+  loadRegisterMembers()
+})
+
+async function loadRegisterMembers() {
+  await vehicleStore.loadRegisterMembers({
+    vehicleType: vehicleType.value,
+    role: role.value
+  })
+}
 
 async function add() {
   const normalizedCarNo = carNo.value.trim().replace(/\s/g, '')
@@ -138,7 +172,7 @@ async function add() {
   }
 
   if (!memberNo.value) {
-    alert('입주민을 선택하세요')
+    alert('회원을 선택하세요')
     return
   }
 
@@ -146,32 +180,61 @@ async function add() {
     await vehicleStore.addVehicle({
       carNo: normalizedCarNo,
       vehicleType: vehicleType.value,
-      vehicleStatus: 'WAITING',
-      memberNo: memberNo.value
+      vehicleStatus: 'APPROVED',
+      memberNo: memberNo.value,
+      startDate: formatDateTimeValue(startDate.value),
+      endDate: formatDateTimeValue(endDate.value)
     })
-
-    alert('차량이 등록되었습니다')
-    reset()
-    await vehicleStore.loadVehicleApproveList()
-    await vehicleStore.loadVehicleList()
   } catch (error) {
+    const data = error.response?.data
+
+    if (typeof data === 'string' && data.trim() !== '') {
+      alert(data)
+      return
+    }
+
+    if (data?.message) {
+      alert(data.message)
+      return
+    }
+
     if (error.response?.status === 409) {
-      alert('이미 등록 또는 승인 대기 중인 차량번호입니다.')
-      reset()
+      alert('차량 등록 조건에 맞지 않습니다.')
+      return
+    }
+
+    if (error.response?.status === 403) {
+      alert('권한 또는 보안 설정 때문에 차량 등록 요청이 차단되었습니다.')
       return
     }
 
     alert('차량 등록 중 오류가 발생했습니다.')
-    reset()
+    return
+  }
+
+  alert('차량이 승인 등록되었습니다.')
+  reset()
+
+  try {
+    await loadRegisterMembers()
+  } catch (error) {
+    console.error(error)
   }
 }
 
 function reset() {
   carNo.value = ''
   vehicleType.value = 'normal'
-  selectedDong.value = ''
-  selectedHo.value = ''
+  role.value = 'RESIDENT'
+  periodValue.value = 1
   memberNo.value = null
+}
+
+function memberLabel(member) {
+  const dong = dongText(member.memDong)
+  const ho = hoText(member.memHo)
+
+  return `${member.memName} / ${dong} ${ho}`
 }
 
 function dongText(dong) {
@@ -190,10 +253,28 @@ function hoText(ho) {
   return `${ho}호`
 }
 
-function memberLabel(member) {
-  const dong = dongText(member.memDong)
-  const ho = hoText(member.memHo)
+function formatDateTimeValue(date) {
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mi = String(date.getMinutes()).padStart(2, '0')
+  const ss = String(date.getSeconds()).padStart(2, '0')
 
-  return `${dong} ${ho} / ${member.memName}`
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`
 }
 </script>
+
+<style scoped>
+.vehicle-management-section {
+  padding: 22px 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-header);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.vehicle-management-section h3 {
+  margin: 0 0 16px;
+}
+</style>

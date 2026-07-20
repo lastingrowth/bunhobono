@@ -2,9 +2,11 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import {
   approvePendingMembers,
+  changeResidentPassword,
   deleteMember,
   getMemberDetail,
   getMemberList,
+  getResidentSecurityChallenge,
   getAvailableSignupUnits,
   getResidentDashboard,
   idCheckMember,
@@ -16,6 +18,7 @@ import {
   searchMember,
   signupMember,
   updateMember,
+  verifyResidentWithdrawal,
 } from "./memApi";
 import { getParkingsList } from "../parking/parkingsApi";
 import { toVehicleView } from "../vehicle/vehicleFormat";
@@ -63,12 +66,15 @@ export const useMemStore =  defineStore("member", () => {
     await loadMember(memberNo);
   };
 
+  // 선택한 전출 신청 회원을 거주 상태로 복원
   const restoreMembers = async (memberNos) => {
     const res = await restoreWithdrawnMembers(memberNos);
     await loadmemberList();
     return res.data;
   };
 
+  // 선택한 전출 신청 회원을 전출 확정 처리
+  // 실제 member 삭제가 아니라 archive 보관 후 member 원본을 미등록 상태로 비움
   const removeWithdrawnMembers = async (memberNos) => {
     const res = await permanentlyDeleteWithdrawnMembers(memberNos);
     await loadmemberList();
@@ -81,7 +87,7 @@ export const useMemStore =  defineStore("member", () => {
     await loadmemberList();
   };
 
-  // 회원을 탈퇴 처리하고 목록을 갱신한다.
+  // 회원을 전출 신청 상태로 변경하고 목록을 갱신
   const removeMember = async (memberNo) => {
     await deleteMember(memberNo);
     await loadmemberList();
@@ -110,9 +116,23 @@ export const useMemStore =  defineStore("member", () => {
     await loadMypage();
   };
   
-    // 입주민 로그인 시, 입주민 본인이 직접 회원 탈퇴
-  const removeResident = async () => {
-    await residentDelete(member.value.loginId);
+  const loadSecurityChallenge = async () => {
+    const res = await getResidentSecurityChallenge();
+    return res.data;
+  };
+
+  // 현재 비밀번호와 보안문자를 포함해 입주민 본인 탈퇴를 요청한다.
+  const removeResident = async (securityData) => {
+    await residentDelete(securityData);
+  };
+
+  // 회원 상태를 바꾸기 전에 비밀번호와 보안문자의 일치 여부만 확인한다.
+  const verifyWithdrawal = async (securityData) => {
+    await verifyResidentWithdrawal(securityData);
+  };
+
+  const updateResidentPassword = async (securityData) => {
+    await changeResidentPassword(securityData);
   };
 
   // 아이디 중복확인
@@ -181,7 +201,10 @@ export const useMemStore =  defineStore("member", () => {
 
     loadMypage,
     editResident,
+    loadSecurityChallenge,
+    verifyWithdrawal,
     removeResident,
+    updateResidentPassword,
     idCheck,
 
     loadDashboard,

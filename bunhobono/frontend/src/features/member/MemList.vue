@@ -54,43 +54,68 @@
     </template>
 
     <template v-if="activeSection === 'withdrawn'">
-    <div class="approval-actions">
-        <button type="button" @click="selectAllWithdrawnMembers">{{ allWithdrawnSelected ? '전체해제' : '전체선택' }}</button>
-        <button type="button" @click="restoreSelectedWithdrawnMembers">복원</button>
-        <button type="button" @click="permanentlyDeleteSelectedWithdrawnMembers">영구삭제</button>
-        <span>선택 {{ selectedWithdrawnMemberNos.length }}명</span>
-    </div>
+        <div class="approval-actions">
+            <button type="button" @click="selectAllWithdrawnMembers">
+                {{ allWithdrawnSelected ? '전체해제' : '전체선택' }}
+            </button>
+            <button type="button" @click="restoreSelectedWithdrawnMembers">복원</button>
+            <button type="button" @click="permanentlyDeleteSelectedWithdrawnMembers">전출 확정</button>
+            <span>선택 {{ selectedWithdrawnMemberNos.length }}명</span>
+        </div>
 
-    <!-- 탈퇴한 회원을 승인된 회원 바로 위에서 확인한다. -->
-    <section class="archive-alert-section">
-        <h3>탈퇴한 회원 리스트 ({{ withdrawnMembers.length }}명)</h3>
-        <table border="">
-            <thead>
-                <tr>
-                    <th>선택</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th>
-                    <th>아이디</th><th>상태</th><th>탈퇴일</th><th>경과일</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="mem in paginatedMembers" :key="mem.memberNo" :class="{ 'withdrawn-expired': getElapsedDays(mem.memDeleteAt) >= 3 }">
-                    <td><input type="checkbox" :checked="selectedWithdrawnMemberNos.includes(mem.memberNo)" @change="toggleWithdrawnMember(mem.memberNo)"></td>
-                    <td>{{ mem.role }}</td>
-                    <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
-                    <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.loginId }}</td>
-                    <td>{{ mem.memStatus }}</td><td>{{ mem.memDeleteAt }}</td>
-                    <td>{{ getElapsedDays(mem.memDeleteAt) }}일</td>
-                </tr>
-                <tr v-if="withdrawnMembers.length === 0">
-                    <td colspan="9">탈퇴한 회원이 없습니다.</td>
-                </tr>
-            </tbody>
-        </table>
-        <pagination
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            :page-numbers="pageNumbers"
-            @change-page="setPage"/>
-    </section>
+        <!-- 전출 신청 상태의 회원을 확인하고 복원 또는 전출 확정 처리한다. -->
+        <section class="archive-alert-section">
+            <h3>전출 신청 회원 목록 ({{ withdrawnMembers.length }}명)</h3>
+            <table border="">
+                <thead>
+                    <tr>
+                        <th>선택</th>
+                        <th>가입유형</th>
+                        <th>이름</th>
+                        <th>동</th>
+                        <th>호수</th>
+                        <th>아이디</th>
+                        <th>상태</th>
+                        <th>전출 신청일</th>
+                        <th>경과일</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr
+                        v-for="mem in paginatedMembers"
+                        :key="mem.memberNo"
+                        :class="{ 'withdrawn-expired': getElapsedDays(mem.memDeleteAt) >= 3 }">
+                        <td>
+                            <input
+                                type="checkbox"
+                                :checked="selectedWithdrawnMemberNos.includes(mem.memberNo)"
+                                @change="toggleWithdrawnMember(mem.memberNo)">
+                        </td>
+                        <td>{{ mem.role }}</td>
+                        <td>
+                            <router-link :to="`/admin/members/${mem.memberNo}/detail`">
+                                {{ mem.memName }}
+                            </router-link>
+                        </td>
+                        <td>{{ mem.memDong }}</td>
+                        <td>{{ mem.memHo }}</td>
+                        <td>{{ mem.loginId }}</td>
+                        <td>{{ mem.memStatus }}</td>
+                        <td>{{ mem.memDeleteAt }}</td>
+                        <td>{{ getElapsedDays(mem.memDeleteAt) }}일</td>
+                    </tr>
+
+                    <tr v-if="withdrawnMembers.length === 0">
+                        <td colspan="9">전출 신청 회원이 없습니다.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <pagination
+                :current-page="currentPage"
+                :total-pages="totalPages"
+                :page-numbers="pageNumbers"
+                @change-page="setPage"/>
+        </section>
     </template>
 
     <template v-if="activeSection === 'approved'">
@@ -171,7 +196,7 @@ let elapsedCheckTimer;
 const managementSections = [
     { value: 'approved', label: '승인회원관리' },
     { value: 'pending', label: '승인대기회원' },
-    { value: 'withdrawn', label: '탈퇴회원관리' }
+    { value: 'withdrawn', label: '전출신청관리' }
 ];
 const requestedSection = String(route.query.section || 'approved');
 const activeSection = ref(
@@ -179,6 +204,19 @@ const activeSection = ref(
         ? requestedSection
         : 'approved'
 );
+
+const toDateTime = (value) => {
+    if (!value) {
+        return 0;
+    }
+
+    if (Array.isArray(value)) {
+        const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+        return new Date(year, month - 1, day, hour, minute, second).getTime();
+    }
+
+    return new Date(value).getTime();
+};
 
 // PENDING 역할 회원만 승인 대기 목록으로 분류한다.
 const pendingMembers = computed(() => memberList.value.filter(
@@ -198,8 +236,10 @@ const approvedMembers = computed(() => memberList.value
 );
 
 const withdrawnMembers = computed(() => memberList.value
-    .filter((member) => Boolean(member.memDeleteAt))
-    .sort((left, right) => new Date(right.memDeleteAt) - new Date(left.memDeleteAt))
+    .filter((member) => {
+        return Boolean(member.memDeleteAt) && !member.archived;
+    })
+    .sort((left, right) => toDateTime(right.memDeleteAt) - toDateTime(left.memDeleteAt))
 );
 
 const activeMembers = computed(() => {
@@ -280,7 +320,10 @@ const restoreSelectedWithdrawnMembers = async () => {
         alert('복원할 회원을 선택해 주세요.');
         return;
     }
-    if (!confirm('선택한 회원을 거주 상태로 복원하시겠습니까?')) return;
+
+    if (!confirm('선택한 회원을 거주 상태로 복원하시겠습니까?')) {
+        return;
+    }
 
     const restoredCount = await store.restoreMembers(selectedWithdrawnMemberNos.value);
     currentPage.value = 1;
@@ -290,15 +333,18 @@ const restoreSelectedWithdrawnMembers = async () => {
 
 const permanentlyDeleteSelectedWithdrawnMembers = async () => {
     if (selectedWithdrawnMemberNos.value.length === 0) {
-        alert('영구 삭제할 회원을 선택해 주세요.');
+        alert('전출 확정할 회원을 선택해 주세요.');
         return;
     }
-    if (!confirm('선택한 회원을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+
+    if (!confirm('선택한 회원을 전출 확정 처리하시겠습니까?')) {
+        return;
+    }
 
     const deletedCount = await store.removeWithdrawnMembers(selectedWithdrawnMemberNos.value);
     currentPage.value = 1;
     selectedWithdrawnMemberNos.value = [];
-    alert(`${deletedCount}명의 회원이 영구 삭제되었습니다.`);
+    alert(`${deletedCount}명의 회원이 전출 확정 처리되었습니다.`);
 };
 
 const approveSelectedMembers = async () => {

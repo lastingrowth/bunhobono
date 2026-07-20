@@ -54,7 +54,7 @@ TEST_STREAMS = [
 # 설정
 # =========================
 
-FRAME_STEP = 3
+FRAME_STEP = 60
 CROP_COUNT = 2
 SEND_COOLDOWN_SECONDS = 10
 MIN_OCR_SCORE = 0.5

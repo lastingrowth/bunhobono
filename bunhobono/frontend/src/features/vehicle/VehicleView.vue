@@ -4,19 +4,21 @@
 
     <div>
       <button @click="openVehicleList">차량 목록</button>
-      <button @click="toggleVehicleForm">차량 등록</button>
-      <button @click="viewMode = 'approve'">승인 대기</button>
+      <button @click="openVehicleForm">차량 등록</button>
+      <button @click="openVehicleApprove">승인 대기</button>
     </div>
 
-    <VehicleSearch />
-
-    <VehicleForm
-      v-if="viewMode === 'list' && showVehicleForm"
+    <VehicleSearch
+      v-if="viewMode === 'list'"
     />
 
     <VehicleList
       v-if="viewMode === 'list'"
       :vehicles="vehicleStore.vehicleList"
+    />
+
+    <VehicleForm
+      v-if="viewMode === 'form'"
     />
 
     <VehicleApprove
@@ -28,34 +30,41 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { useVehicleStore } from './vehicleStore'
 
 import VehicleSearch from './components/VehicleSearch.vue'
 import VehicleForm from './components/VehicleForm.vue'
 import VehicleList from './components/VehicleList.vue'
 import VehicleApprove from './components/VehicleApprove.vue'
-import { useRoute } from 'vue-router'
 
 const vehicleStore = useVehicleStore()
 const route = useRoute()
 
 const viewMode = ref('list')
-const showVehicleForm = ref(false)
 
-const openVehicleList = () => {
+function openVehicleList() {
   viewMode.value = 'list'
+  vehicleStore.loadVehicleList()
 }
 
-const toggleVehicleForm = () => {
-  viewMode.value = 'list'
-  showVehicleForm.value = !showVehicleForm.value
+function openVehicleForm() {
+  viewMode.value = 'form'
+}
+
+function openVehicleApprove() {
+  viewMode.value = 'approve'
+  vehicleStore.loadVehicleApproveList()
 }
 
 onMounted(() => {
   if (route.query.mode === 'approve') {
     viewMode.value = 'approve'
+    vehicleStore.loadVehicleApproveList()
+    return
   }
+
+  viewMode.value = 'list'
   vehicleStore.loadVehicleList()
-  vehicleStore.loadVehicleApproveList()
 })
 </script>
