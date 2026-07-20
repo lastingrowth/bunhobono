@@ -131,11 +131,14 @@
                 <option value="RESIDENT">입주민</option>
             </select>
             <div v-else-if="searchType === 'dongHo'" class="member-search-fields">
-                <select v-model="dong">
+                <select v-model="dong" @change="ho = ''">
                     <option value="" disabled>동을 선택하세요</option>
                     <option v-for="dongOption in dongOptions" :key="dongOption" :value="dongOption">{{ dongOption }}동</option>
                 </select>
-                <input type="text" v-model="ho" placeholder="호수(숫자만 적어주세요)">
+                <select v-model="ho" :disabled="dong === ''">
+                    <option value="" disabled>호수를 선택하세요</option>
+                    <option v-for="hoOption in hoOptions" :key="hoOption" :value="hoOption">{{ hoOption }}호</option>
+                </select>
             </div>
             <input v-else-if="searchType !== 'all'" type="text" v-model="searchKeyword" placeholder="검색어 입력" />
             <button @click="searchGo">검색</button>
@@ -184,7 +187,6 @@ const searchType = ref('all');
 const searchKeyword = ref('');
 const dong = ref('');
 const ho = ref('');
-const dongOptions = [0, 101, 102, 103, 104, 105, 106, 107, 108];
 const selectedMemberNos = ref([]);
 const selectedWithdrawnMemberNos = ref([]);
 const currentTime = ref(Date.now());
@@ -231,6 +233,21 @@ const approvedMembers = computed(() => memberList.value
         displayNo: index + 1
     }))
 );
+
+// 조회된 회원의 실제 동·호수 값으로 검색 선택지를 구성한다.
+const dongOptions = computed(() => [...new Set(
+    approvedMembers.value.map((member) => Number(member.memDong))
+)]
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right));
+
+const hoOptions = computed(() => [...new Set(
+    approvedMembers.value
+        .filter((member) => Number(member.memDong) === Number(dong.value))
+        .map((member) => Number(member.memHo))
+)]
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right));
 
 const withdrawnMembers = computed(() => memberList.value
     .filter((member) => {
@@ -364,7 +381,11 @@ const searchGo = async () => {
     currentPage.value = 1;
     if (searchType.value === 'all') return store.loadmemberList();
     if (searchType.value === 'dongHo') {
-        return store.search({ type: 'dongHo', dong: dong.value, ho: ho.value });
+        if (dong.value === '' || ho.value === '') {
+            alert('동과 호수를 선택해 주세요.');
+            return;
+        }
+        return store.search({ type: 'dongHo', keyword: '', dong: dong.value, ho: ho.value });
     }
     return store.search({ type: searchType.value, keyword: searchKeyword.value });
 };

@@ -1,11 +1,6 @@
 <template>
     <h2>회원 수정</h2>
 
-    <div>
-        <button @click="goDetail">뒤로</button>
-        <button @click="update">수정완료</button>
-    </div>
-
     <table border="">
         <tbody>
             <tr>
@@ -66,6 +61,11 @@
             </tr>
         </tbody>
     </table>
+
+    <div class="form-actions">
+        <button type="button" @click="goDetail">뒤로</button>
+        <button type="button" @click="update">수정완료</button>
+    </div>
 </template>
 
 <script setup>
@@ -182,5 +182,20 @@ const update = async () => {
 .phone-fields input {
     width: 72px;
     text-align: center;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.form-actions button {
+    min-width: 120px;
+    height: 44px;
+    padding: 0 20px;
+    font-size: 16px;
+    font-weight: 700;
 }
 </style>
