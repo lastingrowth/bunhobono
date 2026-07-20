@@ -2,114 +2,233 @@
     <section class="statistics-page">
         <!-- 페이지 제목 영역 -->
         <div class="statistics-title-area">
-            <h1>통계</h1>
-            <p>주차장 이용 현황과 차량 입차 유형을 확인하세요.</p>
-        </div>
-
-        <!-- 상단 요약 카드 4개 -->
-        <div class="statistics-summary-grid">
-            <!-- 오늘 입차 수 -->
-            <article class="summary-card blue">
-                <div class="summary-icon">
-                    🚘
-                </div>
-
-                <div>
-                    <span>오늘 입차</span>
-                    <strong>{{ statsStore.todayInCount }}건</strong>
-                </div>
-            </article>
-
-            <!-- 오늘 출차 수 -->
-            <article class="summary-card green">
-                <div class="summary-icon">
-                    🚗
-                </div>
-
-                <div>
-                    <span>오늘 출차</span>
-                    <strong>{{ statsStore.todayOutCount }}건</strong>
-                </div>
-            </article>
-
-            <!-- 오늘 미등록 차량 수 -->
-            <article class="summary-card orange">
-                <div class="summary-icon">
-                    🚙
-                </div>
-
-                <div>
-                    <span>미등록 차량</span>
-                    <strong>{{ statsStore.todayUnknownCount }}건</strong>
-                </div>
-            </article>
-
-            <!-- OCR 평균 신뢰도 -->
-            <article class="summary-card purple">
-                <div class="summary-icon">
-                    OCR
-                </div>
-
-                <div>
-                    <span>평균 OCR 신뢰도</span>
-                    <strong>{{ statsStore.averageConfidence }}%</strong>
-                </div>
-            </article>
-        </div>
-
-        <!-- 최근 7일 입주민 / 방문 차량 입차 비교 그래프 -->
-        <article class="statistics-card weekly-entry-card">
-            <div class="card-title-row">
-                <h2>최근 7일 입주민 / 방문 차량 입차 비교</h2>
-
-                <!-- 그래프 색상 설명 -->
-                <div class="chart-legend">
-                    <span>
-                        <i class="legend-color resident"></i>
-                        입주민 차량
-                    </span>
-
-                    <span>
-                        <i class="legend-color visit"></i>
-                        방문 차량
-                    </span>
-                </div>
+            <div>
+                <h1>통계</h1>
+                <p>주차 현황, 입차 유형, 장기주차 위험을 한눈에 확인하세요.</p>
             </div>
 
-            <!-- 막대그래프 -->
-            <div class="weekly-bar-chart">
-                <div
-                    v-for="day in statsStore.weeklyEntryStats"
-                    :key="day.label"
-                    class="weekly-bar-item">
-                    <!-- 막대가 올라가는 영역 -->
-                    <div class="bar-column">
-                        <!-- 입주민 차량 막대 -->
-                        <div
-                            class="bar resident"
-                            :style="{ height: getBarHeight(day.registeredCount, statsStore.weeklyMaxCount) }">
-                            <span>{{ day.registeredCount }}</span>
-                        </div>
+            <button
+                type="button"
+                class="refresh-button"
+                @click="statsStore.loadStatistics()">
+                새로고침
+            </button>
+        </div>
 
-                        <!-- 방문 차량 막대 -->
-                        <div
-                            class="bar visit"
-                            :style="{ height: getBarHeight(day.visitCount, statsStore.weeklyMaxCount) }">
-                            <span>{{ day.visitCount }}</span>
+        <!-- 데이터 조회 상태 -->
+        <p
+            v-if="statsStore.loading"
+            class="statistics-message">
+            통계 데이터를 불러오는 중입니다.
+        </p>
+
+        <p
+            v-if="statsStore.errorMessage"
+            class="statistics-message error">
+            {{ statsStore.errorMessage }}
+        </p>
+
+        <!-- 상단 3개 카드 영역 -->
+        <div class="statistics-top-grid">
+            <!-- 현재 주차 현황 -->
+            <article class="statistics-card current-parking-card">
+                <div class="card-title-row">
+                    <h2>현재 주차 현황</h2>
+                </div>
+
+                <div class="current-parking-content">
+                    <!-- 입주민 / 방문차량 / 미등록 차량 도넛 그래프 -->
+                    <div
+                        class="current-parking-donut"
+                        :style="currentParkingDonutStyle">
+                        <div class="current-parking-donut-inner">
+                            <span>총</span>
+                            <strong>{{ statsStore.currentParkingTotal }}대</strong>
                         </div>
                     </div>
 
-                    <!-- 날짜 라벨 -->
-                    <strong>{{ day.label }}</strong>
+                    <!-- 도넛 그래프 범례 -->
+                    <div class="parking-type-list">
+                        <div
+                            v-for="item in statsStore.currentParkingTypeStats"
+                            :key="item.key"
+                            class="parking-type-row">
+                            <span>
+                                <i :class="['legend-color', item.key]"></i>
+                                {{ item.label }}
+                            </span>
+
+                            <strong>
+                                {{ item.count }}대
+                                <small>({{ item.percent }}%)</small>
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- 시간대별 평균 주차 대수 -->
+            <article class="statistics-card hourly-card">
+                <div class="card-title-row">
+                    <h2>시간대별 평균 주차 대수</h2>
+                </div>
+
+                <!-- SVG 꺾은선 그래프 -->
+                <div class="hourly-chart-wrap">
+                    <svg
+                        class="hourly-chart"
+                        viewBox="0 0 360 190"
+                        preserveAspectRatio="none">
+                        <!-- 배경 기준선 -->
+                        <line
+                            v-for="line in hourlyGuideLines"
+                            :key="line"
+                            x1="30"
+                            x2="335"
+                            :y1="line"
+                            :y2="line"
+                            class="chart-guide-line"
+                        />
+
+                        <!-- 시간대별 주차 대수를 연결하는 선 -->
+                        <polyline
+                            :points="hourlyPolylinePoints"
+                            class="hourly-polyline"
+                        />
+
+                        <!-- 각 시간대의 점과 숫자 -->
+                        <g
+                            v-for="point in hourlyChartPoints"
+                            :key="point.label">
+                            <circle
+                                :cx="point.x"
+                                :cy="point.y"
+                                r="5"
+                                class="hourly-point"
+                            />
+
+                            <text
+                                :x="point.x"
+                                :y="point.y - 10"
+                                text-anchor="middle"
+                                class="chart-value">
+                                {{ point.count }}
+                            </text>
+
+                            <text
+                                :x="point.x"
+                                y="176"
+                                text-anchor="middle"
+                                class="chart-label">
+                                {{ point.label }}
+                            </text>
+                        </g>
+                    </svg>
+                </div>
+            </article>
+
+            <!-- 비입주민 주차 주의 현황 -->
+            <article class="statistics-card warning-card">
+                <div class="card-title-row">
+                    <h2>비입주민 주차 주의 현황</h2>
+                </div>
+
+                <div class="warning-list">
+                    <button
+                        v-for="item in statsStore.nonResidentWarningStats"
+                        :key="item.key"
+                        type="button"
+                        :class="['warning-row', item.key]"
+                        @click="goWarningPage(item.key)">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.count }}건</strong>
+                    </button>
+                </div>
+
+                <p class="card-help-text">
+                    기준: 다음날까지 미출차 / 등록 시간 만료
+                </p>
+            </article>
+        </div>
+
+        <!-- 입주민 / 비입주민 입차 비교 -->
+        <article class="statistics-card entry-compare-card">
+            <div class="card-title-row">
+                <div>
+                    <h2>입주민 / 비입주민 입차 비교</h2>
+                    <p>비입주민 = 방문차량 + 미등록 차량</p>
+                </div>
+
+                <!-- 주간 / 월간 / 연간 버튼 -->
+                <div class="period-buttons">
+                    <button
+                        type="button"
+                        :class="{ active: statsStore.entryPeriod === 'weekly' }"
+                        @click="statsStore.changeEntryPeriod('weekly')">
+                        주간
+                    </button>
+
+                    <button
+                        type="button"
+                        :class="{ active: statsStore.entryPeriod === 'monthly' }"
+                        @click="statsStore.changeEntryPeriod('monthly')">
+                        월간
+                    </button>
+
+                    <button
+                        type="button"
+                        :class="{ active: statsStore.entryPeriod === 'yearly' }"
+                        @click="statsStore.changeEntryPeriod('yearly')">
+                        연간
+                    </button>
+                </div>
+            </div>
+
+            <!-- 막대그래프 범례 -->
+            <div class="chart-legend">
+                <span>
+                    <i class="legend-color resident"></i>
+                    입주민
+                </span>
+
+                <span>
+                    <i class="legend-color non-resident"></i>
+                    비입주민
+                </span>
+            </div>
+
+            <!-- 주간 / 월간 / 연간이 같은 위치에서 바뀌는 막대그래프 -->
+            <div class="entry-bar-chart">
+                <div
+                    v-for="item in statsStore.entryCompareStats"
+                    :key="item.label"
+                    class="entry-bar-item">
+                    <div class="bar-column">
+                        <div
+                            class="bar resident"
+                            :style="{ height: getBarHeight(item.residentCount, statsStore.entryCompareMaxCount) }">
+                            <span>{{ item.residentCount }}</span>
+                        </div>
+
+                        <div
+                            class="bar non-resident"
+                            :style="{ height: getBarHeight(item.nonResidentCount, statsStore.entryCompareMaxCount) }">
+                            <span>{{ item.nonResidentCount }}</span>
+                        </div>
+                    </div>
+
+                    <strong>{{ item.label }}</strong>
                 </div>
             </div>
         </article>
 
-        <!-- 하단 카드 영역 -->
+        <!-- 하단 2개 카드 영역 -->
         <div class="statistics-bottom-grid">
-            <!-- 주차장별 사용률 -->
+            <!-- 현재 주차장 현황 -->
             <article class="statistics-card parking-rate-card">
-                <h2>주차장별 사용률</h2>
+                <div class="card-title-row">
+                    <h2>현재 주차장 현황</h2>
+                </div>
 
                 <div class="parking-circle-grid">
                     <div
@@ -118,7 +237,6 @@
                         class="parking-circle-item">
                         <strong>{{ parking.parkingName }}</strong>
 
-                        <!-- conic-gradient로 만든 원형 사용률 그래프 -->
                         <div
                             class="parking-circle"
                             :style="getCircleStyle(parking.percent, parking.parkingName)">
@@ -132,133 +250,31 @@
                         </small>
                     </div>
                 </div>
-
-                <p class="card-help-text">
-                    * 사용률 = (현재 주차 대수 / 총 주차면) × 100
-                </p>
             </article>
 
-            <!-- 오늘 입차 차량 유형 비율 -->
-            <article class="statistics-card entry-type-card">
-                <div class="entry-type-header">
-                    <h2>오늘 입차 차량 유형 비율</h2>
-
-                    <!-- 입차 차량 유형별 색상 설명 -->
-                    <div class="entry-type-legend">
-                        <span>
-                            <i class="legend-color resident"></i>
-                            입주민
-                        </span>
-
-                        <span>
-                            <i class="legend-color visit"></i>
-                            방문
-                        </span>
-
-                        <span>
-                            <i class="legend-color unknown"></i>
-                            미등록
-                        </span>
-                    </div>
+            <!-- 방문차량 / 미등록 차량 평균 주차 시간 -->
+            <article class="statistics-card average-time-card">
+                <div class="card-title-row">
+                    <h2>방문차량 / 미등록 차량 평균 주차 시간</h2>
                 </div>
 
-                <div class="entry-type-content">
-                    <!-- 오늘 입차 차량 유형을 하나의 원형 그래프로 표시 -->
+                <div class="average-time-list">
                     <div
-                        class="entry-type-donut"
-                        :style="entryTypeDonutStyle">
-                        <div class="entry-type-donut-inner">
-                            <span>총</span>
-                            <strong>{{ statsStore.todayInCount }}건</strong>
-                        </div>
-                    </div>
+                        v-for="item in statsStore.averageParkingTimeStats"
+                        :key="item.key"
+                        :class="['average-time-row', item.key]">
+                        <span>{{ item.label }}</span>
 
-                    <!-- 입주민 / 방문 / 미등록 수치 설명 -->
-                    <div class="entry-type-list">
-                        <div
-                            v-for="item in statsStore.todayEntryTypeStats"
-                            :key="item.label"
-                            class="entry-type-row">
-                            <span>{{ item.label }}</span>
-                            <strong>{{ item.percent }}%</strong>
-                            <small>({{ item.count }}건)</small>
+                        <div class="average-time-bar-wrap">
+                            <div
+                                class="average-time-bar"
+                                :style="{ width: `${item.percent}%` }">
+                            </div>
                         </div>
+
+                        <strong>{{ item.text }}</strong>
                     </div>
                 </div>
-            </article>
-
-            <!-- 최근 7일 미등록 차량 추이 -->
-            <article class="statistics-card unknown-trend-card">
-                <h2>최근 7일 미등록 차량 추이</h2>
-
-                <!-- SVG로 점이 찍힌 꺾은선 그래프를 그린다. -->
-                <div class="unknown-svg-wrap">
-                    <svg class="unknown-svg" viewBox="0 0 320 170" preserveAspectRatio="none">
-                        <!-- 배경 기준선 -->
-                        <line
-                            v-for="line in unknownGuideLines"
-                            :key="line"
-                            x1="20"
-                            x2="300"
-                            :y1="line"
-                            :y2="line"
-                            class="unknown-guide-line"
-                        />
-
-                        <!-- 날짜별 미등록 차량 수를 이어주는 꺾은선 -->
-                        <polyline
-                            :points="unknownPolylinePoints"
-                            class="unknown-polyline"
-                        />
-
-                        <!-- 날짜별 점, 수치, 날짜 표시 -->
-                        <g
-                            v-for="point in unknownChartPoints"
-                            :key="point.label">
-                            <circle
-                                :cx="point.x"
-                                :cy="point.y"
-                                r="4.5"
-                                class="unknown-point"
-                            />
-
-                            <text
-                                :x="point.x"
-                                :y="point.y - 10"
-                                text-anchor="middle"
-                                class="unknown-value">
-                                {{ point.count }}
-                            </text>
-
-                            <text
-                                :x="point.x"
-                                y="158"
-                                text-anchor="middle"
-                                class="unknown-label">
-                                {{ point.label }}
-                            </text>
-                        </g>
-                    </svg>
-                </div>
-            </article>
-
-            <!-- 통계 기준 설명 -->
-            <article class="statistics-card statistics-note-card">
-                <h2>통계 기준</h2>
-
-                <ul>
-                    <li>
-                        OCR 신뢰도는 모델 confidence 평균입니다.
-                    </li>
-
-                    <li>
-                        입차 유형은 carlog와 vehicleType 기준입니다.
-                    </li>
-
-                    <li>
-                        기준 시간은 오늘 00:00 ~ 23:59입니다.
-                    </li>
-                </ul>
             </article>
         </div>
     </section>
@@ -266,20 +282,21 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useStatisticsStore } from '@/features/statistics/statisticsStore'
 
+const router = useRouter()
 const statsStore = useStatisticsStore()
 
 // 막대그래프 높이를 계산한다.
-// 값이 0이면 0%, 값이 있으면 너무 작아서 안 보이지 않게 최소 10%로 표시한다.
+// 값이 너무 작아도 화면에서 보이도록 최소 높이를 8%로 둔다.
 const getBarHeight = (count, maxCount) => {
     const percent = Math.round((count / maxCount) * 100)
 
-    return `${Math.max(percent, count > 0 ? 10 : 0)}%`
+    return `${Math.max(percent, count > 0 ? 8 : 0)}%`
 }
 
-// 주차장 이름에 따라 원형 그래프 색상을 다르게 지정한다.
-// A/B/C/D가 같은 색이면 구분이 어려워서 시안처럼 색을 나눴다.
+// 주차장 이름에 따라 원형 게이지 색상을 다르게 준다.
 const getParkingColor = (parkingName) => {
     if (parkingName?.includes('A')) {
         return '#2f80ed'
@@ -290,7 +307,7 @@ const getParkingColor = (parkingName) => {
     }
 
     if (parkingName?.includes('C')) {
-        return '#ffb000'
+        return '#ff8a00'
     }
 
     if (parkingName?.includes('D')) {
@@ -300,8 +317,7 @@ const getParkingColor = (parkingName) => {
     return '#2f80ed'
 }
 
-// 주차장별 사용률 원형 그래프 스타일을 만든다.
-// --parking-color는 원 안의 퍼센트 글자 색상에도 같이 사용한다.
+// 주차장 사용률 원형 그래프 스타일을 만든다.
 const getCircleStyle = (percent, parkingName) => {
     const color = getParkingColor(parkingName)
 
@@ -311,15 +327,14 @@ const getCircleStyle = (percent, parkingName) => {
     }
 }
 
-// 오늘 입차 차량 유형 비율 원형 그래프 스타일
-// 입주민, 방문객, 미등록 비율을 하나의 원형 그래프에 나눠서 표시한다.
-const entryTypeDonutStyle = computed(() => {
-    const resident = statsStore.todayEntryTypeStats.find((item) => {
-        return item.label === '입주민'
+// 현재 주차 현황 도넛 그래프 스타일
+const currentParkingDonutStyle = computed(() => {
+    const resident = statsStore.currentParkingTypeStats.find((item) => {
+        return item.key === 'resident'
     })?.percent ?? 0
 
-    const visit = statsStore.todayEntryTypeStats.find((item) => {
-        return item.label === '방문객'
+    const visit = statsStore.currentParkingTypeStats.find((item) => {
+        return item.key === 'visit'
     })?.percent ?? 0
 
     const residentEnd = resident
@@ -334,40 +349,56 @@ const entryTypeDonutStyle = computed(() => {
     }
 })
 
-// 미등록 차량 추이 그래프의 점 좌표를 계산한다.
-// SVG는 위쪽으로 갈수록 y값이 작아지므로, count가 클수록 y값을 작게 만든다.
-const unknownChartPoints = computed(() => {
-    const maxCount = statsStore.weeklyUnknownMaxCount || 1
-    const chartTop = 24
-    const chartBottom = 132
+// 시간대별 주차 대수 그래프의 좌표를 계산한다.
+const hourlyChartPoints = computed(() => {
+    const maxCount = statsStore.hourlyParkingMaxCount || 1
+    const chartTop = 30
+    const chartBottom = 145
     const chartHeight = chartBottom - chartTop
-    const gap = 280 / Math.max(statsStore.weeklyUnknownStats.length - 1, 1)
+    const gap = 305 / Math.max(statsStore.hourlyParkingStats.length - 1, 1)
 
-    return statsStore.weeklyUnknownStats.map((day, index) => {
-        const percent = day.count / maxCount
-        const x = 20 + (gap * index)
+    return statsStore.hourlyParkingStats.map((item, index) => {
+        const percent = item.count / maxCount
+        const x = 30 + (gap * index)
         const y = chartBottom - (chartHeight * percent)
 
         return {
-            ...day,
+            ...item,
             x,
             y,
         }
     })
 })
 
-// polyline에 넣을 좌표 문자열을 만든다.
-// 예: "20,120 66,90 113,70" 형태로 SVG가 선을 그릴 수 있게 한다.
-const unknownPolylinePoints = computed(() => {
-    return unknownChartPoints.value.map((point) => {
+// SVG polyline에 들어갈 좌표 문자열을 만든다.
+const hourlyPolylinePoints = computed(() => {
+    return hourlyChartPoints.value.map((point) => {
         return `${point.x},${point.y}`
     }).join(' ')
 })
 
-// 미등록 차량 추이 그래프의 배경 기준선 위치
-const unknownGuideLines = [36, 72, 108, 144]
+// 시간대별 그래프 배경 기준선 위치
+const hourlyGuideLines = [35, 70, 105, 140]
 
-// 화면이 처음 열릴 때 통계 데이터를 불러온다.
+// 비입주민 주차 주의 현황을 클릭했을 때 관련 관리 페이지로 이동한다.
+// query를 붙이지 않고, 의미 있는 path로 이동시켜 URL을 깔끔하게 유지한다
+const goWarningPage = (key) => {
+    if (key === 'visitLongStay') {
+        router.push('/admin/notice/visit-long-stay')
+        return
+    }
+
+    if (key === 'unknownLongStay') {
+        router.push('/admin/notice/unknown-long-stay')
+        return
+    }
+
+    if (key === 'parkedExpired') {
+        router.push('/admin/vehicles/parked-expired')
+    }
+}
+
+// 화면을 처음 열 때 통계 데이터를 불러온다.
 onMounted(async () => {
     await statsStore.loadStatistics()
 })
@@ -380,6 +411,10 @@ onMounted(async () => {
 }
 
 .statistics-title-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
     margin-bottom: 18px;
 }
 
@@ -395,83 +430,28 @@ onMounted(async () => {
     font-size: 16px;
 }
 
-.statistics-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 18px;
-    margin-bottom: 22px;
-}
-
-.summary-card {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    min-height: 112px;
-    padding: 24px 30px;
-    border: 1px solid #dce4ef;
-    border-radius: 16px;
+.refresh-button {
+    padding: 10px 16px;
+    border: 1px solid #d5deeb;
+    border-radius: 10px;
     background: #fff;
-    box-shadow: 0 8px 20px rgba(18, 32, 51, 0.06);
+    color: #253047;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-.summary-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    font-weight: 800;
-}
-
-.summary-card.blue .summary-icon {
-    background: #eaf2ff;
-    color: #1f6feb;
-}
-
-.summary-card.green .summary-icon {
-    background: #e8f8ee;
-    color: #19a85b;
-}
-
-.summary-card.orange .summary-icon {
-    background: #fff1dd;
-    color: #ff8a00;
-}
-
-.summary-card.purple .summary-icon {
-    background: #f0eaff;
-    color: #7048e8;
-}
-
-.summary-card span {
-    display: block;
-    color: #333f52;
-    font-size: 16px;
+.statistics-message {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #eef6ff;
+    color: #2878d8;
     font-weight: 700;
 }
 
-.summary-card strong {
-    display: block;
-    margin-top: 8px;
-    font-size: 34px;
-    font-weight: 800;
-}
-
-.summary-card.blue strong {
-    color: #1f6feb;
-}
-
-.summary-card.green strong {
-    color: #19a85b;
-}
-
-.summary-card.orange strong {
-    color: #ff8a00;
-}
-
-.summary-card.purple strong {
-    color: #7048e8;
+.statistics-message.error {
+    background: #fff0f0;
+    color: #e03131;
 }
 
 .statistics-card {
@@ -481,43 +461,119 @@ onMounted(async () => {
     box-shadow: 0 8px 20px rgba(18, 32, 51, 0.06);
 }
 
-.statistics-card h2 {
+.statistics-top-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1.15fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.statistics-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.card-title-row h2 {
     margin: 0;
     font-size: 19px;
     font-weight: 800;
 }
 
-.weekly-entry-card {
-    padding: 22px 26px;
-    margin-bottom: 22px;
-}
-
-.card-title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
-}
-
-.chart-legend {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    color: #4d5a6d;
+.card-title-row p {
+    margin: 6px 0 0;
+    color: #7d8797;
     font-size: 14px;
+}
+
+.current-parking-card,
+.hourly-card,
+.warning-card,
+.parking-rate-card,
+.average-time-card {
+    padding: 22px;
+}
+
+.current-parking-content {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
+.current-parking-donut {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 188px;
+    height: 188px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.current-parking-donut-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 104px;
+    height: 104px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.current-parking-donut-inner span {
+    color: #7d8797;
+    font-size: 13px;
     font-weight: 700;
 }
 
-.chart-legend span {
+.current-parking-donut-inner strong {
+    color: #142033;
+    font-size: 26px;
+    font-weight: 900;
+}
+
+.parking-type-list {
+    flex: 1;
+}
+
+.parking-type-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    color: #253047;
+}
+
+.parking-type-row span {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.parking-type-row strong {
+    font-size: 15px;
+}
+
+.parking-type-row small {
+    color: #7d8797;
+    font-size: 12px;
 }
 
 .legend-color {
-    width: 12px;
-    height: 12px;
+    display: inline-block;
+    width: 11px;
+    height: 11px;
     border-radius: 3px;
 }
 
@@ -525,7 +581,8 @@ onMounted(async () => {
     background: #2f80ed;
 }
 
-.legend-color.visit {
+.legend-color.visit,
+.legend-color.non-resident {
     background: #20c997;
 }
 
@@ -533,125 +590,236 @@ onMounted(async () => {
     background: #ff8a00;
 }
 
-.entry-type-header {
-    margin-bottom: 18px;
+.hourly-chart-wrap {
+    height: 220px;
 }
 
-.entry-type-header h2 {
-    margin-bottom: 12px;
+.hourly-chart {
+    width: 100%;
+    height: 100%;
 }
 
-/* 오늘 입차 차량 유형 비율 범례를 제목 아래 한 줄로 정리 */
-.entry-type-legend {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    color: #4d5a6d;
-    font-size: 13px;
+.chart-guide-line {
+    stroke: #dbe3ef;
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+}
+
+.hourly-polyline {
+    fill: none;
+    stroke: #2f80ed;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.hourly-point {
+    fill: #fff;
+    stroke: #2f80ed;
+    stroke-width: 4;
+}
+
+.chart-value {
+    fill: #253047;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.chart-label {
+    fill: #7d8797;
+    font-size: 12px;
     font-weight: 700;
 }
 
-.entry-type-legend span {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-}
-
-.weekly-bar-chart {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 22px;
-    min-height: 270px;
-    padding: 22px 10px 0;
-    border-top: 1px solid #edf1f6;
-}
-
-.weekly-bar-item {
+.warning-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
     gap: 12px;
+}
+
+.warning-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 54px;
+    padding: 0 16px;
+    border: 1px solid #dce4ef;
+    border-radius: 12px;
+    background: #fbfdff;
+    color: #142033;
+    text-align: left;
+    cursor: pointer;
+}
+
+.warning-row:hover {
+    border-color: #9bc5ff;
+    background: #f4f9ff;
+}
+
+.warning-row span {
+    font-weight: 800;
+}
+
+.warning-row strong {
+    font-size: 24px;
+    font-weight: 900;
+}
+
+.warning-row.visitLongStay strong {
+    color: #ff8a00;
+}
+
+.warning-row.unknownLongStay strong {
+    color: #e03131;
+}
+
+.warning-row.expiredVisit strong {
+    color: #7048e8;
+}
+
+.card-help-text {
+    margin: 14px 0 0;
+    color: #7d8797;
+    font-size: 13px;
+}
+
+.entry-compare-card {
+    padding: 22px;
+    margin-bottom: 18px;
+}
+
+.period-buttons {
+    display: inline-flex;
+    overflow: hidden;
+    border: 1px solid #d5deeb;
+    border-radius: 12px;
+    background: #f6f8fb;
+}
+
+.period-buttons button {
+    min-width: 76px;
+    padding: 10px 16px;
+    border: 0;
+    border-right: 1px solid #d5deeb;
+    background: transparent;
+    color: #647086;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.period-buttons button:last-child {
+    border-right: 0;
+}
+
+.period-buttons button.active {
+    background: #2f80ed;
+    color: #fff;
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 12px;
+}
+
+.chart-legend span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #253047;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.entry-bar-chart {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+    align-items: end;
+    gap: 12px;
+    height: 260px;
+    padding: 10px 8px 0;
+    border-top: 1px dashed #dbe3ef;
+}
+
+.entry-bar-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    min-width: 0;
+    height: 100%;
 }
 
 .bar-column {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    height: 230px;
+    height: 210px;
 }
 
 .bar {
     position: relative;
-    width: 30px;
-    min-height: 4px;
-    border-radius: 8px 8px 0 0;
+    width: 22px;
+    min-height: 0;
+    border-radius: 6px 6px 0 0;
 }
 
 .bar span {
     position: absolute;
-    top: -24px;
+    top: -22px;
     left: 50%;
     transform: translateX(-50%);
-    color: #3e4b5f;
-    font-size: 13px;
-    font-weight: 700;
+    color: #253047;
+    font-size: 12px;
+    font-weight: 800;
 }
 
 .bar.resident {
-    background: linear-gradient(180deg, #1269e8, #3b8cff);
+    background: linear-gradient(180deg, #2f80ed, #1c64d1);
 }
 
-.bar.visit {
-    background: linear-gradient(180deg, #14b86e, #33d18a);
+.bar.non-resident {
+    background: linear-gradient(180deg, #20c997, #12a679);
 }
 
-.weekly-bar-item strong {
-    color: #6f7b8f;
-    font-size: 14px;
-}
-
-.statistics-bottom-grid {
-    display: grid;
-    grid-template-columns: 1.15fr 0.9fr 1.15fr 0.6fr;
-    gap: 18px;
-}
-
-.parking-rate-card,
-.entry-type-card,
-.unknown-trend-card,
-.statistics-note-card {
-    min-height: 250px;
-    padding: 22px;
+.entry-bar-item > strong {
+    margin-top: 10px;
+    color: #647086;
+    font-size: 13px;
+    font-weight: 800;
 }
 
 .parking-circle-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
-    margin-top: 22px;
 }
 
 .parking-circle-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    padding: 16px 10px;
+    border: 1px solid #e4ebf5;
+    border-radius: 14px;
+    background: #fbfdff;
 }
 
-.parking-circle-item strong {
-    color: #4b5668;
-    font-size: 13px;
+.parking-circle-item > strong {
+    font-size: 15px;
+    font-weight: 800;
 }
 
 .parking-circle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 86px;
-    height: 86px;
+    width: 104px;
+    height: 104px;
     border-radius: 50%;
 }
 
@@ -659,163 +827,113 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 62px;
-    height: 62px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     background: #fff;
-    color: var(--parking-color);
-    font-size: 20px;
-    font-weight: 800;
+    color: #142033;
+    font-size: 22px;
+    font-weight: 900;
 }
 
 .parking-circle-item small {
-    color: #5d6878;
-    font-weight: 700;
-}
-
-.card-help-text {
-    margin: 18px 0 0;
-    color: #8a95a8;
+    color: var(--parking-color);
     font-size: 13px;
-}
-
-.entry-type-content {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    margin-top: 18px;
-}
-
-.entry-type-donut {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 142px;
-    height: 142px;
-    border-radius: 50%;
-}
-
-.entry-type-donut-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 88px;
-    height: 88px;
-    border-radius: 50%;
-    background: #fff;
-}
-
-.entry-type-donut-inner span {
-    color: #6f7b8f;
-    font-size: 14px;
-}
-
-.entry-type-donut-inner strong {
-    color: #142033;
-    font-size: 20px;
-}
-
-.entry-type-list {
-    flex: 1;
-}
-
-.entry-type-row {
-    display: grid;
-    grid-template-columns: 1fr 52px 60px;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.entry-type-row span {
-    color: #4b5668;
-    font-weight: 700;
-}
-
-.entry-type-row strong {
-    color: #142033;
-    font-size: 18px;
-}
-
-.entry-type-row small {
-    color: #7d8797;
-}
-
-.unknown-svg-wrap {
-    height: 190px;
-    margin-top: 20px;
-    padding: 8px 4px 0;
-    border-top: 1px solid #edf1f6;
-}
-
-.unknown-svg {
-    width: 100%;
-    height: 100%;
-}
-
-.unknown-guide-line {
-    stroke: #edf1f6;
-    stroke-width: 1;
-}
-
-.unknown-polyline {
-    fill: none;
-    stroke: #ff8a00;
-    stroke-width: 3;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.unknown-point {
-    fill: #fff;
-    stroke: #ff8a00;
-    stroke-width: 3;
-}
-
-.unknown-value {
-    fill: #ff8a00;
-    font-size: 12px;
     font-weight: 800;
 }
 
-.unknown-label {
-    fill: #7d8797;
-    font-size: 11px;
-    font-weight: 700;
+.average-time-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding-top: 14px;
 }
 
-.statistics-note-card {
-    background: #fbfdff;
+.average-time-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 110px;
+    align-items: center;
+    gap: 18px;
 }
 
-.statistics-note-card ul {
-    margin: 22px 0 0;
-    padding-left: 18px;
-    color: #3f4b5d;
-    font-size: 14px;
-    line-height: 1.8;
+.average-time-row span {
+    font-weight: 800;
+}
+
+.average-time-row strong {
+    text-align: right;
+    font-size: 21px;
+    font-weight: 900;
+}
+
+.average-time-bar-wrap {
+    height: 13px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e9eef5;
+}
+
+.average-time-bar {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.average-time-row.visit .average-time-bar {
+    background: linear-gradient(90deg, #20c997, #12a679);
+}
+
+.average-time-row.visit strong {
+    color: #20a86f;
+}
+
+.average-time-row.unknown .average-time-bar {
+    background: linear-gradient(90deg, #ffb000, #ff7a00);
+}
+
+.average-time-row.unknown strong {
+    color: #ff7a00;
 }
 
 @media (max-width: 1200px) {
-    .statistics-summary-grid,
-    .statistics-bottom-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 760px) {
-    .statistics-summary-grid,
+    .statistics-top-grid,
     .statistics-bottom-grid {
         grid-template-columns: 1fr;
     }
 
     .parking-circle-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .statistics-page {
+        padding: 18px;
     }
 
-    .weekly-bar-chart {
-        overflow-x: auto;
+    .statistics-title-area {
+        flex-direction: column;
+    }
+
+    .current-parking-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .period-buttons {
+        width: 100%;
+    }
+
+    .period-buttons button {
+        flex: 1;
+    }
+
+    .average-time-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .average-time-row strong {
+        text-align: left;
     }
 }
 </style>

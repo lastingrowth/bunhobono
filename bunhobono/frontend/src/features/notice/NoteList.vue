@@ -1,7 +1,7 @@
 <template>
   <main class="notice-page">
     <div class="notice-header">
-      <h1>알림 리스트</h1>
+      <h1>{{ pageTitle }}</h1>
 
       <div class="notice-actions">
         <div class="status-filters">
@@ -119,13 +119,55 @@ const statusOptions = [
 
 const validStatuses = statusOptions.map((option) => option.value);
 
+// 통계 페이지에서 들어온 장기주차 알림 화면은
+// 미확인(Unresolved)과 확인(Checked)을 함께 보여준다.
+// 처리완료(Resolved)만 제외해야 대시보드 숫자와 목록 숫자가 맞는다.
 const getRouteStatus = () => {
-  const status = route.query.status;
+  const status = route.query.status
 
-  return validStatuses.includes(status) ? status : "Unresolved";
-};
+  if (validStatuses.includes(status)) {
+    return status
+  }
+
+  if (
+    route.name === 'NoticeVisitLongStay'
+    || route.name === 'NoticeUnknownLongStay'
+  ) {
+    return ''
+  }
+
+  return 'Unresolved'
+}
 
 const selectedStatus = ref(getRouteStatus());
+
+// 통계 페이지에서 들어온 전용 주소에 따라 알림 종류를 나눈다.
+// 기존 NoteList 화면은 그대로 쓰고, route name만 보고 필터링한다.
+const getRouteCarKind = () => {
+  if (route.name === 'NoticeVisitLongStay') {
+    return 'VISIT'
+  }
+
+  if (route.name === 'NoticeUnknownLongStay') {
+    return 'UNKNOWN'
+  }
+
+  return ''
+}
+
+const selectedCarKind = ref(getRouteCarKind())
+
+const pageTitle = computed(() => {
+  if (selectedCarKind.value === 'VISIT') {
+    return '방문 장기주차 알림'
+  }
+
+  if (selectedCarKind.value === 'UNKNOWN') {
+    return '비등록 장기주차 알림'
+  }
+
+  return '알림 리스트'
+})
 
 const columns = [
   { key: "noticeNo", fallbackKey: "notice_no", label: "번호", className: "col-xs" },
@@ -144,11 +186,25 @@ const getAlertStat = (notice) => {
   return notice.alertStat ?? notice.alert_stat ?? "Unresolved";
 };
 
+const getCarKind = (notice) => {
+  return notice.carKind ?? notice.car_kind ?? "";
+};
+
 const filteredNotices = computed(() => {
   return notices.value.filter((notice) => {
-    return getAlertStat(notice) === selectedStatus.value;
-  });
-});
+    // selectedStatus가 비어 있으면 처리완료를 제외한 알림을 보여준다.
+    // 통계 카드의 장기주차 알림 수와 목록 수를 맞추기 위한 조건이다.
+    const statusMatched = selectedStatus.value
+      ? getAlertStat(notice) === selectedStatus.value
+      : getAlertStat(notice) !== 'Resolved'
+
+    if (!selectedCarKind.value) {
+      return statusMatched
+    }
+
+    return statusMatched && getCarKind(notice) === selectedCarKind.value
+  })
+})
 
 const sortedNotices = computed(() => {
   return [...filteredNotices.value].sort((a, b) => {
@@ -243,10 +299,13 @@ watch(
   }
 );
 
-watch(selectedStatus, (status) => {
-  router.replace({
-    name: "NoticeList",
-    query: { status },
-  });
-});
+// 같은 NoteList를 쓰더라도 주소가 바뀌면 알림 필터를 다시 적용한다.
+watch(
+  () => route.name,
+  () => {
+    selectedCarKind.value = getRouteCarKind()
+    currentPage.value = 1
+  }
+)
+
 </script>

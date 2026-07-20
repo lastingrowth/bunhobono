@@ -251,7 +251,9 @@ const hoOptions = computed(() => [...new Set(
 
 const withdrawnMembers = computed(() => memberList.value
     .filter((member) => {
-        return Boolean(member.memDeleteAt) && !member.archived;
+        return Boolean(member.memDeleteAt)
+            && !member.archived
+            && member.memName !== '미등록';
     })
     .sort((left, right) => toDateTime(right.memDeleteAt) - toDateTime(left.memDeleteAt))
 );

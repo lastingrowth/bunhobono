@@ -43,6 +43,7 @@
     <VehicleList
       v-if="viewMode === 'list'"
       :vehicles="vehicleStore.vehicleList"
+      :initial-filter="vehicleInitialFilter"
       :filter-type="filterType"
       :sort-mode="sortMode"
     />
@@ -61,7 +62,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useVehicleStore } from './vehicleStore'
 
@@ -76,6 +77,16 @@ const route = useRoute()
 const viewMode = ref('list')
 const filterType = ref('all')
 const sortMode = ref('latest')
+
+// 통계 화면에서 '주차중 방문 만료 차량'을 눌러 들어온 경우
+// 차량 목록 화면은 그대로 쓰되, 처음 필터만 전용 필터로 열어준다.
+const vehicleInitialFilter = computed(() => {
+  if (route.name === 'ParkedExpiredVehicleList') {
+    return 'parkedExpired'
+  }
+
+  return 'all'
+})
 
 function openVehicleList() {
   viewMode.value = 'list'

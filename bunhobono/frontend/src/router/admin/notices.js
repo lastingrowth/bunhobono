@@ -8,6 +8,16 @@ export default [
     component: NoteList,
   },
   {
+    path: 'notice/visit-long-stay',
+    name: 'NoticeVisitLongStay',
+    component: NoteList,
+  },
+  {
+    path: 'notice/unknown-long-stay',
+    name: 'NoticeUnknownLongStay',
+    component: NoteList,
+  },
+  {
     path: "notice/:noticeNo",
     name: "NoticeDetail",
     component: NoteDetail,
