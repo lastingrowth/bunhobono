@@ -31,6 +31,7 @@ public interface CarLogMapper {
             p.parking_no,
             p.parking_name,
             cl.camera_data_no,
+            cl.out_camera_data_no,
             cl.in_gate_no,
             ig.gate_name AS in_gate_name,
             cl.in_time,
@@ -95,7 +96,10 @@ public interface CarLogMapper {
                 </when>
                 <otherwise>
                     AND cl.vehicle_car_no IS NULL
-                    AND COALESCE(cd.car_no, cl.snapshot_car_no) = #{carNo}
+                    AND (
+                        cd.car_no = #{carNo}
+                        OR cl.snapshot_car_no = #{carNo}
+                    )
                 </otherwise>
             </choose>
         )
@@ -118,7 +122,8 @@ public interface CarLogMapper {
         <script>
         UPDATE car_log
         SET out_gate_no = #{gateNo},
-            out_time = #{data.captureTime}
+            out_time = #{data.captureTime},
+            out_camera_data_no = #{data.cameraDataNo}
         WHERE car_log_no = (
             SELECT cl.car_log_no
             FROM car_log cl
@@ -130,7 +135,10 @@ public interface CarLogMapper {
                 </when>
                 <otherwise>
                     AND cl.vehicle_car_no IS NULL
-                    AND COALESCE(cd.car_no, cl.snapshot_car_no) = #{data.carNo}
+                    AND (
+                        cd.car_no = #{data.carNo}
+                        OR cl.snapshot_car_no = #{data.carNo}
+                    )
                 </otherwise>
             </choose>
             ORDER BY cl.in_time DESC
@@ -139,6 +147,24 @@ public interface CarLogMapper {
         </script>
     """)
     int completeExit(@Param("data") CameraDataDTO data, @Param("gateNo") int gateNo);
+
+    @Update("""
+        <script>
+        UPDATE car_log
+        <choose>
+            <when test="vehicleCarNo != null">
+                SET vehicle_car_no = #{vehicleCarNo},
+                    snapshot_car_no = #{carNo}
+            </when>
+            <otherwise>
+                SET vehicle_car_no = NULL
+            </otherwise>
+        </choose>
+        WHERE camera_data_no = #{cameraDataNo}
+           OR out_camera_data_no = #{cameraDataNo}
+        </script>
+    """)
+    int correctByCameraData(CameraDataDTO dto);
 
     @Delete("DELETE FROM car_log WHERE car_log_no = #{carLogNo}")
     int delete(int carLogNo);

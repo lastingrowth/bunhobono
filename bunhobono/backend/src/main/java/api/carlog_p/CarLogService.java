@@ -52,6 +52,10 @@ public class CarLogService {
         }
     }
 
+    public int correctByCameraData(CameraDataDTO cameraData) {
+        return carLogMapper.correctByCameraData(cameraData);
+    }
+
     // 테스트용: 매분 실행
     // @Scheduled(cron = "0 * * * * *")
     // 매일 자정: 출차 후 15일 지난 입출차 기록을 휴지통으로 이동

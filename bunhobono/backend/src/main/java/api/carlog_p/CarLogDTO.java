@@ -23,6 +23,7 @@ public class CarLogDTO {
     private String parkingName;
 
     private Integer cameraDataNo;
+    private Integer outCameraDataNo;
     private Integer inGateNo;
     private String inGateName;
     private LocalDateTime inTime, realEndDate;

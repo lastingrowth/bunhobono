@@ -83,6 +83,11 @@ SEND_COOLDOWN_SECONDS = 10
 DETECTION_DISPLAY_SECONDS = 2
 DETECTION_ZONE_TOP_RATIO = 1 / 3
 OCR_DEVICE = "cpu"
+LOW_LIGHT_CAMERA_NOS = {5, 6}
+LOW_LIGHT_BRIGHTNESS = 0.40
+SUNNY_CAMERA_NOS = {7, 8}
+SUNNY_CONTRAST = 1.20
+SUNNY_BRIGHTNESS = 18
 
 
 class TestStreamWorker:
@@ -266,6 +271,26 @@ class TestStreamWorker:
 
             self.latest_frame = display_frame
 
+    def apply_low_light(self, frame):
+        dark_frame = frame.astype("float32") * LOW_LIGHT_BRIGHTNESS
+        return dark_frame.clip(0, 255).astype("uint8")
+
+    def apply_sunny_day(self, frame):
+        return cv2.convertScaleAbs(
+            frame,
+            alpha=SUNNY_CONTRAST,
+            beta=SUNNY_BRIGHTNESS,
+        )
+
+    def apply_camera_environment(self, frame):
+        if self.camera_no in LOW_LIGHT_CAMERA_NOS:
+            return self.apply_low_light(frame)
+
+        if self.camera_no in SUNNY_CAMERA_NOS:
+            return self.apply_sunny_day(frame)
+
+        return frame
+
     def show_detection(self, box):
         with self.latest_frame_lock:
             self.latest_detection_box = [int(value) for value in box]
@@ -332,6 +357,8 @@ class TestStreamWorker:
         # Keep a preview frame ready so the first viewer does not wait on startup.
         success, preview_frame = cap.read()
         if success:
+            preview_frame = self.apply_camera_environment(preview_frame)
+
             frame_no = 1
             self.update_latest_frame(preview_frame)
 
@@ -347,6 +374,8 @@ class TestStreamWorker:
                 if not success:
                     print(f"[{self.camera_name}] 영상 종료 후 반복")
                     break
+
+                frame = self.apply_camera_environment(frame)
 
                 frame_no += 1
                 self.update_latest_frame(frame)

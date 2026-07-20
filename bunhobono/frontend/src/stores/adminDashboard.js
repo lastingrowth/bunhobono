@@ -182,12 +182,17 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
         selectedParkingPanel.value = latestPanel ?? selectedParkingPanel.value
     }
 
+    const refreshGateStatuses = async () => {
+        await gateStore.loadList()
+        refreshSelectedParkingPanel()
+    }
+
     // 대시 보드 오른쪽에 보여줄 최신 입출차 로그
     const recentCarlogs = computed(() => {
         return [...carlogStore.carLogs]
             .sort((left,right) => {
-                const rightTime = new Date(right.inTime ?? right.outTime ?? 0)
-                const leftTime = new Date(left.inTime ?? left.outTime ?? 0)
+                const rightTime = new Date(right.outTime ?? right.inTime ?? 0)
+                const leftTime = new Date(left.outTime ?? left.inTime ?? 0)
 
                 return rightTime - leftTime
             })
@@ -437,6 +442,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
         refreshCarlogs,
         parkingStateClass,
         openManualGate,
+        refreshGateStatuses,
         loadDashboard,
     }
 })

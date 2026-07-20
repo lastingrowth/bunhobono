@@ -106,7 +106,11 @@ public class CameraDataService {
             // 8. DB에 저장할 DTO 생성
             CameraDataDTO dto = new CameraDataDTO();
             dto.setCameraNo(cameraNo);
-            dto.setCarNo(carNo);
+            String recognizedCarNo = carNo == null
+                    ? ""
+                    : carNo.trim().replaceAll("\\s+", "");
+            dto.setOcrCarNo(recognizedCarNo);
+            dto.setCarNo(recognizedCarNo);
             dto.setCaptureTime(Timestamp.valueOf(now));
             dto.setImagePath(savePath.toString());
             dto.setCropImagePath(
@@ -120,8 +124,25 @@ public class CameraDataService {
 
             // OCR로 읽은 차량번호가 등록 차량 테이블에 있으면 vehicle_car_no를 찾아서 저장
             //
-            Integer vehicleCarNo = cameraDataMapper.findVehicleCarNo(carNo);
+            Integer vehicleCarNo =
+                    cameraDataMapper.findVehicleCarNo(recognizedCarNo);
+            boolean autoCorrected = false;
+
+            if (vehicleCarNo == null) {
+                CameraDataDTO aliasVehicle =
+                        cameraDataMapper.findApprovedVehicleByAlias(
+                                recognizedCarNo
+                        );
+
+                if (aliasVehicle != null) {
+                    vehicleCarNo = aliasVehicle.getVehicleCarNo();
+                    dto.setCarNo(aliasVehicle.getCarNo());
+                    autoCorrected = true;
+                }
+            }
+
             dto.setVehicleCarNo(vehicleCarNo);
+            dto.setAutoCorrected(autoCorrected);
 
             // 9. camera_data 저장
             // 카메라 인식 기록이므로 등록/미등록 관계 없이 먼저 저장
@@ -187,6 +208,97 @@ public class CameraDataService {
 
     public CameraDataDTO getCameraData(int cameraDataNo) {
         return cameraDataMapper.detail(cameraDataNo);
+    }
+
+    @Transactional
+    public CameraDataDTO editCarNo(
+            int cameraDataNo,
+            CameraDataDTO request) {
+        CameraDataDTO current = cameraDataMapper.detail(cameraDataNo);
+
+        if (current == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라 데이터가 존재하지 않습니다"
+            );
+        }
+
+        String carNo = request == null ? null : request.getCarNo();
+        String normalizedCarNo = carNo == null
+                ? ""
+                : carNo.trim().replaceAll("\\s+", "");
+
+        if (!normalizedCarNo.matches(
+                "^(?:[가-힣]{2})?\\d{2,3}[가-힣]\\d{4}$")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "차량번호 형식이 올바르지 않습니다"
+            );
+        }
+
+        Integer vehicleCarNo =
+                cameraDataMapper.findVehicleCarNo(normalizedCarNo);
+
+        boolean saveAlias = request != null
+                && Boolean.TRUE.equals(request.getSaveAlias());
+        String previousCarNo = current.getCarNo() == null
+                ? ""
+                : current.getCarNo().trim().replaceAll("\\s+", "");
+
+        boolean aliasSaved = false;
+
+        if (saveAlias && vehicleCarNo != null
+                && !previousCarNo.isBlank()
+                && !previousCarNo.equals(normalizedCarNo)) {
+            Integer actualVehicleCarNo =
+                    cameraDataMapper.findVehicleCarNo(previousCarNo);
+
+            if (actualVehicleCarNo != null
+                    && !actualVehicleCarNo.equals(vehicleCarNo)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "다른 등록 차량의 실제 번호는 별칭으로 사용할 수 없습니다"
+                );
+            }
+
+            Integer aliasVehicleCarNo =
+                    cameraDataMapper.findAliasVehicleCarNo(previousCarNo);
+
+            if (aliasVehicleCarNo != null
+                    && !aliasVehicleCarNo.equals(vehicleCarNo)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "이미 다른 차량에 연결된 OCR 별칭입니다"
+                );
+            }
+
+            cameraDataMapper.updateAlias(
+                    vehicleCarNo,
+                    previousCarNo
+            );
+            aliasSaved = true;
+        }
+
+        CameraDataDTO updateDto = new CameraDataDTO();
+        updateDto.setCameraDataNo(cameraDataNo);
+        updateDto.setCarNo(normalizedCarNo);
+        updateDto.setVehicleCarNo(vehicleCarNo);
+
+        if (cameraDataMapper.updateCarNo(updateDto) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "차량번호 수정에 실패했습니다"
+            );
+        }
+
+        // 이미 게이트가 열려 입출차 로그가 생성 또는 완료된 경우에도
+        // 동일한 camera_data를 참조하는 로그의 차량 정보를 함께 정정한다.
+        carLogService.correctByCameraData(updateDto);
+
+        CameraDataDTO updated = cameraDataMapper.detail(cameraDataNo);
+        updated.setRegistered(vehicleCarNo != null);
+        updated.setAliasSaved(aliasSaved);
+        return updated;
     }
 
     // 관리자 수동 게이트 열기
