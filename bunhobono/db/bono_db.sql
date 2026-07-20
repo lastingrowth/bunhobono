@@ -133,6 +133,7 @@ CREATE TABLE camera_data (
     camera_no INT NOT NULL,
     vehicle_car_no INT,
     car_no VARCHAR(50),
+    ocr_car_no VARCHAR(50),
     capture_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     image_path TEXT,
     crop_image_path TEXT,

@@ -83,8 +83,9 @@ public interface TrashMapper {
 
     @Insert("""
         INSERT INTO camera_data
-            (camera_data_no, camera_no, vehicle_car_no, car_no, capture_time,
-             image_path, recognition_state, confidence_score)
+            (camera_data_no, camera_no, vehicle_car_no, car_no, ocr_car_no,
+             capture_time, image_path, crop_image_path, recognition_state,
+             confidence_score)
         SELECT
             (tb.data_json ->> 'camera_data_no')::int,
             (tb.data_json ->> 'camera_no')::int,
@@ -96,8 +97,13 @@ public interface TrashMapper {
                 ELSE NULL
             END,
             tb.data_json ->> 'car_no',
+            COALESCE(
+                tb.data_json ->> 'ocr_car_no',
+                tb.data_json ->> 'car_no'
+            ),
             NULLIF(tb.data_json ->> 'capture_time', '')::timestamp,
             tb.data_json ->> 'image_path',
+            tb.data_json ->> 'crop_image_path',
             NULLIF(tb.data_json ->> 'recognition_state', '')::boolean,
             NULLIF(tb.data_json ->> 'confidence_score', '')::double precision
         FROM trash_bin tb

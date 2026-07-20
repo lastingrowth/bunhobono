@@ -98,7 +98,11 @@ public interface CarLogMapper {
                     AND cl.vehicle_car_no IS NULL
                     AND (
                         cd.car_no = #{carNo}
+                        OR cd.ocr_car_no = #{carNo}
+                        OR cd.car_no = #{ocrCarNo}
+                        OR cd.ocr_car_no = #{ocrCarNo}
                         OR cl.snapshot_car_no = #{carNo}
+                        OR cl.snapshot_car_no = #{ocrCarNo}
                     )
                 </otherwise>
             </choose>
@@ -106,6 +110,38 @@ public interface CarLogMapper {
         </script>
     """)
     boolean existsOpenLog(CameraDataDTO dto);
+
+    @Select("""
+        <script>
+        SELECT
+            cl.car_log_no,
+            cl.vehicle_car_no,
+            COALESCE(vc.car_no, cl.snapshot_car_no, cd.car_no) AS car_no
+        FROM car_log cl
+        LEFT JOIN vehicle_car vc ON cl.vehicle_car_no = vc.vehicle_car_no
+        LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no
+        WHERE cl.out_time IS NULL
+        <choose>
+            <when test="vehicleCarNo != null">
+                AND cl.vehicle_car_no = #{vehicleCarNo}
+            </when>
+            <otherwise>
+                AND cl.vehicle_car_no IS NULL
+                AND (
+                    cd.car_no = #{carNo}
+                    OR cd.ocr_car_no = #{carNo}
+                    OR cd.car_no = #{ocrCarNo}
+                    OR cd.ocr_car_no = #{ocrCarNo}
+                    OR cl.snapshot_car_no = #{carNo}
+                    OR cl.snapshot_car_no = #{ocrCarNo}
+                )
+            </otherwise>
+        </choose>
+        ORDER BY cl.in_time DESC
+        LIMIT 1
+        </script>
+    """)
+    CarLogDTO findOpenLog(CameraDataDTO dto);
 
     //데이터 추가할때 스냅샷 칼럼도 추가
     @Insert("INSERT INTO car_log " +
@@ -137,7 +173,11 @@ public interface CarLogMapper {
                     AND cl.vehicle_car_no IS NULL
                     AND (
                         cd.car_no = #{data.carNo}
+                        OR cd.ocr_car_no = #{data.carNo}
+                        OR cd.car_no = #{data.ocrCarNo}
+                        OR cd.ocr_car_no = #{data.ocrCarNo}
                         OR cl.snapshot_car_no = #{data.carNo}
+                        OR cl.snapshot_car_no = #{data.ocrCarNo}
                     )
                 </otherwise>
             </choose>
