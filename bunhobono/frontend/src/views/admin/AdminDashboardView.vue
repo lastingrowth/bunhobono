@@ -9,77 +9,16 @@
             {{ errorMessage }}
         </p>
 
-        <!-- 차량 등록과 알림을 하나의 카드 안에 한 줄로 배치 -->
-        <div class="dashboard-top-strip">
-            <!-- 관리자 차량 등록 영역 -->
-            <form 
-                class="quick-register-inline"
-                @submit.prevent="submitQuickVehicle">
-
-                <span class="quick-register-label">
-                    차량 등록
-                </span>
-            
-                <input
-                    v-model="quickVehicle.carNo"
-                    type="text"
-                    placeholder="차량번호" />
-            
-                <select
-                    v-model="quickVehicle.vehicleType"
-                    @change="loadQuickRegisterMembers">
-                    <option value="normal">등록차량</option>
-                    <option value="visit">방문차량</option>
-                </select>
-            
-                <select
-                    v-model="quickVehicle.role"
-                    @change="loadQuickRegisterMembers">
-                    <option value="RESIDENT">입주민</option>
-                    <option value="ADMIN">관리자</option>
-                </select>
-            
-                <select v-model.number="quickVehicle.periodValue">
-                    <option
-                        v-for="option in quickPeriodOptions"
-                        :key="option.value"
-                        :value="option.value">
-                        {{ option.text }}
-                    </option>
-                </select>
-            
-                <select v-model.number="quickVehicle.memberNo">
-                    <option :value="null">회원 선택</option>
-                    <option
-                        v-for="member in quickRegisterMembers"
-                        :key="member.memberNo"
-                        :value="member.memberNo">
-                        {{ memberLabel(member) }}
-                    </option>
-                </select>
-            
-                <button type="submit">등록</button>              
-            </form>
-
-            <!-- 상단 알림 영역 -->
-            <div class="dashboard-alert-chips">
-                <button
-                    v-for="alert in dashboardAlerts"
-                    :key="alert.key"
-                    type="button"
-                    class="alert-chip"
-                    @click="router.push(alert.path)">
-                    <span>{{ alert.title }}</span>
-                    <strong>{{ alert.count }}</strong>
-                </button>
-            </div>
-        </div>
- 
-
         <!-- 메인 영역 : 왼쪽은 영상, 오른쪽은 입출차 로그와 상세 정보 -->
-        <div class="admin-control-layout">
+        <div
+            class="admin-control-layout"
+            :style="{
+                ...(monitoringHeight ? { '--monitoring-height': `${monitoringHeight}px` } : {}),
+                ...(cameraDataHeight ? { '--camera-data-height': `${cameraDataHeight}px` } : {}),
+            }">
+            <section class="admin-control-left">
             <!-- 주차장 모니터링 영역 -->
-            <article class="dashboard-card monitoring-card">
+            <article ref="monitoringCardRef" class="dashboard-card monitoring-card">
 
                 <!-- A/B/C/D 주차장 카드 v-for로 반복해서 표시 -->
                 <div class="parking-monitor-grid">
@@ -98,7 +37,7 @@
 
                             <div v-else class="parking-video-placeholder">
                                 <strong v-if="isCameraFinished(panel.cameraNo)">영상 재생이 끝났습니다</strong>
-                                <strong v-else>{{ panel.parkingName }} {{ panel.modeText }} 영상</strong>
+                                <strong v-else>{{ panel.modeText }}</strong>
                                 <small>
                                     CCTV {{ panel.cameraNo }} · {{ isCameraFinished(panel.cameraNo) ? 'END OF VIDEO' : '재생 대기' }}
                                 </small>
@@ -192,59 +131,55 @@
                 </div>
             </article>
 
+            <section class="dashboard-card carlog-dashboard-block">
+                <div class="section-heading">
+                    <h3>입출차 로그</h3>
+                    <button
+                        type="button"
+                        class="dashboard-view-all-button"
+                        @click="router.push('/admin/carlogs')">
+                        전체보기
+                    </button>
+                </div>
+
+                <div class="carlog-table-wrap">
+                    <table class="dashboard-log-table">
+                        <thead>
+                            <tr>
+                                <th>차량번호</th>
+                                <th>구분</th>
+                                <th>상태</th>
+                                <th>입차</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="log in recentCarlogs"
+                                :key="log.carLogNo"
+                                :class="{ selected: selectedDetailType === 'CAR_LOG' && selectedCarlog?.carLogNo === log.carLogNo }"
+                                @click="showCarlogDetail(log)">
+                                <td>{{ log.carNo || '미인식' }}</td>
+                                <td>{{ log.carKindText }}</td>
+                                <td>
+                                    <span class="state-badge" :class="parkingStateClass(log)">
+                                        {{ log.parkingStateText }}
+                                    </span>
+                                </td>
+                                <td>{{ log.inTimeText }}</td>
+                            </tr>
+                            <tr v-if="recentCarlogs.length === 0">
+                                <td colspan="4">입출차 로그가 없습니다</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            </section>
+
             <!-- 오른쪽 입출차 로그 + 선택 상세 영역 -->
             <section class="admin-control-right">
                 <article class="dashboard-card carlog-preview-card">
-                    <div class="section-heading">
-                        <h3>입출차 로그</h3>
-                        <button
-                            type="button"
-                            class="dashboard-view-all-button"
-                            @click="router.push('/admin/carlogs')">
-                            전체보기
-                        </button>
-                    </div>
-
-                    <div class="carlog-table-wrap">
-                        <table class="dashboard-log-table">
-                            <thead>
-                                <tr>
-                                    <th>차량번호</th>
-                                    <th>구분</th>
-                                    <th>상태</th>
-                                    <th>입차</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                <tr
-                                    v-for="log in recentCarlogs"
-                                    :key="log.carLogNo"
-                                    :class="{ selected: selectedDetailType === 'CAR_LOG' && selectedCarlog?.carLogNo === log.carLogNo }"
-                                    @click="showCarlogDetail(log)">
-                                    <td>{{ log.carNo || '미인식' }}</td>
-                                    <td>{{ log.carKindText }}</td>
-                                    <td>
-                                        <span
-                                            class="state-badge"
-                                            :class="parkingStateClass(log)">
-                                            {{ log.parkingStateText }}
-                                        </span>
-                                    </td>
-                                    <td>{{ log.inTimeText }}</td>
-                                </tr>
-
-                                <tr v-if="recentCarlogs.length === 0">
-                                    <td colspan="4">
-                                        입출차 로그가 없습니다
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </article>
-
-                <article class="dashboard-card camera-data-preview-card">
+                    <section ref="cameraDataBlockRef" class="dashboard-card camera-dashboard-block">
                     <div class="section-heading">
                         <h3>카메라 데이터</h3>
                         <button
@@ -287,13 +222,11 @@
                             </tbody>
                         </table>
                     </div>
+                    </section>
                 </article>
 
                 <article class="dashboard-card selected-log-card">
-                    <div class="section-heading">
-                        <h3>{{ selectedDetailType === 'CAMERA_DATA' ? '선택 카메라 데이터 상세 정보' : '선택 로그 상세 정보' }}</h3>
-                    </div>
-
+                    <div class="combined-detail-section">
                     <div v-if="selectedDetailType === 'CAMERA_DATA' && selectedCameraData" class="selected-log-content">
                         <div class="selected-log-images">
                             <div class="capture-image-box">
@@ -454,8 +387,68 @@
                     <div v-else class="selected-log-empty">
                         입출차 로그를 선택하세요
                     </div>
+                    </div>
                 </article>
             </section>
+        </div>
+
+        <!-- 하단 차량 등록 및 회원 승인 -->
+        <div class="dashboard-top-strip dashboard-bottom-strip">
+            <form
+                class="quick-register-inline"
+                @submit.prevent="submitQuickVehicle">
+                <input
+                    v-model="quickVehicle.carNo"
+                    type="text"
+                    placeholder="차량번호" />
+
+                <select
+                    v-model="quickVehicle.vehicleType"
+                    @change="loadQuickRegisterMembers">
+                    <option value="normal">등록차량</option>
+                    <option value="visit">방문차량</option>
+                </select>
+
+                <select
+                    v-model="quickVehicle.role"
+                    @change="loadQuickRegisterMembers">
+                    <option value="RESIDENT">입주민</option>
+                    <option value="ADMIN">관리자</option>
+                </select>
+
+                <select v-model.number="quickVehicle.periodValue">
+                    <option
+                        v-for="option in quickPeriodOptions"
+                        :key="option.value"
+                        :value="option.value">
+                        {{ option.text }}
+                    </option>
+                </select>
+
+                <select v-model.number="quickVehicle.memberNo">
+                    <option :value="null">회원 선택</option>
+                    <option
+                        v-for="member in quickRegisterMembers"
+                        :key="member.memberNo"
+                        :value="member.memberNo">
+                        {{ memberLabel(member) }}
+                    </option>
+                </select>
+
+                <button type="submit">등록</button>
+            </form>
+
+            <div class="dashboard-alert-chips">
+                <button
+                    v-for="alert in dashboardAlerts"
+                    :key="alert.key"
+                    type="button"
+                    class="alert-chip"
+                    @click="router.push(alert.path)">
+                    <span>{{ alert.title }}</span>
+                    <strong>{{ alert.count }}</strong>
+                </button>
+            </div>
         </div>
 
         <!-- 주차장 카드를 클릭했을 때 크게 보여주는 dialog 화면 -->
@@ -518,7 +511,7 @@
                         <strong>
                             {{ isCameraFinished(selectedParkingPanel.cameraNo)
                                 ? '영상 재생이 끝났습니다'
-                                : `${selectedParkingPanel.parkingName} ${selectedParkingPanel.modeText} 화면` }}
+                                : selectedParkingPanel.modeText }}
                         </strong>
                         <small>
                             CCTV {{ selectedParkingPanel.cameraNo }} ·
@@ -644,9 +637,15 @@ const cameraStatuses = ref({})
 const isEditingCameraCarNo = ref(false)
 const cameraCarNoDraft = ref('')
 const cameraCarNoSaving = ref(false)
+const monitoringCardRef = ref(null)
+const monitoringHeight = ref(0)
+const cameraDataBlockRef = ref(null)
+const cameraDataHeight = ref(0)
 let ocrStatusTimer = null
 let refreshingCarlogs = false
 let cctvClockTimer = null
+let monitoringResizeObserver = null
+let cameraDataResizeObserver = null
 
 // storeToRefs 를 사용하면 store 안의 ref/computed 반응성이 유지된다
 const {
@@ -1109,9 +1108,24 @@ onMounted(async () => {
     cctvClockTimer = window.setInterval(updateCctvClock, 1000)
     ocrStatusTimer = window.setInterval(checkOcrEvents, 1000)
     await loadDashboard()
+    await nextTick()
+    monitoringResizeObserver = new ResizeObserver(([entry]) => {
+        monitoringHeight.value = Math.round(entry.target.getBoundingClientRect().height)
+    })
+    if (monitoringCardRef.value) {
+        monitoringResizeObserver.observe(monitoringCardRef.value)
+    }
+    cameraDataResizeObserver = new ResizeObserver(([entry]) => {
+        cameraDataHeight.value = Math.round(entry.target.getBoundingClientRect().height)
+    })
+    if (cameraDataBlockRef.value) {
+        cameraDataResizeObserver.observe(cameraDataBlockRef.value)
+    }
 })
 
 onBeforeUnmount(() => {
+    monitoringResizeObserver?.disconnect()
+    cameraDataResizeObserver?.disconnect()
     window.clearInterval(cctvClockTimer)
     window.clearInterval(ocrStatusTimer)
     playingCameraNos.value.forEach((cameraNo) => {

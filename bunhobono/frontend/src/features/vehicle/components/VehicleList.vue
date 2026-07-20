@@ -1,17 +1,5 @@
 <template>
   <div>
-    <h3>차량 목록</h3>
-
-    <div class="vehicle-filter-bar">
-      <button class="filter-btn" @click="filterType = 'all'">전체</button>
-      <button class="filter-btn" @click="filterType = 'normal'">입주민만</button>
-      <button class="filter-btn" @click="filterType = 'visit'">방문자만</button>
-      <button class="filter-btn" @click="filterType = 'expired'">만기차량</button>
-      <button class="filter-btn" @click="toggleSort">
-        {{ sortButtonText }}
-      </button>
-    </div>
-
     <table border="">
       <thead>
         <tr>
@@ -60,7 +48,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useVehicleStore } from '../vehicleStore'
 import { usePagination } from '@/shared/pagination/usePagination'
 import Pagination from '@/shared/pagination/Pagination.vue'
@@ -69,19 +57,24 @@ const props = defineProps({
   vehicles: {
     type: Array,
     default: () => []
+  },
+  filterType: {
+    type: String,
+    default: 'all'
+  },
+  sortMode: {
+    type: String,
+    default: 'latest'
   }
 })
 
 const vehicleStore = useVehicleStore()
 
-const filterType = ref('all')
-const sortMode = ref('latest')
-
 const filteredVehicles = computed(() => {
   return props.vehicles.filter((vehicle) => {
     const expired = isExpiredVehicle(vehicle)
 
-    if (filterType.value === 'expired') {
+    if (props.filterType === 'expired') {
       return expired
     }
 
@@ -89,11 +82,11 @@ const filteredVehicles = computed(() => {
       return false
     }
 
-    if (filterType.value === 'normal') {
+    if (props.filterType === 'normal') {
       return vehicle.vehicleType === 'normal'
     }
 
-    if (filterType.value === 'visit') {
+    if (props.filterType === 'visit') {
       return vehicle.vehicleType === 'visit'
     }
 
@@ -108,7 +101,7 @@ const sortedVehicles = computed(() => {
     const left = Number(a.displayNo ?? a.vehicleCarNo)
     const right = Number(b.displayNo ?? b.vehicleCarNo)
 
-    if (sortMode.value === 'oldest') {
+    if (props.sortMode === 'oldest') {
       return left - right
     }
 
@@ -126,22 +119,6 @@ const {
   paginatedItems,
   setPage
 } = usePagination(sortedVehicles, pageSize)
-
-const sortButtonText = computed(() => {
-  if (sortMode.value === 'oldest') {
-    return '오래된순'
-  }
-
-  return '최신순'
-})
-
-function toggleSort() {
-  if (sortMode.value === 'latest') {
-    sortMode.value = 'oldest'
-  } else {
-    sortMode.value = 'latest'
-  }
-}
 
 function isExpiredVehicle(vehicle) {
   return String(vehicle.remainingTimeText || '').startsWith('만기됨')
@@ -181,20 +158,8 @@ async function remove(vehicleNo) {
 </script>
 
 <style scoped>
-.vehicle-filter-bar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 740px;
-  min-width: 740px;
-  max-width: 740px;
-  margin: 12px 0;
-}
-
-.filter-btn {
-  width: 120px;
-  height: 36px;
-  white-space: nowrap;
+table th,
+table td {
   text-align: center;
 }
 </style>

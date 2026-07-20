@@ -1,121 +1,92 @@
 <template>
   <div class="carlog-filter">
-    <div class="carlog-search-row">
+    <div class="carlog-heading-row">
+      <h2>입출차 기록</h2>
+
+      <select
+        v-model="carlogStore.search.sort"
+        class="filter-select sort-select"
+        @change="loadCarLogs"
+      >
+        <option value="latest">최신순</option>
+        <option value="oldest">오래된순</option>
+      </select>
+    </div>
+
+    <div class="carlog-filter-bar">
       <input
         v-model="carNoKeyword"
         class="carlog-search-input"
         placeholder="차량번호 검색"
-        @keyup.enter="searchCarNo"
+        @keyup.enter="searchLogs"
       >
 
-      <button class="search-btn" @click="searchCarNo">
+      <label class="in-time-filter">
+        <input
+          v-model="inTimeFromInput"
+          class="in-time-input"
+          type="datetime-local"
+          @keyup.enter="searchLogs"
+        >
+        <span>~</span>
+        <input
+          v-model="inTimeToInput"
+          class="in-time-input"
+          type="datetime-local"
+          @keyup.enter="searchLogs"
+        >
+      </label>
+
+      <select
+        v-model="carKindInput"
+        class="filter-select kind-select"
+      >
+        <option value="">전체차량</option>
+        <option value="REGISTERED">등록차량</option>
+        <option value="VISIT">방문차량</option>
+        <option value="UNKNOWN">미등록차량</option>
+      </select>
+
+      <button class="search-btn" @click="searchLogs">
         검색
       </button>
 
-      <button class="search-btn" @click="resetAll">
+      <button class="search-btn reset-btn" @click="resetAll">
         초기화
-      </button>
-    </div>
-
-    <div class="carlog-filter-bar">
-      <button class="filter-btn" @click="showAllLogs">
-        전체로그
-      </button>
-
-      <button class="filter-btn" @click="toggleParkingState">
-        {{ parkingStateButtonText }}
-      </button>
-
-      <button class="filter-btn" @click="toggleCarKind">
-        {{ carKindButtonText }}
-      </button>
-
-      <button class="filter-btn" @click="toggleParking">
-        {{ parkingButtonText }}
-      </button>
-
-      <button class="filter-btn" @click="toggleSort">
-        {{ sortButtonText }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useCarlogStore } from '../carlogStore'
 
 const carlogStore = useCarlogStore()
 
+const emit = defineEmits(['apply-in-time'])
+
 const carNoKeyword = ref(carlogStore.search.carNo || '')
+const inTimeFromInput = ref('')
+const inTimeToInput = ref('')
+const carKindInput = ref(carlogStore.search.carKind || '')
 
-const parkingStateStep = ref(0)
-const carKindStep = ref(0)
-const parkingStep = ref(0)
-
-const parkingStateButtonText = computed(() => {
-  if (parkingStateStep.value === 1) {
-    return '주차중'
-  }
-
-  if (parkingStateStep.value === 2) {
-    return '출차완료'
-  }
-
-  return '전체상태'
-})
-
-const carKindButtonText = computed(() => {
-  if (carKindStep.value === 1) {
-    return '입주민'
-  }
-
-  if (carKindStep.value === 2) {
-    return '방문차량'
-  }
-
-  if (carKindStep.value === 3) {
-    return '미등록차량'
-  }
-
-  return '전체차량'
-})
-
-const parkingButtonText = computed(() => {
-  if (parkingStep.value === 1) {
-    return '주차장 A'
-  }
-
-  if (parkingStep.value === 2) {
-    return '주차장 B'
-  }
-
-  if (parkingStep.value === 3) {
-    return '주차장 C'
-  }
-
-  if (parkingStep.value === 4) {
-    return '주차장 D'
-  }
-
-  return '전체주차장'
-})
-
-const sortButtonText = computed(() => {
-  if (carlogStore.search.sort === 'oldest') {
-    return '오래된순'
-  }
-
-  return '최신순'
-})
-
-async function searchCarNo() {
+async function searchLogs() {
   carlogStore.search.carNo = carNoKeyword.value.trim()
+  carlogStore.search.carKind = carKindInput.value
+  emit('apply-in-time', {
+    from: inTimeFromInput.value,
+    to: inTimeToInput.value
+  })
   await carlogStore.loadCarLogs()
 }
 
-async function showAllLogs() {
+async function resetAll() {
   carNoKeyword.value = ''
+  inTimeFromInput.value = ''
+  inTimeToInput.value = ''
+  carKindInput.value = ''
+  emit('apply-in-time', { from: '', to: '' })
 
   carlogStore.search.carNo = ''
   carlogStore.search.parkingState = ''
@@ -124,133 +95,168 @@ async function showAllLogs() {
   carlogStore.search.gateNo = null
   carlogStore.search.sort = 'latest'
 
-  parkingStateStep.value = 0
-  carKindStep.value = 0
-  parkingStep.value = 0
-
   await carlogStore.loadCarLogs()
 }
 
-async function toggleParkingState() {
-  parkingStateStep.value += 1
-
-  if (parkingStateStep.value > 2) {
-    parkingStateStep.value = 0
-  }
-
-  if (parkingStateStep.value === 0) {
-    carlogStore.search.parkingState = ''
-  }
-
-  if (parkingStateStep.value === 1) {
-    carlogStore.search.parkingState = 'PARKING'
-  }
-
-  if (parkingStateStep.value === 2) {
-    carlogStore.search.parkingState = 'OUT'
-  }
-
+async function loadCarLogs() {
   await carlogStore.loadCarLogs()
-}
-
-async function toggleCarKind() {
-  carKindStep.value += 1
-
-  if (carKindStep.value > 3) {
-    carKindStep.value = 0
-  }
-
-  if (carKindStep.value === 0) {
-    carlogStore.search.carKind = ''
-  }
-
-  if (carKindStep.value === 1) {
-    carlogStore.search.carKind = 'REGISTERED'
-  }
-
-  if (carKindStep.value === 2) {
-    carlogStore.search.carKind = 'VISIT'
-  }
-
-  if (carKindStep.value === 3) {
-    carlogStore.search.carKind = 'UNKNOWN'
-  }
-
-  await carlogStore.loadCarLogs()
-}
-
-async function toggleParking() {
-  parkingStep.value += 1
-
-  if (parkingStep.value > 4) {
-    parkingStep.value = 0
-  }
-
-  if (parkingStep.value === 0) {
-    carlogStore.search.parkingNo = null
-  } else {
-    carlogStore.search.parkingNo = parkingStep.value
-  }
-
-  await carlogStore.loadCarLogs()
-}
-
-async function toggleSort() {
-  if (carlogStore.search.sort === 'oldest') {
-    carlogStore.search.sort = 'latest'
-  } else {
-    carlogStore.search.sort = 'oldest'
-  }
-
-  await carlogStore.loadCarLogs()
-}
-
-async function resetAll() {
-  await showAllLogs()
 }
 </script>
 
 <style scoped>
 .carlog-filter {
-  width: 760px;
-  min-width: 760px;
-  max-width: 760px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   margin: 12px 0;
 }
 
-.carlog-search-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 760px;
-  margin-bottom: 10px;
-}
-
 .carlog-search-input {
-  width: 300px;
+  flex: 1 1 150px;
+  width: auto;
+  min-width: 130px;
   height: 36px;
   box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
 }
 
 .search-btn {
-  width: 80px;
-  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
   white-space: nowrap;
+}
+
+.reset-btn {
+  width: 52px;
+  border-color: #d1d5db;
+  background: #fff;
+  color: #4b5563;
+}
+
+.search-btn:hover {
+  background: #1d4ed8;
+}
+
+.reset-btn:hover {
+  background: #f3f4f6;
 }
 
 .carlog-filter-bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  width: 760px;
-  min-width: 760px;
-  max-width: 760px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
 }
 
-.filter-btn {
-  width: 140px;
+.carlog-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.carlog-heading-row h2 {
+  margin: 0 auto 0 0;
+}
+
+.in-time-filter {
+  display: flex;
+  flex: 2 1 340px;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+  max-width: 100%;
   height: 36px;
+  white-space: nowrap;
+}
+
+.in-time-input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.filter-select {
+  flex: 0 1 120px;
+  width: 120px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
   text-align: center;
   white-space: nowrap;
+}
+
+.carlog-search-input:focus,
+.in-time-input:focus,
+.filter-select:focus {
+  border-color: #2563eb;
+  outline: 2px solid rgba(37, 99, 235, 0.14);
+  outline-offset: 0;
+}
+
+.kind-select {
+  flex-basis: 105px;
+  width: 105px;
+}
+
+.sort-select {
+  flex-basis: 100px;
+  width: 100px;
+}
+
+@media (max-width: 700px) {
+  .carlog-search-input {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  .in-time-filter {
+    width: 100%;
+  }
+
+  .in-time-input {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .filter-select {
+    flex: 1 1 140px;
+  }
+
+  .carlog-heading-row .sort-select {
+    flex: 0 0 100px;
+  }
 }
 </style>
