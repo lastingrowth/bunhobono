@@ -4,21 +4,48 @@ import re
 from collections import Counter
 
 
+REGION_NAMES = (
+    "서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주"
+)
+
+CURRENT_PLATE_RE = re.compile(r"^\d{2,3}[가-힣]\d{4}$")
+OLD_REGION_PLATE_RE = re.compile(
+    rf"^({REGION_NAMES})\d{{1,2}}[가-힣]\d{{4}}$"
+)
+
+
 def clean_text(text: str) -> str:
     return re.sub(r"[^0-9가-힣]", "", str(text))
 
 
 def is_valid_plate(text: str) -> bool:
     text = clean_text(text)
-    return re.fullmatch(r"\d{2,3}[가-힣]\d{4}", text) is not None
+
+    return (
+        CURRENT_PLATE_RE.fullmatch(text) is not None
+        or OLD_REGION_PLATE_RE.fullmatch(text) is not None
+    )
 
 
 def split_plate(text: str):
     text = clean_text(text)
-    m = re.fullmatch(r"(\d{2,3})([가-힣])(\d{4})", text)
-    if not m:
-        return "", "", ""
-    return m.group(1), m.group(2), m.group(3)
+
+    current = re.fullmatch(r"(\d{2,3})([가-힣])(\d{4})", text)
+    if current:
+        return current.group(1), current.group(2), current.group(3)
+
+    old_region = re.fullmatch(
+        rf"({REGION_NAMES})(\d{{1,2}})([가-힣])(\d{{4}})",
+        text,
+    )
+    if old_region:
+        return (
+            old_region.group(1) + old_region.group(2),
+            old_region.group(3),
+            old_region.group(4),
+        )
+
+    return "", "", ""
 
 
 def number_count(text: str) -> int:
@@ -29,15 +56,25 @@ def hangul_count(text: str) -> int:
     return len(re.findall(r"[가-힣]", clean_text(text)))
 
 
+def has_region_name(text: str) -> bool:
+    text = clean_text(text)
+    return re.match(rf"^({REGION_NAMES})", text) is not None
+
+
 def format_score(text: str) -> int:
     text = clean_text(text)
 
     if is_valid_plate(text):
+        if has_region_name(text):
+            return 105
         return 100
 
     score = 0
 
     if re.match(r"^\d{2,3}", text):
+        score += 25
+
+    if re.match(rf"^({REGION_NAMES})", text):
         score += 25
 
     if re.search(r"[가-힣]", text):
@@ -46,7 +83,7 @@ def format_score(text: str) -> int:
     if re.search(r"\d{4}$", text):
         score += 25
 
-    if 7 <= len(text) <= 8:
+    if 7 <= len(text) <= 10:
         score += 15
 
     if re.fullmatch(r"[0-9가-힣]+", text):
@@ -100,14 +137,19 @@ def selector_v2_score(candidate: dict, repeat_count: int) -> float:
     if is_valid_plate(pred):
         score += 60
 
-    if not (7 <= len(pred) <= 8):
+    # 신형: 7~8자, 구형 지역명 포함: 보통 8~10자까지 허용
+    if not (7 <= len(pred) <= 10):
         score -= 80
 
-    if hangul_count(pred) != 1:
+    if not has_region_name(pred) and hangul_count(pred) != 1:
         score -= 70
 
+    if has_region_name(pred) and hangul_count(pred) < 3:
+        # 서울, 부산 같은 지역명 + 용도 한글 1자가 있어야 하므로 보통 한글 3자 이상.
+        score -= 35
+
     nums = number_count(pred)
-    if nums not in [6, 7]:
+    if nums not in [5, 6, 7]:
         score -= 40
 
     if len(pred) < 6:
@@ -120,32 +162,6 @@ def selector_v2_score(candidate: dict, repeat_count: int) -> float:
 
 
 def select_best_ocr(candidates: list[dict]) -> dict:
-    """
-    candidates 예시:
-    [
-        {
-            "mode": "raw",
-            "text": "02두5589",
-            "raw_text": "02두5589",
-            "score": 0.998,
-            "image_path": "..."
-        },
-        ...
-    ]
-
-    return:
-    {
-        "text": 최종 번호,
-        "raw_text": 원문,
-        "score": OCR score,
-        "mode": 선택된 전처리 mode,
-        "selector_score": selector 점수,
-        "repeat_count": 반복 횟수,
-        "is_valid_plate": 번호판 형식 여부,
-        "all_candidates": 후보 목록
-    }
-    """
-
     if not candidates:
         return {
             "text": "",

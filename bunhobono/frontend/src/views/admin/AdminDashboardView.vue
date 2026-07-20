@@ -12,53 +12,53 @@
         <!-- 차량 등록과 알림을 하나의 카드 안에 한 줄로 배치 -->
         <div class="dashboard-top-strip">
             <!-- 관리자 차량 등록 영역 -->
-            <!-- 현재 백엔드 정책상 등록 시 WAITING 상태로 저장 -->
             <form 
                 class="quick-register-inline"
                 @submit.prevent="submitQuickVehicle">
-                
+
                 <span class="quick-register-label">
                     차량 등록
                 </span>
-
+            
                 <input
                     v-model="quickVehicle.carNo"
                     type="text"
                     placeholder="차량번호" />
-
-                <select v-model="quickVehicle.memDong">
-                    <option value="">동</option>
-                    <option 
-                        v-for="dong in dongOptions"
-                        :key="dong"
-                        :value="dong">
-                        {{ dongText(dong) }}
+            
+                <select
+                    v-model="quickVehicle.vehicleType"
+                    @change="loadQuickRegisterMembers">
+                    <option value="normal">등록차량</option>
+                    <option value="visit">방문차량</option>
+                </select>
+            
+                <select
+                    v-model="quickVehicle.role"
+                    @change="loadQuickRegisterMembers">
+                    <option value="RESIDENT">입주민</option>
+                    <option value="ADMIN">관리자</option>
+                </select>
+            
+                <select v-model.number="quickVehicle.periodValue">
+                    <option
+                        v-for="option in quickPeriodOptions"
+                        :key="option.value"
+                        :value="option.value">
+                        {{ option.text }}
                     </option>
                 </select>
-
-                <select v-model="quickVehicle.memHo">
-                    <option value="">호</option>
-                    <option 
-                        v-for="ho in hoOptions"
-                        :key="ho"
-                        :value="ho">
-                        {{ hoText(ho) }}
-                    </option>
-                </select>  
-
+            
                 <select v-model.number="quickVehicle.memberNo">
-                    <option :value="null">입주민</option>
+                    <option :value="null">회원 선택</option>
                     <option
-                        v-for="member in filteredMembers"
+                        v-for="member in quickRegisterMembers"
                         :key="member.memberNo"
                         :value="member.memberNo">
                         {{ memberLabel(member) }}
                     </option>
                 </select>
-
-                <button type="submit">
-                    등록
-                </button>              
+            
+                <button type="submit">등록</button>              
             </form>
 
             <!-- 상단 알림 영역 -->
@@ -366,11 +366,11 @@
                             </div>
                             <div>
                                 <dt>인식 상태</dt>
-                                <dd>{{ selectedCameraData.recognitionState === false ? '인식 실패' : '인식 성공' }}</dd>
+                                <dd :class="{ 'danger-text': selectedCameraData.carNo === '미인식' }">{{ selectedCameraData.carNo === '미인식' ? '확인 필요' : '인식 성공' }}</dd>
                             </div>
                             <div>
                                 <dt>인식률</dt>
-                                <dd>{{ formatConfidence(selectedCameraData.confidenceScore) }}</dd>
+                                <dd :class="{ 'danger-text': selectedCameraData.carNo === '미인식' }">{{ selectedCameraData.carNo === '미인식' ? '인식 실패' : formatConfidence(selectedCameraData.confidenceScore) }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -646,9 +646,8 @@ const {
     loading,
     errorMessage,
     quickVehicle,
-    dongOptions,
-    hoOptions,
-    filteredMembers,
+    quickPeriodOptions,
+    quickRegisterMembers,
     dashboardAlerts,
     parkingMonitorPanels,
     selectedParkingPanel,
@@ -658,10 +657,9 @@ const {
 } = storeToRefs(dashboardStore)
 
 const {
-    dongText,
-    hoText,
     memberLabel,
     submitQuickVehicle,
+    loadQuickRegisterMembers,
     toggleParkingCamera,
     selectParkingPanel,
     closeParkingPanel,
