@@ -638,6 +638,7 @@ const {
     refreshCarlogs,
     parkingStateClass,
     openManualGate,
+    refreshGateStatuses,
     loadDashboard,
 } = dashboardStore
 
@@ -928,7 +929,18 @@ const checkOcrEvents = async () => {
 
         if (hasNewOcr) {
             refreshingCarlogs = true
-            await refreshCarlogs()
+            await Promise.all([
+                refreshCarlogs(),
+                refreshGateStatuses(),
+            ])
+
+            // The backend closes an automatically opened gate after five seconds.
+            // Reload once more so the closed state is also reflected in the UI.
+            window.setTimeout(() => {
+                refreshGateStatuses().catch((error) => {
+                    console.debug('게이트 닫힘 상태 갱신 실패', error)
+                })
+            }, 5500)
         }
     } catch (error) {
         console.debug('OCR 상태 확인 실패', error)

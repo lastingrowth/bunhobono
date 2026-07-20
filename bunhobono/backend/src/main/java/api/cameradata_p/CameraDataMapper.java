@@ -15,7 +15,16 @@ public interface CameraDataMapper {
             "ORDER BY cd.camera_data_no DESC")
     List<CameraDataDTO> list(CameraDataDTO dto);
 
-    @Select("SELECT vehicle_car_no FROM vehicle_car WHERE car_no = #{carNo} ORDER BY vehicle_car_no DESC LIMIT 1")
+    @Select("""
+        SELECT vehicle_car_no
+        FROM vehicle_car
+        WHERE car_no = #{carNo}
+          AND vehicle_status = 'APPROVED'
+          AND (start_date IS NULL OR start_date <= CURRENT_TIMESTAMP)
+          AND (end_date IS NULL OR end_date > CURRENT_TIMESTAMP)
+        ORDER BY vehicle_car_no DESC
+        LIMIT 1
+    """)
     Integer findVehicleCarNo(String carNo);
 
     @Insert("INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, capture_time, image_path, crop_image_path, recognition_state, confidence_score) " +
