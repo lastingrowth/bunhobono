@@ -39,11 +39,82 @@ public class MemberService {
     @Resource
     PasswordEncoder passwordEncoder;
 
+    // 전출 신청된 회원을 복원한다.
+// member_archive로 이동하기 전 단계에서 탈퇴 신청을 취소하는 기능이다.
+    @Transactional
+    public void restoreWithdrawnMember(int memberNo) {
+        MemberDTO savedMember = mapper.detail(memberNo);
+
+        if (savedMember == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "회원을 찾을 수 없습니다."
+            );
+        }
+
+        int restored = mapper.restoreWithdrawnMember(memberNo);
+
+        if (restored == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "복원할 수 없는 회원입니다."
+            );
+        }
+    }
+
+    // 전출 신청된 회원을 확정 처리한다.
+    // 회원 정보는 member_archive에 복사하고, member 원본은 동/호수 자리만 남기도록 초기화한다.
+    @Transactional
+    public void confirmWithdrawnMember(int memberNo) {
+        MemberDTO savedMember = mapper.detail(memberNo);
+
+        if (savedMember == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "회원을 찾을 수 없습니다."
+            );
+        }
+
+        mapper.saveMemberArchive(memberNo);
+
+        mapper.deleteVehiclesByMemberNo(memberNo);
+
+        int updated = mapper.delete(memberNo);
+
+        if (updated == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "전출 확정 처리에 실패했습니다."
+            );
+        }
+    }
+    // 선택한 탈퇴 신청 회원들을 다시 거주 상태로 복원한다.
+    @Transactional
+    public int restoreWithdrawnMembers(List<Long> memberNos) {
+        if (memberNos == null || memberNos.isEmpty()) {
+            throw new IllegalArgumentException("복원할 회원을 선택해 주세요.");
+        }
+
+        for (Long memberNo : memberNos) {
+            restoreWithdrawnMember(memberNo.intValue());
+        }
+
+        return memberNos.size();
+    }
+
+    // 선택한 탈퇴 신청 회원들을 전출 확정 처리한다.
+    // 실제 member 삭제가 아니라 archive 보관 후 member 원본을 미등록 상태로 비운다.
+    @Transactional
     public int permanentlyDeleteWithdrawnMembers(List<Long> memberNos) {
         if (memberNos == null || memberNos.isEmpty()) {
-            throw new IllegalArgumentException("영구 삭제할 회원을 선택해 주세요.");
+            throw new IllegalArgumentException("전출 확정할 회원을 선택해 주세요.");
         }
-        return mapper.permanentlyDeleteWithdrawnMembers(memberNos);
+
+        for (Long memberNo : memberNos) {
+            confirmWithdrawnMember(memberNo.intValue());
+        }
+
+        return memberNos.size();
     }
 
     // 회원가입
@@ -153,7 +224,8 @@ public class MemberService {
         mapper.approvePendingMembers(memberNos);
     }
 
-    // 전출 하고나면 차량을 삭제한다.
+    // 회원을 탈퇴 신청 상태로 변경한다.
+    // 이 단계에서는 archive 저장, 차량 삭제, 회원 정보 초기화를 하지 않는다.
     @Transactional
     public void delete(int memberNo, String currentLoginId) {
         MemberDTO savedMember = mapper.detail(memberNo);
@@ -173,17 +245,12 @@ public class MemberService {
             );
         }
 
-        // 차량 삭제
-        // 관련 카메라·입출차 FK는 DB에서 자동 NULL 처리
-        mapper.deleteVehiclesByMemberNo(memberNo);
-
-        // 회원을 전출·공실 상태로 변경
-        int updated = mapper.delete(memberNo);
+        int updated = mapper.requestWithdrawnMember(memberNo);
 
         if (updated == 0) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "전출 처리할 회원이 없습니다."
+                    "전출 신청 처리할 회원이 없습니다."
             );
         }
     }

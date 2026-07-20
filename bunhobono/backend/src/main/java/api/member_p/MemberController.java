@@ -77,8 +77,14 @@ public class MemberController {
         return service.list();
     }
 
+    // 선택한 탈퇴 신청 회원들을 다시 거주 상태로 복원한다.
+    @PutMapping("/members/restore")
+    public int restoreWithdrawnMembers(@RequestBody List<Long> memberNos) {
+        return service.restoreWithdrawnMembers(memberNos);
+    }
 
-    // 탈퇴 처리된 선택 회원을 영구 삭제한다.
+    // 선택한 탈퇴 신청 회원들을 전출 확정 처리한다.
+    // 실제 member 삭제가 아니라 member_archive에 보관 후 member 원본을 미등록 상태로 비운다.
     @DeleteMapping("/members/withdrawn")
     public int permanentlyDeleteWithdrawnMembers(@RequestBody List<Long> memberNos) {
         return service.permanentlyDeleteWithdrawnMembers(memberNos);
@@ -104,6 +110,20 @@ public class MemberController {
     @DeleteMapping("/members/{memberNo}/delete")
     public void delete(@PathVariable int memberNo, Authentication authentication) {
         service.delete(memberNo, authentication.getName());
+    }
+
+    // 탈퇴 신청된 회원을 다시 거주 상태로 복원한다.
+    // 관리자가 탈퇴 신청을 취소할 때 사용한다.
+    @PutMapping("/members/{memberNo}/restore")
+    public void restoreWithdrawnMember(@PathVariable int memberNo) {
+        service.restoreWithdrawnMember(memberNo);
+    }
+
+    // 탈퇴 신청된 회원을 전출 확정 처리한다.
+    // 회원 정보를 member_archive에 보관하고 member 원본은 미등록 상태로 비운다.
+    @PutMapping("/members/{memberNo}/confirm-withdrawn")
+    public void confirmWithdrawnMember(@PathVariable int memberNo) {
+        service.confirmWithdrawnMember(memberNo);
     }
 
     // 입주민 마이페이지

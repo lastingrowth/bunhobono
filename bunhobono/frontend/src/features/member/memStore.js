@@ -66,12 +66,15 @@ export const useMemStore =  defineStore("member", () => {
     await loadMember(memberNo);
   };
 
+  // 선택한 전출 신청 회원을 거주 상태로 복원
   const restoreMembers = async (memberNos) => {
     const res = await restoreWithdrawnMembers(memberNos);
     await loadmemberList();
     return res.data;
   };
 
+  // 선택한 전출 신청 회원을 전출 확정 처리
+  // 실제 member 삭제가 아니라 archive 보관 후 member 원본을 미등록 상태로 비움
   const removeWithdrawnMembers = async (memberNos) => {
     const res = await permanentlyDeleteWithdrawnMembers(memberNos);
     await loadmemberList();
@@ -84,7 +87,7 @@ export const useMemStore =  defineStore("member", () => {
     await loadmemberList();
   };
 
-  // 회원을 탈퇴 처리하고 목록을 갱신한다.
+  // 회원을 전출 신청 상태로 변경하고 목록을 갱신
   const removeMember = async (memberNo) => {
     await deleteMember(memberNo);
     await loadmemberList();
