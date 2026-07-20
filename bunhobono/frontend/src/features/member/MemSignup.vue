@@ -1,40 +1,67 @@
 <template>
-    <section class="signup-card">
-        <div class="login-brand">
+    <section class="signup-card" :class="{ 'admin-signup-card': props.adminMode }">
+        <div v-if="props.adminMode" class="signup-header">
+            <div>
+                <p>MEMBER MANAGEMENT</p>
+                <h2>관리자 회원 추가</h2>
+            </div>
+            <button class="back-button" type="button" @click="router.push('/admin/members')">목록</button>
+        </div>
+
+        <div v-else class="login-brand">
             <div class="brand-symbol">P</div>
             <h1>아파트 주차관리 시스템</h1>
             <p>SMART PARKING SYSTEM</p>
         </div>
 
-        <h2 class="login-title">입주민 회원가입</h2>
+        <h2 v-if="!props.adminMode" class="login-title">입주민 회원가입</h2>
 
-        <p v-if="availabilityLoading" class="availability-guide">가입 가능한 세대를 확인하고 있습니다.</p>
-        <p v-else-if="availabilityError" class="availability-guide availability-error">{{ availabilityError }}</p>
-        <p v-else-if="!hasAvailableUnits" class="availability-guide availability-error">
+        <p v-if="needsAvailableUnit && availabilityLoading" class="availability-guide">가입 가능한 세대를 확인하고 있습니다.</p>
+        <p v-else-if="needsAvailableUnit && availabilityError" class="availability-guide availability-error">{{ availabilityError }}</p>
+        <p v-else-if="needsAvailableUnit && !hasAvailableUnits" class="availability-guide availability-error">
             현재 가입 가능한 세대가 없습니다. 관리사무소에 문의해주세요.
         </p>
 
         <form class="signup-form" @submit.prevent="signupGo">
+            <div v-if="props.adminMode" class="form-row">
+                <label class="form-field">
+                    <span>가입유형</span>
+                    <select v-model="member.role" @change="syncStatusWithRole">
+                        <option value="RESIDENT">RESIDENT</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                </label>
+
+                <label class="form-field">
+                    <span>상태</span>
+                    <select v-model="member.memStatus">
+                        <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+                    </select>
+                </label>
+            </div>
+
             <label class="form-field">
                 <span>이름</span>
-                <input v-model="member.memName" type="text" minlength="2" maxlength="20" placeholder="한글+숫자 조합 2~20자" required @blur="normalizeName">
+                <input v-model="member.memName" type="text" minlength="2" maxlength="20" placeholder="한글로 입력하세요." required @blur="normalizeName">
             </label>
 
             <div class="form-row">
                 <label class="form-field">
                     <span>동</span>
                     <!-- 서버가 확인한 가입 가능 세대의 동만 표시한다. -->
-                    <select v-model.number="member.memDong" :disabled="!hasAvailableUnits" required @change="member.memHo = ''">
+                    <select v-model.number="member.memDong" :disabled="props.adminMode && member.role === 'ADMIN' || !hasAvailableUnits" required @change="member.memHo = ''">
                         <option disabled value="">동을 선택하세요</option>
-                        <option v-for="dong in availableDongs" :key="dong" :value="dong">{{ dong }}동</option>
+                        <option v-if="props.adminMode && member.role === 'ADMIN'" :value="0">0동</option>
+                        <option v-for="dong in availableDongs" v-else :key="dong" :value="dong">{{ dong }}동</option>
                     </select>
                 </label>
 
                 <label class="form-field">
                     <span>호수</span>
-                    <select v-model.number="member.memHo" :disabled="!member.memDong" required>
+                    <select v-model.number="member.memHo" :disabled="props.adminMode && member.role === 'ADMIN' || !member.memDong" required>
                         <option disabled value="">호수를 선택하세요</option>
-                        <optgroup label="1·2라인">
+                        <option v-if="props.adminMode && member.role === 'ADMIN'" :value="0">0호</option>
+                        <optgroup v-else label="1·2라인">
                             <option v-for="ho in line12HoOptions" :key="ho" :value="ho">{{ ho }}호</option>
                         </optgroup>
                     </select>
@@ -65,10 +92,12 @@
                 <input type="password" inputmode="numeric" :value="member.loginPwd" minlength="4" maxlength="20" autocomplete="new-password" placeholder="숫자 4~20자" required @input="handlePasswordInput">
             </label>
 
-            <button class="login-submit" type="submit" :disabled="!hasAvailableUnits || availabilityLoading">회원가입</button>
+            <button class="login-submit" type="submit" :disabled="needsAvailableUnit && (!hasAvailableUnits || availabilityLoading)">
+                {{ props.adminMode ? '회원 추가' : '회원가입' }}
+            </button>
         </form>
 
-        <div class="signup-guide">
+        <div v-if="!props.adminMode" class="signup-guide">
             <span>이미 계정이 있으신가요?</span>
             <RouterLink class="signup-link" to="/login">로그인</RouterLink>
         </div>
@@ -82,12 +111,17 @@ import { useMemStore } from "./memStore";
 
 const router = useRouter();
 const store = useMemStore();
+const props = defineProps({
+    adminMode: {
+        type: Boolean,
+        default: false
+    }
+});
 const availabilityLoading = ref(true);
 const availabilityError = ref("");
 
 const member = ref({
-    // 외부 회원가입은 관리자 승인 전까지 PENDING 역할로 고정한다.
-    role: "PENDING",
+    role: props.adminMode ? "RESIDENT" : "PENDING",
     memName: "",
     memDong: "",
     memHo: "",
@@ -101,6 +135,10 @@ const idChecked = ref(false);
 const checkedLoginId = ref("");
 const phoneParts = reactive({ first: "", middle: "", last: "" });
 
+const needsAvailableUnit = computed(() => !props.adminMode || member.value.role === "RESIDENT");
+const statusOptions = computed(() => member.value.role === "ADMIN"
+    ? ["근무", "휴직", "퇴사"]
+    : ["거주", "전출"]);
 const hasAvailableUnits = computed(() => store.availableSignupUnits.length > 0);
 const availableDongs = computed(() => [
     ...new Set(store.availableSignupUnits.map((unit) => Number(unit.memDong)))
@@ -128,14 +166,21 @@ const loadAvailableUnits = async () => {
 
 onMounted(loadAvailableUnits);
 
+// 관리자 모드에서 가입유형에 맞는 상태와 동·호수 기본값을 설정한다.
+const syncStatusWithRole = () => {
+    member.value.memStatus = statusOptions.value[0];
+    member.value.memDong = member.value.role === "ADMIN" ? 0 : "";
+    member.value.memHo = member.value.role === "ADMIN" ? 0 : "";
+};
+
 // 공개 회원가입 화면의 이름·아이디·비밀번호 입력 규칙을 검사한다.
 const loginIdPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{3,20}$/;
 const passwordPattern = /^\d{4,20}$/;
-const namePattern = /^(?=.*[가-힣])(?=.*\d)[가-힣\d]{2,20}$/;
+const namePattern = /^(?=.*[가-힣])[가-힣\d]{2,20}$/;
 
 const validateSignupFields = () => {
     if (!namePattern.test(member.value.memName)) {
-        alert("이름은 한글과 숫자를 조합해 2~20자로 입력하세요.");
+        alert("한글 또는 한글+숫자 조합 2~20자로 입력하세요.");
         return false;
     }
     if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
@@ -212,15 +257,16 @@ const signupGo = async () => {
     try {
         await store.signup(member.value);
 
-        alert("회원등록 성공");
-
-        router.push("/login");
+        alert(props.adminMode ? "회원이 추가되었습니다." : "회원등록 성공");
+        await router.push(props.adminMode ? "/admin/members" : "/login");
     } catch (e) {
         console.error(e);
         alert(e.response?.data?.message || e.response?.data?.error || "회원등록 실패");
-        member.value.memDong = "";
-        member.value.memHo = "";
-        await loadAvailableUnits();
+        if (needsAvailableUnit.value) {
+            member.value.memDong = "";
+            member.value.memHo = "";
+            await loadAvailableUnits();
+        }
     }
 };
 </script>
@@ -233,6 +279,42 @@ const signupGo = async () => {
     border-radius: 16px;
     background: var(--bg-header);
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.admin-signup-card {
+    margin: 20px auto 40px;
+}
+
+.signup-header {
+    margin-bottom: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.signup-header p {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--primary);
+}
+
+.signup-header h2 {
+    margin: 0;
+    color: var(--heading-color);
+}
+
+.back-button {
+    height: 38px;
+    padding: 0 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--text-color);
+    background: var(--bg-header);
 }
 
 .signup-form {

@@ -1,11 +1,13 @@
 <template>
-    <h2>마이페이지</h2>
+    <header class="detail-header">
+        <h2>마이페이지</h2>
 
-    <div>
-        <button @click="goHome">홈</button>
-        <button @click="goModify">회원정보수정</button>
-        <button @click="openDeleteConfirm">회원탈퇴</button>
-    </div>
+        <div class="detail-actions">
+            <button @click="goHome">홈</button>
+            <button @click="goModify">회원정보수정</button>
+            <button @click="openDeleteConfirm">회원탈퇴</button>
+        </div>
+    </header>
 
     <!-- 비밀번호는 조회 응답과 마이페이지 화면에 표시하지 않는다. -->
     <table border="">
@@ -130,7 +132,7 @@ onMounted(async () => {
 
 // 홈
 const goHome = () => {
-    router.push("/resident");
+    router.push("/resident/dashboard");
 };
 
 // 수정

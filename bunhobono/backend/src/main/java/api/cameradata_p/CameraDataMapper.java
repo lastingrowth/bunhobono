@@ -9,7 +9,8 @@ import java.util.List;
 public interface CameraDataMapper {
 
     @Select("SELECT ROW_NUMBER() OVER (ORDER BY cd.camera_data_no DESC) AS display_no, " +
-            "cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
+            "cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
+            "cd.recognition_state, cd.confidence_score, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "ORDER BY cd.camera_data_no DESC")
@@ -55,12 +56,12 @@ public interface CameraDataMapper {
             @Param("aliasCarNo") String aliasCarNo
     );
 
-    @Insert("INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, capture_time, image_path, crop_image_path, recognition_state, confidence_score) " +
-            "VALUES (#{cameraNo}, #{vehicleCarNo}, #{carNo}, #{captureTime}, #{imagePath}, #{cropImagePath}, #{recognitionState}, #{confidenceScore})")
+    @Insert("INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, ocr_car_no, capture_time, image_path, crop_image_path, recognition_state, confidence_score) " +
+            "VALUES (#{cameraNo}, #{vehicleCarNo}, #{carNo}, #{ocrCarNo}, #{captureTime}, #{imagePath}, #{cropImagePath}, #{recognitionState}, #{confidenceScore})")
     @Options(useGeneratedKeys = true, keyProperty = "cameraDataNo")
     int insert(CameraDataDTO dto);
 
-    @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
+    @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
             "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
@@ -76,11 +77,21 @@ public interface CameraDataMapper {
     """)
     int updateCarNo(CameraDataDTO dto);
 
-    @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
+    @Update("""
+        UPDATE camera_data
+        SET car_no = #{carNo},
+            vehicle_car_no = #{vehicleCarNo},
+            recognition_state = TRUE
+        WHERE camera_data_no = #{cameraDataNo}
+    """)
+    int applyMatchedCarNo(CameraDataDTO dto);
+
+    @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
             "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.car_no LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR cd.ocr_car_no LIKE CONCAT('%', #{keyword}, '%') " +
             "ORDER BY cd.camera_data_no DESC")
     List<CameraDataDTO> searchByCarNo(String keyword);
 

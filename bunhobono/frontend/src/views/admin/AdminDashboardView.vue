@@ -147,14 +147,14 @@
                                 class="approval-wait-overlay"
                                 @click.stop>
                                 <div class="approval-wait-panel">
-                                    <span class="approval-wait-title"><i></i>{{ panel.modeText }} 승인 대기</span>
+                                    <span class="approval-wait-title"><i></i>{{ approvalWaitTitle(panel) }}</span>
                                     <strong>{{ getCameraStatus(panel.cameraNo)?.lastOcrCarNo || '차량번호 확인 중' }}</strong>
-                                    <p>미등록 차량입니다<br>관리자 게이트 개방을 기다리고 있습니다</p>
+                                    <p>{{ approvalWaitMessage(panel) }}</p>
                                     <button
                                         type="button"
                                         :disabled="!panel.gate"
                                         @click.stop="openGateAndResume(panel)">
-                                        게이트 열기
+                                        {{ approvalWaitButtonText(panel) }}
                                     </button>
                                 </div>
                             </div>
@@ -272,7 +272,10 @@
                                     :key="cameraData.cameraDataNo"
                                     :class="{ selected: selectedDetailType === 'CAMERA_DATA' && selectedCameraData?.cameraDataNo === cameraData.cameraDataNo }"
                                     @click="showCameraDataDetail(cameraData)">
-                                    <td>{{ cameraData.carNo || '미인식' }}</td>
+                                    <td>
+                                        {{ cameraData.carNo || '미인식' }}
+                                        <span v-if="needsRecognitionReview(cameraData)" class="danger-text"> · 확인 필요</span>
+                                    </td>
                                     <td>{{ cameraData.vehicleCarNo ? '등록' : '미등록' }}</td>
                                     <td>{{ cameraLabel(cameraData.cameraNo) }}</td>
                                     <td>{{ formatCameraDataTime(cameraData.captureTime) }}</td>
@@ -352,6 +355,10 @@
                                     </form>
                                 </dd>
                             </div>
+                            <div v-if="selectedCameraData.ocrCarNo && selectedCameraData.ocrCarNo !== selectedCameraData.carNo">
+                                <dt>원본 OCR 번호</dt>
+                                <dd>{{ selectedCameraData.ocrCarNo }}</dd>
+                            </div>
                             <div>
                                 <dt>등록 상태</dt>
                                 <dd>{{ selectedCameraData.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</dd>
@@ -366,11 +373,11 @@
                             </div>
                             <div>
                                 <dt>인식 상태</dt>
-                                <dd :class="{ 'danger-text': selectedCameraData.carNo === '미인식' }">{{ selectedCameraData.carNo === '미인식' ? '확인 필요' : '인식 성공' }}</dd>
+                                <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">{{ recognitionStateText(selectedCameraData) }}</dd>
                             </div>
                             <div>
                                 <dt>인식률</dt>
-                                <dd :class="{ 'danger-text': selectedCameraData.carNo === '미인식' }">{{ selectedCameraData.carNo === '미인식' ? '인식 실패' : formatConfidence(selectedCameraData.confidenceScore) }}</dd>
+                                <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">{{ formatConfidence(selectedCameraData.confidenceScore) }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -562,14 +569,14 @@
                         class="approval-wait-overlay dialog-approval-wait"
                         @click.stop>
                         <div class="approval-wait-panel">
-                            <span class="approval-wait-title"><i></i>{{ selectedParkingPanel.modeText }} 승인 대기</span>
+                            <span class="approval-wait-title"><i></i>{{ approvalWaitTitle(selectedParkingPanel) }}</span>
                             <strong>{{ getCameraStatus(selectedParkingPanel.cameraNo)?.lastOcrCarNo || '차량번호 확인 중' }}</strong>
-                            <p>미등록 차량입니다<br>관리자 게이트 개방을 기다리고 있습니다</p>
+                            <p>{{ approvalWaitMessage(selectedParkingPanel) }}</p>
                             <button
                                 type="button"
                                 :disabled="!selectedParkingPanel.gate"
                                 @click="openGateAndResume(selectedParkingPanel)">
-                                게이트 열기
+                                {{ approvalWaitButtonText(selectedParkingPanel) }}
                             </button>
                         </div>
                     </div>
@@ -778,6 +785,28 @@ const formatConfidence = (value) => {
     return `${Number(value).toFixed(1)}%`
 }
 
+const needsRecognitionReview = (cameraData) => {
+    if (!cameraData) {
+        return false
+    }
+
+    const score = Number(cameraData.confidenceScore)
+    return !cameraData.carNo
+        || cameraData.carNo === '미인식'
+        || cameraData.recognitionState === false
+        || (cameraData.recognitionState == null
+            && !Number.isNaN(score)
+            && score <= 95)
+}
+
+const recognitionStateText = (cameraData) => {
+    if (!cameraData?.carNo || cameraData.carNo === '미인식') {
+        return '미인식'
+    }
+
+    return needsRecognitionReview(cameraData) ? '확인 필요' : '인식 성공'
+}
+
 const isCameraPlaying = (cameraNo) => {
     return playingCameraNos.value.has(Number(cameraNo))
 }
@@ -870,6 +899,43 @@ const isApprovalWaiting = (cameraNo) => {
     const status = getCameraStatus(cameraNo)
     return status?.pauseReason === 'WAITING_FOR_BACKEND'
         && Boolean(status?.pendingCameraDataNo)
+}
+
+const getPendingCameraData = (cameraNo) => {
+    const cameraDataNo = getPendingCameraDataNo(cameraNo)
+    return recentCameraData.value.find((item) => {
+        return Number(item.cameraDataNo) === Number(cameraDataNo)
+    }) ?? null
+}
+
+const isLowConfidenceWaiting = (panel) => {
+    const cameraData = getPendingCameraData(panel.cameraNo)
+    return cameraData?.recognitionState === false
+        && cameraData?.carNo
+        && cameraData.carNo !== '미인식'
+}
+
+const approvalWaitTitle = (panel) => {
+    return isLowConfidenceWaiting(panel)
+        ? `${panel.modeText} OCR 확인 필요`
+        : `${panel.modeText} 승인 대기`
+}
+
+const approvalWaitMessage = (panel) => {
+    if (isLowConfidenceWaiting(panel)) {
+        const score = formatConfidence(
+            getPendingCameraData(panel.cameraNo)?.confidenceScore,
+        )
+        return `OCR 인식 신뢰도가 ${score}입니다. 차량번호를 확인한 뒤 통과를 승인해 주세요.`
+    }
+
+    return '미등록 차량입니다. 관리자 게이트 개방을 기다리고 있습니다.'
+}
+
+const approvalWaitButtonText = (panel) => {
+    return isLowConfidenceWaiting(panel)
+        ? '확인 후 통과 승인'
+        : '게이트 열기'
 }
 
 const setCameraPlaying = (cameraNo, playing) => {

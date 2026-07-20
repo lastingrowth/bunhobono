@@ -8,16 +8,16 @@ export const adminMenu = [
     path: '/admin/statistics'
   },
   {
+    title: "카메라 기록 관리",
+    path: "/admin/camera-data"
+  },
+  {
+    title: '입출차 기록',
+    path: '/admin/carlogs'
+  },
+  {
     title: '알림 관리',
     path: '/admin/notice'
-  },
-  {
-    title: '회원관리',
-    path: '/admin/members'
-  },
-  {
-    title: '전출 회원 관리',
-    path: '/admin/member-archive'
   },
   {
     title: '차량 관리',
@@ -28,32 +28,31 @@ export const adminMenu = [
     path: '/admin/parkings'
   },
   {
-    title: '카메라',
-    path: '/admin/cameras'
-  },
-  {
-    title: "카메라 기록 관리",
-    path: "/admin/camera-data"
-  },
-  {
-    title: '입출차 기록',
-    path: '/admin/carlogs'
-  },
-  {
     title: '게이트',
     path: '/admin/gates'
   },
   {
+    title: '카메라',
+    path: '/admin/cameras'
+  },
+  {
     title: '지난기록',
     path: '/admin/trash'
-  }
-
+  },
+  {
+    title: '회원관리',
+    path: '/admin/members'
+  },
+  {
+    title: '전출 회원 관리',
+    path: '/admin/member-archive'
+  },
 ];
 
 
 export const residentMenu = [
 {
-    title: '대시보드',
+    title: '홈',
     path: '/resident/dashboard'
   },
   {
@@ -61,12 +60,8 @@ export const residentMenu = [
     path: '/resident/vehicles'
   },
   {
-    title: '주차현황',
-    path: '/resident/parkings'
-  },
-  {
-    title: '알림내역',
-    path: '/resident/notice'
+    title: '입출차내역',
+    path: '/resident/carlogs'
   },
   {
     title: '마이페이지',

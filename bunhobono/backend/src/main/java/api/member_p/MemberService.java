@@ -133,8 +133,17 @@ public class MemberService {
         }
         // 비밀번호 암호화
         dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
-        // DB 저장
-        mapper.signup(dto);
+        // 관리자는 새 행으로 등록하고, 입주민은 기존 전출 세대 행을 갱신한다.
+        int savedCount = "ADMIN".equals(dto.getRole())
+                ? mapper.signupAdmin(dto)
+                : mapper.signup(dto);
+
+        if (savedCount != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "회원으로 등록할 수 없는 동·호수입니다."
+            );
+        }
     }
 
     public List<MemberDTO> availableSignupUnits() {

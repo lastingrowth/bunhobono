@@ -440,10 +440,7 @@ class TestStreamWorker:
         car_no = ocr_result.get("text", "")
         score = float(ocr_result.get("score", 0))
         
-        if (
-            not ocr_result.get("is_valid_plate", False)
-            or score < CCTV_OCR_DIRECT_ACCEPT_SCORE
-        ):
+        if not car_no:
             print(
                 f"[{self.camera_name}] OCR 미인식 처리 "
                 f"rawCarNo={car_no}, score={score * 100:.1f}%"
@@ -617,11 +614,7 @@ class TestStreamWorker:
         car_no = raw_car_no
         score = best["score"]
 
-        if score < CCTV_OCR_DIRECT_ACCEPT_SCORE:
-            print(
-                f"[{self.camera_name}] OCR 미인식 처리 "
-                f"rawCarNo={raw_car_no}, score={score * 100:.1f}%"
-            )
+        if not car_no:
             car_no = "미인식"
 
         print(

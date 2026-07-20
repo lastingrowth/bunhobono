@@ -1,7 +1,7 @@
 import MemList from "@/features/member/MemList.vue";
 import MemListDetail from "@/features/member/MemListDetail.vue";
 import MemModify from "@/features/member/MemModify.vue";
-import MemSignupRes from "@/features/member/MemSignupRes.vue";
+import MemSignup from "@/features/member/MemSignup.vue";
 
 export default [
     {
@@ -13,7 +13,10 @@ export default [
     {
         path: "signup",
         name: "memberCreate",
-        component: MemSignupRes,
+        component: MemSignup,
+        props: {
+            adminMode: true
+        },
     },
 
     {

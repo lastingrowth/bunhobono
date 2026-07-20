@@ -11,16 +11,15 @@ public interface MemberMapper {
     // 회원가입 및 가입 가능한 세대 확인
     // =====================================================
 
-    // 회원가입
-    // 외부 회원가입은 PENDING으로 저장 / 가입일 = 실제 회원가입한 시각.
+    // 입주민 회원가입은 기존 전출 세대 행에 Controller가 결정한 역할과 상태를 저장한다.
     @Update("""
     UPDATE member
     SET login_id = #{loginId},
         login_pwd = #{loginPwd},
         mem_name = #{memName},
         mem_phone = #{memPhone},
-        role = 'PENDING',
-        mem_status = '거주',
+        role = #{role},
+        mem_status = #{memStatus},
         create_at = CURRENT_TIMESTAMP,
         delete_at = NULL
     WHERE mem_dong = #{memDong}
@@ -29,6 +28,34 @@ public interface MemberMapper {
       AND TRIM(mem_status) = '전출'
 """)
     int signup(MemberDTO dto);
+
+    // 관리자가 추가한 관리자 계정은 기존 세대 행을 사용하지 않고 새 회원으로 등록한다.
+    @Insert("""
+        INSERT INTO member (
+            login_id,
+            login_pwd,
+            mem_dong,
+            mem_ho,
+            mem_name,
+            mem_phone,
+            role,
+            create_at,
+            delete_at,
+            mem_status
+        ) VALUES (
+            #{loginId},
+            #{loginPwd},
+            #{memDong},
+            #{memHo},
+            #{memName},
+            #{memPhone},
+            'ADMIN',
+            CURRENT_TIMESTAMP,
+            NULL,
+            #{memStatus}
+        )
+        """)
+    int signupAdmin(MemberDTO dto);
 
     // 회원가입 전에 입력한 아이디가 이미 사용 중인지 확인한다.
     @Select("SELECT EXISTS (SELECT 1 FROM member WHERE login_id = #{loginId})" )
@@ -308,7 +335,6 @@ public interface MemberMapper {
         LEFT JOIN parking p ON ig.parking_no = p.parking_no
         WHERE m.login_id = #{loginId}
         ORDER BY cl.in_time DESC
-        LIMIT 5
         """)
     List<MemberDTO.ResidentCarLog> residentCarLogs(String loginId);
 
