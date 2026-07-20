@@ -1,5 +1,6 @@
 package api.cameradata_p;
 import api.carlog_p.CarLogService;
+import api.carlog_p.CarLogDTO;
 import api.gate_p.GateDTO;
 import api.gate_p.GateService;
 import jakarta.annotation.Resource;
@@ -116,7 +117,12 @@ public class CameraDataService {
             dto.setCropImagePath(
                     cropSavePath != null ? cropSavePath.toString() : null
             );
-            dto.setRecognitionState(carNo != null && !carNo.isBlank());
+            boolean recognitionConfirmed = carNo != null
+                    && !carNo.isBlank()
+                    && !"미인식".equals(carNo)
+                    && confidenceScore != null
+                    && confidenceScore > 95.0;
+            dto.setRecognitionState(recognitionConfirmed);
             dto.setConfidenceScore(confidenceScore);
 
             // vehicleNo는 나중에 차량 테이블 조회 후 넣으면 됨
@@ -175,11 +181,22 @@ public class CameraDataService {
                 boolean isExitGate =
                         "Out".equalsIgnoreCase(gate.getGateType());
 
-                boolean currentlyParked =
-                        isExitGate && carLogService.isCurrentlyParked(dto);
+                CarLogDTO parkedLog = isExitGate
+                        ? carLogService.findCurrentlyParked(dto)
+                        : null;
+                boolean currentlyParked = parkedLog != null;
+
+                // 출차 OCR 원본은 ocr_car_no에 유지하고, 화면과 카메라
+                // 데이터에는 입차 때 관리자가 확정한 차량번호를 표시한다.
+                if (currentlyParked && parkedLog.getCarNo() != null) {
+                    dto.setCarNo(parkedLog.getCarNo());
+                    dto.setVehicleCarNo(parkedLog.getVehicleCarNo());
+                    dto.setRecognitionState(true);
+                    cameraDataMapper.applyMatchedCarNo(dto);
+                }
 
                 boolean canOpenAutomatically =
-                        (isEntryGate && registered) ||
+                        (isEntryGate && registered && recognitionConfirmed) ||
                         (isExitGate && currentlyParked);
 
                 if (canOpenAutomatically) {
