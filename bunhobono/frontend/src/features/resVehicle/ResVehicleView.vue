@@ -1,8 +1,8 @@
 <template>
   <div class="resident-vehicle-management">
-    <h2>차량관리</h2>
+    <h2 v-if="mode === 'list'">차량관리</h2>
 
-    <div class="resident-vehicle-member">
+    <div v-if="mode === 'list'" class="resident-vehicle-member">
       {{ resVehicleStore.member.memName }}
       ({{ resVehicleStore.member.loginId }})
       {{ resVehicleStore.member.memDong }}동
@@ -10,7 +10,7 @@
     </div>
 
     <!-- 본인 등록 차량: 조회만 가능 -->
-    <section class="vehicle-management-section">
+    <section v-if="mode === 'list'" class="vehicle-management-section">
       <h3>본인 차량</h3>
 
       <ResVehicleList
@@ -21,12 +21,11 @@
     </section>
 
     <!-- 방문 차량: 신청 가능 -->
-    <section class="vehicle-management-section vehicle-management-visit-section">
+    <section v-if="mode === 'list'" class="vehicle-management-section vehicle-management-visit-section">
       <div class="vehicle-management-section-header">
         <h3>방문 차량</h3>
 
         <button
-          v-if="mode === 'list'"
           :disabled="resVehicleStore.hasActiveVisitVehicle"
           @click="openInsert"
         >
@@ -39,30 +38,33 @@
       </div>
 
       <ResVehicleList
-        v-if="mode === 'list'"
         :vehicles="resVehicleStore.visitVehicles"
         empty-message="신청한 방문차량이 없습니다."
         :show-manage="false"
       />
 
-      <ResVehicleForm
-        v-if="mode === 'form'"
-        @submit="submitVisitVehicle"
-        @cancel="openList"
-      />
     </section>
+
+    <ResVehicleForm
+      v-else
+      @submit="submitVisitVehicle"
+      @cancel="openList"
+    />
   </div>
 </template>
 
 <script setup>
 import { onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 import { useResVehicleStore } from "./resVehicleStore";
 import ResVehicleList from "./components/ResVehicleList.vue";
 import ResVehicleForm from "./components/ResVehicleForm.vue";
 
 const resVehicleStore = useResVehicleStore();
+const route = useRoute();
 
-const mode = ref("list");
+// 초기화면 -> '방문차량등록'버튼 눌렀을 때, 차량등록 폼만 나오도록 함
+const mode = ref(route.query.mode === "form" ? "form" : "list");
 
 onMounted(async () => {
   await resVehicleStore.loadMyInfo();

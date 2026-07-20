@@ -308,7 +308,6 @@ public interface MemberMapper {
         LEFT JOIN parking p ON ig.parking_no = p.parking_no
         WHERE m.login_id = #{loginId}
         ORDER BY cl.in_time DESC
-        LIMIT 5
         """)
     List<MemberDTO.ResidentCarLog> residentCarLogs(String loginId);
 

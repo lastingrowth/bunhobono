@@ -17,8 +17,8 @@
                 <p>오늘도 안전한 운행하세요.</p>
 
                 <div class="welcome-actions">
-                    <button type="button" @click="goVisitVehicle">방문차량 등록</button>
-                    <button type="button" @click="goDashboard">대시보드로 가기</button>
+                    <button type="button" @click="goDashboard">홈페이지로</button>
+                    <button type="button" @click="goVisitVehicleForm">방문차량 등록</button>
                 </div>
             </div>
         </article>
@@ -43,7 +43,7 @@ const formattedTime = computed(() => new Intl.DateTimeFormat("ko-KR", {
     hour: "numeric", minute: "2-digit", hour12: true,
 }).format(now.value));
 
-const goVisitVehicle = () => router.push("/resident/vehicles");
+const goVisitVehicleForm = () => router.push("/resident/vehicles?mode=form")
 const goDashboard = () => router.push("/resident/dashboard");
 
 onMounted(async () => {

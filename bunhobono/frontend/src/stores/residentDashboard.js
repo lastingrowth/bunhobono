@@ -99,8 +99,7 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
             const recentCarLogs = (residentData.recentCarLogs || [])
                 .sort((left, right) => {
                     return new Date(right.inTime) - new Date(left.inTime);
-                })
-                .slice(0, 5);
+                });
 
             dashboard.value = {
                 member,

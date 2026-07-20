@@ -81,10 +81,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr
-                        v-for="mem in paginatedMembers"
-                        :key="mem.memberNo"
-                        :class="{ 'withdrawn-expired': getElapsedDays(mem.memDeleteAt) >= 3 }">
+                    <tr v-for="mem in paginatedMembers" :key="mem.memberNo">
                         <td>
                             <input
                                 type="checkbox"
@@ -389,7 +386,6 @@ onUnmounted(() => {
 .list-header h2 { margin: 0; }
 .pending-section { margin: 24px 0; padding: 16px; border: 1px solid #f0b8b8; background: #fff8f8; }
 .archive-alert-section { margin: 24px 0; padding: 16px; border: 1px solid #e6a23c; background: #fffaf0; }
-.withdrawn-expired, .withdrawn-expired a { color: #dc2626; font-weight: 700; }
 .approval-actions { display: flex; align-items: center; gap: 8px; margin: 16px 0; }
 .member-management-tabs { display: flex; align-items: center; gap: 4px; margin: 18px 0; }
 .member-management-tabs button { padding: 9px 14px; border: 1px solid var(--border-color); border-radius: 7px; cursor: pointer; font-weight: 700; color: var(--text-color); background: var(--bg-header); }

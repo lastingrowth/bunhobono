@@ -1,9 +1,11 @@
 <template>
-    <h2>회원 정보 수정</h2>
+    <header class="detail-header">
+        <h2>회원정보 수정</h2>
 
-    <div>
-        <button @click="goHome">홈</button>
-    </div>
+        <div class="detail-actions">
+            <button @click="goHome">뒤로</button>
+        </div>
+    </header>
 
     <table border="">
         <tbody>
@@ -173,7 +175,7 @@ const handlePasswordInput = (event) => {
 };
 
 const goHome = () => {
-    router.push("/resident");
+    router.push("/resident/mypage");
 };
 
 const loadChallenge = async () => {
