@@ -25,6 +25,8 @@ SPRING_URL = os.getenv(
     "http://localhost:80/api/camera-data/ocr",
 )
 
+OCR_CONFIRM_SCORE = 0.95
+
 PREPROCESS_DIR = BASE_DIR / "runtime" / "preprocess"
 ERROR_DIR = BASE_DIR / "runtime" / "errors"
 
@@ -38,6 +40,8 @@ async def lifespan(app: FastAPI):
         timeout=httpx.Timeout(10.0, connect=3.0)
     )
     app.state.plate_detector = PlateDetector()
+
+    # PaddleOCR GPU는 현재 Windows 환경에서 로딩 에러가 있으므로 OCR은 CPU 유지
     app.state.plate_ocr = PlateOCR(device="cpu")
     # app.state.plate_ocr = PlateOCR(device="gpu:0")
 
@@ -126,6 +130,44 @@ def make_empty_ocr_result(mode: str = "ocr_pipeline_error"):
     }
 
 
+def is_confirmed_ocr(ocr_result: dict) -> bool:
+    return (
+        ocr_result.get("is_valid_plate", False)
+        and float(ocr_result.get("score", 0.0)) >= OCR_CONFIRM_SCORE
+    )
+
+
+async def send_ocr_to_spring(
+    camera_no: int,
+    car_no: str,
+    score: float,
+    image: bytes,
+    filename: str | None,
+    content_type: str | None,
+):
+    data = {
+        "cameraNo": str(camera_no),
+        "carNo": car_no,
+        "confidenceScore": str(score * 100),
+    }
+
+    files = {
+        "file": (
+            filename or "camera.jpg",
+            image,
+            content_type or "application/octet-stream",
+        )
+    }
+
+    response = await app.state.spring_client.post(
+        SPRING_URL,
+        data=data,
+        files=files,
+    )
+
+    return response
+
+
 def run_ocr_pipeline(crop_path: str):
     try:
         crop_path_obj = Path(crop_path)
@@ -170,6 +212,7 @@ def home():
     return {
         "msg": "Fast API",
         "spring_url": SPRING_URL,
+        "ocr_confirm_score": OCR_CONFIRM_SCORE,
         "cameras": list(app.state.stream_workers.keys()),
     }
 
@@ -353,9 +396,7 @@ async def ocr_test(file: UploadFile = File(...)):
             "ocr": None,
         }
 
-    pipeline_result = run_ocr_pipeline(
-        detect_result["crop_path"]
-    )
+    pipeline_result = run_ocr_pipeline(detect_result["crop_path"])
 
     if not pipeline_result["success"]:
         error_image_path = save_error_image(
@@ -375,20 +416,24 @@ async def ocr_test(file: UploadFile = File(...)):
         }
 
     ocr_result = pipeline_result["result"]
+    raw_car_no = ocr_result.get("text", "")
+    score = float(ocr_result.get("score", 0.0))
 
-    if not ocr_result.get("is_valid_plate", False):
+    if not is_confirmed_ocr(ocr_result):
         error_image_path = save_error_image(
             image_bytes=image,
-            reason="invalid_plate",
+            reason="unrecognized_plate",
             original_filename=file.filename,
         )
 
         return {
             "success": False,
-            "message": "번호판 형식 미인식",
+            "message": "번호판 미인식",
             "error_image_path": error_image_path,
-            "carNo": ocr_result.get("text", ""),
-            "ocr_score": ocr_result.get("score", 0.0),
+            "carNo": "미인식",
+            "rawCarNo": raw_car_no,
+            "ocr_score": score,
+            "ocr_confirm_score": OCR_CONFIRM_SCORE,
             "selected_mode": ocr_result.get("mode"),
             "selector_score": ocr_result.get("selector_score"),
             "detect": detect_result,
@@ -399,8 +444,10 @@ async def ocr_test(file: UploadFile = File(...)):
     return {
         "success": True,
         "message": "번호판 검출 + 전처리 OCR 성공",
-        "carNo": ocr_result["text"],
-        "ocr_score": ocr_result["score"],
+        "carNo": raw_car_no,
+        "rawCarNo": raw_car_no,
+        "ocr_score": score,
+        "ocr_confirm_score": OCR_CONFIRM_SCORE,
         "selected_mode": ocr_result.get("mode"),
         "selector_score": ocr_result.get("selector_score"),
         "detect": detect_result,
@@ -429,13 +476,27 @@ async def ocr(
             original_filename=file.filename,
         )
 
+        response = await send_ocr_to_spring(
+            camera_no=cameraNo,
+            car_no="미인식",
+            score=0.0,
+            image=image,
+            filename=file.filename,
+            content_type=file.content_type,
+        )
+
         return {
             "success": False,
             "message": "번호판 검출 처리 중 오류",
             "cameraNo": cameraNo,
+            "carNo": "미인식",
+            "rawCarNo": "",
+            "ocr_score": 0.0,
             "error": str(e),
             "error_image_path": error_image_path,
             "detect": None,
+            "spring_status": response.status_code,
+            "spring_result": response.text,
         }
 
     if not detect_result["success"]:
@@ -445,17 +506,29 @@ async def ocr(
             original_filename=file.filename,
         )
 
+        response = await send_ocr_to_spring(
+            camera_no=cameraNo,
+            car_no="미인식",
+            score=0.0,
+            image=image,
+            filename=file.filename,
+            content_type=file.content_type,
+        )
+
         return {
             "success": False,
             "message": "번호판 검출 실패",
             "cameraNo": cameraNo,
+            "carNo": "미인식",
+            "rawCarNo": "",
+            "ocr_score": 0.0,
             "error_image_path": error_image_path,
             "detect": detect_result,
+            "spring_status": response.status_code,
+            "spring_result": response.text,
         }
 
-    pipeline_result = run_ocr_pipeline(
-        detect_result["crop_path"]
-    )
+    pipeline_result = run_ocr_pipeline(detect_result["crop_path"])
 
     if not pipeline_result["success"]:
         error_image_path = save_error_image(
@@ -464,69 +537,74 @@ async def ocr(
             original_filename=file.filename,
         )
 
+        response = await send_ocr_to_spring(
+            camera_no=cameraNo,
+            car_no="미인식",
+            score=0.0,
+            image=image,
+            filename=file.filename,
+            content_type=file.content_type,
+        )
+
         return {
             "success": False,
             "message": "전처리 또는 OCR 처리 실패",
             "cameraNo": cameraNo,
+            "carNo": "미인식",
+            "rawCarNo": "",
+            "ocr_score": 0.0,
             "error": pipeline_result["error"],
             "error_image_path": error_image_path,
             "detect": detect_result,
             "ocr": pipeline_result["result"],
+            "spring_status": response.status_code,
+            "spring_result": response.text,
         }
 
     ocr_result = pipeline_result["result"]
-    carNo = ocr_result.get("text", "")
+    raw_car_no = ocr_result.get("text", "")
+    score = float(ocr_result.get("score", 0.0))
 
-    if not ocr_result.get("is_valid_plate", False):
+    if is_confirmed_ocr(ocr_result):
+        car_no = raw_car_no
+        success = True
+        message = "YOLO + 전처리 OCR 처리 후 Spring OCR 전송 완료"
+        error_image_path = None
+    else:
+        car_no = "미인식"
+        success = False
+        message = "번호판 미인식"
         error_image_path = save_error_image(
             image_bytes=image,
-            reason="invalid_plate",
+            reason="unrecognized_plate",
             original_filename=file.filename,
         )
 
-        return {
-            "success": False,
-            "message": "번호판 형식 미인식",
-            "cameraNo": cameraNo,
-            "carNo": carNo,
-            "ocr_score": ocr_result.get("score", 0.0),
-            "selected_mode": ocr_result.get("mode"),
-            "selector_score": ocr_result.get("selector_score"),
-            "error_image_path": error_image_path,
-            "detect": detect_result,
-            "ocr": ocr_result,
-        }
-
-    data = {
-        "cameraNo": str(cameraNo),
-        "carNo": carNo,
-        "confidenceScore": str(ocr_result["score"] * 100),
-    }
-
-    files = {
-        "file": (
-            file.filename,
-            image,
-            file.content_type or "application/octet-stream",
+        print(
+            f"OCR 미인식 처리 rawCarNo={raw_car_no}, "
+            f"score={score * 100:.1f}%, errorImage={error_image_path}"
         )
-    }
 
-    client = app.state.spring_client
-
-    response = await client.post(
-        SPRING_URL,
-        data=data,
-        files=files,
+    response = await send_ocr_to_spring(
+        camera_no=cameraNo,
+        car_no=car_no,
+        score=score,
+        image=image,
+        filename=file.filename,
+        content_type=file.content_type,
     )
 
     return {
-        "success": True,
-        "msg": "YOLO + 전처리 OCR 처리 후 Spring OCR 전송 완료",
+        "success": success,
+        "msg": message,
         "cameraNo": cameraNo,
-        "carNo": carNo,
-        "ocr_score": ocr_result["score"],
+        "carNo": car_no,
+        "rawCarNo": raw_car_no,
+        "ocr_score": score,
+        "ocr_confirm_score": OCR_CONFIRM_SCORE,
         "selected_mode": ocr_result.get("mode"),
         "selector_score": ocr_result.get("selector_score"),
+        "error_image_path": error_image_path,
         "detect": detect_result,
         "ocr": ocr_result,
         "spring_status": response.status_code,
@@ -536,10 +614,6 @@ async def ocr(
 
 # cd C:\Users\dkddp\Documents\bunhobono\bunhobono\fast-api
 # C:\Users\dkddp\.conda\envs\bono\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-
-
-
 
 # cd C:\Users\dkddp\Documents\bunhobono\bunhobono\fast-api
 # C:\ProgramData\anaconda3\envs\bono_gpu\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
