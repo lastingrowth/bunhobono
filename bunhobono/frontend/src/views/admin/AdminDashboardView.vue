@@ -1,12 +1,5 @@
 <template>
     <section class="admin-dashboard"> 
-        <!-- 관리자 대시보드 제목 영역 -->
-        <div class="dashboard-header">
-            <div>
-                <h2>관리자 대시보드</h2>
-            </div>
-        </div>
-
         <!-- 데이터 조회 상태 -->
         <p v-if="loading" class="dashboard-message">
             대시보드 정보를 불러오는 중입니다
@@ -87,9 +80,6 @@
         <div class="admin-control-layout">
             <!-- 주차장 모니터링 영역 -->
             <article class="dashboard-card monitoring-card">
-                <div class="section-heading">
-                    <h3>주차장 모니터링</h3>
-                </div>
 
                 <!-- A/B/C/D 주차장 카드 v-for로 반복해서 표시 -->
                 <div class="parking-monitor-grid">
@@ -272,7 +262,7 @@
                                     @click="showCameraDataDetail(cameraData)">
                                     <td>{{ cameraData.carNo || '미인식' }}</td>
                                     <td>{{ cameraData.vehicleCarNo ? '등록' : '미등록' }}</td>
-                                    <td>CAM {{ cameraData.cameraNo }}</td>
+                                    <td>{{ cameraLabel(cameraData.cameraNo) }}</td>
                                     <td>{{ formatCameraDataTime(cameraData.captureTime) }}</td>
                                 </tr>
 
@@ -330,7 +320,7 @@
                             </div>
                             <div>
                                 <dt>카메라 번호</dt>
-                                <dd>CAM {{ selectedCameraData.cameraNo }}</dd>
+                                <dd>{{ cameraLabel(selectedCameraData.cameraNo) }}</dd>
                             </div>
                             <div>
                                 <dt>촬영 시각</dt>
@@ -678,6 +668,21 @@ const formatCameraDataTime = (value) => {
 
     const date = new Date(value)
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ko-KR')
+}
+
+const cameraLabel = (cameraNo) => {
+    const labels = {
+        1: 'A 입차',
+        2: 'A 출차',
+        3: 'B 입차',
+        4: 'B 출차',
+        5: 'C 입차',
+        6: 'C 출차',
+        7: 'D 입차',
+        8: 'D 출차',
+    }
+
+    return labels[Number(cameraNo)] ?? `CAM ${cameraNo}`
 }
 
 const formatConfidence = (value) => {
