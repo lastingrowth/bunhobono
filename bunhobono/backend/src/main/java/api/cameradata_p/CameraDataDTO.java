@@ -13,6 +13,7 @@ CameraDataDTO {
     private Integer vehicleCarNo;
     private int cameraDataNo, displayNo;
     private String carNo, imagePath;
+    private String ocrCarNo;
     private Timestamp captureTime;
     private Boolean recognitionState;
     private Double confidenceScore;
@@ -30,6 +31,9 @@ CameraDataDTO {
     private Boolean saved;
     private Boolean registered;
     private Boolean gateOpened;
+    private Boolean saveAlias;
+    private Boolean aliasSaved;
+    private Boolean autoCorrected;
     private Integer gateNo;
 
     //crop 이미지 저장

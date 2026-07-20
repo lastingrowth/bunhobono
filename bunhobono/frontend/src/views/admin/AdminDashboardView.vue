@@ -207,6 +207,12 @@
                 <article class="dashboard-card carlog-preview-card">
                     <div class="section-heading">
                         <h3>입출차 로그</h3>
+                        <button
+                            type="button"
+                            class="dashboard-view-all-button"
+                            @click="router.push('/admin/carlogs')">
+                            전체보기
+                        </button>
                     </div>
 
                     <div class="carlog-table-wrap">
@@ -251,6 +257,12 @@
                 <article class="dashboard-card camera-data-preview-card">
                     <div class="section-heading">
                         <h3>카메라 데이터</h3>
+                        <button
+                            type="button"
+                            class="dashboard-view-all-button"
+                            @click="router.push('/admin/camera-data')">
+                            전체보기
+                        </button>
                     </div>
 
                     <div class="carlog-table-wrap">
@@ -322,7 +334,33 @@
                         <dl class="selected-log-info">
                             <div>
                                 <dt>차량번호</dt>
-                                <dd>{{ selectedCameraData.carNo || '미인식' }}</dd>
+                                <dd class="camera-car-number-field">
+                                    <template v-if="!isEditingCameraCarNo">
+                                        <span>{{ selectedCameraData.carNo || '미인식' }}</span>
+                                        <button
+                                            type="button"
+                                            class="camera-car-number-edit-button"
+                                            @click="startCameraCarNoEdit">
+                                            수정
+                                        </button>
+                                    </template>
+
+                                    <form v-else class="camera-car-number-edit-form" @submit.prevent="saveCameraCarNo">
+                                        <input
+                                            v-model="cameraCarNoDraft"
+                                            type="text"
+                                            maxlength="12"
+                                            placeholder="예: 경기37바1083"
+                                            aria-label="수정할 차량번호" />
+                                        <div class="camera-car-number-edit-actions">
+                                            <button type="submit" :disabled="cameraCarNoSaving">
+                                                {{ cameraCarNoSaving ? '저장 중' : '차량번호 수정' }}
+                                            </button>
+                                            <button type="button" class="cancel" :disabled="cameraCarNoSaving" @click="cancelCameraCarNoEdit">취소</button>
+                                        </div>
+                                        <small>등록 차량과 일치하면 기존 OCR 번호도 별칭으로 저장됩니다.</small>
+                                    </form>
+                                </dd>
                             </div>
                             <div>
                                 <dt>등록 상태</dt>
@@ -581,7 +619,7 @@
 
 <script setup>
 import { useAdminDashboardStore } from '@/stores/adminDashboard';
-import { getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
+import { editCameraDataCarNo, getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
 import { storeToRefs } from 'pinia';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -606,6 +644,9 @@ const cropImageErrors = ref(new Set())
 const lastOcrEventIds = new Map()
 const pendingCameraDataNos = ref({})
 const cameraStatuses = ref({})
+const isEditingCameraCarNo = ref(false)
+const cameraCarNoDraft = ref('')
+const cameraCarNoSaving = ref(false)
 let ocrStatusTimer = null
 let refreshingCarlogs = false
 let cctvClockTimer = null
@@ -658,6 +699,8 @@ const showCarlogDetail = (log) => {
 }
 
 const showCameraDataDetail = async (cameraData) => {
+    isEditingCameraCarNo.value = false
+    cameraCarNoDraft.value = ''
     selectedCameraData.value = cameraData
     selectedDetailType.value = 'CAMERA_DATA'
 
@@ -669,6 +712,49 @@ const showCameraDataDetail = async (cameraData) => {
         }
     } catch (error) {
         console.error('카메라 데이터 상세 조회 실패', error)
+    }
+}
+
+const startCameraCarNoEdit = () => {
+    cameraCarNoDraft.value = selectedCameraData.value?.carNo ?? ''
+    isEditingCameraCarNo.value = true
+}
+
+const cancelCameraCarNoEdit = () => {
+    isEditingCameraCarNo.value = false
+    cameraCarNoDraft.value = ''
+}
+
+const saveCameraCarNo = async () => {
+    const carNo = cameraCarNoDraft.value.trim().replace(/\s/g, '')
+    const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
+
+    if (!carNoPattern.test(carNo)) {
+        alert('차량번호 형식을 확인하세요. 예: 123가4567, 경기37바1083')
+        return
+    }
+
+    cameraCarNoSaving.value = true
+
+    try {
+        const response = await editCameraDataCarNo(
+            selectedCameraData.value.cameraDataNo,
+            carNo,
+            true,
+        )
+
+        selectedCameraData.value = {
+            ...selectedCameraData.value,
+            ...(response.data ?? {}),
+        }
+        await refreshCarlogs()
+        isEditingCameraCarNo.value = false
+        cameraCarNoDraft.value = ''
+    } catch (error) {
+        console.error('차량번호 수정 실패', error)
+        alert(error.response?.data?.message || '차량번호 수정에 실패했습니다')
+    } finally {
+        cameraCarNoSaving.value = false
     }
 }
 

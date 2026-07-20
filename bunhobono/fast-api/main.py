@@ -338,3 +338,7 @@ async def ocr(
 # cd C:\kwon\mbc_a_java21\java_17\fast-api
 # C:\Users\dkddp\.conda\envs\bono\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 # python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# cd /d C:\Users\503-22\Documents\bunhobono\bunhobono\fast-api
+# .venv\Scripts\activate
+# python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
