@@ -24,7 +24,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
     const errorMessage = ref('')
 
     // 관리자 대시보드 상단의 차량 등록 입력값
-    // 현재 백엔드 정책상 등록 차량은 바로 승인되지 않고 WAITING 상태로 저장
+    // 관리자가 대시보드에서 등록한 입주민 차량은 승인 과정 없이 바로 APPROVED 상태로 저장된다.
     const quickVehicle = ref({
         carNo : '',
         memDong : '',
@@ -340,7 +340,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
     }
 
     // 관리자 대시보드에서 입주민 차량을 등록
-    // 현재 백엔드 VehicleServie 에서 vehicleStatus를 WAITING으로 고정하므로 승인 대기 상태로 저장
+    // 관리자가 등록하는 입주민 차량은 normal 타입으로 보내고, 백엔드에서 APPROVED 상태로 저장한다.
     const submitQuickVehicle = async () => {
         const normalizedCarNo = quickVehicle.value.carNo.trim().replace(/\s/g, '')
 
@@ -366,7 +366,9 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
                 memberNo : quickVehicle.value.memberNo,
             })
 
-            alert('차량이 승인 대기 상태로 등록되었습니다')
+            await vehicleStore.loadVehicleList()
+
+            alert('차량이 등록되었습니다')
             resetQuickVehicle()
         } catch (e) {
             console.error(e)
