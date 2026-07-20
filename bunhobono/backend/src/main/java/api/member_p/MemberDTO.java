@@ -20,8 +20,10 @@ public class MemberDTO {
     private String memStatus;
     private int memDong;
     private int memHo;
-    private LocalDate memCreateAt;
-    private LocalDate memDeleteAt;
+    private LocalDateTime memCreateAt;
+    private LocalDateTime memDeleteAt;
+
+    private Boolean archived;
 
     // 입주민 대시보드에 표시할 본인 차량 정보를 전달한다.
     @Data

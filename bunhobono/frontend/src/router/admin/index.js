@@ -9,6 +9,8 @@ import cameraData from "./cameraData";
 import notices from "./notices";
 import cameras from "./cameras";
 import trash from "./trash";
+import memberArchive from "./memberArchive";
+import statistics from "./statistics";
 
 export const adminRoutes = [
     {
@@ -29,7 +31,9 @@ export const adminRoutes = [
             ...cameras,
             ...cameraData,
             ...notices,
-            ...trash
+            ...trash,
+            ...memberArchive,
+            ...statistics
         ]
     }
 ]

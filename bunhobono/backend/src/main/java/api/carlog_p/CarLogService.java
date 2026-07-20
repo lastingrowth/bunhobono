@@ -20,6 +20,17 @@ public class CarLogService {
         return carLogMapper.list(dto);
     }
 
+    //입차 등록여부 확인 서비스
+    public boolean isCurrentlyParked(CameraDataDTO cameraData) {
+        if (cameraData == null ||
+                cameraData.getCarNo() == null ||
+                cameraData.getCarNo().isBlank()) {
+            return false;
+        }
+
+        return carLogMapper.existsOpenLog(cameraData);
+    }
+
     // camera_data 저장 직후 호출: 연결된 게이트 유형에 따라 입차 생성 또는 출차 처리
     public void processCameraData(CameraDataDTO cameraData) {
         if (cameraData.getCarNo() == null || cameraData.getCarNo().isBlank()) {
@@ -39,6 +50,10 @@ public class CarLogService {
         } else if ("Out".equalsIgnoreCase(gate.getGateType())) {
             carLogMapper.completeExit(cameraData, gate.getGateNo());
         }
+    }
+
+    public int correctByCameraData(CameraDataDTO cameraData) {
+        return carLogMapper.correctByCameraData(cameraData);
     }
 
     // 테스트용: 매분 실행
@@ -64,4 +79,6 @@ public class CarLogService {
                 "휴지통으로 이동된 입출차 기록 수: " + moveCount
         );
     }
+
+
 }

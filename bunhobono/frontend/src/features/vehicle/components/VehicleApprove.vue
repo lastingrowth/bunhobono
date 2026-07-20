@@ -41,7 +41,7 @@
               >
               시간
               <span>
-                신청 {{ getRequestedVisitHours(vehicle) }}시간
+                신청
               </span>
             </span>
           </td>

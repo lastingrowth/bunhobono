@@ -90,8 +90,10 @@ export const useGateStore =  defineStore("gate", () => {
 
     if (res.data === 1) {
       await loadList();
+      return true;
     } else {
       alert("게이트 열기 실패");
+      return false;
     }
   };
 

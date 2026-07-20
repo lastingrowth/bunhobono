@@ -34,17 +34,25 @@ public class CameraDataController {
 
     // 카메라 장치가 호출하는 API  이거 하드웨어도 post로 api처리한다고 함
     @PostMapping("/ocr")
-    public int ocr(@RequestParam("cameraNo") int cameraNo,
-                   @RequestParam("carNo") String carNo,
-                   @RequestParam("confidenceScore") Double confidenceScore,
-                   @RequestParam("file") MultipartFile file) {
+    public CameraDataDTO ocr(@RequestParam("cameraNo") int cameraNo,
+                           @RequestParam("carNo") String carNo,
+                           @RequestParam("confidenceScore") Double confidenceScore,
+                           @RequestParam("file") MultipartFile file,
+                           @RequestParam(value = "cropFile", required = false) MultipartFile cropFile) {
 
-        return cameraDataService.ocr(cameraNo, carNo,confidenceScore, file);
+        return cameraDataService.ocr(cameraNo, carNo, confidenceScore, file, cropFile);
     }
 
     @GetMapping("/{cameraDataNo}/detail")
     public CameraDataDTO getCameraData(@PathVariable int cameraDataNo) {
         return cameraDataService.getCameraData(cameraDataNo);
+    }
+
+    @PatchMapping("/{cameraDataNo}/edit")
+    public CameraDataDTO editCarNo(
+            @PathVariable int cameraDataNo,
+            @RequestBody CameraDataDTO dto) {
+        return cameraDataService.editCarNo(cameraDataNo, dto);
     }
 
     // 관리자 수동 게이트 열기
@@ -72,6 +80,26 @@ public class CameraDataController {
 
         Path path =
                 cameraDataService.getCameraImagePath(cameraDataNo);
+
+        org.springframework.core.io.Resource image =
+                new UrlResource(path.toUri());
+
+        String contentType = Files.probeContentType(path);
+
+        if (contentType == null) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(image);
+    }
+
+    @GetMapping("/{cameraDataNo}/crop-image")
+    public ResponseEntity<org.springframework.core.io.Resource> getCropImage(
+            @PathVariable int cameraDataNo) throws IOException {
+
+        Path path = cameraDataService.getCameraCropImagePath(cameraDataNo);
 
         org.springframework.core.io.Resource image =
                 new UrlResource(path.toUri());

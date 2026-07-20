@@ -5,6 +5,13 @@ export const getVehicleList = () => {
     return api.get("/vehicles");
 };
 
+// 차량 등록 화면에서 선택 가능한 회원 검색
+export const searchVehicleMembers = (params) => {
+    return api.get("/vehicles/search", {
+        params,
+    });
+};
+
 // 차량 등록
 export const createVehicle = (data) => {
     return api.post("/vehicles/signUp", data);

@@ -9,6 +9,7 @@ from ultralytics import YOLO
 BASE_DIR = Path(__file__).resolve().parent
 
 YOLO_MODEL_PATH = BASE_DIR / "model" / "yolo11s_bono1199" / "best.pt"
+VIDEO_ROI_TOP_RATIO = 1 / 3
 
 RUNTIME_DIR = BASE_DIR / "runtime"
 UPLOAD_DIR = RUNTIME_DIR / "uploads"
@@ -61,13 +62,23 @@ class PlateDetector:
 
         return self._detect_and_crop_image(
             img=frame,
-            filename=filename
+            filename=filename,
+            use_bottom_half=True,
         )
 
     # 실제 YOLO 번호판 탐지와 crop 저장 공통 처리
-    def _detect_and_crop_image(self, img, filename: str):
+    def _detect_and_crop_image(
+        self,
+        img,
+        filename: str,
+        use_bottom_half: bool = False,
+    ):
+        h, w = img.shape[:2]
+        roi_y1 = int(h * VIDEO_ROI_TOP_RATIO) if use_bottom_half else 0
+        detection_img = img[roi_y1:h, 0:w]
+
         results = self.model.predict(
-            source=img,
+            source=detection_img,
             conf=0.25,
             imgsz=640,
             verbose=False
@@ -92,8 +103,8 @@ class PlateDetector:
         det_conf = float(confs[best_idx])
 
         x1, y1, x2, y2 = xyxy.astype(int)
-
-        h, w = img.shape[:2]
+        y1 += roi_y1
+        y2 += roi_y1
 
         # OCR용으로 너무 딱 붙지 않게 여백 추가
         margin_x = max(2, int((x2 - x1) * 0.04))

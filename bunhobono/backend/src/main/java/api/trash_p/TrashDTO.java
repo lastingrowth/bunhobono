@@ -1,10 +1,12 @@
 package api.trash_p;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TrashDTO {
     private Long trashNo;           // 휴지통 고유 번호
     private String dataType;        // CAMERA_DATA, CAR_LOG, NOTICE
@@ -14,4 +16,6 @@ public class TrashDTO {
     private String deleteType;      // MANUAL, SCHEDULED
     private LocalDateTime deletedAt; // 휴지통 이동 시각
     private LocalDateTime purgeAt;   // 영구 삭제 예정 시
+    private Boolean success;
+    private Integer restoredNo;
 }

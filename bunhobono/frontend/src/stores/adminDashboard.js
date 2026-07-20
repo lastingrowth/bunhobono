@@ -1,519 +1,431 @@
-import { computed, ref } from "vue";
-import { defineStore } from "pinia";
-
-import { useNoticeStore } from "@/features/notice/noticeStore";
-import { useVehicleStore } from "@/features/vehicle/vehicleStore";
-import { useParkingsStore } from "@/features/parking/parkingsStore";
-import { getCarLogs } from "@/features/carlog/carlogApi";
-import { toCarLogView } from "@/features/carlog/carlogFormat";
-import { useCameraDataStore } from "@/features/camera-data/cameraDataStore";
-import { useCameraStore } from "@/features/camera/cameraStore";
+import { useCarlogStore } from "@/features/carlog/carlogStore";
+import { openGateByCameraData } from "@/features/camera-data/cameraDataApi";
+import { getCameraDataList } from "@/features/camera-data/cameraDataApi";
 import { useGateStore } from "@/features/gates/gateStore";
-import { getCameraDataDetail, getCameraDataImage, openGateByCameraData } from "@/features/camera-data/cameraDataApi";
-
+import { useMemStore } from "@/features/member/memStore";
+import { useNoticeStore } from "@/features/notice/noticeStore";
+import { useParkingsStore } from "@/features/parking/parkingsStore";
+import { useVehicleStore } from "@/features/vehicle/vehicleStore";
+import { defineStore } from "pinia";
+import { computed, ref } from "vue";
 
 export const useAdminDashboardStore = defineStore("adminDashboard", () => {
-  
+
     const noticeStore = useNoticeStore();
     const vehicleStore = useVehicleStore();
-    const parkingStore = useParkingsStore();
-    const cameraDataStore = useCameraDataStore();
-    const cameraStore = useCameraStore();
+    const memberStore = useMemStore();
+
     const gateStore = useGateStore();
+    const parkingStore = useParkingsStore();
+
+    const carlogStore = useCarlogStore();
 
     const loading = ref(false);
     const errorMessage = ref("");
-    const ocrImageUrls = ref({});
-    const ocrDetails = ref({});
 
-    // 입출차 목록의 현재 페이지
-    const currentCarlogPage = ref(1);
+    // 관리자 대시보드 상단 차량 등록 입력값
+    const quickVehicle = ref({
+        carNo: "",
+        vehicleType: "normal",
+        role: "RESIDENT",
+        periodValue: 1,
+        memberNo: null,
+    });
 
-    // 한 페이지에 표시할 입출차 기록 수
-    const carlogPageSize = 5;
+    // 등록차량이면 개월, 방문차량이면 시간 선택지를 보여준다.
+    const quickPeriodOptions = computed(() => {
+        if (quickVehicle.value.vehicleType === "normal") {
+            return [
+                { value: 1, text: "1개월" },
+                { value: 3, text: "3개월" },
+                { value: 6, text: "6개월" },
+                { value: 12, text: "12개월" },
+            ];
+        }
 
-    // 관리자 대시보드에서만 사용할 입출차 기록
-    // carlog 페이지의 검색 조건과 섞이지 않도록 별도로 관리한다
-    const dashboardCarlogs = ref([]);
+        return [
+            { value: 2, text: "2시간" },
+            { value: 4, text: "4시간" },
+            { value: 6, text: "6시간" },
+            { value: 8, text: "8시간" },
+            { value: 12, text: "12시간" },
+        ];
+    });
 
-    // 확인하지 않은 알림 수
-    const unresolvedNoticeCount = computed(() => {
+    // /vehicles/search 로 가져온 등록 가능한 회원 목록
+    const quickRegisterMembers = computed(() => {
+        return vehicleStore.registerMembers;
+    });
+
+    // 차량종류/회원구분에 맞는 회원 목록 조회
+    const loadQuickRegisterMembers = async () => {
+        await vehicleStore.loadRegisterMembers({
+            vehicleType: quickVehicle.value.vehicleType,
+            role: quickVehicle.value.role,
+        });
+    };
+
+    const parkingCameraModes = ref({
+        "A 주차장": "IN",
+        "B 주차장": "IN",
+        "C 주차장": "IN",
+        "D 주차장": "IN",
+    });
+
+    const selectedParkingPanel = ref(null);
+    const selectedCarlog = ref(null);
+    const cameraDataLogs = ref([]);
+
+    // 예: 12가3456, 123가4567, 서울12가3456
+    const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/;
+
+    const longParkingNoticeCount = computed(() => {
         return noticeStore.notices.filter((notice) => {
             const status = notice.alertStat ?? notice.alert_stat;
-
             return status === "Unresolved";
         }).length;
     });
 
-    // 승인 대기 차량 수
-    const waitingVehicleCount = computed(() => {
+    const waitingVisitVehicleCount = computed(() => {
         return vehicleStore.vehicleList.filter((vehicle) => {
-            return vehicle.vehicleStatus === "WAITING";
+            return vehicle.vehicleType === "visit"
+                && vehicle.vehicleStatus === "WAITING";
         }).length;
     });
 
-    // 오늘 방문 차량 수
-    const todayVisitVehicleCount = computed(() => {
-        const today = new Date();
-
-        return vehicleStore.vehicleList.filter((vehicle) => {
-            if (vehicle.vehicleType !== "visit") {
-                return false;
-            }
-
-            const startDate = new Date(vehicle.startDate);
-
-            if (Number.isNaN(startDate.getTime())) {
-                return false;
-            }
-
-            return startDate.getFullYear() === today.getFullYear()
-                && startDate.getMonth() === today.getMonth()
-                && startDate.getDate() === today.getDate();
+    const waitingMemberCount = computed(() => {
+        return memberStore.memberList.filter((member) => {
+            return member.role === "PENDING";
         }).length;
-    })
+    });
 
+    const dashboardAlerts = computed(() => {
+        return [
+            {
+                key: "long-parking",
+                title: "장기주차",
+                count: longParkingNoticeCount.value,
+                path: "/admin/notice",
+            },
+            {
+                key: "visit-approve",
+                title: "방문승인",
+                count: waitingVisitVehicleCount.value,
+                path: "/admin/vehicles?mode=approve",
+            },
+            {
+                key: "member-approve",
+                title: "회원가입승인",
+                count: waitingMemberCount.value,
+                path: "/admin/members?section=pending",
+            },
+        ];
+    });
 
-    // 주차장별 전체 면수, 사용 면수, 가능 면수와 사용률
-    const parkingStatusList = computed(() => {
-        return parkingStore.list.map((parking) => {
-            const total = Math.max(
-                Number(parking.parkingSpaces ?? 0),
-                0
-            );
+    const findGateByParking = (parkingName, gateType) => {
+        return gateStore.list.find((gate) => {
+            return gate.parkingName === parkingName
+                && String(gate.gateType).toUpperCase() === gateType;
+        });
+    };
 
-            const available = Math.min(
-                Math.max(Number(parking.availableSpaces ?? 0), 0), total);
-
-                const occupied = Math.max(total - available, 0);
-
-                const usageRate = total === 0
-            ? 0
-            : Math.round(occupied / total * 100);
+    const parkingMonitorPanels = computed(() => {
+        return parkingStore.list.slice(0, 4).map((parking, index) => {
+            const mode = parkingCameraModes.value[parking.parkingName] ?? "IN";
+            const gate = findGateByParking(parking.parkingName, mode);
+            const cameraNo = (index * 2) + (mode === "IN" ? 1 : 2);
 
             return {
-                ...parking,
-                total,
-                available,
-                occupied,
-                usageRate
+                parkingNo: parking.parkingNo,
+                parkingName: parking.parkingName,
+                parkingLocation: parking.parkingLocation,
+                mode,
+                modeText: mode === "IN" ? "입차" : "출차",
+                modeClass: mode === "IN" ? "in" : "out",
+                cameraNo,
+                gate,
             };
         });
     });
 
-    // 전체 OCR 데이터 수
-    const ocrTotalCount = computed(() => {
-        return cameraDataStore.list.length;
-    });
-
-    // 차량번호가 인식된 OCR 데이터 수
-    const ocrSuccessCount = computed(() => {
-        return cameraDataStore.list.filter((data) => {
-            if (typeof data.recognitionState === "boolean") {
-                return data.recognitionState;
-            }
-
-            return Boolean(data.carNo);
-        }).length;
-    });
-
-    // 차량번호를 인식하지 못한 OCR 데이터 수
-    const ocrFailCount = computed(() => {
-        return ocrTotalCount.value - ocrSuccessCount.value;
-    });
-
-    // 전체 OCR 데이터 대비 성공률
-    const ocrSuccessRate = computed(() => {
-        if (ocrTotalCount.value === 0) {
-            return 0;
+    const refreshSelectedParkingPanel = () => {
+        if (!selectedParkingPanel.value) {
+            return;
         }
 
-        return Math.round(
-            ocrSuccessCount.value
-            / ocrTotalCount.value
-            * 100
-        );
-    });
-
-    const getCameraParkingNo = (cameraNo) => {
-        const camera = cameraStore.list.find((item) => {
-            return Number(item.cameraNo) === Number(cameraNo);
+        const latestPanel = parkingMonitorPanels.value.find((panel) => {
+            return Number(panel.parkingNo) === Number(selectedParkingPanel.value.parkingNo);
         });
 
-        const gate = gateStore.list.find((item) => {
-            return Number(item.gateNo) === Number(camera?.gateNo);
-        });
-
-        return gate?.parkingNo ?? null;
+        selectedParkingPanel.value = latestPanel ?? selectedParkingPanel.value;
     };
 
-    const getLatestCameraDataByParkingNo = (parkingNo) => {
-        return [...cameraDataStore.displayList]
-            .filter((data) => {
-                return data.cameraDataNo
-                    && Number(getCameraParkingNo(data.cameraNo)) === Number(parkingNo);
+    const refreshGateStatuses = async () => {
+        await gateStore.loadList();
+        refreshSelectedParkingPanel();
+    };
+
+    const recentCarlogs = computed(() => {
+        return [...carlogStore.carLogs]
+            .sort((left, right) => {
+                const rightTime = new Date(right.outTime ?? right.inTime ?? 0);
+                const leftTime = new Date(left.outTime ?? left.inTime ?? 0);
+
+                return rightTime - leftTime;
             })
-            .sort((a, b) => {
-                const aTime = new Date(a.captureTime ?? 0).getTime();
-                const bTime = new Date(b.captureTime ?? 0).getTime();
+            .slice(0, 3);
+    });
 
-                return bTime - aTime;
-            })[0];
+    const recentCameraData = computed(() => {
+        return [...cameraDataLogs.value]
+            .sort((left, right) => {
+                return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0);
+            })
+            .slice(0, 3);
+    });
+
+    const toggleParkingCamera = (parkingName) => {
+        const currentMode = parkingCameraModes.value[parkingName] ?? "IN";
+
+        parkingCameraModes.value = {
+            ...parkingCameraModes.value,
+            [parkingName]: currentMode === "IN" ? "OUT" : "IN",
+        };
+
+        refreshSelectedParkingPanel();
     };
 
-    const getParkingOcrCard = (parking) => {
-        const data = getLatestCameraDataByParkingNo(parking.parkingNo);
+    const selectParkingPanel = (panel) => {
+        selectedParkingPanel.value = panel;
+    };
 
-        if (!data) {
-            return {
-                cameraDataNo: null,
-                imageUrl: "",
-                carNoText: "데이터 없음",
-                movementText: "-",
-                confidenceText: "-"
-            };
+    const closeParkingPanel = () => {
+        selectedParkingPanel.value = null;
+    };
+
+    const selectCarlog = (log) => {
+        selectedCarlog.value = log;
+    };
+
+    const refreshCarlogs = async () => {
+        const selectedNo = selectedCarlog.value?.carLogNo;
+
+        const [, cameraDataResponse] = await Promise.all([
+            carlogStore.loadCarLogs(),
+            getCameraDataList(),
+        ]);
+
+        cameraDataLogs.value = Array.isArray(cameraDataResponse.data)
+            ? cameraDataResponse.data
+            : [];
+
+        selectedCarlog.value = carlogStore.carLogs.find((log) => {
+            return Number(log.carLogNo) === Number(selectedNo);
+        }) ?? recentCarlogs.value[0] ?? null;
+    };
+
+    const parkingStateClass = (log) => {
+        if (log.parkingState === "PARKING") {
+            return "parking";
         }
 
-        const detail = ocrDetails.value[data.cameraDataNo] ?? {};
-        const confidenceScore = detail.confidenceScore ?? data.confidenceScore;
-        const vehicleStatus = detail.vehicleStatus ?? data.vehicleStatus;
-        const vehicleCarNo = detail.vehicleCarNo ?? data.vehicleCarNo;
-        const relatedCarLog = data.relatedCarLog;
-        const waitingForApproval = data.movementType === "IN"
-            && !data.processed
-            && (!vehicleCarNo || vehicleStatus === "WAITING" || vehicleStatus === "UNKNOWN");
-        const movementText = data.processedMovementType === "IN"
-            ? "입차"
-            : data.processedMovementType === "OUT"
-                ? "출차"
-                : waitingForApproval
-                    ? "대기중"
-                    : "처리 안 됨";
+        if (log.parkingState === "OUT") {
+            return "out";
+        }
 
-        return {
-            ...data,
-            ...detail,
-            imageUrl: ocrImageUrls.value[data.cameraDataNo] ?? "",
-            carNoText: relatedCarLog?.carNo || detail.carNo || data.carNo || "미인식",
-            movementText,
-            confidenceText: confidenceScore == null
-                ? "-"
-                : `${Number(confidenceScore).toFixed(1)}%`
+        return "unknown";
+    };
+
+    const openManualGate = async (gate, cameraDataNo = null) => {
+        if (!gate) {
+            alert("연결된 게이트가 없습니다");
+            return false;
+        }
+
+        let opened = false;
+
+        if (cameraDataNo) {
+            const response = await openGateByCameraData(cameraDataNo);
+            opened = response.data === 1;
+        } else {
+            opened = await gateStore.open(gate.gateNo);
+        }
+
+        if (!opened) {
+            return false;
+        }
+
+        Promise.all([
+            gateStore.loadList(),
+            refreshCarlogs(),
+        ]).then(() => {
+            refreshSelectedParkingPanel();
+        }).catch((error) => {
+            console.error("게이트 개방 후 화면 갱신 실패", error);
+        });
+
+        setTimeout(() => {
+            gateStore.loadList()
+                .then(refreshSelectedParkingPanel)
+                .catch((error) => {
+                    console.error("게이트 닫힘 상태 갱신 실패", error);
+                });
+        }, 5500);
+
+        return true;
+    };
+
+    const dongText = (dong) => {
+        if (String(dong) === "0") {
+            return "관리동";
+        }
+
+        return `${dong}동`;
+    };
+
+    const hoText = (ho) => {
+        if (String(ho) === "0") {
+            return "관리실";
+        }
+
+        return `${ho}호`;
+    };
+
+    const memberLabel = (member) => {
+        return `${dongText(member.memDong)} ${hoText(member.memHo)} / ${member.memName}`;
+    };
+
+    const resetQuickVehicle = () => {
+        quickVehicle.value = {
+            carNo: "",
+            vehicleType: "normal",
+            role: "RESIDENT",
+            periodValue: 1,
+            memberNo: null,
         };
     };
 
-    // 주차장 현황 카드 안에 함께 표시할 주차장별 최신 OCR 정보
-    const parkingStatusWithOcr = computed(() => {
-        return parkingStatusList.value.slice(0, 4).map((parking) => {
-            return {
-                ...parking,
-                ocr: getParkingOcrCard(parking)
-            };
-        });
-    });
+    const submitQuickVehicle = async () => {
+        const normalizedCarNo = quickVehicle.value.carNo.trim().replace(/\s/g, "");
 
-    const clearOcrImageUrls = () => {
-        Object.values(ocrImageUrls.value).forEach((url) => {
-            if (url) {
-                URL.revokeObjectURL(url);
-            }
-        });
-
-        ocrImageUrls.value = {};
-        ocrDetails.value = {};
-    };
-
-    const loadOcrImages = async () => {
-        clearOcrImageUrls();
-
-        const latestItems = parkingStatusList.value
-            .slice(0, 4)
-            .map((parking) => getLatestCameraDataByParkingNo(parking.parkingNo))
-            .filter(Boolean);
-
-        const results = await Promise.all(
-            latestItems.map(async (data) => {
-                const result = {
-                    cameraDataNo: data.cameraDataNo,
-                    detail: {},
-                    imageUrl: ""
-                };
-
-                try {
-                    const detailResponse = await getCameraDataDetail(data.cameraDataNo);
-                    result.detail = detailResponse.data ?? {};
-                } catch (error) {
-                    console.error("OCR 상세 정보 조회 실패", error);
-                }
-
-                try {
-                    const imageResponse = await getCameraDataImage(data.cameraDataNo);
-                    result.imageUrl = URL.createObjectURL(imageResponse.data);
-                } catch (error) {
-                    console.error("OCR 차량 이미지 조회 실패", error);
-                }
-
-                return result;
-            })
-        );
-
-        ocrDetails.value = Object.fromEntries(
-            results.map((result) => [result.cameraDataNo, result.detail])
-        );
-        ocrImageUrls.value = Object.fromEntries(
-            results.map((result) => [result.cameraDataNo, result.imageUrl])
-        );
-    };
-
-    // 새로 등록된 OCR 데이터와 사진만 다시 조회
-    const refreshOcrCards = async () => {
-        await cameraDataStore.loadList();
-        await loadOcrImages();
-    }
-
-    // 관리자 수동 게이트 열기
-    // 미등록 차량처럼 자동 통과되지 않은 OCR 데이터를 관리자가 확인한 뒤 통과시킴
-    const openGateByOcr = async (cameraDataNo) => {
-        if (!cameraDataNo) {
+        if (normalizedCarNo === "") {
+            alert("차량번호를 입력하세요");
             return;
         }
 
-        await openGateByCameraData(cameraDataNo);
-
-        // 게이트를 열면 carlog가 새로 생길 수 있으므로 대시보드 데이터를 다시 조회
-        await Promise.all([
-            loadDashboardCarlogs(),
-            cameraDataStore.loadList(),
-            parkingStore.loadList()
-        ]);
-
-        await loadOcrImages();
-    }
-
-    // 날짜를 YYYY-MM-DD 형식으로 변환
-    const getDateKey = (date) => {
-        const year = date.getFullYear();
-        const month = String(
-            date.getMonth() + 1
-        ).padStart(2, "0");
-
-        const day = String(
-            date.getDate()
-        ).padStart(2, "0");
-
-        return `${year}-${month}-${day}`;
-    };
-
-    // 관리자 대시보드는 항상 최신 입출차 기록을 기준으로 조회한다.
-    // carlogStore.search를 사용하지 않기 때문에 carlog 페이지의 검색/정렬 상태에 영향을 받지 않는다.
-    const loadDashboardCarlogs = async () => {
-        const res = await getCarLogs({
-            gateNo: null,
-            parkingNo: null,
-            parkingState: "",
-            carKind: "",
-            carNo: "",
-            sort: "latest"
-        });
-
-        dashboardCarlogs.value = res.data.map(toCarLogView);
-    };
-
-    // 오늘을 포함한 최근 7일 입차 건수
-    const weeklyEntryStats = computed(() => {
-        const weekNames = [
-            "일",
-            "월",
-            "화",
-            "수",
-            "목",
-            "금",
-            "토"
-        ];
-
-        const days = [];
-
-        // 6일 전부터 오늘까지 날짜 생성
-        for (let index = 6; index >= 0; index -= 1) {
-            const date = new Date();
-
-            date.setHours(0, 0, 0, 0);
-            date.setDate(date.getDate() - index);
-
-            const dateKey = getDateKey(date);
-
-            // 해당 날짜에 입차한 기록 수
-            const dayLogs = dashboardCarlogs.value.filter((log) => {
-                if (!log.inTime) {
-                    return false;
-                }
-
-                const inTime = new Date(log.inTime);
-
-                if (Number.isNaN(inTime.getTime())) {
-                    return false;
-                }
-
-                return getDateKey(inTime) === dateKey;
-            });
-
-            // 입주민 차량 입차 수
-            const residentCount = dayLogs.filter((log) => {
-                return log.carKind === "normal" || log.vehicleType === "normal";
-            }).length;
-
-            // 방문 차량 입차 수
-            const visitCount = dayLogs.filter((log) => {
-                return log.carKind === "visit" || log.vehicleType === "visit";
-            }).length;
-
-            days.push({
-                dateKey,
-                dateLabel: `${date.getMonth() + 1}/${date.getDate()}`,
-                dayLabel: weekNames[date.getDay()],
-                residentCount,
-                visitCount
-            });
-        }
-
-        // 입주민 / 방문객 중 입차량이 가장 많은 날을 막대 높이 100%로 사용
-        const maximumCount = Math.max(
-            ...days.map((day) => { return Math.max(day.residentCount, day.visitCount);}), 1
-        );
-
-        return days.map((day) => {
-            return {
-                ...day,
-                residentBarHeight : day.residentCount === 0 ? 0 : Math.max(Math.round(day.residentCount / maximumCount * 100), 8),
-                visitBarHeight : day.visitCount === 0 ? 0 : Math.max(Math.round(day.visitCount / maximumCount * 100), 8)
-            };
-        });
-    });
-
-    // 입출차 목록의 전체 페이지 수
-    const carlogTotalPages = computed(() => {
-        return Math.max(
-            Math.ceil(
-                dashboardCarlogs.value.length / carlogPageSize
-            ),
-            1
-        );
-    });
-
-
-    // 현재 페이지에 표시할 입출차 기록
-    const paginatedCarlogs = computed(() => {
-        const start = (
-            currentCarlogPage.value - 1
-        ) * carlogPageSize;
-
-        const end = start + carlogPageSize;
-
-        return dashboardCarlogs.value.slice(start, end);
-    });
-
-    // 현재 페이지를 기준으로 최대 5개의 페이지 번호 표시
-    const carlogPageNumbers = computed(() => {
-        const pageGroupSize = 5;
-
-        const currentGroup = Math.ceil(
-            currentCarlogPage.value / pageGroupSize
-        );
-
-        let startPage = (currentGroup - 1) * pageGroupSize + 1;
-
-        let endPage = Math.min(
-            startPage + pageGroupSize - 1,
-            carlogTotalPages.value
-        );
-        
-        return Array.from(
-            {
-                length: endPage - startPage + 1
-            },
-            (_, index) => startPage + index
-        );
-    });
-
-    // 입출차 목록 페이지 변경
-    const setCarlogPage = (page) => {
-        if (
-            page < 1
-            || page > carlogTotalPages.value
-        ) {
+        if (!carNoPattern.test(normalizedCarNo)) {
+            alert("차량번호 형식이 올바르지 않습니다. 예: 12가3456");
             return;
         }
 
-        currentCarlogPage.value = page;
-    };
+        if (!quickVehicle.value.memberNo) {
+            alert("회원을 선택하세요");
+            return;
+        }
 
+        const startDate = new Date();
+        const endDate = new Date(startDate);
 
-    // 주차장 현황, 입출차 기록, OCR 사진을 백그라운드로 다시 조회
-    const refreshOcrImages = async () => {
+        if (quickVehicle.value.vehicleType === "normal") {
+            endDate.setMonth(endDate.getMonth() + Number(quickVehicle.value.periodValue));
+        } else {
+            endDate.setHours(endDate.getHours() + Number(quickVehicle.value.periodValue));
+        }
+
         try {
-            await Promise.all([
-                parkingStore.loadList(),
-                loadDashboardCarlogs(),
-                cameraDataStore.loadList()
-            ]);
+            await vehicleStore.addVehicle({
+                carNo: normalizedCarNo,
+                vehicleType: quickVehicle.value.vehicleType,
+                vehicleStatus: "APPROVED",
+                memberNo: quickVehicle.value.memberNo,
+                startDate: formatDateTimeValue(startDate),
+                endDate: formatDateTimeValue(endDate),
+            });
 
-            await loadOcrImages();
-        } catch (error) {
-            console.error("대시보드 자동 갱신 실패", error);
+            await vehicleStore.loadVehicleList();
+            await loadQuickRegisterMembers();
+
+            alert("차량이 등록되었습니다");
+            resetQuickVehicle();
+        } catch (e) {
+            console.error(e);
+
+            if (e.response?.status === 409) {
+                alert("차량 등록 조건에 맞지 않습니다");
+                return;
+            }
+
+            alert("차량 등록 중 오류가 발생했습니다");
         }
     };
 
-    // 대시보드에 필요한 데이터를 한 번에 조회
+    function formatDateTimeValue(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const dd = String(date.getDate()).padStart(2, "0");
+        const hh = String(date.getHours()).padStart(2, "0");
+        const mi = String(date.getMinutes()).padStart(2, "0");
+        const ss = String(date.getSeconds()).padStart(2, "0");
+
+        return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`;
+    }
+
     const loadDashboard = async () => {
         loading.value = true;
         errorMessage.value = "";
 
-        const results = await Promise.allSettled([
-            noticeStore.loadNotices(),
-            vehicleStore.loadVehicleList(),
-            parkingStore.loadList(),
-            loadDashboardCarlogs(),
-            cameraStore.loadList(),
-            gateStore.loadList(),
-            cameraDataStore.loadList()
-        ]);
+        try {
+            await Promise.all([
+                noticeStore.loadNotices(),
+                vehicleStore.loadVehicleList(),
+                memberStore.loadmemberList(),
+                parkingStore.loadList(),
+                gateStore.loadList(),
+                carlogStore.loadCarLogs(),
+                loadQuickRegisterMembers(),
+                getCameraDataList().then((response) => {
+                    cameraDataLogs.value = Array.isArray(response.data)
+                        ? response.data
+                        : [];
+                }),
+            ]);
 
-        const failed = results.some((result) => {
-            return result.status === "rejected";
-        });
-
-        if (failed) {
-            errorMessage.value = "일부 현황을 불러오지 못했습니다.";
+            selectedCarlog.value = recentCarlogs.value[0] ?? null;
+        } catch (e) {
+            console.log(e);
+            errorMessage.value = "대시보드 정보를 불러오지 못했습니다";
+        } finally {
+            loading.value = false;
         }
-
-        await loadOcrImages();
-
-        // 새로 조회한 목록은 첫 페이지부터 표시
-        currentCarlogPage.value = 1;
-        loading.value = false;
     };
 
     return {
         loading,
         errorMessage,
-        unresolvedNoticeCount,
-        waitingVehicleCount,
-        todayVisitVehicleCount,
-        parkingStatusList,
-        ocrTotalCount,
-        ocrSuccessCount,
-        ocrFailCount,
-        ocrSuccessRate,
-        parkingStatusWithOcr,
-        weeklyEntryStats,
-        currentCarlogPage,
-        carlogTotalPages,
-        carlogPageNumbers,
-        paginatedCarlogs,
-        setCarlogPage,
-        refreshOcrCards,
-        openGateByOcr,
-        refreshOcrImages,
-        loadDashboard
+
+        quickVehicle,
+        quickPeriodOptions,
+        quickRegisterMembers,
+
+        dashboardAlerts,
+        parkingMonitorPanels,
+        selectedParkingPanel,
+        recentCarlogs,
+        recentCameraData,
+        selectedCarlog,
+
+        memberLabel,
+        submitQuickVehicle,
+        loadQuickRegisterMembers,
+
+        toggleParkingCamera,
+        selectParkingPanel,
+        closeParkingPanel,
+        selectCarlog,
+        refreshCarlogs,
+        parkingStateClass,
+        openManualGate,
+        refreshGateStatuses,
+        loadDashboard,
     };
 });

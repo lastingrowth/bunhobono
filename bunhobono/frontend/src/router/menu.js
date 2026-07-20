@@ -4,12 +4,20 @@ export const adminMenu = [
     path: '/admin/dashboard'
   },
   {
+    title: '통계',
+    path: '/admin/statistics'
+  },
+  {
     title: '알림 관리',
     path: '/admin/notice'
   },
   {
     title: '회원관리',
     path: '/admin/members'
+  },
+  {
+    title: '전출 회원 관리',
+    path: '/admin/member-archive'
   },
   {
     title: '차량 관리',

@@ -1,15 +1,22 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-
 import { toVehicleView } from "./vehicleFormat";
-import { createVehicle, deleteVehicle, getVehicleList, updateVehicle, updateVehicleStatus } from "./vehicleApi";
+import {
+    createVehicle,
+    deleteVehicle,
+    getVehicleList,
+    searchVehicleMembers,
+    updateVehicle,
+    updateVehicleStatus
+} from "./vehicleApi";
 
 export const useVehicleStore = defineStore("vehicle", () => {
 
     const vehicleList = ref([]);
     const vehicle = ref({});
     const approveList = ref([]);
+    const registerMembers = ref([]);
 
     // 차량 목록
     const loadVehicleList = async () => {
@@ -17,12 +24,21 @@ export const useVehicleStore = defineStore("vehicle", () => {
         vehicleList.value = res.data.map(toVehicleView);
     };
 
+    // 차량 등록 화면에서 선택 가능한 회원 목록
+    const loadRegisterMembers = async (params) => {
+        const res = await searchVehicleMembers(params);
+        registerMembers.value = res.data;
+    };
+
     // 차량번호 검색
     const searchVehicle = async (carNo) => {
         const res = await getVehicleList();
-        vehicleList.value = res.data.filter((item) => {
-            return item.carNo?.includes(carNo.trim());
-        }).map(toVehicleView);
+
+        vehicleList.value = res.data
+            .filter((item) => {
+                return item.carNo?.includes(carNo.trim());
+            })
+            .map(toVehicleView);
     };
 
     // 차량 상세
@@ -37,11 +53,10 @@ export const useVehicleStore = defineStore("vehicle", () => {
     };
 
     // 차량 등록
+    // 등록 성공 여부만 반환한다.
+    // 목록 갱신은 화면에서 필요할 때 따로 호출한다.
     const addVehicle = async (data) => {
         const res = await createVehicle(data);
-        
-        await loadVehicleList();
-
         return res.data;
     };
 
@@ -91,8 +106,10 @@ export const useVehicleStore = defineStore("vehicle", () => {
         vehicleList,
         vehicle,
         approveList,
+        registerMembers,
 
         loadVehicleList,
+        loadRegisterMembers,
         searchVehicle,
         loadVehicle,
         addVehicle,
