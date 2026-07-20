@@ -1,12 +1,5 @@
 <template>
     <section class="admin-dashboard"> 
-        <!-- 관리자 대시보드 제목 영역 -->
-        <div class="dashboard-header">
-            <div>
-                <h2>관리자 대시보드</h2>
-            </div>
-        </div>
-
         <!-- 데이터 조회 상태 -->
         <p v-if="loading" class="dashboard-message">
             대시보드 정보를 불러오는 중입니다
@@ -19,53 +12,53 @@
         <!-- 차량 등록과 알림을 하나의 카드 안에 한 줄로 배치 -->
         <div class="dashboard-top-strip">
             <!-- 관리자 차량 등록 영역 -->
-            <!-- 현재 백엔드 정책상 등록 시 WAITING 상태로 저장 -->
             <form 
                 class="quick-register-inline"
                 @submit.prevent="submitQuickVehicle">
-                
+
                 <span class="quick-register-label">
                     차량 등록
                 </span>
-
+            
                 <input
                     v-model="quickVehicle.carNo"
                     type="text"
                     placeholder="차량번호" />
-
-                <select v-model="quickVehicle.memDong">
-                    <option value="">동</option>
-                    <option 
-                        v-for="dong in dongOptions"
-                        :key="dong"
-                        :value="dong">
-                        {{ dongText(dong) }}
+            
+                <select
+                    v-model="quickVehicle.vehicleType"
+                    @change="loadQuickRegisterMembers">
+                    <option value="normal">등록차량</option>
+                    <option value="visit">방문차량</option>
+                </select>
+            
+                <select
+                    v-model="quickVehicle.role"
+                    @change="loadQuickRegisterMembers">
+                    <option value="RESIDENT">입주민</option>
+                    <option value="ADMIN">관리자</option>
+                </select>
+            
+                <select v-model.number="quickVehicle.periodValue">
+                    <option
+                        v-for="option in quickPeriodOptions"
+                        :key="option.value"
+                        :value="option.value">
+                        {{ option.text }}
                     </option>
                 </select>
-
-                <select v-model="quickVehicle.memHo">
-                    <option value="">호</option>
-                    <option 
-                        v-for="ho in hoOptions"
-                        :key="ho"
-                        :value="ho">
-                        {{ hoText(ho) }}
-                    </option>
-                </select>  
-
+            
                 <select v-model.number="quickVehicle.memberNo">
-                    <option :value="null">입주민</option>
+                    <option :value="null">회원 선택</option>
                     <option
-                        v-for="member in filteredMembers"
+                        v-for="member in quickRegisterMembers"
                         :key="member.memberNo"
                         :value="member.memberNo">
                         {{ memberLabel(member) }}
                     </option>
                 </select>
-
-                <button type="submit">
-                    등록
-                </button>              
+            
+                <button type="submit">등록</button>              
             </form>
 
             <!-- 상단 알림 영역 -->
@@ -87,9 +80,6 @@
         <div class="admin-control-layout">
             <!-- 주차장 모니터링 영역 -->
             <article class="dashboard-card monitoring-card">
-                <div class="section-heading">
-                    <h3>주차장 모니터링</h3>
-                </div>
 
                 <!-- A/B/C/D 주차장 카드 v-for로 반복해서 표시 -->
                 <div class="parking-monitor-grid">
@@ -207,6 +197,12 @@
                 <article class="dashboard-card carlog-preview-card">
                     <div class="section-heading">
                         <h3>입출차 로그</h3>
+                        <button
+                            type="button"
+                            class="dashboard-view-all-button"
+                            @click="router.push('/admin/carlogs')">
+                            전체보기
+                        </button>
                     </div>
 
                     <div class="carlog-table-wrap">
@@ -251,6 +247,12 @@
                 <article class="dashboard-card camera-data-preview-card">
                     <div class="section-heading">
                         <h3>카메라 데이터</h3>
+                        <button
+                            type="button"
+                            class="dashboard-view-all-button"
+                            @click="router.push('/admin/camera-data')">
+                            전체보기
+                        </button>
                     </div>
 
                     <div class="carlog-table-wrap">
@@ -272,7 +274,7 @@
                                     @click="showCameraDataDetail(cameraData)">
                                     <td>{{ cameraData.carNo || '미인식' }}</td>
                                     <td>{{ cameraData.vehicleCarNo ? '등록' : '미등록' }}</td>
-                                    <td>CAM {{ cameraData.cameraNo }}</td>
+                                    <td>{{ cameraLabel(cameraData.cameraNo) }}</td>
                                     <td>{{ formatCameraDataTime(cameraData.captureTime) }}</td>
                                 </tr>
 
@@ -322,7 +324,33 @@
                         <dl class="selected-log-info">
                             <div>
                                 <dt>차량번호</dt>
-                                <dd>{{ selectedCameraData.carNo || '미인식' }}</dd>
+                                <dd class="camera-car-number-field">
+                                    <template v-if="!isEditingCameraCarNo">
+                                        <span>{{ selectedCameraData.carNo || '미인식' }}</span>
+                                        <button
+                                            type="button"
+                                            class="camera-car-number-edit-button"
+                                            @click="startCameraCarNoEdit">
+                                            수정
+                                        </button>
+                                    </template>
+
+                                    <form v-else class="camera-car-number-edit-form" @submit.prevent="saveCameraCarNo">
+                                        <input
+                                            v-model="cameraCarNoDraft"
+                                            type="text"
+                                            maxlength="12"
+                                            placeholder="예: 경기37바1083"
+                                            aria-label="수정할 차량번호" />
+                                        <div class="camera-car-number-edit-actions">
+                                            <button type="submit" :disabled="cameraCarNoSaving">
+                                                {{ cameraCarNoSaving ? '저장 중' : '차량번호 수정' }}
+                                            </button>
+                                            <button type="button" class="cancel" :disabled="cameraCarNoSaving" @click="cancelCameraCarNoEdit">취소</button>
+                                        </div>
+                                        <small>등록 차량과 일치하면 기존 OCR 번호도 별칭으로 저장됩니다.</small>
+                                    </form>
+                                </dd>
                             </div>
                             <div>
                                 <dt>등록 상태</dt>
@@ -330,7 +358,7 @@
                             </div>
                             <div>
                                 <dt>카메라 번호</dt>
-                                <dd>CAM {{ selectedCameraData.cameraNo }}</dd>
+                                <dd>{{ cameraLabel(selectedCameraData.cameraNo) }}</dd>
                             </div>
                             <div>
                                 <dt>촬영 시각</dt>
@@ -338,11 +366,11 @@
                             </div>
                             <div>
                                 <dt>인식 상태</dt>
-                                <dd>{{ selectedCameraData.recognitionState === false ? '인식 실패' : '인식 성공' }}</dd>
+                                <dd :class="{ 'danger-text': selectedCameraData.carNo === '미인식' }">{{ selectedCameraData.carNo === '미인식' ? '확인 필요' : '인식 성공' }}</dd>
                             </div>
                             <div>
                                 <dt>인식률</dt>
-                                <dd>{{ formatConfidence(selectedCameraData.confidenceScore) }}</dd>
+                                <dd :class="{ 'danger-text': selectedCameraData.carNo === '미인식' }">{{ selectedCameraData.carNo === '미인식' ? '인식 실패' : formatConfidence(selectedCameraData.confidenceScore) }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -581,7 +609,7 @@
 
 <script setup>
 import { useAdminDashboardStore } from '@/stores/adminDashboard';
-import { getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
+import { editCameraDataCarNo, getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
 import { storeToRefs } from 'pinia';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -606,6 +634,9 @@ const cropImageErrors = ref(new Set())
 const lastOcrEventIds = new Map()
 const pendingCameraDataNos = ref({})
 const cameraStatuses = ref({})
+const isEditingCameraCarNo = ref(false)
+const cameraCarNoDraft = ref('')
+const cameraCarNoSaving = ref(false)
 let ocrStatusTimer = null
 let refreshingCarlogs = false
 let cctvClockTimer = null
@@ -615,9 +646,8 @@ const {
     loading,
     errorMessage,
     quickVehicle,
-    dongOptions,
-    hoOptions,
-    filteredMembers,
+    quickPeriodOptions,
+    quickRegisterMembers,
     dashboardAlerts,
     parkingMonitorPanels,
     selectedParkingPanel,
@@ -627,10 +657,9 @@ const {
 } = storeToRefs(dashboardStore)
 
 const {
-    dongText,
-    hoText,
     memberLabel,
     submitQuickVehicle,
+    loadQuickRegisterMembers,
     toggleParkingCamera,
     selectParkingPanel,
     closeParkingPanel,
@@ -638,6 +667,7 @@ const {
     refreshCarlogs,
     parkingStateClass,
     openManualGate,
+    refreshGateStatuses,
     loadDashboard,
 } = dashboardStore
 
@@ -657,6 +687,8 @@ const showCarlogDetail = (log) => {
 }
 
 const showCameraDataDetail = async (cameraData) => {
+    isEditingCameraCarNo.value = false
+    cameraCarNoDraft.value = ''
     selectedCameraData.value = cameraData
     selectedDetailType.value = 'CAMERA_DATA'
 
@@ -671,6 +703,49 @@ const showCameraDataDetail = async (cameraData) => {
     }
 }
 
+const startCameraCarNoEdit = () => {
+    cameraCarNoDraft.value = selectedCameraData.value?.carNo ?? ''
+    isEditingCameraCarNo.value = true
+}
+
+const cancelCameraCarNoEdit = () => {
+    isEditingCameraCarNo.value = false
+    cameraCarNoDraft.value = ''
+}
+
+const saveCameraCarNo = async () => {
+    const carNo = cameraCarNoDraft.value.trim().replace(/\s/g, '')
+    const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
+
+    if (!carNoPattern.test(carNo)) {
+        alert('차량번호 형식을 확인하세요. 예: 123가4567, 경기37바1083')
+        return
+    }
+
+    cameraCarNoSaving.value = true
+
+    try {
+        const response = await editCameraDataCarNo(
+            selectedCameraData.value.cameraDataNo,
+            carNo,
+            true,
+        )
+
+        selectedCameraData.value = {
+            ...selectedCameraData.value,
+            ...(response.data ?? {}),
+        }
+        await refreshCarlogs()
+        isEditingCameraCarNo.value = false
+        cameraCarNoDraft.value = ''
+    } catch (error) {
+        console.error('차량번호 수정 실패', error)
+        alert(error.response?.data?.message || '차량번호 수정에 실패했습니다')
+    } finally {
+        cameraCarNoSaving.value = false
+    }
+}
+
 const formatCameraDataTime = (value) => {
     if (!value) {
         return '-'
@@ -678,6 +753,21 @@ const formatCameraDataTime = (value) => {
 
     const date = new Date(value)
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ko-KR')
+}
+
+const cameraLabel = (cameraNo) => {
+    const labels = {
+        1: 'A 입차',
+        2: 'A 출차',
+        3: 'B 입차',
+        4: 'B 출차',
+        5: 'C 입차',
+        6: 'C 출차',
+        7: 'D 입차',
+        8: 'D 출차',
+    }
+
+    return labels[Number(cameraNo)] ?? `CAM ${cameraNo}`
 }
 
 const formatConfidence = (value) => {
@@ -928,7 +1018,18 @@ const checkOcrEvents = async () => {
 
         if (hasNewOcr) {
             refreshingCarlogs = true
-            await refreshCarlogs()
+            await Promise.all([
+                refreshCarlogs(),
+                refreshGateStatuses(),
+            ])
+
+            // The backend closes an automatically opened gate after five seconds.
+            // Reload once more so the closed state is also reflected in the UI.
+            window.setTimeout(() => {
+                refreshGateStatuses().catch((error) => {
+                    console.debug('게이트 닫힘 상태 갱신 실패', error)
+                })
+            }, 5500)
         }
     } catch (error) {
         console.debug('OCR 상태 확인 실패', error)

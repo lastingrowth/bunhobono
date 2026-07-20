@@ -76,13 +76,18 @@ FRAME_STEP = 10
 CROP_COUNT = 1
 NO_DETECTION_RESET_COUNT = 2
 PLAYBACK_SPEED = 0.25
-CCTV_OCR_DIRECT_ACCEPT_SCORE = 0.98
+CCTV_OCR_DIRECT_ACCEPT_SCORE = 0.95
 CCTV_OCR_MAX_CANDIDATES = 3
 MIN_OCR_SCORE = 0.5
 SEND_COOLDOWN_SECONDS = 10
 DETECTION_DISPLAY_SECONDS = 2
 DETECTION_ZONE_TOP_RATIO = 1 / 3
 OCR_DEVICE = "cpu"
+LOW_LIGHT_CAMERA_NOS = {5, 6}
+LOW_LIGHT_BRIGHTNESS = 0.40
+SUNNY_CAMERA_NOS = {7, 8}
+SUNNY_CONTRAST = 1.20
+SUNNY_BRIGHTNESS = 18
 
 
 class TestStreamWorker:
@@ -266,6 +271,26 @@ class TestStreamWorker:
 
             self.latest_frame = display_frame
 
+    def apply_low_light(self, frame):
+        dark_frame = frame.astype("float32") * LOW_LIGHT_BRIGHTNESS
+        return dark_frame.clip(0, 255).astype("uint8")
+
+    def apply_sunny_day(self, frame):
+        return cv2.convertScaleAbs(
+            frame,
+            alpha=SUNNY_CONTRAST,
+            beta=SUNNY_BRIGHTNESS,
+        )
+
+    def apply_camera_environment(self, frame):
+        if self.camera_no in LOW_LIGHT_CAMERA_NOS:
+            return self.apply_low_light(frame)
+
+        if self.camera_no in SUNNY_CAMERA_NOS:
+            return self.apply_sunny_day(frame)
+
+        return frame
+
     def show_detection(self, box):
         with self.latest_frame_lock:
             self.latest_detection_box = [int(value) for value in box]
@@ -332,6 +357,8 @@ class TestStreamWorker:
         # Keep a preview frame ready so the first viewer does not wait on startup.
         success, preview_frame = cap.read()
         if success:
+            preview_frame = self.apply_camera_environment(preview_frame)
+
             frame_no = 1
             self.update_latest_frame(preview_frame)
 
@@ -347,6 +374,8 @@ class TestStreamWorker:
                 if not success:
                     print(f"[{self.camera_name}] 영상 종료 후 반복")
                     break
+
+                frame = self.apply_camera_environment(frame)
 
                 frame_no += 1
                 self.update_latest_frame(frame)
@@ -410,6 +439,16 @@ class TestStreamWorker:
 
         car_no = ocr_result.get("text", "")
         score = float(ocr_result.get("score", 0))
+        
+        if (
+            not ocr_result.get("is_valid_plate", False)
+            or score < CCTV_OCR_DIRECT_ACCEPT_SCORE
+        ):
+            print(
+                f"[{self.camera_name}] OCR 미인식 처리 "
+                f"rawCarNo={car_no}, score={score * 100:.1f}%"
+            )
+            car_no = "미인식"
 
         print(
             f"[{self.camera_name}] OCR selected "
@@ -419,10 +458,8 @@ class TestStreamWorker:
             f"mode={ocr_result.get('mode', '-')}"
         )
 
-        if not car_no or score < MIN_OCR_SCORE:
-            self.vehicle_active = False
-            self.resume()
-            return
+        if not car_no:
+            car_no = "미인식"
 
         if self.is_cooldown(car_no):
             print(f"[{self.camera_name}] duplicate blocked: {car_no}")
@@ -576,26 +613,32 @@ class TestStreamWorker:
         best = max(self.candidates, key=lambda item: item["score"])
         self.candidates = []
 
-        car_no = best["carNo"]
+        raw_car_no = best["carNo"]
+        car_no = raw_car_no
         score = best["score"]
+
+        if score < CCTV_OCR_DIRECT_ACCEPT_SCORE:
+            print(
+                f"[{self.camera_name}] OCR 미인식 처리 "
+                f"rawCarNo={raw_car_no}, score={score * 100:.1f}%"
+            )
+            car_no = "미인식"
 
         print(
             f"[{self.camera_name}] 최종 선택 "
-            f"carNo={car_no}, score={score * 100:.1f}%"
+            f"carNo={car_no}, rawCarNo={raw_car_no}, score={score * 100:.1f}%"
         )
-
-        if score < MIN_OCR_SCORE:
-            print(f"[{self.camera_name}] OCR 신뢰도가 낮아 전송하지 않음")
-            return
 
         if self.is_cooldown(car_no):
             print(f"[{self.camera_name}] 중복 전송 방지: {car_no}")
+            self.vehicle_active = False
+            self.resume()
             return
 
         original_path = self.save_original_frame(
             best["frame"], car_no, best["frameNo"]
         )
-        saved_crop_path = self.save_best_crop(
+        saved_crop_path = self.save_crop_image(
             best["cropPath"], car_no, best["frameNo"]
         )
 
@@ -605,6 +648,7 @@ class TestStreamWorker:
             original_path,
             saved_crop_path,
         )
+
         if spring_result:
             self.last_send_time[self.cooldown_key(car_no)] = time.time()
 

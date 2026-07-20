@@ -4,6 +4,10 @@ export const adminMenu = [
     path: '/admin/dashboard'
   },
   {
+    title: '통계',
+    path: '/admin/statistics'
+  },
+  {
     title: '알림 관리',
     path: '/admin/notice'
   },

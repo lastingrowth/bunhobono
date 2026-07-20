@@ -105,6 +105,7 @@
 }
 
 .quick-register-inline button {
+  min-width: 72px;
   height: 42px;
   padding: 0 16px;
   border: 1px solid var(--dashboard-blue);
@@ -167,6 +168,24 @@
   margin: 0;
   font-size: 18px;
   font-weight: 900;
+}
+
+.dashboard-view-all-button {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.dashboard-view-all-button:hover {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  background: #eff6ff;
 }
 
 .monitoring-card {
@@ -870,6 +889,71 @@
   color: var(--dashboard-text);
 }
 
+.camera-car-number-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.camera-car-number-edit-button,
+.camera-car-number-edit-actions button {
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: #2563eb;
+  cursor: pointer;
+}
+
+.camera-car-number-preview-badge {
+  flex-basis: 100%;
+  color: #d97706;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.camera-car-number-edit-form {
+  width: 100%;
+  display: grid;
+  gap: 7px;
+}
+
+.camera-car-number-edit-form input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  padding: 8px 9px;
+  font-size: 14px;
+  font-weight: 800;
+  background: #fff;
+  outline: none;
+}
+
+.camera-car-number-edit-form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.camera-car-number-edit-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.camera-car-number-edit-actions .cancel {
+  color: #475569;
+  background: #e2e8f0;
+}
+
+.camera-car-number-edit-form small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .parking-dialog {
   width: min(980px, 92vw);
   padding: 0;
@@ -991,4 +1075,9 @@
   .selected-log-info {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+.admin-dashboard dd.danger-text,
+.admin-dashboard td.danger-text {
+  color: #dc2626 !important;
+  font-weight: 800;
 }

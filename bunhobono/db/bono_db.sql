@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS notice;
 DROP TABLE IF EXISTS car_log;
 DROP TABLE IF EXISTS camera_data;
 DROP TABLE IF EXISTS camera;
+DROP TABLE IF EXISTS vehicle_car_alias;
 DROP TABLE IF EXISTS vehicle_car;
 DROP TABLE IF EXISTS gate;
 DROP TABLE IF EXISTS parking;
@@ -91,6 +92,7 @@ CREATE TABLE vehicle_car (
     vehicle_type VARCHAR(20) NOT NULL DEFAULT 'normal'
         CHECK (vehicle_type IN ('normal', 'visit')),
     car_no VARCHAR(20) NOT NULL,
+    alias_car_no VARCHAR(50) UNIQUE,
     vehicle_status VARCHAR(20) NOT NULL DEFAULT 'WAITING'
         CHECK (vehicle_status IN ('WAITING', 'APPROVED', 'EXPIRED', 'UNKNOWN')),
     start_date TIMESTAMP,
@@ -156,6 +158,7 @@ CREATE TABLE car_log (
     car_log_no SERIAL PRIMARY KEY,
     vehicle_car_no INT,
     camera_data_no INT,
+    out_camera_data_no INT,
     in_gate_no INT,
     in_time TIMESTAMP,
     out_gate_no INT,
@@ -180,6 +183,11 @@ CREATE TABLE car_log (
 
     CONSTRAINT fk_log_camera_data
         FOREIGN KEY (camera_data_no)
+        REFERENCES camera_data(camera_data_no)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_log_out_camera_data
+        FOREIGN KEY (out_camera_data_no)
         REFERENCES camera_data(camera_data_no)
         ON DELETE SET NULL
 );

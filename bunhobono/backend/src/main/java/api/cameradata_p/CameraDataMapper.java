@@ -15,8 +15,45 @@ public interface CameraDataMapper {
             "ORDER BY cd.camera_data_no DESC")
     List<CameraDataDTO> list(CameraDataDTO dto);
 
-    @Select("SELECT vehicle_car_no FROM vehicle_car WHERE car_no = #{carNo} ORDER BY vehicle_car_no DESC LIMIT 1")
+    @Select("""
+        SELECT vehicle_car_no
+        FROM vehicle_car
+        WHERE car_no = #{carNo}
+          AND vehicle_status = 'APPROVED'
+          AND (start_date IS NULL OR start_date <= CURRENT_TIMESTAMP)
+          AND (end_date IS NULL OR end_date > CURRENT_TIMESTAMP)
+        ORDER BY vehicle_car_no DESC
+        LIMIT 1
+    """)
     Integer findVehicleCarNo(String carNo);
+
+    @Select("""
+        SELECT vc.vehicle_car_no, vc.car_no
+        FROM vehicle_car vc
+        WHERE vc.alias_car_no = #{aliasCarNo}
+          AND vc.vehicle_status = 'APPROVED'
+          AND (vc.start_date IS NULL OR vc.start_date <= CURRENT_TIMESTAMP)
+          AND (vc.end_date IS NULL OR vc.end_date > CURRENT_TIMESTAMP)
+        LIMIT 1
+    """)
+    CameraDataDTO findApprovedVehicleByAlias(String aliasCarNo);
+
+    @Select("""
+        SELECT vehicle_car_no
+        FROM vehicle_car
+        WHERE alias_car_no = #{aliasCarNo}
+    """)
+    Integer findAliasVehicleCarNo(String aliasCarNo);
+
+    @Update("""
+        UPDATE vehicle_car
+        SET alias_car_no = #{aliasCarNo}
+        WHERE vehicle_car_no = #{vehicleCarNo}
+    """)
+    int updateAlias(
+            @Param("vehicleCarNo") int vehicleCarNo,
+            @Param("aliasCarNo") String aliasCarNo
+    );
 
     @Insert("INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, capture_time, image_path, crop_image_path, recognition_state, confidence_score) " +
             "VALUES (#{cameraNo}, #{vehicleCarNo}, #{carNo}, #{captureTime}, #{imagePath}, #{cropImagePath}, #{recognitionState}, #{confidenceScore})")
@@ -29,6 +66,15 @@ public interface CameraDataMapper {
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.camera_data_no = #{cameraDataNo}")
     CameraDataDTO detail(int cameraDataNo);
+
+    @Update("""
+        UPDATE camera_data
+        SET car_no = #{carNo},
+            vehicle_car_no = #{vehicleCarNo},
+            recognition_state = TRUE
+        WHERE camera_data_no = #{cameraDataNo}
+    """)
+    int updateCarNo(CameraDataDTO dto);
 
     @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.capture_time, " +
             "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, " +

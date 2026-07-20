@@ -10,6 +10,7 @@ import notices from "./notices";
 import cameras from "./cameras";
 import trash from "./trash";
 import memberArchive from "./memberArchive";
+import statistics from "./statistics";
 
 export const adminRoutes = [
     {
@@ -31,7 +32,8 @@ export const adminRoutes = [
             ...cameraData,
             ...notices,
             ...trash,
-            ...memberArchive
+            ...memberArchive,
+            ...statistics
         ]
     }
 ]
