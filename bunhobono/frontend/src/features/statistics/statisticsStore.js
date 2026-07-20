@@ -3,22 +3,30 @@ import { computed, ref } from 'vue'
 import { useCarlogStore } from '@/features/carlog/carlogStore'
 import { useCameraDataStore } from '@/features/camera-data/cameraDataStore'
 import { useParkingsStore } from '@/features/parking/parkingsStore'
+import { useNoticeStore } from '@/features/notice/noticeStore'
+import { useVehicleStore } from '@/features/vehicle/vehicleStore'
 
 // 관리자 통계 페이지에서 사용할 store
-// carlog, camera-data, parking 데이터를 가져와서 통계용 값으로 계산한다.
+// carlog, camera-data, parking, notice, vehicle 데이터를 가져와 화면용 통계 값으로 계산한다.
 export const useStatisticsStore = defineStore('statistics', () => {
     const carlogStore = useCarlogStore()
     const cameraDataStore = useCameraDataStore()
     const parkingStore = useParkingsStore()
+    const noticeStore = useNoticeStore()
+    const vehicleStore = useVehicleStore()
 
-    // 통계 데이터를 불러오는 중인지 화면에서 표시할 때 사용한다.
+    // 통계 데이터를 불러오는 중인지 표시한다.
     const loading = ref(false)
 
-    // 데이터 조회 실패 시 화면에 보여줄 메시지다.
+    // 통계 데이터 조회 실패 시 화면에 보여줄 메시지
     const errorMessage = ref('')
 
-    // 문자열 날짜를 Date 객체로 바꾸는 공통 함수
-    // 잘못된 날짜가 들어오면 null을 반환해서 계산 오류를 막는다.
+    // 입주민 / 비입주민 입차 비교 그래프의 기간 상태
+    // weekly: 주간, monthly: 월간, yearly: 연간
+    const entryPeriod = ref('weekly')
+
+    // 문자열 날짜를 Date 객체로 바꾼다.
+    // 잘못된 날짜가 들어오면 계산 오류를 막기 위해 null을 반환한다.
     const toDate = (value) => {
         if (!value) {
             return null
@@ -33,8 +41,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
         return date
     }
 
-    // 특정 날짜가 기준 날짜와 같은 날인지 확인한다.
-    // 입차 시간, 출차 시간이 오늘인지 확인할 때 사용한다.
+    // 두 날짜가 같은 날짜인지 확인한다.
     const isSameDate = (value, targetDate) => {
         const date = toDate(value)
 
@@ -47,19 +54,17 @@ export const useStatisticsStore = defineStore('statistics', () => {
             && date.getDate() === targetDate.getDate()
     }
 
-    // 그래프 아래에 표시할 날짜 형식
-    // 예: 7월 20일이면 7/20으로 표시한다.
+    // 화면 그래프 아래에 표시할 날짜 라벨
     const getDateLabel = (date) => {
         return `${date.getMonth() + 1}/${date.getDate()}`
     }
 
-    // 오늘 날짜
+    // 현재 날짜
     const today = computed(() => {
         return new Date()
     })
 
     // 최근 7일 날짜 배열
-    // 막대그래프에서 7일치 데이터를 만들기 위해 사용한다.
     const recentSevenDays = computed(() => {
         return Array.from({ length: 7 }, (_, index) => {
             const date = new Date()
@@ -68,8 +73,16 @@ export const useStatisticsStore = defineStore('statistics', () => {
         })
     })
 
+    // 현재 주차중인 입출차 로그
+    // parkingState가 PARKING이거나, 출차 시간이 없는 로그를 현재 주차중으로 본다.
+    const currentParkingLogs = computed(() => {
+        return carlogStore.carLogs.filter((log) => {
+            return log.parkingState === 'PARKING'
+                || (log.inTime && !log.outTime)
+        })
+    })
+
     // 오늘 발생한 입출차 로그
-    // inTime 또는 outTime이 오늘이면 오늘 로그로 본다.
     const todayCarlogs = computed(() => {
         return carlogStore.carLogs.filter((log) => {
             return isSameDate(log.inTime ?? log.outTime, today.value)
@@ -77,7 +90,6 @@ export const useStatisticsStore = defineStore('statistics', () => {
     })
 
     // 오늘 입차 수
-    // carlog.inTime이 오늘인 데이터만 센다.
     const todayInCount = computed(() => {
         return carlogStore.carLogs.filter((log) => {
             return isSameDate(log.inTime, today.value)
@@ -85,7 +97,6 @@ export const useStatisticsStore = defineStore('statistics', () => {
     })
 
     // 오늘 출차 수
-    // carlog.outTime이 오늘인 데이터만 센다.
     const todayOutCount = computed(() => {
         return carlogStore.carLogs.filter((log) => {
             return isSameDate(log.outTime, today.value)
@@ -93,15 +104,14 @@ export const useStatisticsStore = defineStore('statistics', () => {
     })
 
     // 오늘 미등록 차량 수
-    // carKind가 UNKNOWN이면 미등록 차량으로 본다.
     const todayUnknownCount = computed(() => {
         return todayCarlogs.value.filter((log) => {
             return log.carKind === 'UNKNOWN'
         }).length
     })
 
-    // OCR 평균 신뢰도
-    // 주의: 이 값은 정답률이 아니라 PaddleOCR이 반환한 confidenceScore 평균이다.
+    // 평균 OCR 신뢰도
+    // 주의: 정확도가 아니라 OCR 모델이 반환한 confidenceScore 평균이다.
     const averageConfidence = computed(() => {
         const scores = cameraDataStore.list
             .map((item) => Number(item.confidenceScore))
@@ -118,46 +128,210 @@ export const useStatisticsStore = defineStore('statistics', () => {
         return Math.round(total / scores.length)
     })
 
-    // 최근 7일 입주민 차량 / 방문 차량 입차 비교 그래프용 데이터
-    // REGISTERED는 입주민 차량, VISIT은 방문 차량으로 계산한다.
-    const weeklyEntryStats = computed(() => {
+    // 현재 주차 현황 도넛 그래프
+    // 현재 주차중인 차량을 입주민 / 방문차량 / 미등록 차량으로 나눈다.
+    const currentParkingTypeStats = computed(() => {
+        const residentCount = currentParkingLogs.value.filter((log) => {
+            return log.carKind === 'REGISTERED'
+        }).length
+
+        const visitCount = currentParkingLogs.value.filter((log) => {
+            return log.carKind === 'VISIT'
+        }).length
+
+        const unknownCount = currentParkingLogs.value.filter((log) => {
+            return log.carKind === 'UNKNOWN'
+        }).length
+
+        const total = residentCount + visitCount + unknownCount || 1
+
+        return [
+            {
+                key: 'resident',
+                label: '입주민',
+                count: residentCount,
+                percent: Math.round((residentCount / total) * 100),
+            },
+            {
+                key: 'visit',
+                label: '방문차량',
+                count: visitCount,
+                percent: Math.round((visitCount / total) * 100),
+            },
+            {
+                key: 'unknown',
+                label: '미등록 차량',
+                count: unknownCount,
+                percent: Math.round((unknownCount / total) * 100),
+            },
+        ]
+    })
+
+    // 현재 주차 현황 전체 수
+    const currentParkingTotal = computed(() => {
+        return currentParkingLogs.value.length
+    })
+
+    // 시간대별 주차 대수
+    // 현재 가진 carlog 데이터만으로 계산하므로, 실제 평균이라기보다 해당 시간대에 주차 상태였던 차량 수에 가깝다.
+    const hourlyParkingStats = computed(() => {
+        const hours = [0, 6, 12, 18, 24]
+
+        return hours.map((hour) => {
+            const target = new Date(today.value)
+
+            if (hour === 24) {
+                target.setDate(target.getDate() + 1)
+                target.setHours(0, 0, 0, 0)
+            } else {
+                target.setHours(hour, 0, 0, 0)
+            }
+
+            const count = carlogStore.carLogs.filter((log) => {
+                const inTime = toDate(log.inTime)
+                const outTime = toDate(log.outTime)
+
+                if (!inTime) {
+                    return false
+                }
+
+                return inTime <= target && (!outTime || outTime >= target)
+            }).length
+
+            return {
+                label: `${String(hour).padStart(2, '0')}시`,
+                count,
+            }
+        })
+    })
+
+    // 시간대별 그래프 최대값
+    const hourlyParkingMaxCount = computed(() => {
+        const counts = hourlyParkingStats.value.map((item) => {
+            return item.count
+        })
+
+        return Math.max(...counts, 1)
+    })
+
+    // 특정 기간 안의 입차 로그를 입주민 / 비입주민 수로 계산한다.
+    // 비입주민은 방문차량과 미등록 차량을 합친 값이다.
+    const getEntryCountByLogs = (logs) => {
+        const residentCount = logs.filter((log) => {
+            return log.carKind === 'REGISTERED'
+        }).length
+
+        const nonResidentCount = logs.filter((log) => {
+            return log.carKind === 'VISIT' || log.carKind === 'UNKNOWN'
+        }).length
+
+        return {
+            residentCount,
+            nonResidentCount,
+        }
+    }
+
+    // 주간 입차 비교 데이터
+    // 최근 7일을 날짜별로 나눈다.
+    const getWeeklyEntryStats = () => {
         return recentSevenDays.value.map((date) => {
             const logs = carlogStore.carLogs.filter((log) => {
                 return isSameDate(log.inTime, date)
             })
 
-            const registeredCount = logs.filter((log) => {
-                return log.carKind === 'REGISTERED'
-            }).length
-
-            const visitCount = logs.filter((log) => {
-                return log.carKind === 'VISIT'
-            }).length
-
             return {
                 label: getDateLabel(date),
-                registeredCount,
-                visitCount,
+                ...getEntryCountByLogs(logs),
             }
         })
+    }
+
+    // 월간 입차 비교 데이터
+    // 이번 달 데이터를 1주차 ~ 5주차로 나눈다.
+    const getMonthlyEntryStats = () => {
+        const currentYear = today.value.getFullYear()
+        const currentMonth = today.value.getMonth()
+
+        return Array.from({ length: 5 }, (_, index) => {
+            const weekNo = index + 1
+
+            const logs = carlogStore.carLogs.filter((log) => {
+                const inTime = toDate(log.inTime)
+
+                if (!inTime) {
+                    return false
+                }
+
+                const targetWeekNo = Math.ceil(inTime.getDate() / 7)
+
+                return inTime.getFullYear() === currentYear
+                    && inTime.getMonth() === currentMonth
+                    && targetWeekNo === weekNo
+            })
+
+            return {
+                label: `${weekNo}주차`,
+                ...getEntryCountByLogs(logs),
+            }
+        })
+    }
+
+    // 연간 입차 비교 데이터
+    // 올해 데이터를 1월 ~ 12월로 나눈다.
+    const getYearlyEntryStats = () => {
+        const currentYear = today.value.getFullYear()
+
+        return Array.from({ length: 12 }, (_, index) => {
+            const logs = carlogStore.carLogs.filter((log) => {
+                const inTime = toDate(log.inTime)
+
+                if (!inTime) {
+                    return false
+                }
+
+                return inTime.getFullYear() === currentYear
+                    && inTime.getMonth() === index
+            })
+
+            return {
+                label: `${index + 1}월`,
+                ...getEntryCountByLogs(logs),
+            }
+        })
+    }
+
+    // 입주민 / 비입주민 입차 비교 그래프 데이터
+    // entryPeriod 값에 따라 주간 / 월간 / 연간 데이터로 바뀐다.
+    const entryCompareStats = computed(() => {
+        if (entryPeriod.value === 'monthly') {
+            return getMonthlyEntryStats()
+        }
+
+        if (entryPeriod.value === 'yearly') {
+            return getYearlyEntryStats()
+        }
+
+        return getWeeklyEntryStats()
     })
 
-    // 최근 7일 입차 그래프의 최대값
-    // 막대 높이를 계산할 때 기준값으로 사용한다.
-    const weeklyMaxCount = computed(() => {
-        const counts = weeklyEntryStats.value.flatMap((item) => {
+    // 입주민 / 비입주민 입차 비교 그래프 최대값
+    const entryCompareMaxCount = computed(() => {
+        const counts = entryCompareStats.value.flatMap((item) => {
             return [
-                item.registeredCount,
-                item.visitCount,
+                item.residentCount,
+                item.nonResidentCount,
             ]
         })
 
         return Math.max(...counts, 1)
     })
 
-    // 주차장별 사용률
-    // parkingSpaces는 전체 자리 수, availableSpaces는 남은 자리 수다.
-    // 사용 중인 자리 = 전체 자리 - 남은 자리
+    // 입차 비교 그래프 기간 변경
+    const changeEntryPeriod = (period) => {
+        entryPeriod.value = period
+    }
+
+    // 주차장별 현재 사용률
     const parkingUsageStats = computed(() => {
         return parkingStore.list.map((parking) => {
             const total = Number(parking.parkingSpaces ?? 0)
@@ -179,72 +353,128 @@ export const useStatisticsStore = defineStore('statistics', () => {
         })
     })
 
-    // 오늘 입차 차량 유형 비율
-    // 입주민 / 방문객 / 미등록 차량 비율을 계산한다.
-    const todayEntryTypeStats = computed(() => {
-        const total = todayInCount.value || 1
+    // 해결되지 않은 장기주차 알림
+    // Resolved가 아닌 알림만 현재 주의 대상으로 본다.
+    const activeNotices = computed(() => {
+        return noticeStore.notices.filter((notice) => {
+            const status = notice.alertStat ?? notice.alert_stat
+            return status !== 'Resolved'
+        })
+    })
 
-        const registered = todayCarlogs.value.filter((log) => {
-            return log.carKind === 'REGISTERED'
-                && isSameDate(log.inTime, today.value)
+    // 비입주민 주차 주의 현황
+    const nonResidentWarningStats = computed(() => {
+        const visitLongStayCount = activeNotices.value.filter((notice) => {
+            return notice.carKind === 'VISIT'
         }).length
 
-        const visit = todayCarlogs.value.filter((log) => {
-            return log.carKind === 'VISIT'
-                && isSameDate(log.inTime, today.value)
+        const unknownLongStayCount = activeNotices.value.filter((notice) => {
+            return notice.carKind === 'UNKNOWN'
         }).length
 
-        const unknown = todayCarlogs.value.filter((log) => {
-            return log.carKind === 'UNKNOWN'
-                && isSameDate(log.inTime, today.value)
+        const parkedExpiredVehicleCount = vehicleStore.vehicleList.filter((vehicle) => {
+            if (vehicle.vehicleType !== 'visit') {
+                return false
+            }
+
+            const inTime = toDate(vehicle.inTime)
+            const outTime = toDate(vehicle.outTime)
+            const realEndDate = toDate(vehicle.realEndDate)
+
+            if (!inTime || outTime || !realEndDate) {
+                return false
+            }
+
+            const now = new Date()
+            const parkedMinutes = Math.floor((now - inTime) / (1000 * 60))
+            const oneDayMinutes = 60 * 24
+
+            return realEndDate <= now && parkedMinutes < oneDayMinutes
         }).length
 
         return [
             {
-                label: '입주민',
-                count: registered,
-                percent: Math.round((registered / total) * 100),
+                key: 'visitLongStay',
+                label: '방문 장기주차 알림',
+                count: visitLongStayCount,
             },
             {
-                label: '방문객',
-                count: visit,
-                percent: Math.round((visit / total) * 100),
+                key: 'unknownLongStay',
+                label: '비등록 장기주차 알림',
+                count: unknownLongStayCount,
             },
             {
-                label: '미등록',
-                count: unknown,
-                percent: Math.round((unknown / total) * 100),
+                key: 'parkedExpired',
+                label: '주차중 방문 만료 차량',
+                count: parkedExpiredVehicleCount,
             },
         ]
     })
 
-    // 최근 7일 미등록 차량 추이
-    // 관리자가 확인해야 하는 차량 흐름을 보여주기 위한 그래프 데이터다.
-    const weeklyUnknownStats = computed(() => {
-        return recentSevenDays.value.map((date) => {
-            const count = carlogStore.carLogs.filter((log) => {
-                return log.carKind === 'UNKNOWN'
-                    && isSameDate(log.inTime ?? log.outTime, date)
-            }).length
+    // 분 단위를 화면 표시용 시간 문자열로 바꾼다.
+    const formatMinutes = (minutes) => {
+        const safeMinutes = Math.max(Math.round(minutes), 0)
+        const hours = Math.floor(safeMinutes / 60)
+        const remainMinutes = safeMinutes % 60
 
-            return {
-                label: getDateLabel(date),
-                count,
+        if (hours > 0) {
+            return `${hours}시간 ${remainMinutes}분`
+        }
+
+        return `${remainMinutes}분`
+    }
+
+    // 특정 차량 종류의 평균 주차 시간을 계산한다.
+    const getAverageParkingMinutes = (carKind) => {
+        const logs = carlogStore.carLogs.filter((log) => {
+            return log.carKind === carKind && log.inTime
+        })
+
+        if (logs.length === 0) {
+            return 0
+        }
+
+        const now = new Date()
+
+        const totalMinutes = logs.reduce((sum, log) => {
+            const inTime = toDate(log.inTime)
+            const outTime = toDate(log.outTime) ?? now
+
+            if (!inTime) {
+                return sum
             }
-        })
-    })
 
-    // 미등록 차량 그래프의 최대값
-    const weeklyUnknownMaxCount = computed(() => {
-        const counts = weeklyUnknownStats.value.map((item) => {
-            return item.count
-        })
+            return sum + Math.max(Math.floor((outTime - inTime) / (1000 * 60)), 0)
+        }, 0)
 
-        return Math.max(...counts, 1)
+        return Math.round(totalMinutes / logs.length)
+    }
+
+    // 방문차량 / 미등록 차량 평균 주차 시간
+    const averageParkingTimeStats = computed(() => {
+        const visitMinutes = getAverageParkingMinutes('VISIT')
+        const unknownMinutes = getAverageParkingMinutes('UNKNOWN')
+        const maxMinutes = Math.max(visitMinutes, unknownMinutes, 1)
+
+        return [
+            {
+                key: 'visit',
+                label: '방문차량',
+                minutes: visitMinutes,
+                text: formatMinutes(visitMinutes),
+                percent: Math.round((visitMinutes / maxMinutes) * 100),
+            },
+            {
+                key: 'unknown',
+                label: '미등록 차량',
+                minutes: unknownMinutes,
+                text: formatMinutes(unknownMinutes),
+                percent: Math.round((unknownMinutes / maxMinutes) * 100),
+            },
+        ]
     })
 
     // 통계 페이지에서 필요한 데이터를 한 번에 불러온다.
-    // 기존 기능 store를 재사용해서 새 API 없이 빠르게 구성한다.
     const loadStatistics = async () => {
         loading.value = true
         errorMessage.value = ''
@@ -254,6 +484,8 @@ export const useStatisticsStore = defineStore('statistics', () => {
                 carlogStore.resetSearch(),
                 cameraDataStore.loadList(),
                 parkingStore.loadList(),
+                noticeStore.loadNotices(),
+                vehicleStore.loadVehicleList(),
             ])
         } catch (error) {
             console.error(error)
@@ -267,17 +499,27 @@ export const useStatisticsStore = defineStore('statistics', () => {
         loading,
         errorMessage,
 
+        entryPeriod,
+        changeEntryPeriod,
+
         todayInCount,
         todayOutCount,
         todayUnknownCount,
         averageConfidence,
 
-        weeklyEntryStats,
-        weeklyMaxCount,
+        currentParkingLogs,
+        currentParkingTypeStats,
+        currentParkingTotal,
+
+        hourlyParkingStats,
+        hourlyParkingMaxCount,
+
+        entryCompareStats,
+        entryCompareMaxCount,
+
         parkingUsageStats,
-        todayEntryTypeStats,
-        weeklyUnknownStats,
-        weeklyUnknownMaxCount,
+        nonResidentWarningStats,
+        averageParkingTimeStats,
 
         loadStatistics,
     }

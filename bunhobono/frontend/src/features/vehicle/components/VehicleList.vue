@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h3>차량 목록</h3>
+    <h3>{{ listTitle }}</h3>
 
     <div class="vehicle-filter-bar">
       <button class="filter-btn" @click="filterType = 'all'">전체</button>
@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useVehicleStore } from '../vehicleStore'
 import { usePagination } from '@/shared/pagination/usePagination'
 import Pagination from '@/shared/pagination/Pagination.vue'
@@ -69,17 +69,39 @@ const props = defineProps({
   vehicles: {
     type: Array,
     default: () => []
+  },
+  initialFilter: {
+    type: String,
+    default: 'all'
   }
 })
 
 const vehicleStore = useVehicleStore()
 
-const filterType = ref('all')
+const filterType = ref(props.initialFilter)
 const sortMode = ref('latest')
+
+// 통계 화면에서 들어왔을 때 제목도 전용 화면처럼 보이게 한다.
+const listTitle = computed(() => {
+  if (filterType.value === 'parkedExpired') {
+    return '주차중 방문 만료 차량'
+  }
+
+  return '차량 목록'
+})
 
 const filteredVehicles = computed(() => {
   return props.vehicles.filter((vehicle) => {
     const expired = isExpiredVehicle(vehicle)
+    const parking = isParkingVehicle(vehicle)
+
+    // 통계 화면에서 들어온 '주차중 방문 만료 차량' 전용 필터다.
+    // 방문차량이면서, 현재 주차중이고, 만료된 차량만 보여준다.
+    if (filterType.value === 'parkedExpired') {
+      return vehicle.vehicleType === 'visit'
+        && parking
+        && expired
+    }
 
     if (filterType.value === 'expired') {
       return expired
@@ -144,7 +166,19 @@ function toggleSort() {
 }
 
 function isExpiredVehicle(vehicle) {
+  const realEndDate = vehicle.realEndDate ?? vehicle.endDate
+
+  if (realEndDate) {
+    return new Date(realEndDate) <= new Date()
+  }
+
   return String(vehicle.remainingTimeText || '').startsWith('만기됨')
+}
+
+// 입차 시간이 있고 출차 시간이 없으면 현재 주차중으로 본다.
+// 입차 X 차량은 여기서 false가 되기 때문에 전용 목록에서 빠진다.
+function isParkingVehicle(vehicle) {
+  return Boolean(vehicle.inTime) && !vehicle.outTime
 }
 
 function memberDongText(vehicle) {
@@ -170,6 +204,20 @@ function memberHoText(vehicle) {
 
   return vehicle.memHo
 }
+
+// 부모 화면에서 넘긴 초기 필터가 바뀌면 목록 필터도 같이 바꾼다.
+// /admin/vehicles/parked-expired로 들어왔을 때 전용 필터가 적용된다.
+watch(
+  () => props.initialFilter,
+  (value) => {
+    filterType.value = value
+    currentPage.value = 1
+  }
+)
+
+watch(filterType, () => {
+  currentPage.value = 1
+})
 
 async function remove(vehicleNo) {
   if (!confirm('삭제할까요?')) {
