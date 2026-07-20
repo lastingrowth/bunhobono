@@ -894,7 +894,7 @@ onMounted(async () => {
     color: #ff7a00;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
     .statistics-top-grid,
     .statistics-bottom-grid {
         grid-template-columns: 1fr;
@@ -902,6 +902,197 @@ onMounted(async () => {
 
     .parking-circle-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* 데스크톱 통계 화면은 1280 × 720에서도 한 화면에 들어오도록 압축한다. */
+@media (min-width: 901px) {
+    .statistics-page {
+        padding: 8px 12px;
+    }
+
+    .statistics-title-area {
+        align-items: center;
+        margin-bottom: 7px;
+    }
+
+    .statistics-title-area h1 {
+        font-size: 24px;
+    }
+
+    .statistics-title-area p {
+        display: none;
+    }
+
+    .refresh-button {
+        padding: 6px 11px;
+        font-size: 12px;
+    }
+
+    .statistics-top-grid,
+    .statistics-bottom-grid {
+        gap: 9px;
+    }
+
+    .statistics-top-grid {
+        margin-bottom: 9px;
+    }
+
+    .current-parking-card,
+    .hourly-card,
+    .warning-card,
+    .parking-rate-card,
+    .average-time-card,
+    .entry-compare-card {
+        padding: 10px 12px;
+    }
+
+    .card-title-row {
+        margin-bottom: 7px;
+        gap: 8px;
+    }
+
+    .card-title-row h2 {
+        font-size: 15px;
+    }
+
+    .card-title-row p {
+        margin-top: 2px;
+        font-size: 11px;
+    }
+
+    .current-parking-content {
+        gap: 12px;
+    }
+
+    .current-parking-donut {
+        width: 118px;
+        height: 118px;
+    }
+
+    .current-parking-donut-inner {
+        width: 66px;
+        height: 66px;
+    }
+
+    .current-parking-donut-inner strong {
+        font-size: 18px;
+    }
+
+    .parking-type-row {
+        gap: 7px;
+        margin-bottom: 7px;
+        font-size: 12px;
+    }
+
+    .parking-type-row strong {
+        font-size: 12px;
+    }
+
+    .hourly-chart-wrap {
+        height: 125px;
+    }
+
+    .warning-list {
+        gap: 6px;
+    }
+
+    .warning-row {
+        min-height: 34px;
+        padding: 0 10px;
+        border-radius: 8px;
+        font-size: 12px;
+    }
+
+    .warning-row strong {
+        font-size: 16px;
+    }
+
+    .card-help-text {
+        margin-top: 6px;
+        font-size: 10px;
+    }
+
+    .entry-compare-card {
+        margin-bottom: 9px;
+    }
+
+    .period-buttons {
+        border-radius: 8px;
+    }
+
+    .period-buttons button {
+        min-width: 52px;
+        padding: 6px 9px;
+        font-size: 11px;
+    }
+
+    .chart-legend {
+        gap: 18px;
+        margin-bottom: 3px;
+    }
+
+    .chart-legend span {
+        font-size: 11px;
+    }
+
+    .entry-bar-chart {
+        height: 155px;
+        padding-top: 5px;
+    }
+
+    .bar-column {
+        height: 118px;
+    }
+
+    .bar {
+        width: 16px;
+    }
+
+    .entry-bar-item > strong {
+        margin-top: 5px;
+        font-size: 11px;
+    }
+
+    .parking-circle-grid {
+        gap: 7px;
+    }
+
+    .parking-circle-item {
+        gap: 5px;
+        padding: 6px 5px;
+        border-radius: 9px;
+    }
+
+    .parking-circle-item > strong,
+    .parking-circle-item small {
+        font-size: 11px;
+    }
+
+    .parking-circle {
+        width: 62px;
+        height: 62px;
+    }
+
+    .parking-circle-inner {
+        width: 43px;
+        height: 43px;
+        font-size: 14px;
+    }
+
+    .average-time-list {
+        gap: 13px;
+        padding-top: 5px;
+    }
+
+    .average-time-row {
+        grid-template-columns: 85px 1fr 82px;
+        gap: 10px;
+        font-size: 12px;
+    }
+
+    .average-time-row strong {
+        font-size: 15px;
     }
 }
 

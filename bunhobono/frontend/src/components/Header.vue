@@ -1,7 +1,7 @@
 <template>
     <header class="header">
         <div class="header-left">
-            <button class="sidebar-toggle" type="button"
+            <button v-if="showSidebarToggle" class="sidebar-toggle" type="button"
                     aria-label="사이드바 열기 및 닫기" @click="$emit('toggle-sidebar')">
                 ☰
             </button>
@@ -25,6 +25,13 @@ import { useJwtStore } from '@/features/login/jwtStore';
 import { computed } from 'vue';
 
 const jwtStore = useJwtStore()
+
+defineProps({
+    showSidebarToggle: {
+        type: Boolean,
+        default: true,
+    },
+})
 
 const homePath = computed(() => {
     if (jwtStore.role === 'ADMIN') {

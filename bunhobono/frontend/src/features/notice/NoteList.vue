@@ -59,6 +59,7 @@
               v-for="column in columns"
               :key="column.key"
               :class="column.className"
+              :data-label="column.label"
               :title="formatValue(getValue(notice, column), column)"
             >
               <span v-if="column.key === 'noticeNo'">
@@ -73,7 +74,7 @@
                 {{ formatValue(getValue(notice, column), column) }}
               </template>
             </td>
-            <td class="col-action">
+            <td class="col-action" data-label="관리">
               <button
                 type="button"
                 @click.stop="noticeStore.remove(getNoticeNo(notice))"

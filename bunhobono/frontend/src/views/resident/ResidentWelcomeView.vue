@@ -1,12 +1,6 @@
 <template>
     <section class="resident-welcome">
         <article class="welcome-card">
-            <img
-                class="welcome-background"
-                src="@/assets/images/resident-welcome-apartment.png"
-                alt="아파트 전경"
-            />
-
             <div class="welcome-date-time">
                 <span>{{ formattedDate }}</span>
                 <span>{{ formattedTime }}</span>
@@ -14,7 +8,7 @@
 
             <div class="welcome-content">
                 <h2>{{ memberName }}님 반갑습니다.</h2>
-                <p>오늘도 안전한 운행하세요.</p>
+                <p><br/></p>
 
                 <div class="welcome-actions">
                     <button type="button" @click="goDashboard">홈페이지로</button>
@@ -54,5 +48,98 @@ onUnmounted(() => window.clearInterval(clockTimer));
 </script>
 
 <style scoped>
-.resident-welcome{min-height:calc(100vh - 80px);display:grid;place-items:center;padding:24px;background:#f4f8fc}.welcome-card{position:relative;overflow:hidden;width:min(620px,100%);padding:96px 44px 64px;border:1px solid #d5e3f2;border-radius:24px;background:#fff;box-shadow:0 18px 42px rgba(30,75,125,.12);text-align:center}.welcome-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 62%;opacity:.28}.welcome-date-time{position:absolute;z-index:2;top:22px;right:26px;display:flex;gap:14px;padding:9px 14px;border:1px solid rgba(185,207,231,.9);border-radius:12px;color:#234a73;background:rgba(255,255,255,.84);font-size:14px;font-weight:700;backdrop-filter:blur(5px)}.welcome-content{position:relative;z-index:1}.welcome-content h2{margin:0 0 10px;color:#173b63;font-size:clamp(28px,3vw,38px)}.welcome-content p{margin:0 0 34px;color:#486581;font-size:18px;font-weight:600}.welcome-actions{display:grid;grid-template-columns:1fr 1fr;gap:16px}.welcome-actions button{min-height:62px;border:1px solid #1f6fd1;border-radius:14px;color:#fff;background:#2f7ddd;font-size:18px;font-weight:700;cursor:pointer}.welcome-actions button:hover{background:#1e63bd}@media(max-width:560px){.welcome-card{padding:105px 24px 40px}.welcome-date-time{right:20px;left:20px;justify-content:center}.welcome-actions{grid-template-columns:1fr}}
+:global(.content:has(.resident-welcome)) {
+    padding: 0;
+}
+
+.resident-welcome {
+    min-height: calc(100vh - var(--header-height));
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+        linear-gradient(rgba(13, 35, 55, 0.2), rgba(13, 35, 55, 0.32)),
+        url('@/assets/images/back.jpg') center center / cover no-repeat;
+}
+
+.welcome-card {
+    position: relative;
+    width: min(620px, 100%);
+    padding: 96px 44px 64px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.68);
+    box-shadow: 0 22px 50px rgba(9, 31, 52, 0.28);
+    text-align: center;
+    backdrop-filter: blur(6px);
+}
+
+.welcome-date-time {
+    position: absolute;
+    top: 22px;
+    right: 26px;
+    display: flex;
+    gap: 14px;
+    padding: 9px 14px;
+    border: 1px solid rgba(185, 207, 231, 0.9);
+    border-radius: 12px;
+    color: #234a73;
+    background: rgba(255, 255, 255, 0.72);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.welcome-content h2 {
+    margin: 0 0 10px;
+    color: #173b63;
+    font-size: clamp(28px, 3vw, 38px);
+}
+
+.welcome-content p {
+    margin: 0 0 34px;
+    color: #486581;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.welcome-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.welcome-actions button {
+    min-height: 62px;
+    border: 1px solid #1f6fd1;
+    border-radius: 14px;
+    color: #fff;
+    background: #2f7ddd;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.welcome-actions button:hover {
+    background: #1e63bd;
+}
+
+@media (max-width: 560px) {
+    .resident-welcome {
+        padding: 16px;
+    }
+
+    .welcome-card {
+        padding: 105px 24px 40px;
+    }
+
+    .welcome-date-time {
+        right: 20px;
+        left: 20px;
+        justify-content: center;
+    }
+
+    .welcome-actions {
+        grid-template-columns: 1fr;
+    }
+}
 </style>

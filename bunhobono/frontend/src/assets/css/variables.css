@@ -6,21 +6,21 @@
 
     /* background */
     --bg-header: #ffffff;
-    --bg-sidebar: #292522;
-    --bg-main: #f3f6f8;
+    --bg-sidebar: #20252a;
+    --bg-main: #f2f4f6;
 
     /* Primary */
-    --primary: #5b7c99;
-    --primary-hover: #44657f;
-    --accent: #565b60;
-    --accent-soft: #e7eaed;
+    --primary: #3f4b56;
+    --primary-hover: #202830;
+    --accent: #59646e;
+    --accent-soft: #edf0f2;
 
     /* Text */
-    --text-color: #303b44;      /* 기본 글자 */
-    --heading-color: #38bdf8;   /* 페이지 제목 */
+    --text-color: #252b31;      /* 기본 글자 */
+    --heading-color: #171c21;   /* 페이지 제목 */
     --text-white: #ffffff;      /* 밝은 글자 */
-    --text-muted: #81909c;      /* 구분선, 보조텍스트 */
+    --text-muted: #717b84;      /* 구분선, 보조텍스트 */
 
     /* Border */
-    --border-color: #d9e1e7;    /* border, table, input */
+    --border-color: #d9dee3;    /* border, table, input */
 }
