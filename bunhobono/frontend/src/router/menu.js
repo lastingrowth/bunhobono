@@ -45,7 +45,7 @@ export const adminMenu = [
 
 export const residentMenu = [
 {
-    title: '대시보드',
+    title: '홈',
     path: '/resident/dashboard'
   },
   {
@@ -53,12 +53,8 @@ export const residentMenu = [
     path: '/resident/vehicles'
   },
   {
-    title: '주차현황',
-    path: '/resident/parkings'
-  },
-  {
-    title: '알림내역',
-    path: '/resident/notice'
+    title: '입출차내역',
+    path: '/resident/carlogs'
   },
   {
     title: '마이페이지',

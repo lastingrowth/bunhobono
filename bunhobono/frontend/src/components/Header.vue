@@ -32,7 +32,7 @@ const homePath = computed(() => {
     }
 
     if (jwtStore.role === 'RESIDENT') {
-        return '/resident/dashboard'
+        return '/resident'
     }
 
     return '/login'

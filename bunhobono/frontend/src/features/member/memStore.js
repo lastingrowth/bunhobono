@@ -3,12 +3,10 @@ import { ref } from "vue";
 import {
   approvePendingMembers,
   changeResidentPassword,
-  deleteMember,
   getMemberDetail,
   getMemberList,
   getResidentSecurityChallenge,
   getAvailableSignupUnits,
-  getResidentDashboard,
   idCheckMember,
   permanentlyDeleteWithdrawnMembers,
   residentDelete,
@@ -20,27 +18,12 @@ import {
   updateMember,
   verifyResidentWithdrawal,
 } from "./memApi";
-import { getParkingsList } from "../parking/parkingsApi";
-import { toVehicleView } from "../vehicle/vehicleFormat";
 
 export const useMemStore =  defineStore("member", () => {
 
   const memberList = ref ([]);
   const member = ref({});
   const availableSignupUnits = ref([]);
-  const memberArchiveAlerts = ref([]);
-  const loading = ref(false);
-  const errorMessage = ref("");
-  const dashboard = ref({
-    member: {},
-    normalVehicleCount: 0,
-    visitVehicleCount: 0,
-    totalParkingSpaces: 0,
-    availableParkingSpaces: 0,
-    vehicles: [],
-    parkings: [],
-    recentCarLogs: []
-  });
 
   // 전체 조회
   const loadmemberList = async () => {
@@ -81,12 +64,6 @@ export const useMemStore =  defineStore("member", () => {
   // 선택된 승인 대기 회원을 입주민 역할로 변경한 뒤 목록을 갱신한다.
   const approveMembers = async (memberNos) => {
     await approvePendingMembers(memberNos);
-    await loadmemberList();
-  };
-
-  // 회원을 탈퇴 처리하고 목록을 갱신한다.
-  const removeMember = async (memberNo) => {
-    await deleteMember(memberNo);
     await loadmemberList();
   };
 
@@ -138,52 +115,10 @@ export const useMemStore =  defineStore("member", () => {
     return res.data;
   }
 
-  // 기존 Spring API 데이터를 조회해 입주민 대시보드 데이터로 조합한다.
-  const loadDashboard = async () => {
-    loading.value = true;
-    errorMessage.value = "";
-
-    try {
-      const [residentResponse, parkingResponse] = await Promise.all([
-        getResidentDashboard(),
-        getParkingsList()
-      ]);
-
-      const residentData = residentResponse.data || {};
-      const memberData = residentData.member || {};
-      // Spring Service가 집계한 본인 차량을 대시보드 표시 형식으로 변환한다.
-      const vehicles = (residentData.vehicles || []).map(toVehicleView);
-      const parkings = parkingResponse.data || [];
-      const recentCarLogs = (residentData.recentCarLogs || [])
-        .sort((left, right) => new Date(right.inTime) - new Date(left.inTime))
-        .slice(0, 5);
-
-      dashboard.value = {
-        member: memberData,
-        normalVehicleCount: vehicles.filter((item) => item.vehicleType === "normal").length,
-        visitVehicleCount: vehicles.filter((item) => item.vehicleType === "visit").length,
-        totalParkingSpaces: parkings.reduce((sum, parking) => sum + (parking.parkingSpaces || 0), 0),
-        availableParkingSpaces: parkings.reduce((sum, parking) => sum + (parking.availableSpaces || 0), 0),
-        vehicles,
-        parkings,
-        recentCarLogs
-      };
-    } catch (error) {
-      console.error(error);
-      errorMessage.value = "입주민 정보를 불러오지 못했습니다.";
-    } finally {
-      loading.value = false;
-    }
-  };
-  
   return {
     memberList,
     member,
     availableSignupUnits,
-    memberArchiveAlerts,
-    loading,
-    errorMessage,
-    dashboard,
 
     loadmemberList,
     restoreMembers,
@@ -192,7 +127,6 @@ export const useMemStore =  defineStore("member", () => {
     loadMember,
     editMember,
     approveMembers,
-    removeMember,
     signup,
     loadAvailableSignupUnits,
 
@@ -203,8 +137,6 @@ export const useMemStore =  defineStore("member", () => {
     removeResident,
     updateResidentPassword,
     idCheck,
-
-    loadDashboard,
   };
 
 });
