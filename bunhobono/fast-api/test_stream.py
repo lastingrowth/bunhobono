@@ -76,7 +76,7 @@ FRAME_STEP = 10
 CROP_COUNT = 1
 NO_DETECTION_RESET_COUNT = 2
 PLAYBACK_SPEED = 0.25
-CCTV_OCR_DIRECT_ACCEPT_SCORE = 0.95
+CCTV_OCR_DIRECT_ACCEPT_SCORE = 0.98
 CCTV_OCR_MAX_CANDIDATES = 3
 MIN_OCR_SCORE = 0.5
 SEND_COOLDOWN_SECONDS = 10
@@ -440,23 +440,25 @@ class TestStreamWorker:
         car_no = ocr_result.get("text", "")
         score = float(ocr_result.get("score", 0))
         
+        raw_car_no = ocr_result.get("text", "")
+        car_no = raw_car_no
+        score = float(ocr_result.get("score", 0))
+
         if not car_no:
             print(
-                f"[{self.camera_name}] OCR 미인식 처리 "
-                f"rawCarNo={car_no}, score={score * 100:.1f}%"
+                f"[{self.camera_name}] OCR text empty "
+                f"score={score * 100:.1f}%"
             )
             car_no = "미인식"
 
         print(
             f"[{self.camera_name}] OCR selected "
             f"frame={best['frameNo']}, carNo={car_no}, "
+            f"rawCarNo={raw_car_no}, "
             f"det={best['detScore'] * 100:.1f}%, "
             f"ocr={score * 100:.1f}%, "
             f"mode={ocr_result.get('mode', '-')}"
         )
-
-        if not car_no:
-            car_no = "미인식"
 
         if self.is_cooldown(car_no):
             print(f"[{self.camera_name}] duplicate blocked: {car_no}")
