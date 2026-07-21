@@ -77,6 +77,9 @@ const vehicleStore = useVehicleStore()
 const filterType = ref(props.initialFilter)
 const sortMode = ref('latest')
 
+// 통계 화면에서 처음 들어왔을 때만 사용하는 전용 모드
+const isInitialMode = ref(props.initialFilter === 'parkedExpired')
+
 // 통계 화면에서 들어왔을 때 제목도 전용 화면처럼 보이게 한다.
 const listTitle = computed(() => {
   if (filterType.value === 'parkedExpired') {
@@ -93,10 +96,8 @@ const filteredVehicles = computed(() => {
 
     // 통계 화면에서 들어온 '주차중 방문 만료 차량' 전용 필터다.
     // 방문차량이면서, 현재 주차중이고, 만료된 차량만 보여준다.
-    if (filterType.value === 'parkedExpired') {
-      return vehicle.vehicleType === 'visit'
-        && parking
-        && expired
+    if (isInitialMode.value) {
+      return isParkedExpiredVehicle(vehicle)
     }
 
     if (props.filterType === 'expired') {
@@ -155,6 +156,31 @@ function isExpiredVehicle(vehicle) {
   return String(vehicle.remainingTimeText || '').startsWith('만기됨')
 }
 
+function isParkedExpiredVehicle(vehicle) {
+  if (vehicle.vehicleType !== 'visit') {
+    return false
+  }
+
+  if (!vehicle.inTime || vehicle.outTime) {
+    return false
+  }
+
+  const realEndDate = new Date(vehicle.realEndDate)
+  const now = new Date()
+
+  if (realEndDate > now) {
+    return false
+  }
+
+  // 날짜 변경 여부 확인
+  const inDate = new Date(vehicle.inTime)
+  const nextDay = new Date(inDate)
+  nextDay.setHours(0, 0, 0, 0)
+  nextDay.setDate(nextDay.getDate() + 1)
+
+  return now < nextDay
+}
+
 // 입차 시간이 있고 출차 시간이 없으면 현재 주차중으로 본다.
 // 입차 X 차량은 여기서 false가 되기 때문에 전용 목록에서 빠진다.
 function isParkingVehicle(vehicle) {
@@ -191,14 +217,21 @@ watch(
   () => props.initialFilter,
   (value) => {
     filterType.value = value
+    isInitialMode.value = value === 'parkedExpired'
     currentPage.value = 1
   }
 )
 
-watch(filterType, () => {
-  currentPage.value = 1
-})
+watch(
+  () => props.filterType,
+  () => {
+    // 검색/필터를 한 번이라도 변경하면
+    // 통계 전용 모드를 종료한다.
+    isInitialMode.value = false
 
+    currentPage.value = 1
+  }
+)
 async function remove(vehicleNo) {
   if (!confirm('삭제할까요?')) {
     return

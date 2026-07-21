@@ -5,7 +5,8 @@
 .content > .admin-dashboard {
   --dashboard-blue: #2563eb;
   --dashboard-text: #172033;
-  --dashboard-muted: #8a94a6;
+  /* --dashboard-muted: #8a94a6; */
+  --dashboard-muted: #24292E;
   --dashboard-border: #d6dee9;
 
   width: calc(100% + 24px);
