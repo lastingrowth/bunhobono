@@ -138,37 +138,66 @@ VALUES
     
 
 -- 입주민 등록 차량 더미
--- res1 ~ res9 각각 1대씩 등록
+-- vehicle_type: normal
+-- vehicle_status: APPROVED
+-- start_date는 차량마다 다르게 지정
+-- end_date는 실제 프론트 구조처럼 start_date + 등록 개월 수로 생성
 INSERT INTO vehicle_car
     (vehicle_type, car_no, alias_car_no, vehicle_status, start_date, end_date, member_no, approved_at)
 VALUES
-    ('normal', '845루9345', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res1'), NOW()),
+    ('normal', '222하5233', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-01 09:00:00',
+        TIMESTAMP '2026-07-01 09:00:00' + INTERVAL '1 month',
+        (SELECT member_no FROM member WHERE login_id = 'res1'),
+        NOW()),
 
-    ('normal', '222하5233', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res2'), NOW()),
+    ('normal', '26무3111', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-03 10:00:00',
+        TIMESTAMP '2026-07-03 10:00:00' + INTERVAL '3 months',
+        (SELECT member_no FROM member WHERE login_id = 'res2'),
+        NOW()),
 
-    ('normal', '41소2593', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res3'), NOW()),
+    ('normal', '41소2593', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-05 11:00:00',
+        TIMESTAMP '2026-07-05 11:00:00' + INTERVAL '6 months',
+        (SELECT member_no FROM member WHERE login_id = 'res3'),
+        NOW()),
 
-    ('normal', '47조2603', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res4'), NOW()),
+    ('normal', '47조2603', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-07 12:00:00',
+        TIMESTAMP '2026-07-07 12:00:00' + INTERVAL '12 months',
+        (SELECT member_no FROM member WHERE login_id = 'res4'),
+        NOW()),
 
-    ('normal', '817라7385', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res5'), NOW()),
+    ('normal', '817라7385', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-09 13:00:00',
+        TIMESTAMP '2026-07-09 13:00:00' + INTERVAL '1 month',
+        (SELECT member_no FROM member WHERE login_id = 'res5'),
+        NOW()),
 
-    ('normal', '95마7152', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res6'), NOW()),
+    ('normal', '95마7152', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-11 14:00:00',
+        TIMESTAMP '2026-07-11 14:00:00' + INTERVAL '3 months',
+        (SELECT member_no FROM member WHERE login_id = 'res6'),
+        NOW()),
 
-    ('normal', '67모4231', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res7'), NOW()),
+    ('normal', '67모4231', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-13 15:00:00',
+        TIMESTAMP '2026-07-13 15:00:00' + INTERVAL '6 months',
+        (SELECT member_no FROM member WHERE login_id = 'res7'),
+        NOW()),
 
-    ('normal', '998어6281', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res8'), NOW()),
+    ('normal', '222마2574', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-15 16:00:00',
+        TIMESTAMP '2026-07-15 16:00:00' + INTERVAL '12 months',
+        (SELECT member_no FROM member WHERE login_id = 'res8'),
+        NOW()),
 
-    ('normal', '222마2574', NULL, 'APPROVED', NOW(), NULL,
-        (SELECT member_no FROM member WHERE login_id = 'res9'), NOW());
-
+    ('normal', '55오0359', NULL, 'APPROVED',
+        TIMESTAMP '2026-07-17 17:00:00',
+        TIMESTAMP '2026-07-17 17:00:00' + INTERVAL '3 months',
+        (SELECT member_no FROM member WHERE login_id = 'res9'),
+        NOW());
 
 
 
