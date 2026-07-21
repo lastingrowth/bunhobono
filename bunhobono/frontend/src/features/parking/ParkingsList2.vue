@@ -31,15 +31,58 @@
         <tbody>
           <tr v-for="p in pStore.list" :key="p.parkingNo">
             <td>{{ p.displayNo }}</td>
-            <td>{{ p.parkingName }}</td>
-            <td>{{ p.parkingSpaces }}</td>
-            <td>{{ p.parkingLocation }}</td>
+
+            <!-- 수정 중인 행이면 input, 아니면 기존 글자 표시 -->
+            <td>
+              <input
+                v-if="editingParkingNo === p.parkingNo"
+                v-model.trim="editParking.parkingName"
+                class="inline-edit-input"
+                type="text">
+              <span v-else>{{ p.parkingName }}</span>
+            </td>
+
+            <td>
+              <input
+                v-if="editingParkingNo === p.parkingNo"
+                v-model.number="editParking.parkingSpaces"
+                class="inline-edit-input"
+                type="number"
+                min="0">
+              <span v-else>{{ p.parkingSpaces }}</span>
+            </td>
+
+            <td>
+              <input
+                v-if="editingParkingNo === p.parkingNo"
+                v-model.trim="editParking.parkingLocation"
+                class="inline-edit-input"
+                type="text">
+              <span v-else>{{ p.parkingLocation }}</span>
+            </td>
+
             <td>
               {{ p.parkingSpaces - p.availableSpaces }}/{{ p.parkingSpaces }}
             </td>
+
             <td>
-              <button class="edit-button" type="button" @click="goEdit(p.parkingNo)">수정</button>
-              <button class="delete-button" type="button" @click="pStore.remove(p.parkingNo)">삭제</button>
+              <template v-if="editingParkingNo === p.parkingNo">
+                <button class="edit-button" type="button" @click="completeEdit">
+                  완료
+                </button>
+                <button class="delete-button" type="button" @click="cancelEdit">
+                  취소
+                </button>
+              </template>
+
+              <template v-else>
+                <button class="edit-button" type="button" @click="startEdit(p)">
+                  수정
+                </button>
+                <button class="delete-button" type="button" @click="pStore.remove(p.parkingNo)">
+                  삭제
+                </button>
+              </template>
             </td>
           </tr>
 
@@ -146,6 +189,13 @@ const createEmptyParking = () => ({
 
 const parking = ref(createEmptyParking())
 
+// 현재 수정 중인 주차장 번호
+// null이면 수정 중인 행이 없다는 뜻이다.
+const editingParkingNo = ref(null)
+
+// 목록에서 바로 수정할 값을 임시로 담아두는 객체
+const editParking = ref(createEmptyParking())
+
 // 주차장 등록 다이얼로그 열기
 const openDialog = () => {
   parking.value = createEmptyParking()
@@ -179,6 +229,46 @@ const signupGo = async () => {
   } catch (error) {
     console.error(error)
     alert('주차장 등록 실패')
+  }
+}
+
+// 수정 버튼을 누르면 해당 행의 글자들이 input으로 바뀐다.
+const startEdit = (parkingItem) => {
+  editingParkingNo.value = parkingItem.parkingNo
+
+  editParking.value = {
+    parkingName: parkingItem.parkingName,
+    parkingSpaces: parkingItem.parkingSpaces,
+    parkingLocation: parkingItem.parkingLocation,
+  }
+}
+
+// 취소를 누르면 input을 닫고 기존 목록 형태로 되돌린다.
+const cancelEdit = () => {
+  editingParkingNo.value = null
+  editParking.value = createEmptyParking()
+}
+
+// 완료 버튼을 누르면 수정 API를 호출하고 목록을 다시 불러온다.
+const completeEdit = async () => {
+  if (!editParking.value.parkingName || !editParking.value.parkingLocation) {
+    alert('주차장 이름과 위치를 입력해 주세요')
+    return
+  }
+
+  if (editParking.value.parkingSpaces === '' || Number(editParking.value.parkingSpaces) < 0) {
+    alert('주차 가능 대수를 확인해 주세요')
+    return
+  }
+
+  try {
+    await pStore.update(editingParkingNo.value, editParking.value)
+
+    editingParkingNo.value = null
+    editParking.value = createEmptyParking()
+  } catch (error) {
+    console.error(error)
+    alert('주차장 수정 실패')
   }
 }
 
@@ -267,6 +357,25 @@ tbody tr:hover {
   padding: 40px 16px;
   color: #8a96a8;
   text-align: center;
+}
+
+.inline-edit-input {
+  width: 100%;
+  min-width: 90px;
+  height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #253047;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.inline-edit-input:focus {
+  outline: none;
+  border-color: #2f80ed;
+  box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.12);
 }
 
 .delete-button {

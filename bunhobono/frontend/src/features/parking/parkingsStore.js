@@ -38,17 +38,25 @@ export const useParkingsStore = defineStore("parkings", () => {
   };
 
   // 수정
+  // router가 있으면 수정 페이지 방식처럼 이동하고,
+  // router가 없으면 현재 목록 화면에 그대로 머문다.
   const update = async (parkingNo, data, router) => {
-    const res = await updateParking(parkingNo, data);
-    if (res.data === 1) {
-      alert("수정 완료");
+    const res = await updateParking(parkingNo, data)
 
-      await loadList();
-      router.push("/admin/parkings"); // 성공 시 화면 이동
-    } else {
-      alert("잘못된 정보 입력");
+    if (res.data === 1) {
+      alert('수정 완료')
+
+      await loadList()
+
+      if (router) {
+        router.push('/admin/parkings')
+      }
+
+      return
     }
-  };
+
+    alert('잘못된 정보 입력')
+  }
 
   return {
     list,
