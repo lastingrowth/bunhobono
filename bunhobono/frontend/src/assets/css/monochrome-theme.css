@@ -1,0 +1,610 @@
+/* 공통 모노톤 테마: 흰색, 차콜, 청색 기운이 아주 옅은 회색만 사용한다. */
+:root {
+  --mono-ink: #171c21;
+  --mono-text: #2d343a;
+  --mono-muted: #717b84;
+  --mono-dark: #20252a;
+  --mono-slate: #4d5963;
+  --mono-canvas: #f2f4f6;
+  --mono-soft: #edf0f2;
+  --mono-line: #d9dee3;
+  --mono-white: #ffffff;
+}
+
+body,
+.content,
+.resident-board-page,
+.statistics-page {
+  color: var(--mono-text);
+  background-color: var(--mono-canvas);
+}
+
+.header {
+  color: var(--mono-ink);
+  background: var(--mono-white);
+  box-shadow: 0 1px 0 var(--mono-line);
+}
+
+.logo a,
+.logo a:hover,
+.content h1,
+.content h2,
+.content h3 {
+  color: var(--mono-ink);
+}
+
+.sidebar {
+  background: var(--mono-dark);
+}
+
+.user-role {
+  color: var(--mono-slate);
+  background: var(--mono-soft);
+}
+
+.logout-btn,
+.login-submit,
+.welcome-actions button,
+.board-navigation-actions button,
+.camera-car-number-edit-button,
+.camera-car-number-edit-actions button {
+  border-color: var(--mono-dark) !important;
+  color: var(--mono-white) !important;
+  background: var(--mono-dark) !important;
+  box-shadow: none !important;
+}
+
+.logout-btn:hover,
+.login-submit:hover,
+.welcome-actions button:hover,
+.board-navigation-actions button:hover {
+  border-color: var(--mono-slate) !important;
+  color: var(--mono-white) !important;
+  background: var(--mono-slate) !important;
+}
+
+input,
+select,
+textarea,
+.content form input,
+.content form select,
+.content form textarea {
+  border-color: var(--mono-line);
+  color: var(--mono-text);
+  background: var(--mono-white);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--mono-slate) !important;
+  box-shadow: 0 0 0 3px rgba(77, 89, 99, 0.12) !important;
+}
+
+.content table,
+.content table th,
+.content table td {
+  border-color: var(--mono-line);
+}
+
+.content table th {
+  color: var(--mono-text);
+  background: var(--mono-soft);
+}
+
+.dashboard-card:not(.monitoring-card),
+.statistics-card,
+.member-summary-card,
+.vehicle-summary-card,
+.recent-log-card,
+.parking-card,
+.vehicle-management-section,
+.info-detail-card {
+  border-color: var(--mono-line) !important;
+  background: var(--mono-white) !important;
+  box-shadow: 0 6px 18px rgba(23, 28, 33, 0.06) !important;
+}
+
+.summary-card-header h2::before,
+.recent-log-card h2::before,
+.parking-card h2::before {
+  background: var(--mono-slate) !important;
+}
+
+.profile-icon,
+.member-status-badge,
+.log-label,
+.state-badge,
+.carlog-state {
+  color: var(--mono-text) !important;
+  background: var(--mono-soft) !important;
+}
+
+.profile-icon {
+  color: var(--mono-white) !important;
+  background: var(--mono-slate) !important;
+}
+
+.summary-card-header button,
+.dashboard-view-all-button,
+.back-to-list-button,
+.period-buttons button,
+.refresh-button {
+  border-color: var(--mono-line) !important;
+  color: var(--mono-text) !important;
+  background: var(--mono-white) !important;
+}
+
+.summary-card-header button:hover,
+.dashboard-view-all-button:hover,
+.back-to-list-button:hover,
+.period-buttons button:hover,
+.period-buttons button.active,
+.refresh-button:hover {
+  border-color: var(--mono-slate) !important;
+  color: var(--mono-white) !important;
+  background: var(--mono-slate) !important;
+}
+
+.vehicle-status-group,
+.vehicle-status-group.visit-group,
+.member-summary-list,
+.vehicle-summary-row,
+.parking-zone,
+.warning-row,
+.selected-log-empty {
+  border-color: var(--mono-line) !important;
+  background: var(--mono-white) !important;
+}
+
+.zone-donut {
+  --zone-color: var(--mono-slate) !important;
+}
+
+.zone-donut-inner b,
+.zone-space-count strong,
+.vehicle-group-title span,
+.visit-group .vehicle-group-title span,
+.recent-log-item small.parking-movement-text {
+  color: var(--mono-slate) !important;
+}
+
+.hourly-polyline,
+.hourly-point {
+  stroke: var(--mono-slate) !important;
+}
+
+.hourly-point {
+  fill: var(--mono-white) !important;
+}
+
+.bar.resident,
+.bar.non-resident,
+.average-time-bar {
+  background: var(--mono-slate) !important;
+}
+
+.legend-color.resident,
+.legend-color.visit,
+.legend-color.non-resident,
+.legend-color.unknown {
+  background: var(--mono-slate) !important;
+}
+
+.auth-layout .login-card,
+.auth-layout .signup-card {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* 관리자 화면은 눈부심을 줄인 한 단계 짙은 회색 팔레트를 사용한다. */
+.admin-layout {
+  /* --admin-canvas: #e3e6e8; */
+  --admin-canvas: #24292E;
+  --admin-surface: #f7f8f8;
+  --admin-surface-muted: #d4d8db;
+  --admin-line: #b8bfc4;
+  --admin-ink: #171b1f;
+  --admin-muted: #515b63;
+}
+
+.admin-layout .header {
+  color: #f5f6f7;
+  background: #2b3035;
+  box-shadow: 0 1px 0 #171b1f;
+}
+
+.admin-layout .logo a,
+.admin-layout .logo a:hover,
+.admin-layout .user-name {
+  color: #ffffff !important;
+}
+
+.admin-layout .logo a {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.42);
+}
+
+.admin-layout .sidebar-toggle {
+  border-color: #596168;
+  color: #f5f6f7;
+  background: #343a40;
+}
+
+.admin-layout .sidebar-toggle:hover {
+  border-color: #8b949c;
+  color: #ffffff;
+  background: #444b51;
+}
+
+.admin-layout .user-role {
+  color: #e7eaec;
+  background: #454c52;
+}
+
+.admin-layout .content,
+.admin-layout .statistics-page,
+.admin-layout .admin-dashboard {
+  color: var(--admin-ink);
+  background-color: var(--admin-canvas);
+}
+
+.admin-layout .dashboard-card:not(.monitoring-card),
+.admin-layout .statistics-card,
+.admin-layout .vehicle-management-section,
+.admin-layout .info-detail-card,
+.admin-layout .content form,
+.admin-layout .content table {
+  border-color: var(--admin-line) !important;
+  background: var(--admin-surface) !important;
+  box-shadow: 0 5px 14px rgba(32, 37, 42, 0.09) !important;
+}
+
+.admin-layout .content table th,
+.admin-layout .dashboard-log-table th {
+  border-color: var(--admin-line) !important;
+  color: var(--admin-ink) !important;
+  background: var(--admin-surface-muted) !important;
+}
+
+.admin-layout .content table td,
+.admin-layout .dashboard-log-table td {
+  border-color: var(--admin-line) !important;
+  color: #343b41;
+  background-color: transparent;
+}
+
+.admin-layout input,
+.admin-layout select,
+.admin-layout textarea,
+.admin-layout .content form input,
+.admin-layout .content form select,
+.admin-layout .content form textarea {
+  border-color: var(--admin-line);
+  color: var(--admin-ink);
+  background: #f7f8f8;
+}
+
+.admin-layout .selected-log-info div,
+.admin-layout .member-summary-list,
+.admin-layout .vehicle-summary-row,
+.admin-layout .warning-row {
+  border-color: var(--admin-line) !important;
+  background: #f1f2f3 !important;
+}
+
+.admin-layout .content table tbody tr:hover td,
+.admin-layout .dashboard-log-table tbody tr:hover td {
+  background: #e1e4e6 !important;
+}
+
+.admin-layout .content table tbody tr.selected td,
+.admin-layout .dashboard-log-table tbody tr.selected td {
+  color: #111417 !important;
+  background: #cbd1d5 !important;
+}
+
+.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button),
+.admin-layout .dashboard-view-all-button {
+  border-color: #444d54;
+}
+
+.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button):hover,
+.admin-layout .dashboard-view-all-button:hover {
+  border-color: #20252a !important;
+  color: #ffffff !important;
+  background: #353c42 !important;
+}
+
+.admin-layout .section-heading h3,
+.admin-layout .card-title-row h2,
+.admin-layout .content h1,
+.admin-layout .content h2,
+.admin-layout .content h3 {
+  color: var(--admin-ink);
+}
+
+.admin-layout .dashboard-bottom-strip,
+.admin-layout .dashboard-top-strip {
+  border-color: var(--admin-line);
+  background: var(--admin-surface);
+  box-shadow: 0 5px 14px rgba(32, 37, 42, 0.09);
+}
+
+/* 관리자 공통 관제실 테마 -------------------------------------------------- */
+.admin-layout {
+  --admin-canvas: #20252a;
+  --admin-surface: #2b3035;
+  --admin-surface-muted: #343a40;
+  --admin-line: #505960;
+  --admin-ink: #f1f3f5;
+  --admin-muted: #aeb6bd;
+  --admin-accent: #ffc928;
+  --admin-danger: #ff5d63;
+  color-scheme: dark;
+}
+
+.admin-layout .header {
+  height: 60px;
+  padding-inline: 32px;
+  border-bottom: 1px solid #596168;
+  background: #2b3035;
+  box-shadow: none;
+}
+
+.admin-layout .sidebar {
+  padding: 20px;
+  border-right: 1px solid #343a40;
+  background: #1d2226;
+}
+
+.admin-layout .menu-item {
+  color: #d9dde0;
+}
+
+.admin-layout .menu-item:hover {
+  background: #2b3035;
+}
+
+.admin-layout .menu-item.router-link-active {
+  border: 1px solid #596168;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3b4147, #30363b);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: none;
+}
+
+.admin-layout .content,
+.admin-layout .statistics-page,
+.admin-layout .admin-dashboard {
+  color: var(--admin-ink);
+  background: var(--admin-canvas);
+}
+
+.admin-layout .content h1,
+.admin-layout .content h2,
+.admin-layout .content h3,
+.admin-layout .section-heading h3,
+.admin-layout .card-title-row h2,
+.admin-layout .detail-table td,
+.admin-layout .content form label {
+  color: var(--admin-ink) !important;
+}
+
+.admin-layout .content p,
+.admin-layout .content small,
+.admin-layout .content .text-muted,
+.admin-layout .detail-table th {
+  color: var(--admin-muted);
+}
+
+.admin-layout .dashboard-card:not(.monitoring-card),
+.admin-layout .statistics-card,
+.admin-layout .vehicle-management-section,
+.admin-layout .info-detail-card,
+.admin-layout .content form,
+.admin-layout .content table,
+.admin-layout .status-panel,
+.admin-layout .notice-table-wrap {
+  border: 1px solid var(--admin-line) !important;
+  color: var(--admin-ink);
+  background: var(--admin-surface) !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content table {
+  border-radius: 4px;
+  font-size: 11px;
+  table-layout: fixed;
+}
+
+.admin-layout .content table th,
+.admin-layout .dashboard-log-table th {
+  height: 24px;
+  padding: 2px 5px;
+  border-color: #555c62 !important;
+  color: #c9ced2 !important;
+  background: #41474c !important;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.admin-layout .content table td,
+.admin-layout .dashboard-log-table td {
+  height: 24px;
+  padding: 2px 5px;
+  border-color: #484f55 !important;
+  color: #e2c96f !important;
+  background: #2c3237 !important;
+  line-height: 1.15;
+}
+
+.admin-layout .content table tbody tr:hover td,
+.admin-layout .dashboard-log-table tbody tr:hover td {
+  color: #ffe282 !important;
+  background: #3a4147 !important;
+}
+
+.admin-layout .content table tbody tr.selected td,
+.admin-layout .dashboard-log-table tbody tr.selected td {
+  color: #fff0a6 !important;
+  background: #4b535a !important;
+}
+
+/* 대시보드 표는 원래의 전용 밀도와 행 상태 표현을 보존한다. */
+.admin-layout .content .admin-dashboard .dashboard-log-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  border-color: #50575d !important;
+  border-radius: 0;
+  background: #2b3035 !important;
+  box-shadow: none !important;
+  font-size: 11px;
+  table-layout: fixed;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table th,
+.admin-layout .content .admin-dashboard .dashboard-log-table td {
+  min-width: 0;
+  height: 24px;
+  padding: 2px 5px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table th {
+  border-color: #555c62 !important;
+  color: #c9ced2 !important;
+  background: #41474c !important;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table td {
+  border-color: #484f55 !important;
+  color: #e2c96f !important;
+  background: #2c3237 !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table tbody tr:hover td {
+  background: #3a4147 !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table tbody tr.selected td {
+  color: #fff0a6 !important;
+  background: #4b535a !important;
+}
+
+.admin-layout .content .admin-dashboard .camera-dashboard-block .dashboard-log-table tbody tr.recognition-review-row td {
+  color: #ff7777 !important;
+}
+
+.admin-layout .content .admin-dashboard .camera-dashboard-block .dashboard-log-table tbody tr.recognition-review-row.selected td {
+  color: #ff9a9a !important;
+}
+
+.admin-layout input,
+.admin-layout select,
+.admin-layout textarea,
+.admin-layout .content form input,
+.admin-layout .content form select,
+.admin-layout .content form textarea {
+  border-color: var(--admin-line);
+  border-radius: 5px;
+  color: var(--admin-ink);
+  background: #30363b;
+}
+
+.admin-layout input::placeholder,
+.admin-layout textarea::placeholder {
+  color: #929ba3;
+}
+
+.admin-layout input:focus,
+.admin-layout select:focus,
+.admin-layout textarea:focus {
+  border-color: #98a2aa !important;
+  box-shadow: 0 0 0 2px rgba(255, 201, 40, 0.14) !important;
+}
+
+.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button),
+.admin-layout .dashboard-view-all-button,
+.admin-layout .back-to-list-button,
+.admin-layout .period-buttons button,
+.admin-layout .refresh-button {
+  border: 1px solid #69737b !important;
+  border-radius: 5px;
+  color: #f4f6f7 !important;
+  background: #3a4147 !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button):hover,
+.admin-layout .dashboard-view-all-button:hover,
+.admin-layout .back-to-list-button:hover,
+.admin-layout .period-buttons button:hover,
+.admin-layout .period-buttons button.active,
+.admin-layout .refresh-button:hover {
+  border-color: #8d969d !important;
+  color: #ffffff !important;
+  background: #4a5259 !important;
+}
+
+.admin-layout .content a,
+.admin-layout .info-detail-highlight strong,
+.admin-layout .info-detail-category,
+.admin-layout .confidence-value {
+  color: var(--admin-accent) !important;
+}
+
+.admin-layout .info-detail-header,
+.admin-layout .info-detail-actions,
+.admin-layout .info-detail-list > div,
+.admin-layout .selected-log-info div,
+.admin-layout .member-summary-list,
+.admin-layout .vehicle-summary-row,
+.admin-layout .warning-row {
+  border-color: var(--admin-line) !important;
+}
+
+.admin-layout .info-detail-highlight,
+.admin-layout .selected-log-info div,
+.admin-layout .member-summary-list,
+.admin-layout .vehicle-summary-row,
+.admin-layout .warning-row {
+  background: #30363b !important;
+}
+
+.admin-layout .info-detail-list dt,
+.admin-layout .info-detail-highlight span {
+  color: var(--admin-muted);
+}
+
+.admin-layout .info-detail-list dd {
+  color: var(--admin-ink);
+}
+
+.admin-layout .dashboard-bottom-strip,
+.admin-layout .dashboard-top-strip {
+  border-color: var(--admin-line);
+  background: var(--admin-surface);
+  box-shadow: none;
+}
+
+@media (max-width: 700px) {
+  .admin-layout .header {
+    padding-inline: 14px;
+  }
+
+  .admin-layout .user-role {
+    display: none;
+  }
+
+  .admin-layout .sidebar {
+    position: relative;
+    z-index: 5;
+  }
+}
