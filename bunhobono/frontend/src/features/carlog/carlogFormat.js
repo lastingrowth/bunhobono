@@ -86,13 +86,12 @@ function gateText(value) {
     }
 
     if (value.endsWith("-IN")) {
-        return value.replace("-IN", " GATE");
+        return value.replace("-IN", " IN");
     }
 
     if (value.endsWith("-OUT")) {
-        return value.replace("-OUT", " GATE");
+        return value.replace("-OUT", " OUT");
     }
 
     return value;
 }
-

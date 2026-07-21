@@ -173,7 +173,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
                 return rightTime - leftTime;
             })
-            .slice(0, 5);
+            .slice(0, 10);
     });
 
     const recentCameraData = computed(() => {
@@ -181,7 +181,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             .sort((left, right) => {
                 return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0);
             })
-            .slice(0, 5);
+            .slice(0, 10);
     });
 
     const toggleParkingCamera = (parkingName) => {

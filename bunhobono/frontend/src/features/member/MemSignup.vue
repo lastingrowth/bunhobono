@@ -42,7 +42,7 @@
 
             <label class="form-field">
                 <span>이름</span>
-                <input v-model="member.memName" type="text" minlength="2" maxlength="20" placeholder="한글로 입력하세요." required @blur="normalizeName">
+                <input v-model="member.memName" type="text" minlength="2" maxlength="10" placeholder="한글 2~10자" required>
             </label>
 
             <div class="form-field">
@@ -83,14 +83,14 @@
             <label class="form-field">
                 <span>아이디</span>
                 <div class="input-action">
-                    <input v-model="member.loginId" type="text" minlength="3" maxlength="20" placeholder="영문+숫자 3~20자" required>
+                    <input v-model="member.loginId" type="text" minlength="4" maxlength="20" placeholder="영문, 숫자 포함 4~20자" required>
                     <button type="button" @click="idCheck">중복 확인</button>
                 </div>
             </label>
 
             <label class="form-field">
                 <span>비밀번호</span>
-                <input type="password" inputmode="numeric" :value="member.loginPwd" minlength="4" maxlength="20" autocomplete="new-password" placeholder="숫자 4~20자" required @input="handlePasswordInput">
+                <input type="password" :value="member.loginPwd" minlength="8" maxlength="20" autocomplete="new-password" placeholder="영문, 숫자, 특수문자 포함 8~20자" required @input="handlePasswordInput">
             </label>
 
             <button class="login-submit" type="submit" :disabled="needsAvailableUnit && (!hasAvailableUnits || availabilityLoading)">
@@ -174,14 +174,14 @@ const syncStatusWithRole = () => {
     member.value.memHo = member.value.role === "ADMIN" ? 0 : "";
 };
 
-// 공개 회원가입 화면의 이름·아이디·비밀번호 입력 규칙을 검사한다.
-const loginIdPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{3,20}$/;
-const passwordPattern = /^\d{4,20}$/;
-const namePattern = /^(?=.*[가-힣])[가-힣\d]{2,20}$/;
+// 외부 회원가입과 관리자 회원 추가에 공통으로 적용하는 정규식.
+const namePattern = /^(?=.*[가-힣])[가-힣]{2,10}$/;
+const loginIdPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{4,20}$/;
+const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,20}$/;
 
 const validateSignupFields = () => {
     if (!namePattern.test(member.value.memName)) {
-        alert("한글 또는 한글+숫자 조합 2~20자로 입력하세요.");
+        alert("한글 2~10자로 입력하세요.");
         return false;
     }
     if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
@@ -189,11 +189,11 @@ const validateSignupFields = () => {
         return false;
     }
     if (!loginIdPattern.test(member.value.loginId)) {
-        alert("아이디는 영문과 숫자를 조합해 3~20자로 입력하세요.");
+        alert("아이디는 영문과 숫자를 조합해 4~20자로 입력하세요.");
         return false;
     }
     if (!passwordPattern.test(member.value.loginPwd)) {
-        alert("비밀번호는 숫자 4~20자로 입력하세요.");
+        alert("비밀번호는 영문+숫자+특수기호 조합으로 8~20자로 입력하세요.");
         return false;
     }
     return true;
@@ -206,24 +206,17 @@ const handlePhoneInput = (event, part, maxLength) => {
     phoneParts[part] = numericValue;
 };
 
-// 한글 조합이 끝난 뒤 이름에서 한글과 숫자 이외의 문자를 제거한다.
-const normalizeName = (event) => {
-    const nameValue = event.target.value.replace(/[^가-힣0-9]/g, "").slice(0, 20);
-    event.target.value = nameValue;
-    member.value.memName = nameValue;
-};
-
-// 비밀번호에는 숫자만 입력한다.
+// 비밀번호에는 허용된 영문, 숫자, 특수문자만 입력한다.
 const handlePasswordInput = (event) => {
-    const numericValue = event.target.value.replace(/\D/g, "").slice(0, 20);
-    event.target.value = numericValue;
-    member.value.loginPwd = numericValue;
+    const passwordValue = event.target.value.replace(/[^A-Za-z\d!@#$%^&*]/g, "").slice(0, 20);
+    event.target.value = passwordValue;
+    member.value.loginPwd = passwordValue;
 };
 
 // 아이디 중복확인
 const idCheck = async () => {
     if (!loginIdPattern.test(member.value.loginId)) {
-        alert("아이디는 영문과 숫자를 조합해 3~20자로 입력하세요.");
+        alert("아이디는 영문과 숫자를 조합해 4~20자로 입력하세요.");
         return;
     }
 

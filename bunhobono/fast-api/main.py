@@ -31,6 +31,8 @@ ERROR_DIR = BASE_DIR / "runtime" / "errors"
 PREPROCESS_DIR.mkdir(parents=True, exist_ok=True)
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
 
+OCR_CONFIRM_SCORE = 0.95
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -132,8 +134,8 @@ def is_readable_ocr(ocr_result: dict) -> bool:
     return (
         ocr_result.get("is_valid_plate", False)
         and bool(str(ocr_result.get("text", "")).strip())
+        and float(ocr_result.get("score", 0.0)) >= OCR_CONFIRM_SCORE
     )
-
 
 async def send_ocr_to_spring(
     camera_no: int,

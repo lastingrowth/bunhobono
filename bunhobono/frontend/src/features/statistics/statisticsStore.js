@@ -60,9 +60,12 @@ export const useStatisticsStore = defineStore('statistics', () => {
     }
 
     // 현재 날짜
-    const today = computed(() => {
-        return new Date()
-    })
+    const today = ref(new Date())
+
+    // 오늘 날짜 갱신
+    const updateToday = () => {
+        today.value = new Date()
+    }
 
     // 최근 7일 날짜 배열
     const recentSevenDays = computed(() => {
@@ -386,10 +389,9 @@ export const useStatisticsStore = defineStore('statistics', () => {
             }
 
             const now = new Date()
-            const parkedMinutes = Math.floor((now - inTime) / (1000 * 60))
-            const oneDayMinutes = 60 * 24
 
-            return realEndDate <= now && parkedMinutes < oneDayMinutes
+            // 만료되었고, 아직 입차한 날짜와 같은 날
+            return realEndDate <= now && isSameDate(inTime, now)
         }).length
 
         return [
@@ -522,5 +524,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
         averageParkingTimeStats,
 
         loadStatistics,
+
+        updateToday,
     }
 })

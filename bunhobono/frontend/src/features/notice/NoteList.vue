@@ -3,6 +3,16 @@
     <div class="notice-header">
       <h1>{{ pageTitle }}</h1>
 
+      <!-- 통계 화면에서 들어온 경우에만 표시 -->
+      <button
+        v-if="fromStatistics"
+        type="button"
+        class="back-button"
+        @click="backToStatistics"
+      >
+        ← 통계로 돌아가기
+      </button>
+
       <div class="notice-actions">
         <div class="status-filters">
           <label
@@ -15,6 +25,7 @@
               type="radio"
               name="noticeStatus"
               :value="option.value"
+              @change="handleStatusChange"
             >
             <span>{{ option.label }}</span>
           </label>
@@ -158,6 +169,14 @@ const getRouteCarKind = () => {
 
 const selectedCarKind = ref(getRouteCarKind())
 
+// 통계 화면에서 들어온 전용 화면인지 확인한다.
+const fromStatistics = computed(() => {
+  return (
+    route.name === 'NoticeVisitLongStay'
+    || route.name === 'NoticeUnknownLongStay'
+  )
+})
+
 const pageTitle = computed(() => {
   if (selectedCarKind.value === 'VISIT') {
     return '방문 장기주차 알림'
@@ -281,6 +300,19 @@ const handleLoadNotices = async () => {
   }
 };
 
+// 통계 화면으로 돌아간다.
+const backToStatistics = () => {
+  router.push('/admin/statistics')
+}
+
+const handleStatusChange = () => {
+  // 상태를 직접 선택하면 방문/미등록 필터를 해제
+  selectedCarKind.value = ""
+
+  // 첫 페이지부터 다시 보여준다
+  currentPage.value = 1
+}
+
 const goDetail = (notice) => {
   const noticeNo = getNoticeNo(notice);
 
@@ -310,3 +342,24 @@ watch(
 )
 
 </script>
+<<<<<<< HEAD
+=======
+
+<style scoped>
+.back-button {
+  height: 36px;
+  padding: 0 12px;
+  margin-top: 8px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+
+  background: #fff;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background: #f3f4f6;
+}
+</style>
+>>>>>>> jeongmin

@@ -76,7 +76,7 @@ FRAME_STEP = 10
 CROP_COUNT = 1
 NO_DETECTION_RESET_COUNT = 2
 PLAYBACK_SPEED = 0.25
-CCTV_OCR_DIRECT_ACCEPT_SCORE = 0.95
+CCTV_OCR_DIRECT_ACCEPT_SCORE = 0.98
 CCTV_OCR_MAX_CANDIDATES = 3
 MIN_OCR_SCORE = 0.5
 SEND_COOLDOWN_SECONDS = 10
@@ -88,6 +88,8 @@ LOW_LIGHT_BRIGHTNESS = 0.40
 SUNNY_CAMERA_NOS = {7, 8}
 SUNNY_CONTRAST = 1.20
 SUNNY_BRIGHTNESS = 18
+TOP_PADDED_CAMERA_NOS = {5, 6, 7, 8}
+DISPLAY_TOP_CROP_RATIO = 0.08
 
 
 class TestStreamWorker:
@@ -206,18 +208,26 @@ class TestStreamWorker:
     def update_latest_frame(self, frame):
         with self.latest_frame_lock:
             frame_height, frame_width = frame.shape[:2]
+            crop_top = 0
             crop_left = 0
 
             # 테스트 영상은 중앙의 정사각형 영상 양옆에 검은 여백이 포함되어 있다.
             # 탐지에는 원본 프레임을 사용하고, 브라우저로 보낼 화면만 중앙 크롭한다.
-            if frame_width > frame_height:
-                crop_left = (frame_width - frame_height) // 2
+            # Remove the source video's top padding from browser output only.
+            # Detection and OCR still use the untouched source frame.
+            if self.camera_no in TOP_PADDED_CAMERA_NOS:
+                crop_top = int(frame_height * DISPLAY_TOP_CROP_RATIO)
+
+            display_height = frame_height - crop_top
+
+            if frame_width > display_height:
+                crop_left = (frame_width - display_height) // 2
                 display_frame = frame[
-                    :,
-                    crop_left:crop_left + frame_height,
+                    crop_top:frame_height,
+                    crop_left:crop_left + display_height,
                 ].copy()
             else:
-                display_frame = frame.copy()
+                display_frame = frame[crop_top:frame_height, :].copy()
 
             height, width = display_frame.shape[:2]
 
@@ -246,8 +256,10 @@ class TestStreamWorker:
                 x1, y1, x2, y2 = self.latest_detection_box
                 x1 = max(0, x1 - crop_left)
                 x2 = min(width - 1, x2 - crop_left)
+                y1 = max(0, y1 - crop_top)
+                y2 = min(height - 1, y2 - crop_top)
 
-                if x2 <= x1:
+                if x2 <= x1 or y2 <= y1:
                     self.latest_frame = display_frame
                     return
 
@@ -440,23 +452,25 @@ class TestStreamWorker:
         car_no = ocr_result.get("text", "")
         score = float(ocr_result.get("score", 0))
         
+        raw_car_no = ocr_result.get("text", "")
+        car_no = raw_car_no
+        score = float(ocr_result.get("score", 0))
+
         if not car_no:
             print(
-                f"[{self.camera_name}] OCR 미인식 처리 "
-                f"rawCarNo={car_no}, score={score * 100:.1f}%"
+                f"[{self.camera_name}] OCR text empty "
+                f"score={score * 100:.1f}%"
             )
             car_no = "미인식"
 
         print(
             f"[{self.camera_name}] OCR selected "
             f"frame={best['frameNo']}, carNo={car_no}, "
+            f"rawCarNo={raw_car_no}, "
             f"det={best['detScore'] * 100:.1f}%, "
             f"ocr={score * 100:.1f}%, "
             f"mode={ocr_result.get('mode', '-')}"
         )
-
-        if not car_no:
-            car_no = "미인식"
 
         if self.is_cooldown(car_no):
             print(f"[{self.camera_name}] duplicate blocked: {car_no}")
