@@ -236,6 +236,60 @@ async function loadCarLogs() {
   width: 100px;
 }
 
+/* 관리자 관제 테마: scoped 기본 스타일보다 명확하게 우선 적용 */
+:global(.admin-layout) .carlog-filter {
+  margin-top: 8px;
+}
+
+:global(.admin-layout) .carlog-heading-row h2 {
+  color: #f1f3f5;
+}
+
+:global(.admin-layout) .carlog-filter-bar {
+  border-color: #505960;
+  background: #2b3035;
+  box-shadow: none;
+}
+
+:global(.admin-layout) .carlog-search-input,
+:global(.admin-layout) .in-time-input,
+:global(.admin-layout) .filter-select {
+  border-color: #596168;
+  color: #f1f3f5;
+  background: #343a40;
+}
+
+:global(.admin-layout) .carlog-search-input::placeholder,
+:global(.admin-layout) .in-time-input::placeholder {
+  color: #9da6ad;
+  opacity: 1;
+}
+
+:global(.admin-layout) .in-time-filter {
+  color: #9da6ad;
+}
+
+:global(.admin-layout) .carlog-search-input:focus,
+:global(.admin-layout) .in-time-input:focus,
+:global(.admin-layout) .filter-select:focus {
+  border-color: #ffc928;
+  outline: 2px solid rgba(255, 201, 40, 0.16);
+}
+
+:global(.admin-layout) .search-btn,
+:global(.admin-layout) .reset-btn {
+  border-color: #69737b;
+  color: #ffffff;
+  background: #3a4147;
+}
+
+:global(.admin-layout) .search-btn:hover,
+:global(.admin-layout) .reset-btn:hover {
+  border-color: #8d969d;
+  color: #ffffff;
+  background: #4a5259;
+}
+
 @media (max-width: 700px) {
   .carlog-search-input {
     flex: 1 1 180px;
