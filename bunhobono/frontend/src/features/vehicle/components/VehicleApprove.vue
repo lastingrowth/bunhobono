@@ -13,7 +13,8 @@
           <th>차량번호</th>
           <th>차량종류</th>
           <th>승인상태</th>
-          <th>등록기간</th>
+          <th>예상 방문시간</th>
+          <th>등록시간</th>
           <th>관리</th>
         </tr>
       </thead>
@@ -23,76 +24,90 @@
           <td>{{ vehicle.carNo }}</td>
           <td>{{ vehicle.vehicleTypeText || vehicle.vehicleType }}</td>
           <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus }}</td>
-
-          <td>
-            <select
-              v-if="vehicle.vehicleType === 'normal'"
-              v-model.number="vehicle.periodMonths"
-              style="width: 120px;"
+          <td>{{ vehicle.startDateText || '-' }}</td>
+          <td>{{ vehicle.periodText || '-' }}</td>
+          <td class="action-cell">
+            <button
+              type="button"
+              :disabled="processingNo === vehicle.vehicleCarNo"
+              @click="approve(vehicle)"
             >
-              <option :value="1">1개월</option>
-              <option :value="3">3개월</option>
-              <option :value="6">6개월</option>
-              <option :value="12">12개월</option>
-            </select>
+              승인
+            </button>
 
-            <span v-if="vehicle.vehicleType === 'visit'">
-              <input
-                type="number"
-                min="1"
-                v-model.number="vehicle.periodHours"
-                :placeholder="String(getRequestedVisitHours(vehicle))"
-                style="width: 60px;"
-              >
-              시간
-              <span>
-                신청
-              </span>
-            </span>
-          </td>
-
-          <td>
-            <button @click="approve(vehicle)">승인</button>
-            <button @click="reject(vehicle)">반려</button>
-            <button @click="expire(vehicle)">만료</button>
+            <button
+              type="button"
+              class="reject-btn"
+              :disabled="processingNo === vehicle.vehicleCarNo"
+              @click="openRejectDialog(vehicle)"
+            >
+              반려
+            </button>
           </td>
         </tr>
 
-        <tr v-if="vehicles.length === 0">
-          <td colspan="5" align="center">승인 대기 차량이 없습니다.</td>
+        <tr v-if="paginatedItems.length === 0">
+          <td colspan="6" align="center">
+            승인 대기 차량이 없습니다.
+          </td>
         </tr>
       </tbody>
     </table>
+
     <Pagination
       :current-page="currentPage"
       :total-pages="totalPages"
       :page-numbers="pageNumbers"
-      @change-page="setPage"/>
+      @change-page="setPage"
+    />
+
+    <dialog ref="rejectDialog" class="reject-dialog">
+      <form @submit.prevent="submitReject">
+        <h3>방문차량 신청 반려</h3>
+
+        <p>
+          {{ rejectTarget?.carNo }} 차량의 반려 사유를 입력하세요.
+        </p>
+
+        <textarea
+          v-model="rejectReason"
+          maxlength="300"
+          placeholder="입주민에게 전달할 반려 사유"
+          required
+        />
+
+        <div class="dialog-actions">
+          <button type="button" @click="closeRejectDialog">취소</button>
+          <button type="submit" class="reject-btn">반려 전송</button>
+        </div>
+      </form>
+    </dialog>
   </div>
 </template>
 
 <script setup>
-import { usePagination } from "@/shared/pagination/usePagination";
-import { useVehicleStore } from "../vehicleStore";
-import { computed } from "vue";
-import Pagination from "@/shared/pagination/Pagination.vue";
-
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { usePagination } from '@/shared/pagination/usePagination'
+import Pagination from '@/shared/pagination/Pagination.vue'
+import { useVehicleStore } from '../vehicleStore'
 
 const props = defineProps({
   vehicles: {
-    type : Array,
-    default : () => []
+    type: Array,
+    default: () => []
   }
-});
+})
 
-const emit = defineEmits(['back']);
+const emit = defineEmits(['back'])
+const vehicleStore = useVehicleStore()
 
-const vehicleStore = useVehicleStore();
-const approveVehicles = computed(() => {
-  return props.vehicles;
-});
+const processingNo = ref(null)
+const rejectDialog = ref(null)
+const rejectTarget = ref(null)
+const rejectReason = ref('')
 
-const pageSize = 10;
+const approveVehicles = computed(() => props.vehicles)
+const pageSize = 10
 
 const {
   currentPage,
@@ -100,91 +115,86 @@ const {
   pageNumbers,
   paginatedItems,
   setPage
-} = usePagination(approveVehicles, pageSize);
+} = usePagination(approveVehicles, pageSize)
 
-function getRequestedVisitHours(vehicle) {
-  if (vehicle.periodHours) {
-    return vehicle.periodHours;
-  }
+let refreshTimer = null
 
-  if (!vehicle.startDate || !vehicle.endDate) {
-    return 2;
-  }
+onMounted(() => {
+  refreshTimer = window.setInterval(() => {
+    if (!rejectDialog.value?.open && processingNo.value === null) {
+      vehicleStore.loadVehicleApproveList()
+    }
+  }, 5000)
+})
 
-  const start = new Date(vehicle.startDate);
-  const end = new Date(vehicle.endDate);
-
-  const diffMs = end.getTime() - start.getTime();
-  const diffHours = Math.round(diffMs / 1000 / 60 / 60);
-
-  return diffHours > 0 ? diffHours : 2;
-}
+onBeforeUnmount(() => {
+  window.clearInterval(refreshTimer)
+})
 
 async function approve(vehicle) {
-  const data = {
-    vehicleStatus: "APPROVED",
-    vehicleType: vehicle.vehicleType
-  };
-
-  if (vehicle.vehicleType === "normal") {
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-
-    endDate.setMonth(endDate.getMonth() + Number(vehicle.periodMonths || 3));
-
-    data.startDate = formatDateTimeLocalValue(startDate);
-    data.endDate = formatDateTimeLocalValue(endDate);
+  if (!confirm(`${vehicle.carNo} 차량을 승인할까요?`)) {
+    return
   }
 
-  if (vehicle.vehicleType === "visit") {
-    const startDate = vehicle.startDate
-      ? new Date(vehicle.startDate)
-      : new Date();
+  processingNo.value = vehicle.vehicleCarNo
 
-    const endDate = new Date(startDate);
-    const hours = Number(vehicle.periodHours || getRequestedVisitHours(vehicle));
+  try {
+    await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, {
+      vehicleStatus: 'APPROVED'
+    })
+  } finally {
+    processingNo.value = null
+  }
+}
 
-    endDate.setHours(endDate.getHours() + hours);
+function openRejectDialog(vehicle) {
+  rejectTarget.value = vehicle
+  rejectReason.value = ''
+  rejectDialog.value.showModal()
+}
 
-    data.startDate = formatDateTimeLocalValue(startDate);
-    data.endDate = formatDateTimeLocalValue(endDate);
+function closeRejectDialog() {
+  rejectDialog.value.close()
+  rejectTarget.value = null
+  rejectReason.value = ''
+}
+
+async function submitReject() {
+  const reason = rejectReason.value.trim()
+
+  if (!reason || !rejectTarget.value) {
+    alert('반려 사유를 입력하세요.')
+    return
   }
 
-  await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, data);
-}
+  processingNo.value = rejectTarget.value.vehicleCarNo
 
-async function reject(vehicle) {
-  if (!confirm("신청을 반려하고 목록에서 삭제할까요?")) {
-    return;
+  try {
+    await vehicleStore.changeVehicleApproveStatus(
+      rejectTarget.value.vehicleCarNo,
+      {
+        vehicleStatus: 'REJECTED',
+        rejectReason: reason
+      }
+    )
+
+    closeRejectDialog()
+  } finally {
+    processingNo.value = null
   }
-
-  await vehicleStore.removeVehicle(vehicle.vehicleCarNo);
-  await vehicleStore.loadVehicleApproveList();
-}
-
-async function expire(vehicle) {
-  await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, {
-    vehicleStatus: "EXPIRED",
-    vehicleType: vehicle.vehicleType
-  });
-}
-
-function formatDateTimeLocalValue(date) {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mi = String(date.getMinutes()).padStart(2, "0");
-
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 </script>
 
 <style scoped>
-.approve-header {
+.approve-header,
+.action-cell,
+.dialog-actions {
   display: flex;
-  gap: 12px;
   align-items: center;
+  gap: 8px;
+}
+
+.approve-header {
   justify-content: space-between;
   margin-bottom: 16px;
 }
@@ -196,6 +206,33 @@ function formatDateTimeLocalValue(date) {
 .back-btn {
   min-width: 88px;
   height: 36px;
-  white-space: nowrap;
+}
+
+.reject-btn {
+  color: #fff;
+  background: #b42318;
+}
+
+.reject-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+}
+
+.reject-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.reject-dialog textarea {
+  width: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.dialog-actions {
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>
