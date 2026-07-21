@@ -1,17 +1,5 @@
 <template>
   <div>
-    <h3>차량 목록</h3>
-
-    <div class="vehicle-filter-bar">
-      <button class="filter-btn" @click="filterType = 'all'">전체</button>
-      <button class="filter-btn" @click="filterType = 'normal'">입주민만</button>
-      <button class="filter-btn" @click="filterType = 'visit'">방문자만</button>
-      <button class="filter-btn" @click="filterType = 'expired'">만기차량</button>
-      <button class="filter-btn" @click="toggleSort">
-        {{ sortButtonText }}
-      </button>
-    </div>
-
     <table border="">
       <thead>
         <tr>
@@ -60,7 +48,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useVehicleStore } from '../vehicleStore'
 import { usePagination } from '@/shared/pagination/usePagination'
 import Pagination from '@/shared/pagination/Pagination.vue'
@@ -69,19 +57,49 @@ const props = defineProps({
   vehicles: {
     type: Array,
     default: () => []
+  },
+  initialFilter: {
+    type: String,
+    default: 'all'
+  },
+  filterType: {
+    type: String,
+    default: 'all'
+  },
+  sortMode: {
+    type: String,
+    default: 'latest'
   }
 })
 
 const vehicleStore = useVehicleStore()
 
-const filterType = ref('all')
+const filterType = ref(props.initialFilter)
 const sortMode = ref('latest')
+
+// 통계 화면에서 들어왔을 때 제목도 전용 화면처럼 보이게 한다.
+const listTitle = computed(() => {
+  if (filterType.value === 'parkedExpired') {
+    return '주차중 방문 만료 차량'
+  }
+
+  return '차량 목록'
+})
 
 const filteredVehicles = computed(() => {
   return props.vehicles.filter((vehicle) => {
     const expired = isExpiredVehicle(vehicle)
+    const parking = isParkingVehicle(vehicle)
 
-    if (filterType.value === 'expired') {
+    // 통계 화면에서 들어온 '주차중 방문 만료 차량' 전용 필터다.
+    // 방문차량이면서, 현재 주차중이고, 만료된 차량만 보여준다.
+    if (filterType.value === 'parkedExpired') {
+      return vehicle.vehicleType === 'visit'
+        && parking
+        && expired
+    }
+
+    if (props.filterType === 'expired') {
       return expired
     }
 
@@ -89,11 +107,11 @@ const filteredVehicles = computed(() => {
       return false
     }
 
-    if (filterType.value === 'normal') {
+    if (props.filterType === 'normal') {
       return vehicle.vehicleType === 'normal'
     }
 
-    if (filterType.value === 'visit') {
+    if (props.filterType === 'visit') {
       return vehicle.vehicleType === 'visit'
     }
 
@@ -108,7 +126,7 @@ const sortedVehicles = computed(() => {
     const left = Number(a.displayNo ?? a.vehicleCarNo)
     const right = Number(b.displayNo ?? b.vehicleCarNo)
 
-    if (sortMode.value === 'oldest') {
+    if (props.sortMode === 'oldest') {
       return left - right
     }
 
@@ -127,24 +145,20 @@ const {
   setPage
 } = usePagination(sortedVehicles, pageSize)
 
-const sortButtonText = computed(() => {
-  if (sortMode.value === 'oldest') {
-    return '오래된순'
+function isExpiredVehicle(vehicle) {
+  const realEndDate = vehicle.realEndDate ?? vehicle.endDate
+
+  if (realEndDate) {
+    return new Date(realEndDate) <= new Date()
   }
 
-  return '최신순'
-})
-
-function toggleSort() {
-  if (sortMode.value === 'latest') {
-    sortMode.value = 'oldest'
-  } else {
-    sortMode.value = 'latest'
-  }
+  return String(vehicle.remainingTimeText || '').startsWith('만기됨')
 }
 
-function isExpiredVehicle(vehicle) {
-  return String(vehicle.remainingTimeText || '').startsWith('만기됨')
+// 입차 시간이 있고 출차 시간이 없으면 현재 주차중으로 본다.
+// 입차 X 차량은 여기서 false가 되기 때문에 전용 목록에서 빠진다.
+function isParkingVehicle(vehicle) {
+  return Boolean(vehicle.inTime) && !vehicle.outTime
 }
 
 function memberDongText(vehicle) {
@@ -171,6 +185,20 @@ function memberHoText(vehicle) {
   return vehicle.memHo
 }
 
+// 부모 화면에서 넘긴 초기 필터가 바뀌면 목록 필터도 같이 바꾼다.
+// /admin/vehicles/parked-expired로 들어왔을 때 전용 필터가 적용된다.
+watch(
+  () => props.initialFilter,
+  (value) => {
+    filterType.value = value
+    currentPage.value = 1
+  }
+)
+
+watch(filterType, () => {
+  currentPage.value = 1
+})
+
 async function remove(vehicleNo) {
   if (!confirm('삭제할까요?')) {
     return
@@ -181,20 +209,8 @@ async function remove(vehicleNo) {
 </script>
 
 <style scoped>
-.vehicle-filter-bar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 740px;
-  min-width: 740px;
-  max-width: 740px;
-  margin: 12px 0;
-}
-
-.filter-btn {
-  width: 120px;
-  height: 36px;
-  white-space: nowrap;
+table th,
+table td {
   text-align: center;
 }
 </style>

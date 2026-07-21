@@ -1,6 +1,11 @@
 <template>
   <div class="resident-vehicle-management">
-    <h2 v-if="mode === 'list'">차량관리</h2>
+    <div v-if="mode === 'list'" class="resident-vehicle-header">
+      <h2>차량관리</h2>
+      <button type="button" class="back-to-list-button" @click="goDashboard">
+        홈으로 돌아가기
+      </button>
+    </div>
 
     <div v-if="mode === 'list'" class="resident-vehicle-member">
       {{ resVehicleStore.member.memName }}
@@ -55,13 +60,14 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useResVehicleStore } from "./resVehicleStore";
 import ResVehicleList from "./components/ResVehicleList.vue";
 import ResVehicleForm from "./components/ResVehicleForm.vue";
 
 const resVehicleStore = useResVehicleStore();
 const route = useRoute();
+const router = useRouter();
 
 // 초기화면 -> '방문차량등록'버튼 눌렀을 때, 차량등록 폼만 나오도록 함
 const mode = ref(route.query.mode === "form" ? "form" : "list");
@@ -77,6 +83,10 @@ function openList() {
 
 function openInsert() {
   mode.value = "form";
+}
+
+function goDashboard() {
+  router.push("/resident/dashboard");
 }
 
 async function submitVisitVehicle(data) {
@@ -95,6 +105,17 @@ async function submitVisitVehicle(data) {
 .resident-vehicle-management h2,
 .vehicle-management-section h3 {
   margin: 0;
+}
+
+.resident-vehicle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.back-to-list-button {
+  min-width: 88px;
 }
 
 .resident-vehicle-member {

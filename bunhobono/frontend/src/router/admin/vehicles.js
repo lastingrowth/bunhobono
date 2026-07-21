@@ -6,4 +6,9 @@ export default [
     name: "VehicleList",
     component: VehicleView,
   },
+  {
+    path: 'vehicles/parked-expired',
+    name: 'ParkedExpiredVehicleList',
+    component: VehicleView,
+  },
 ];

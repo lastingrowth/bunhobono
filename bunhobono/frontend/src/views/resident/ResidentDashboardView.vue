@@ -136,17 +136,24 @@
                             v-for="parking in parkingStatusList.slice(0, 4)"
                             :key="parking.parkingNo"
                             class="parking-zone"
-                            :style="{ '--zone-color': parkingColor(parking.usageRate) }"
+                            :style="{
+                                '--zone-color': parkingColor(parking.usageRate),
+                                '--usage-rate': `${parking.usageRate * 3.6}deg`,
+                            }"
                         >
                             <div class="zone-heading">
                                 <span>{{ parking.parkingName }}</span>
                             </div>
-                            <div class="zone-usage">
-                                <span>현재 사용률</span>
-                                <b>{{ parking.usageRate }}%</b>
-                            </div>
-                            <div class="zone-progress" role="progressbar" :aria-valuenow="parking.usageRate" aria-valuemin="0" aria-valuemax="100">
-                                <span :style="{ width: `${parking.usageRate}%` }"></span>
+                            <div
+                                class="zone-donut"
+                                role="progressbar"
+                                :aria-valuenow="parking.usageRate"
+                                aria-valuemin="0"
+                                aria-valuemax="100">
+                                <div class="zone-donut-inner">
+                                    <small>현재 사용률</small>
+                                    <b>{{ parking.usageRate }}%</b>
+                                </div>
                             </div>
                             <div class="zone-space-count">
                                 <strong>{{ parking.available }}</strong>
@@ -302,9 +309,10 @@ onUnmounted(() => window.clearInterval(clockTimer));
 </script>
 
 <style scoped>
-.resident-board-page { min-height: calc(100vh - 70px); display: grid; place-items: center; padding: 10px; background: #f2f7fc; }
-.resident-board { width: min(1180px, 100%); padding: 20px; border: 1px solid #dce8f4; border-radius: 22px; background: #fff; box-shadow: 0 12px 35px rgba(38,78,118,.12); }
-.resident-board.resident-carlog-page { align-self: start; padding: 14px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+:global(.content:has(.resident-board-page)) { padding: 0; }
+.resident-board-page { min-height: calc(100vh - 70px); display: grid; place-items: start center; padding: 0; background: #f2f7fc; }
+.resident-board { width: min(1500px, 100%); padding: 18px 28px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.resident-board.resident-carlog-page { align-self: start; width: min(1500px, 100%); padding: 24px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .board-navigation-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; margin-right: 10px; }
 .board-navigation-actions button { padding: 9px 14px; border: 1px solid transparent; border-radius: 9px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease; }
@@ -321,10 +329,10 @@ onUnmounted(() => window.clearInterval(clockTimer));
 .welcome-actions button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
 .board-date-time { display: flex; align-items: center; gap: 14px; padding: 9px 15px; border-radius: 13px; color: #38536d; background: #f4f8fc; font-size: 16px; font-weight: 700; }
 .board-date-time i { width: 1px; height: 16px; background: #d7e1eb; }
-.board-info-grid { display: grid; grid-template-columns: 38% 1fr; gap: 14px; }
+.board-info-grid { display: grid; grid-template-columns: 32% 1fr; gap: 18px; }
 .board-info-grid > * { min-width: 0; }
 .member-summary-card,.vehicle-summary-card { box-sizing: border-box; min-height: 174px; padding: 13px 15px; border: 1px solid #dfe9f2; border-radius: 15px; background: #fff; }
-.member-summary-card { display: flex; flex-direction: column; border-color: #d8e6f2; background: linear-gradient(145deg,#fff 0%,#f8fbfe 100%); }
+.member-summary-card { display: flex; flex-direction: column; border-color: #d8e6f2; background: #fff; }
 .summary-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .summary-card-header h2 { margin: 0; color: #263f59; font-size: 18px; }
 .summary-card-header button { padding: 6px 10px; border: 1px solid #c9dcef; border-radius: 8px; color: #315c86; background: #f5faff; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -395,7 +403,7 @@ onUnmounted(() => window.clearInterval(clockTimer));
 .alert-copy { display: grid; gap: 2px; min-width: 0; }
 .alert-copy strong { color: #334b63; font-size: 13px; }.alert-copy small { overflow: hidden; color: #7d8d9d; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .alert-card time { color: #718398; font-size: 10px; }
-.board-bottom-grid { display: grid; grid-template-columns: 38% 1fr; gap: 14px; margin-top: 14px; }
+.board-bottom-grid { display: grid; grid-template-columns: 32% 1fr; gap: 18px; margin-top: 18px; }
 .recent-log-card,.parking-card { padding: 13px 15px; border: 1px solid #dfe9f2; border-radius: 15px; background: #fff; }
 .recent-log-link { cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
 .recent-log-link:hover { border-color: #8bb9e5; box-shadow: 0 7px 18px rgba(39, 91, 140, .12); transform: translateY(-1px); }
@@ -411,15 +419,14 @@ onUnmounted(() => window.clearInterval(clockTimer));
 .recent-log-item b { color: #213d58; font-size: 24px; }.recent-log-item > span:not(.log-label) { color: #344f69; font-size: 14px; }.recent-log-item small { color: #6d91b8; font-size: 11px; }
 .recent-log-item small.parking-movement-text { color: #df2f2f; font-weight: 800; }
 .parking-zones { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-.parking-zone { position: relative; display: grid; justify-items: center; gap: 4px; overflow: hidden; padding: 8px 6px 7px; border: 1px solid color-mix(in srgb, var(--zone-color) 26%, white); border-radius: 12px; background: linear-gradient(180deg, color-mix(in srgb, var(--zone-color) 8%, white), #fff 58%); box-shadow: 0 5px 12px rgba(48,78,108,.07); }
-.parking-zone::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--zone-color); }
+.parking-zone { position: relative; display: grid; justify-items: center; gap: 4px; padding: 8px 6px 7px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.parking-zone::before { display: none; }
 .zone-heading { display: flex; align-items: center; justify-content: center; width: 100%; }
 .zone-heading > span { overflow: hidden; color: #202b36; font-size: 17px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
-.zone-usage { display: flex; align-items: baseline; justify-content: space-between; width: 100%; margin-top: 3px; }
-.zone-usage span { color: #73869a; font-size: 9px; }
-.zone-usage b { color: var(--zone-color); font-size: 18px; }
-.zone-progress { overflow: hidden; width: 100%; height: 10px; border-radius: 999px; background: #e7edf3; box-shadow: inset 0 1px 2px rgba(37,61,85,.1); }
-.zone-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--zone-color) 68%, white), var(--zone-color)); transition: width .35s ease; }
+.zone-donut { display: grid; place-items: center; width: 86px; height: 86px; margin: 3px 0; border-radius: 50%; background: conic-gradient(var(--zone-color) 0 var(--usage-rate), #e7edf3 var(--usage-rate) 360deg); box-shadow: inset 0 0 0 1px rgba(37,61,85,.05); }
+.zone-donut-inner { display: grid; place-items: center; align-content: center; width: 61px; height: 61px; border-radius: 50%; background: #fff; box-shadow: 0 2px 7px rgba(48,78,108,.12); }
+.zone-donut-inner small { color: #73869a; font-size: 8px; line-height: 1.1; }
+.zone-donut-inner b { color: var(--zone-color); font-size: 17px; line-height: 1.2; }
 .zone-space-count { display: flex; align-items: baseline; gap: 2px; color: #6f8193; font-size: 9px; }
 .zone-space-count strong { color: #2d4964; font-size: 15px; }
 .my-parked-cars { display: grid; justify-items: center; gap: 2px; width: 100%; margin-top: 1px; }
@@ -433,8 +440,8 @@ onUnmounted(() => window.clearInterval(clockTimer));
 .resident-carlog-empty { padding: 45px 12px !important; color: #8799aa; text-align: center; }
 .parking-empty,.board-state { color: #667d92; text-align: center; }.board-state { padding: 40px; border-radius: 18px; background: #fff; }.board-error { color: #b83e3e; }.board-state button { padding: 8px 14px; border: 1px solid #ccddeb; border-radius: 10px; background: #fff; cursor: pointer; }
 @media (max-height:760px) and (min-width:901px){
-    .resident-board-page{min-height:calc(100vh - 58px);padding:5px 10px}
-    .resident-board{padding:12px 14px;border-radius:17px}
+    .resident-board-page{min-height:calc(100vh - 58px);padding:0}
+    .resident-board{width:min(1500px,100%);padding:10px 18px;border-radius:0}
     .board-header{margin-bottom:8px}
     .profile-icon{width:34px;height:34px}.profile-icon::before{font-size:18px}
     .board-welcome h1{font-size:22px}
@@ -450,9 +457,9 @@ onUnmounted(() => window.clearInterval(clockTimer));
     .recent-log-card,.parking-card{padding:9px 11px}
     .recent-log-card h2{margin-bottom:14px}.parking-card h2{margin-bottom:6px}
     .log-car{font-size:22px}.recent-log-item b{font-size:17px}
-    .zone-usage b{font-size:16px}.zone-progress{height:8px}
+    .zone-donut{width:72px;height:72px}.zone-donut-inner{width:51px;height:51px}.zone-donut-inner b{font-size:15px}
     .parking-zone{gap:2px}
 }
 @media (max-width:900px){.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
-@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:1px solid #edf2f6;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
+@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:1px solid #edf2f6;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
 </style>

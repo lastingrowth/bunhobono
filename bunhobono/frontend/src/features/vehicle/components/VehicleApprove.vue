@@ -1,6 +1,11 @@
 <template>
   <div>
-    <h3>승인 대기 차량</h3>
+    <div class="approve-header">
+      <h3>승인 대기 차량</h3>
+      <button type="button" class="back-btn" @click="emit('back')">
+        목록으로
+      </button>
+    </div>
 
     <table border="">
       <thead>
@@ -79,6 +84,8 @@ const props = defineProps({
     default : () => []
   }
 });
+
+const emit = defineEmits(['back']);
 
 const vehicleStore = useVehicleStore();
 const approveVehicles = computed(() => {
@@ -172,3 +179,23 @@ function formatDateTimeLocalValue(date) {
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 </script>
+
+<style scoped>
+.approve-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.approve-header h3 {
+  margin: 0;
+}
+
+.back-btn {
+  min-width: 88px;
+  height: 36px;
+  white-space: nowrap;
+}
+</style>

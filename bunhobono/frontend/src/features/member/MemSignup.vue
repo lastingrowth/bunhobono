@@ -45,6 +45,17 @@
                 <input v-model="member.memName" type="text" minlength="2" maxlength="10" placeholder="한글 2~10자" required>
             </label>
 
+            <div class="form-field">
+                <span>연락처</span>
+                <div class="phone-fields">
+                    <input type="text" inputmode="numeric" maxlength="3" :value="phoneParts.first" required @input="handlePhoneInput($event, 'first', 3)">
+                    <span>-</span>
+                    <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.middle" required @input="handlePhoneInput($event, 'middle', 4)">
+                    <span>-</span>
+                    <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.last" required @input="handlePhoneInput($event, 'last', 4)">
+                </div>
+            </div>
+
             <div class="form-row">
                 <label class="form-field">
                     <span>동</span>
@@ -68,16 +79,6 @@
                 </label>
             </div>
 
-            <div class="form-field">
-                <span>연락처</span>
-                <div class="phone-fields">
-                    <input type="text" inputmode="numeric" maxlength="3" :value="phoneParts.first" required @input="handlePhoneInput($event, 'first', 3)">
-                    <span>-</span>
-                    <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.middle" required @input="handlePhoneInput($event, 'middle', 4)">
-                    <span>-</span>
-                    <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.last" required @input="handlePhoneInput($event, 'last', 4)">
-                </div>
-            </div>
 
             <label class="form-field">
                 <span>아이디</span>

@@ -115,7 +115,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             },
             {
                 key: "member-approve",
-                title: "회원가입승인",
+                title: "회원승인",
                 count: waitingMemberCount.value,
                 path: "/admin/members?section=pending",
             },
@@ -173,7 +173,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
                 return rightTime - leftTime;
             })
-            .slice(0, 3);
+            .slice(0, 5);
     });
 
     const recentCameraData = computed(() => {
@@ -181,7 +181,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             .sort((left, right) => {
                 return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0);
             })
-            .slice(0, 3);
+            .slice(0, 5);
     });
 
     const toggleParkingCamera = (parkingName) => {

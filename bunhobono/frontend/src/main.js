@@ -2,6 +2,7 @@ import './assets/css/layout.css'
 import './assets/css/variables.css'
 import './assets/css/admin-dashboard.css'
 import './assets/css/resident-dashboard.css'
+import './assets/css/monochrome-theme.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

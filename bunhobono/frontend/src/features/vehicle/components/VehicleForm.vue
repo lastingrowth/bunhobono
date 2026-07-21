@@ -1,6 +1,11 @@
 <template>
   <div class="vehicle-management-section">
-    <h3>차량 등록</h3>
+    <div class="form-header">
+      <h3>차량 등록</h3>
+      <button type="button" class="back-btn" @click="emit('back')">
+        목록으로
+      </button>
+    </div>
 
     <form @submit.prevent="add">
       <table border="">
@@ -84,6 +89,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useVehicleStore } from '../vehicleStore'
 
 const vehicleStore = useVehicleStore()
+const emit = defineEmits(['back'])
 
 const carNo = ref('')
 const vehicleType = ref('normal')
@@ -274,7 +280,21 @@ function formatDateTimeValue(date) {
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
-.vehicle-management-section h3 {
-  margin: 0 0 16px;
+.form-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.form-header h3 {
+  margin: 0;
+}
+
+.back-btn {
+  min-width: 88px;
+  height: 36px;
+  white-space: nowrap;
 }
 </style>
