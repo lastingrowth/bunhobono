@@ -1,10 +1,15 @@
 <template>
     <div class="layout"
-    :class="{ 'admin-layout': route.path.startsWith('/admin') }">
-        <Header @toggle-sidebar="toggleSidebar"/>
+    :class="{
+        'admin-layout': route.path.startsWith('/admin'),
+        'resident-layout': isResidentRoute,
+    }">
+        <Header
+            :show-sidebar-toggle="!isResidentRoute"
+            @toggle-sidebar="toggleSidebar"/>
 
         <div class="container">
-            <Sidebar :collapsed="sidebarCollapsed"/>
+            <Sidebar v-if="!isResidentRoute" :collapsed="sidebarCollapsed"/>
 
             <main class="content">
                 <RouterView/>
@@ -16,11 +21,12 @@
 <script setup lang="ts">
 import Header from '@/components/Header.vue';
 import Sidebar from '@/components/Sidebar.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
 const sidebarCollapsed = ref(false)
+const isResidentRoute = computed(() => route.path.startsWith('/resident'))
 
 function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value

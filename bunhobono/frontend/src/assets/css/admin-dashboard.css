@@ -2,10 +2,11 @@
   padding-left: 0;
 }
 
-.admin-dashboard {
+.content > .admin-dashboard {
   --dashboard-blue: #2563eb;
   --dashboard-text: #172033;
-  --dashboard-muted: #8a94a6;
+  /* --dashboard-muted: #8a94a6; */
+  --dashboard-muted: #24292E;
   --dashboard-border: #d6dee9;
 
   width: calc(100% + 24px);
@@ -51,6 +52,8 @@
 
 /* 차량 등록과 알림을 하나의 상단 카드 안에 배치 */
 .dashboard-top-strip {
+  container-name: dashboard-action-strip;
+  container-type: inline-size;
   min-height: 64px;
   margin-bottom: 14px;
   padding: 10px 12px;
@@ -64,6 +67,26 @@
   border-radius: 16px;
   background: #ffffff;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  scrollbar-width: thin;
+  scrollbar-color: #687077 #30363b;
+}
+
+.dashboard-top-strip::-webkit-scrollbar {
+  height: 7px;
+}
+
+.dashboard-top-strip::-webkit-scrollbar-track {
+  background: #30363b;
+}
+
+.dashboard-top-strip::-webkit-scrollbar-thumb {
+  border: 1px solid #30363b;
+  border-radius: 999px;
+  background: #687077;
+}
+
+.dashboard-top-strip::-webkit-scrollbar-corner {
+  background: #30363b;
 }
 
 /* 차량 등록 form 자체는 별도 카드처럼 보이지 않게 한다 */
@@ -72,7 +95,7 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex: 1 1 auto;
   padding: 0 !important;
   border: 0 !important;
@@ -93,26 +116,61 @@
   background: #ffffff;
 }
 
-.quick-register-inline input {
-  width: 120px;
-}
-
-.quick-register-inline select {
+.content .quick-register-inline input {
   width: 96px;
+  flex: 0 0 96px;
 }
 
-.quick-register-inline select:last-of-type {
-  width: 140px;
+.content .quick-register-inline select {
+  width: 96px;
+  flex: 1 1 82px;
+}
+
+.content .quick-register-inline select:nth-of-type(1) {
+  width: 82px;
+  min-width: 82px;
+  flex-basis: 82px;
+  flex-shrink: 0;
+  max-width: 100px;
+}
+
+.content .quick-register-inline select:nth-of-type(2) {
+  width: 76px;
+  min-width: 76px;
+  flex-basis: 76px;
+  flex-shrink: 0;
+  max-width: 94px;
+}
+
+.content .quick-register-inline select:nth-of-type(3) {
+  width: 72px;
+  min-width: 72px;
+  flex-basis: 72px;
+  flex-shrink: 0;
+  max-width: 90px;
+}
+
+.content .quick-register-inline select:last-of-type {
+  width: 125px;
+  min-width: 110px;
+  flex-basis: 125px;
+  max-width: 220px;
+  flex-grow: 2;
 }
 
 .quick-register-inline button {
-  min-width: 58px;
-  height: 36px;
-  padding: 0 10px;
+  min-width: 0;
+  flex-shrink: 0;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 9px;
   border: 1px solid var(--dashboard-blue);
   border-radius: 10px;
   cursor: pointer;
   font-weight: 900;
+  white-space: nowrap;
   color: #ffffff;
   background: var(--dashboard-blue);
 }
@@ -122,7 +180,7 @@
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 6px;
   flex: 0 0 auto;
 }
 
@@ -160,20 +218,53 @@
 /* 위: 영상/상세, 아래: 입출차 로그/카메라 데이터 */
 .admin-control-layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr);
-  gap: 0;
+  grid-template-columns: minmax(0, 44.2fr) minmax(420px, 55.8fr);
+  gap: 1px;
   align-items: start;
+  background: var(--dashboard-border);
 }
 
 .admin-control-left,
 .admin-control-right {
   min-width: 0;
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
+  background: #ffffff;
+}
+
+@container dashboard-action-strip (max-width: 900px) {
+  .content .quick-register-inline input {
+    width: 90px;
+    flex-basis: 90px;
+  }
+
+  .content .quick-register-inline select,
+  .quick-register-inline button,
+  .alert-chip {
+    font-size: 11px;
+  }
+
+  .content .dashboard-alert-chips .alert-chip {
+    padding-right: 6px;
+    padding-left: 6px;
+  }
+
+  .dashboard-alert-chips {
+    gap: 4px;
+  }
 }
 
 .admin-control-right {
   min-width: 0;
+  container-name: dashboard-log-column;
+  container-type: size;
+  height: var(--monitoring-height, auto);
+  display: grid;
+  grid-template-rows: minmax(0, 0.3fr) minmax(0, 0.3fr) minmax(0, 0.4fr);
+  gap: 1px;
+  overflow: hidden;
+  background: var(--dashboard-border);
 }
 
 .section-heading {
@@ -190,11 +281,15 @@
 }
 
 .dashboard-view-all-button {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 0 7px;
   color: #334155;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   background: #fff;
   cursor: pointer;
@@ -289,7 +384,7 @@
   position: relative;
   width: 100%;
   height: auto;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -299,6 +394,8 @@
 }
 
 .parking-video-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -382,6 +479,64 @@
   background: rgba(15, 23, 42, 0.94);
 }
 
+/* 영상 위 모드 전환은 일반 폼 버튼이 아닌 CCTV 오버레이처럼 표시한다. */
+.content .parking-video-box .cctv-mode-control {
+  position: absolute;
+  top: 17px;
+  right: 14px;
+  width: 38px;
+  height: 14px;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  gap: 0;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 2px;
+  color: #bbf7d0 !important;
+  background: transparent !important;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: auto;
+}
+
+.content .parking-video-box .cctv-mode-control.out {
+  color: #bae6fd !important;
+  box-shadow: none;
+}
+
+.content .parking-video-box .cctv-mode-control:hover {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+.parking-video-box .cctv-mode-control span {
+  width: 100%;
+  display: block;
+  color: currentColor;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-indent: 0.08em;
+  text-shadow: 0 1px 3px #020617, 0 0 7px currentColor;
+}
+
+.cctv-camera-mode-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.cctv-camera-label {
+  display: block;
+  transform: translateY(-7px);
+}
+
 .cctv-mode-control i {
   width: 6px;
   height: 6px;
@@ -409,11 +564,50 @@
   font-weight: 700;
 }
 
-.dialog-mode-control {
-  top: 48px;
-  right: 20px;
-  height: 36px;
-  padding: 0 12px;
+.content .parking-dialog-video .dialog-mode-control {
+  position: absolute;
+  top: 31px;
+  right: 14px;
+  width: 54px;
+  height: 16px;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #bbf7d0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+
+.content .parking-dialog-video .dialog-mode-control.out {
+  color: #bae6fd !important;
+}
+
+.content .parking-dialog-video .dialog-mode-control:hover,
+.content .parking-dialog-video .dialog-mode-control.out:hover {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+.dialog-mode-control i,
+.dialog-mode-control small {
+  display: none;
+}
+
+.dialog-mode-control span {
+  width: 100%;
+  display: block;
+  color: currentColor;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-indent: 0.08em;
+  text-shadow: 0 1px 3px #020617, 0 0 7px currentColor;
 }
 
 .approval-wait-overlay {
@@ -429,6 +623,7 @@
 }
 
 .approval-wait-panel {
+  box-sizing: border-box;
   width: min(290px, 88%);
   padding: 16px;
   border: 1px solid rgba(251, 191, 36, 0.85);
@@ -475,8 +670,13 @@
 }
 
 .approval-wait-panel button {
-  width: 100%;
-  height: 36px;
+  width: auto;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  padding: 0 10px;
   border: 1px solid #fbbf24;
   border-radius: 0;
   cursor: pointer;
@@ -487,6 +687,51 @@
 
 .approval-wait-panel button:hover { background: #f59e0b; }
 .approval-wait-panel button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.parking-video-box .approval-wait-panel {
+  width: min(260px, 88%);
+  padding: 10px;
+}
+
+.parking-video-box .approval-wait-title {
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.parking-video-box .approval-wait-title i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+}
+
+.parking-video-box .approval-wait-panel strong {
+  margin-top: 7px;
+  font-size: clamp(18px, 4.8cqw, 22px);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.parking-video-box .approval-wait-panel p {
+  margin: 6px 0 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.parking-video-box .approval-wait-panel button {
+  height: 25px;
+  padding: 0 8px;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.parking-video-box .approval-wait-overlay.low-confidence .approval-wait-panel strong {
+  color: #ff5f5f;
+  text-shadow: 0 0 8px rgba(255, 70, 70, 0.28);
+}
 
 .dialog-approval-wait .approval-wait-panel {
   width: min(380px, 82%);
@@ -622,13 +867,19 @@
 
 .camera-gate-button,
 .parking-monitor-footer button {
-  height: 28px;
-  padding: 0 8px;
+  height: 22px;
+  min-height: 0;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
   border: none;
   border-radius: 0;
   cursor: pointer;
   font-size: 11px;
   font-weight: 900;
+  white-space: nowrap;
   color: #ffffff;
   background: var(--dashboard-blue);
 }
@@ -644,51 +895,61 @@
   opacity: 0.45;
 }
 
-.admin-control-right {
-  display: flex;
-}
-
-.carlog-preview-card {
-  order: 2;
-  display: block;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
 .carlog-dashboard-block,
 .camera-dashboard-block,
 .selected-log-card {
+  width: 100%;
   min-width: 0;
-  padding: 16px;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 0;
   overflow: hidden;
 }
 
-.carlog-dashboard-block {
-  grid-area: carlog;
-  border-radius: 0;
-  box-sizing: border-box;
-  height: var(--camera-data-height, auto);
+.carlog-dashboard-block,
+.camera-dashboard-block {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.camera-dashboard-block {
-  grid-area: camera;
-  border-radius: 0;
+.carlog-dashboard-block > .section-heading,
+.camera-dashboard-block > .section-heading {
+  margin-bottom: 4px;
 }
 
 .selected-log-card {
-  order: 1;
-  border-radius: 0;
-  box-sizing: border-box;
-  height: var(--monitoring-height, auto);
+  height: auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.carlog-dashboard-block > .section-heading,
+.camera-dashboard-block > .section-heading {
+  margin-bottom: 2px;
+}
+
+.carlog-dashboard-block .section-heading h3,
+.camera-dashboard-block .section-heading h3 {
+  font-size: 14px;
 }
 
 .carlog-table-wrap {
-  overflow: auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .combined-detail-section {
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
   border: 0;
@@ -696,6 +957,7 @@
 
 .dashboard-log-table {
   width: 100%;
+  height: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -716,22 +978,144 @@
 
 .carlog-dashboard-block .dashboard-log-table,
 .camera-dashboard-block .dashboard-log-table {
-  font-size: 12px;
+  font-size: 11px;
+  table-layout: fixed;
 }
 
 .carlog-dashboard-block .dashboard-log-table th,
 .carlog-dashboard-block .dashboard-log-table td,
 .camera-dashboard-block .dashboard-log-table th,
 .camera-dashboard-block .dashboard-log-table td {
-  height: 34px;
-  padding: 5px 7px;
-  line-height: 1.25;
+  min-width: 0;
+  height: 24px;
+  padding: 2px 5px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.carlog-dashboard-block .dashboard-log-table th,
+.camera-dashboard-block .dashboard-log-table th {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.carlog-dashboard-block .dashboard-log-table th:nth-child(1) {
+  width: 22%;
+}
+
+.carlog-dashboard-block .dashboard-log-table th:nth-child(2) {
+  width: 14%;
+}
+
+.carlog-dashboard-block .dashboard-log-table th:nth-child(3) {
+  width: 14%;
+}
+
+.carlog-dashboard-block .dashboard-log-table th:nth-child(4) {
+  width: 16%;
+}
+
+.carlog-dashboard-block .dashboard-log-table th:nth-child(5) {
+  width: 34%;
+}
+
+.camera-dashboard-block .dashboard-log-table th:nth-child(1) {
+  width: 26%;
+}
+
+.camera-dashboard-block .dashboard-log-table th:nth-child(2) {
+  width: 14%;
+}
+
+.camera-dashboard-block .dashboard-log-table th:nth-child(3) {
+  width: 20%;
+}
+
+.camera-dashboard-block .dashboard-log-table th:nth-child(4) {
+  width: 40%;
+}
+
+.camera-dashboard-block .dashboard-log-table th:last-child,
+.camera-dashboard-block .dashboard-log-table td:last-child {
+  white-space: nowrap;
+}
+
+/* 사이드바 개폐 시 오른쪽 로그 칸의 실제 너비를 기준으로 축소한다. */
+@container dashboard-log-column (max-width: 560px) {
+  .carlog-dashboard-block .section-heading h3,
+  .camera-dashboard-block .section-heading h3 {
+    font-size: 12px;
+  }
+
+  .dashboard-view-all-button {
+    height: 21px;
+    padding: 0 5px;
+    font-size: 10px;
+  }
+
+  .carlog-dashboard-block .dashboard-log-table,
+  .camera-dashboard-block .dashboard-log-table {
+    font-size: 10px;
+  }
+
+  .carlog-dashboard-block .dashboard-log-table th,
+  .carlog-dashboard-block .dashboard-log-table td,
+  .camera-dashboard-block .dashboard-log-table th,
+  .camera-dashboard-block .dashboard-log-table td {
+    padding-right: 3px;
+    padding-left: 3px;
+  }
+
+  .carlog-dashboard-block .dashboard-log-table th,
+  .camera-dashboard-block .dashboard-log-table th {
+    font-size: 9px;
+  }
+
+  .carlog-dashboard-block .state-badge {
+    max-width: 100%;
+    padding: 0 3px;
+    overflow: hidden;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .selected-log-content {
+    width: 100%;
+    grid-template-columns: minmax(170px, 0.9fr) minmax(205px, 1.1fr);
+  }
+
+  .selected-log-info > div {
+    grid-template-columns: 76px minmax(0, 1fr);
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .selected-log-info dt {
+    font-size: 10px;
+  }
+
+  .selected-log-info dd {
+    font-size: 11px;
+  }
+}
+
+@container dashboard-log-column (max-width: 450px) {
+  .carlog-dashboard-block .dashboard-log-table,
+  .camera-dashboard-block .dashboard-log-table {
+    font-size: 9px;
+  }
+
+  .selected-log-content {
+    grid-template-columns: minmax(150px, 0.82fr) minmax(190px, 1.18fr);
+  }
 }
 
 .carlog-dashboard-block .state-badge {
-  height: 21px;
-  padding: 0 7px;
-  font-size: 11px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10px;
 }
 
 .dashboard-log-table tbody tr {
@@ -783,23 +1167,46 @@
 }
 
 .selected-log-content {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  gap: 14px;
+  grid-template-columns: minmax(195px, 1fr) minmax(215px, 1fr);
+  gap: 0;
   align-items: start;
+}
+
+.selected-log-images {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+}
+
+.selected-log-images::after {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  content: "";
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: 1px 0 4px rgba(255, 255, 255, 0.1);
 }
 
 .capture-image-box {
   position: relative;
   width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 0;
   color: #9ca3af;
   font-weight: 900;
   background: #e5e7eb;
@@ -809,8 +1216,11 @@
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
-  background: #111827;
+  object-fit: cover;
+  object-position: center bottom;
+  transform: scale(1.55);
+  transform-origin: center bottom;
+  background: #e5e7eb;
   cursor: zoom-in;
 }
 
@@ -822,16 +1232,16 @@
 
 .capture-crop-overlay {
   position: absolute;
-  left: 12px;
-  top: 12px;
+  left: 4px;
+  top: 4px;
   min-width: 92px;
   min-height: 32px;
 }
 
 .capture-crop-image {
   display: block;
-  width: clamp(165px, 42%, 285px);
-  max-height: 108px;
+  width: clamp(125px, 32%, 215px);
+  max-height: 82px;
   object-fit: contain;
   border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 4px;
@@ -934,22 +1344,24 @@
 }
 
 .selected-log-info {
+  margin: 0;
   min-width: 0;
+  height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: minmax(38px, auto);
+  grid-auto-rows: minmax(0, 1fr);
   gap: 0;
   align-content: start;
   border-top: 1px solid #e5eaf2;
 }
 
-.selected-log-info div {
+.selected-log-info > div {
   min-width: 0;
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr);
   align-items: center;
-  min-height: 38px;
-  padding: 7px 10px;
+  min-height: 0;
+  padding: 0 4px;
   border-bottom: 1px solid #e5eaf2;
 }
 
@@ -957,6 +1369,8 @@
   margin: 0;
   font-size: 12px;
   font-weight: 900;
+  white-space: nowrap;
+  line-height: 1.25;
   color: var(--dashboard-muted);
 }
 
@@ -965,6 +1379,7 @@
   min-width: 0;
   font-size: 13px;
   font-weight: 900;
+  line-height: 1.25;
   color: var(--dashboard-text);
 }
 
@@ -979,8 +1394,12 @@
 .camera-car-number-edit-actions button {
   border: 0;
   border-radius: 7px;
-  padding: 5px 9px;
-  font-size: 12px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  font-size: 11px;
   font-weight: 800;
   color: #fff;
   background: #2563eb;
@@ -1034,57 +1453,82 @@
 }
 
 .parking-dialog {
-  width: min(980px, 92vw);
+  width: min(520px, 94vw);
+  max-height: 98vh;
   padding: 0;
-  border: none;
-  border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.3);
+  border: 1px solid #606970;
+  border-radius: 8px;
+  overflow: hidden;
+  color: #e6eaed;
+  background: #242a2f;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62);
 }
 
 .parking-dialog::backdrop {
-  background: rgba(15, 23, 42, 0.55);
+  background: rgba(8, 11, 14, 0.82);
 }
 
 .parking-dialog-content {
-  padding: 22px;
+  box-sizing: border-box;
+  padding: 10px;
+  background: #242a2f;
 }
 
 .parking-dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  padding: 0 2px;
 }
 
 .parking-dialog-header span {
   font-size: 13px;
   font-weight: 900;
-  color: var(--dashboard-blue);
+  color: #9fb7c9;
 }
 
 .parking-dialog-header h3 {
-  margin: 4px 0 0;
-  font-size: 26px;
-  color: var(--dashboard-text);
+  margin: 2px 0 0;
+  font-size: 20px;
+  color: #f0f2f3;
 }
 
 .parking-dialog-close {
-  width: 38px;
-  height: 38px;
-  border: none;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  padding: 0;
+  border: 1px solid #687179;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 24px;
+  font-size: 0;
   font-weight: 900;
   line-height: 1;
-  color: #64748b;
-  background: #f1f5f9;
+  color: #e7eaec;
+  background: #343b41;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.parking-dialog-close::before {
+  content: "\00d7";
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.parking-dialog-close:hover {
+  border-color: #89939b;
+  color: #ffffff;
+  background: #454d53;
 }
 
 .parking-dialog-video {
   position: relative;
-  width: min(100%, 70vh);
+  width: min(100%, calc(98vh - 118px));
   height: auto;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
@@ -1092,20 +1536,106 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 16px;
+  border: 1px solid #596168;
+  border-radius: 4px;
   background: linear-gradient(135deg, #111827, #1f2937);
 }
 
 .parking-dialog-actions {
-  margin-top: 16px;
+  min-height: 34px;
+  margin-top: 8px;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 6px;
+  padding: 0 2px;
 }
 
 .parking-dialog-actions .footer-gate-status {
   margin-right: auto;
   padding-left: 4px;
+}
+
+.parking-dialog-actions .camera-play-button,
+.parking-dialog-actions .camera-gate-button {
+  width: 82px;
+  min-width: 82px;
+  height: 28px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@container dashboard-log-column (max-width: 560px) {
+  .selected-log-content {
+    width: 100%;
+    grid-template-columns: minmax(170px, 0.9fr) minmax(205px, 1.1fr);
+  }
+
+  .selected-log-info > div {
+    grid-template-columns: 76px minmax(0, 1fr);
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+}
+
+@container dashboard-log-column (max-width: 450px) {
+  .selected-log-content {
+    grid-template-columns: minmax(150px, 0.82fr) minmax(190px, 1.18fr);
+  }
+}
+
+/* 1280 × 720 대시보드에서도 선택 로그의 모든 상세 항목을 노출한다. */
+@media (min-width: 1101px) and (max-width: 1400px) {
+  .selected-log-card {
+    padding: 0;
+  }
+
+  .selected-log-content {
+    gap: 0;
+  }
+
+  .selected-log-card .capture-image-box {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+    border-radius: 0;
+  }
+
+  .selected-log-info {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: minmax(0, 1fr);
+  }
+
+  .selected-log-info > div {
+    grid-template-columns: clamp(68px, 19cqw, 88px) minmax(0, 1fr);
+    min-height: 0;
+    padding: 0 clamp(7px, 2cqw, 10px);
+  }
+
+  .selected-log-info dt {
+    font-size: clamp(10px, 2.7cqw, 12px);
+  }
+
+  .selected-log-info dd {
+    font-size: clamp(11px, 3cqw, 13px);
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .camera-car-number-edit-button,
+  .camera-car-number-edit-actions button {
+    min-height: 24px;
+    padding: 3px 7px;
+    font-size: 10px;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -1127,7 +1657,7 @@
     padding-left: 0;
   }
 
-  .admin-dashboard {
+  .content > .admin-dashboard {
     width: calc(100% + 16px);
     margin-top: -16px;
     margin-right: -16px;
@@ -1140,7 +1670,23 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .selected-log-info div {
+  .selected-log-content {
+    width: 100%;
+    height: auto;
+    gap: 0;
+  }
+
+  .selected-log-info {
+    height: auto;
+    grid-auto-rows: auto;
+  }
+
+  .capture-image-box {
+    height: clamp(140px, 35vw, 220px);
+    min-height: 0;
+  }
+
+  .selected-log-info > div {
     grid-template-columns: 82px minmax(0, 1fr);
   }
 }
@@ -1149,4 +1695,319 @@
 .admin-dashboard td.danger-text {
   color: #dc2626 !important;
   font-weight: 800;
+}
+
+/* 관리자 관제 대시보드: 저채도 회색 모니터링 테마 */
+html:has(.admin-dashboard),
+body:has(.admin-dashboard),
+#app:has(.admin-dashboard) {
+  min-height: 100%;
+  background: #24292e !important;
+}
+
+.admin-layout:has(.admin-dashboard),
+.admin-layout:has(.admin-dashboard) .container,
+.admin-layout:has(.admin-dashboard) .content {
+  background: #24292e !important;
+}
+
+.content:has(.admin-dashboard) {
+  background: #24292e !important;
+}
+
+.content > .admin-dashboard {
+  --dashboard-text: #d7dce0;
+  --dashboard-muted: #9ba3aa;
+  --dashboard-border: #50575d;
+  color: #d7dce0;
+  background: #24292e;
+}
+
+.admin-layout .content > .admin-dashboard {
+  background: #24292e !important;
+}
+
+.admin-layout .content .admin-dashboard form.quick-register-inline {
+  max-width: none;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-card:not(.monitoring-card),
+.admin-layout .content .admin-dashboard .dashboard-top-strip {
+  border-color: #50575d !important;
+  background: #30363b !important;
+  box-shadow: none !important;
+}
+
+.admin-dashboard .admin-control-layout,
+.admin-dashboard .admin-control-right {
+  background: #555c62;
+}
+
+.admin-dashboard .parking-monitor-grid {
+  background: #50575d;
+}
+
+.admin-dashboard .parking-monitor-card {
+  background: #2c3237;
+}
+
+.admin-dashboard .parking-monitor-footer {
+  border-color: #50575d;
+  background: #30363b;
+}
+
+.admin-dashboard .dashboard-bottom-strip {
+  border-color: #50575d !important;
+  background: #30363b !important;
+  box-shadow: none !important;
+}
+
+.admin-layout:has(.admin-dashboard),
+.admin-layout:has(.admin-dashboard) .container,
+.admin-layout:has(.admin-dashboard) .content,
+.admin-layout .admin-dashboard,
+.admin-layout .admin-control-layout,
+.admin-layout .admin-control-right,
+.admin-layout .parking-monitor-grid {
+  scrollbar-color: #60676d #24292e;
+}
+
+.admin-dashboard .carlog-dashboard-block,
+.admin-dashboard .camera-dashboard-block,
+.admin-dashboard .selected-log-card {
+  color: #d7dce0;
+  background: #2d3338 !important;
+}
+
+.admin-dashboard .section-heading {
+  padding: 3px 6px;
+  color: #e5e8ea;
+  background: #363c41;
+}
+
+.admin-layout .content .admin-dashboard .section-heading h3 {
+  color: #e5e8ea;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table {
+  border-color: #50575d !important;
+  background: #2b3035 !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table th {
+  border-color: #555c62 !important;
+  color: #c9ced2 !important;
+  background: #41474c !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table td {
+  border-color: #484f55 !important;
+  color: #e2c96f !important;
+  background: #2c3237 !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table tbody tr:hover td {
+  background: #3a4147 !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-log-table tbody tr.selected td {
+  color: #fff0a6 !important;
+  background: #4b535a !important;
+}
+
+.admin-layout .content .admin-dashboard .camera-dashboard-block .dashboard-log-table tbody tr.recognition-review-row td {
+  color: #ff7777 !important;
+}
+
+.admin-layout .content .admin-dashboard .camera-dashboard-block .dashboard-log-table tbody tr.recognition-review-row.selected td {
+  color: #ff9a9a !important;
+}
+
+.admin-layout .content .admin-dashboard .selected-log-info {
+  border-color: #555c62;
+  background: #2d3338;
+}
+
+.admin-layout .content .admin-dashboard .selected-log-info > div {
+  border-color: #50575d !important;
+  background: #343a3f !important;
+}
+
+.admin-dashboard .selected-log-info dt {
+  color: #aeb5bb;
+}
+
+.admin-dashboard .selected-log-info dd {
+  color: #e2c96f !important;
+}
+
+.admin-layout .content .admin-dashboard .quick-register-inline input,
+.admin-layout .content .admin-dashboard .quick-register-inline select {
+  border-color: #596168;
+  color: #e2e5e7;
+  background: #3a4045;
+}
+
+.admin-dashboard .quick-register-inline input::placeholder {
+  color: #a2a9af;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-view-all-button,
+.admin-layout .content .admin-dashboard .quick-register-inline button,
+.admin-layout .content .admin-dashboard .alert-chip {
+  border-color: #626a70 !important;
+  color: #e7eaec !important;
+  background: #3b4247 !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-view-all-button:hover,
+.admin-layout .content .admin-dashboard .quick-register-inline button:hover,
+.admin-layout .content .admin-dashboard .alert-chip:hover {
+  border-color: #8b949b !important;
+  color: #ffffff !important;
+  background: #4a5258 !important;
+}
+
+.admin-dashboard .alert-chip strong {
+  color: #f4f6f7;
+  background: #596168;
+}
+
+.admin-dashboard .state-badge.parking {
+  border: 1px solid #527f77;
+  color: #a7eadb;
+  background: #31534f;
+}
+
+.admin-dashboard .state-badge.out {
+  border: 1px solid #56718c;
+  color: #b8d3ed;
+  background: #394f63;
+}
+
+.admin-dashboard .state-badge.unknown {
+  border: 1px solid #79604f;
+  color: #dfbea7;
+  background: #59483e;
+}
+
+.admin-dashboard .state-badge,
+.admin-dashboard .state-badge.parking,
+.admin-dashboard .state-badge.out,
+.admin-dashboard .state-badge.unknown {
+  height: auto;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  color: #e2c96f !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-dashboard .selected-log-empty,
+.admin-dashboard .capture-image-empty {
+  color: #aeb5bb;
+  background: #30363b;
+}
+
+.admin-dashboard dd.danger-text,
+.admin-dashboard td.danger-text {
+  color: #ff8585 !important;
+}
+
+/* 차량번호 수정 폼은 상세 정보의 차량번호 한 행 안에서만 표시한다. */
+.admin-dashboard .camera-car-number-field {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.admin-layout .content .admin-dashboard form.camera-car-number-edit-form {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  display: flex;
+  height: 22px;
+  max-height: 22px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content .admin-dashboard form.camera-car-number-edit-form input {
+  width: auto;
+  min-width: 0;
+  min-height: 22px;
+  height: 22px;
+  flex: 1 1 auto;
+  padding: 0 5px;
+  border: 1px solid #69727a;
+  border-radius: 3px;
+  color: #f1d77b;
+  font-size: 11px;
+  line-height: 20px;
+  background: #252b30;
+  box-shadow: none;
+}
+
+.admin-dashboard .camera-car-number-edit-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+}
+
+.admin-layout .content .admin-dashboard .selected-log-info .camera-car-number-edit-actions {
+  min-height: 0 !important;
+  height: 22px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.admin-layout .content .admin-dashboard .camera-car-number-edit-actions button {
+  width: auto;
+  min-width: 34px;
+  min-height: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border: 1px solid #687178;
+  border-radius: 3px;
+  color: #e6e9eb;
+  font-size: 10px;
+  line-height: 20px;
+  white-space: nowrap;
+  background: #454c52;
+}
+
+.admin-layout .content .admin-dashboard .camera-car-number-edit-actions button:hover {
+  border-color: #8b949b;
+  color: #ffffff;
+  background: #565e65;
+}
+
+.admin-dashboard .camera-car-number-edit-form small {
+  display: none;
+}
+
+.admin-dashboard .selected-log-card,
+.admin-dashboard .combined-detail-section,
+.admin-dashboard .selected-log-content,
+.admin-dashboard .selected-log-images,
+.admin-dashboard .capture-image-box,
+.admin-dashboard .selected-log-info {
+  min-height: 0;
+  overflow: hidden;
 }

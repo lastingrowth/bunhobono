@@ -528,7 +528,8 @@ textarea {
 }
 
 .notice-table-wrap {
-  overflow-x: auto;
+  width: 100%;
+  overflow-x: visible;
   border-radius: 6px;
   box-shadow: 0 10px 26px rgba(35, 52, 66, 0.11);
 }
@@ -538,7 +539,8 @@ textarea {
 }
 
 .notice-table {
-  min-width: 850px;
+  width: 100%;
+  min-width: 0;
   table-layout: fixed;
 }
 
@@ -546,24 +548,25 @@ textarea {
   cursor: pointer;
 }
 
-.notice-table .col-xs {
-  width: 90px;
-}
+.notice-table th:nth-child(1) { width: 7%; }
+.notice-table th:nth-child(2) { width: 19%; }
+.notice-table th:nth-child(3) { width: 19%; }
+.notice-table th:nth-child(4) { width: 18%; }
+.notice-table th:nth-child(5) { width: 10%; }
+.notice-table th:nth-child(6) { width: 14%; }
+.notice-table th:nth-child(7) { width: 13%; }
 
-.notice-table .col-sm {
-  width: 160px;
-}
-
-.notice-table .col-date {
-  width: 180px;
-}
-
-.notice-table .col-status {
-  width: 120px;
+.notice-table th,
+.notice-table td {
+  min-width: 0;
+  padding-right: clamp(5px, 1vw, 15px);
+  padding-left: clamp(5px, 1vw, 15px);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
 .notice-table .col-action {
-  width: 90px;
   text-align: center;
 }
 
@@ -583,6 +586,60 @@ textarea {
   background: rgba(91, 124, 153, 0.12);
 }
 
+@media (max-width: 700px) {
+  .notice-table,
+  .notice-table tbody,
+  .notice-table tr,
+  .notice-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .notice-table thead {
+    display: none;
+  }
+
+  .notice-table {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .notice-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .notice-table .notice-row {
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-header);
+  }
+
+  .notice-table .notice-row td {
+    min-height: 40px;
+    padding: 8px 12px;
+    display: grid;
+    grid-template-columns: 105px minmax(0, 1fr);
+    align-items: center;
+    border-right: 0;
+    text-align: left;
+  }
+
+  .notice-table .notice-row td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .notice-table .col-action button {
+    width: fit-content;
+    margin-left: 0;
+  }
+}
+
 /* 로그인·회원가입 레이아웃 */
 .auth-layout {
   min-height: 100vh;
@@ -591,12 +648,8 @@ textarea {
   justify-content: center;
   align-items: center;
   background:
-    radial-gradient(
-      circle at 50% 38%,
-      rgba(139, 167, 190, 0.28),
-      transparent 38%
-    ),
-    linear-gradient(145deg, #4b5862, #303940);
+    linear-gradient(rgba(13, 35, 55, 0.24), rgba(13, 35, 55, 0.38)),
+    url('../images/back.jpg') center center / cover fixed no-repeat;
 }
 
 .login-card {
@@ -605,10 +658,125 @@ textarea {
   padding: 40px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 8px;
-  background: rgba(250, 252, 253, 0.98);
+  background: rgba(250, 252, 253, 0.78);
+  backdrop-filter: blur(7px);
   box-shadow:
     0 24px 56px rgba(28, 37, 44, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+
+.auth-layout .signup-card {
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background: rgba(250, 252, 253, 0.78);
+  box-shadow: 0 24px 56px rgba(28, 37, 44, 0.28);
+  backdrop-filter: blur(7px);
+}
+
+/* 1280 × 720처럼 낮은 데스크톱 화면에서는 인증 카드를 가로형으로 배치한다. */
+@media (min-width: 801px) and (max-height: 800px) {
+  .auth-layout {
+    padding: 12px 20px;
+  }
+
+  .auth-layout .login-card {
+    max-width: 760px;
+    padding: 26px 30px;
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    column-gap: 34px;
+    align-items: center;
+  }
+
+  .auth-layout .login-card .login-brand {
+    grid-row: 1 / 4;
+    margin-bottom: 0;
+  }
+
+  .auth-layout .login-card .login-title,
+  .auth-layout .login-card .login-form,
+  .auth-layout .login-card .signup-guide {
+    grid-column: 2;
+  }
+
+  .auth-layout .login-card .login-title {
+    margin-bottom: 14px;
+  }
+
+  .auth-layout .login-card .login-form {
+    gap: 12px;
+  }
+
+  .auth-layout .login-card .signup-guide {
+    margin-top: 14px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) {
+    max-width: 900px;
+    padding: 18px 28px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .login-brand {
+    margin-bottom: 10px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .brand-symbol {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 7px;
+    font-size: 24px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .login-brand h1 {
+    margin-bottom: 3px;
+    font-size: 21px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .login-brand p {
+    font-size: 10px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .login-title {
+    margin-bottom: 10px;
+    font-size: 17px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .availability-guide {
+    margin-bottom: 9px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .signup-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .signup-form > .form-row {
+    display: contents;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .form-field {
+    gap: 5px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .form-field input,
+  .auth-layout .signup-card:not(.admin-signup-card) .form-field select {
+    height: 40px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .phone-fields input {
+    height: 40px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .login-submit {
+    grid-column: 1 / -1;
+    height: 42px;
+  }
+
+  .auth-layout .signup-card:not(.admin-signup-card) .signup-guide {
+    margin-top: 10px;
+  }
 }
 
 .login-brand {
