@@ -27,7 +27,29 @@
 
     <div class="info-detail-highlight">
       <span>인식 차량번호</span>
-      <strong>{{ dStore.detail.carNo || '-' }}</strong>
+      <div class="car-number-edit-row">
+        <strong v-if="!isEditingCarNo">{{ dStore.detail.carNo || '-' }}</strong>
+
+        <form v-else class="car-number-edit-form" @submit.prevent="saveCarNo">
+          <input
+            v-model="carNoDraft"
+            type="text"
+            maxlength="12"
+            placeholder="예: 경기37바1083"
+            aria-label="수정할 차량번호"
+          />
+          <button type="submit" :disabled="carNoSaving">
+            {{ carNoSaving ? '저장 중' : '저장' }}
+          </button>
+          <button type="button" class="cancel" :disabled="carNoSaving" @click="cancelCarNoEdit">
+            취소
+          </button>
+        </form>
+
+        <button v-if="!isEditingCarNo" type="button" class="car-number-edit-button" @click="startCarNoEdit">
+          번호 수정
+        </button>
+      </div>
     </div>
 
     <dl class="info-detail-list">
@@ -86,13 +108,50 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCameraDataStore } from './cameraDataStore'
-import { getCameraDataImage } from './cameraDataApi'
+import { editCameraDataCarNo, getCameraDataImage } from './cameraDataApi'
 
 const route = useRoute()
 const router = useRouter()
 const dStore = useCameraDataStore()
 const imageUrl = ref(null)
 const imageLoading = ref(false)
+const isEditingCarNo = ref(false)
+const carNoDraft = ref('')
+const carNoSaving = ref(false)
+
+const startCarNoEdit = () => {
+  carNoDraft.value = dStore.detail?.carNo ?? ''
+  isEditingCarNo.value = true
+}
+
+const cancelCarNoEdit = () => {
+  carNoDraft.value = ''
+  isEditingCarNo.value = false
+}
+
+const saveCarNo = async () => {
+  const carNo = carNoDraft.value.trim().replace(/\s/g, '')
+  const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
+
+  if (!carNoPattern.test(carNo)) {
+    alert('차량번호 형식을 확인하세요. 예: 123가4567, 경기37바1083')
+    return
+  }
+
+  carNoSaving.value = true
+
+  try {
+    const cameraDataNo = route.params.cameraDataNo
+    await editCameraDataCarNo(cameraDataNo, carNo, true)
+    await dStore.loadDetail(cameraDataNo)
+    cancelCarNoEdit()
+  } catch (error) {
+    console.error('차량번호 수정 실패:', error)
+    alert(error.response?.data?.message || '차량번호 수정에 실패했습니다.')
+  } finally {
+    carNoSaving.value = false
+  }
+}
 
 const formatDate = value => {
   if (!value) {
@@ -172,6 +231,61 @@ onBeforeUnmount(() => {
 
 .info-detail-highlight {
   padding: 22px 24px;
+}
+
+.car-number-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.car-number-edit-button,
+.car-number-edit-form button {
+  height: 32px;
+  min-width: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #ffffff;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  background: #34495e;
+}
+
+.car-number-edit-button {
+  flex: 0 0 auto;
+  min-width: 76px;
+}
+
+.car-number-edit-form {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.car-number-edit-form input {
+  width: 210px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #9aa7b3;
+  border-radius: 7px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.car-number-edit-form button.cancel {
+  color: #39434c;
+  background: #dfe4e8;
+}
+
+.car-number-edit-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .info-detail-list {

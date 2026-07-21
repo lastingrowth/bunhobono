@@ -12,10 +12,7 @@
         <!-- 메인 영역 : 왼쪽은 영상, 오른쪽은 입출차 로그와 상세 정보 -->
         <div
             class="admin-control-layout"
-            :style="{
-                ...(monitoringHeight ? { '--monitoring-height': `${monitoringHeight}px` } : {}),
-                ...(cameraDataHeight ? { '--camera-data-height': `${cameraDataHeight}px` } : {}),
-            }">
+            :style="monitoringHeight ? { '--monitoring-height': `${monitoringHeight}px` } : {}">
             <section class="admin-control-left">
             <!-- 주차장 모니터링 영역 -->
             <article ref="monitoringCardRef" class="dashboard-card monitoring-card">
@@ -30,7 +27,7 @@
 
                         <div class="parking-video-box">
                             <img
-                                v-if="isCameraPlaying(panel.cameraNo) && selectedParkingPanel?.parkingNo !== panel.parkingNo"
+                                v-if="hasStreamSession(panel.cameraNo) && !isCameraFinished(panel.cameraNo)"
                                 class="parking-stream"
                                 :src="getStreamUrl(panel.cameraNo)"
                                 :alt="`${panel.parkingName} ${panel.modeText} CCTV`" />
@@ -54,12 +51,21 @@
                                 </span>
                             </div>
 
-                            <div class="cctv-overlay" aria-hidden="true">
+                            <div class="cctv-overlay">
                                 <div class="cctv-overlay-top">
                                     <span class="cctv-live" :class="{ paused: !isCameraPlaying(panel.cameraNo) }">
                                         <i></i>{{ isCameraPlaying(panel.cameraNo) ? 'REC' : (isCameraFinished(panel.cameraNo) ? 'ENDED' : 'STANDBY') }}
                                     </span>
-                                    <span>CAM {{ String(panel.cameraNo).padStart(2, '0') }}</span>
+                                    <div class="cctv-camera-mode-group">
+                                        <span class="cctv-camera-label">CAM {{ String(panel.cameraNo).padStart(2, '0') }}</span>
+                                        <button
+                                            type="button"
+                                            class="cctv-mode-control"
+                                            :class="panel.modeClass"
+                                            @click.stop="changeCameraMode(panel)">
+                                            <span>{{ panel.mode === 'IN' ? 'IN' : 'OUT' }}</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="cctv-overlay-bottom">
                                     <span>{{ panel.parkingName }} · {{ panel.modeText }}</span>
@@ -71,19 +77,10 @@
                                 <i class="cctv-corner bottom-right"></i>
                             </div>
 
-                            <button
-                                type="button"
-                                class="cctv-mode-control"
-                                :class="panel.modeClass"
-                                @click.stop="changeCameraMode(panel)">
-                                <i></i>
-                                <span>{{ panel.mode === 'IN' ? 'IN' : 'OUT' }}</span>
-                                <small>{{ panel.modeText }} 전환</small>
-                            </button>
-
                             <div
                                 v-if="isApprovalWaiting(panel.cameraNo)"
                                 class="approval-wait-overlay"
+                                :class="{ 'low-confidence': isLowConfidenceWaiting(panel) }"
                                 @click.stop>
                                 <div class="approval-wait-panel">
                                     <span class="approval-wait-title"><i></i>{{ approvalWaitTitle(panel) }}</span>
@@ -131,55 +128,57 @@
                 </div>
             </article>
 
-            <section class="dashboard-card carlog-dashboard-block">
-                <div class="section-heading">
-                    <h3>입출차 로그</h3>
-                    <button
-                        type="button"
-                        class="dashboard-view-all-button"
-                        @click="router.push('/admin/carlogs')">
-                        전체보기
-                    </button>
-                </div>
-
-                <div class="carlog-table-wrap">
-                    <table class="dashboard-log-table">
-                        <thead>
-                            <tr>
-                                <th>차량번호</th>
-                                <th>구분</th>
-                                <th>상태</th>
-                                <th>입차</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="log in recentCarlogs"
-                                :key="log.carLogNo"
-                                :class="{ selected: selectedDetailType === 'CAR_LOG' && selectedCarlog?.carLogNo === log.carLogNo }"
-                                @click="showCarlogDetail(log)">
-                                <td>{{ log.carNo || '미인식' }}</td>
-                                <td>{{ log.carKindText }}</td>
-                                <td>
-                                    <span class="state-badge" :class="parkingStateClass(log)">
-                                        {{ log.parkingStateText }}
-                                    </span>
-                                </td>
-                                <td>{{ log.inTimeText }}</td>
-                            </tr>
-                            <tr v-if="recentCarlogs.length === 0">
-                                <td colspan="4">입출차 로그가 없습니다</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
             </section>
 
             <!-- 오른쪽 입출차 로그 + 선택 상세 영역 -->
             <section class="admin-control-right">
-                <article class="dashboard-card carlog-preview-card">
-                    <section ref="cameraDataBlockRef" class="dashboard-card camera-dashboard-block">
+                <section class="dashboard-card carlog-dashboard-block">
+                    <div class="section-heading">
+                        <h3>입출차 로그</h3>
+                        <button
+                            type="button"
+                            class="dashboard-view-all-button"
+                            @click="router.push('/admin/carlogs')">
+                            전체보기
+                        </button>
+                    </div>
+
+                    <div class="carlog-table-wrap">
+                        <table class="dashboard-log-table">
+                            <thead>
+                                <tr>
+                                    <th>차량번호</th>
+                                    <th>구분</th>
+                                    <th>상태</th>
+                                    <th>주차장</th>
+                                    <th>입차</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="log in recentCarlogs"
+                                    :key="log.carLogNo"
+                                    :class="{ selected: selectedDetailType === 'CAR_LOG' && selectedCarlog?.carLogNo === log.carLogNo }"
+                                    @click="showCarlogDetail(log)">
+                                    <td>{{ log.carNo || '미인식' }}</td>
+                                    <td>{{ log.carKindText }}</td>
+                                    <td>
+                                        <span class="state-badge" :class="parkingStateClass(log)">
+                                            {{ log.parkingStateText }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.parkingName || '-' }}</td>
+                                    <td>{{ formatCameraDataTime(log.inTime) }}</td>
+                                </tr>
+                                <tr v-if="recentCarlogs.length === 0">
+                                    <td colspan="5">입출차 로그가 없습니다</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="dashboard-card camera-dashboard-block">
                     <div class="section-heading">
                         <h3>카메라 데이터</h3>
                         <button
@@ -205,7 +204,10 @@
                                 <tr
                                     v-for="cameraData in recentCameraData"
                                     :key="cameraData.cameraDataNo"
-                                    :class="{ selected: selectedDetailType === 'CAMERA_DATA' && selectedCameraData?.cameraDataNo === cameraData.cameraDataNo }"
+                                    :class="{
+                                        selected: selectedDetailType === 'CAMERA_DATA' && selectedCameraData?.cameraDataNo === cameraData.cameraDataNo,
+                                        'recognition-review-row': needsRecognitionReview(cameraData),
+                                    }"
                                     @click="showCameraDataDetail(cameraData)">
                                     <td>
                                         {{ cameraData.carNo || '미인식' }}
@@ -222,8 +224,7 @@
                             </tbody>
                         </table>
                     </div>
-                    </section>
-                </article>
+                </section>
 
                 <article class="dashboard-card selected-log-card">
                     <div class="combined-detail-section">
@@ -257,10 +258,14 @@
                             </div>
                         </div>
 
-                        <dl class="selected-log-info">
+                        <dl
+                            class="selected-log-info"
+                            :class="{ 'recognition-review-info': needsRecognitionReview(selectedCameraData) }">
                             <div>
                                 <dt>차량번호</dt>
-                                <dd class="camera-car-number-field">
+                                <dd
+                                    class="camera-car-number-field"
+                                    :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">
                                     <template v-if="!isEditingCameraCarNo">
                                         <span>{{ selectedCameraData.carNo || '미인식' }}</span>
                                         <button
@@ -280,7 +285,7 @@
                                             aria-label="수정할 차량번호" />
                                         <div class="camera-car-number-edit-actions">
                                             <button type="submit" :disabled="cameraCarNoSaving">
-                                                {{ cameraCarNoSaving ? '저장 중' : '차량번호 수정' }}
+                                                {{ cameraCarNoSaving ? '저장 중' : '저장' }}
                                             </button>
                                             <button type="button" class="cancel" :disabled="cameraCarNoSaving" @click="cancelCameraCarNoEdit">취소</button>
                                         </div>
@@ -311,6 +316,12 @@
                             <div>
                                 <dt>인식률</dt>
                                 <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">{{ formatConfidence(selectedCameraData.confidenceScore) }}</dd>
+                            </div>
+                            <div>
+                                <dt>비고</dt>
+                                <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">
+                                    {{ needsRecognitionReview(selectedCameraData) ? '인식 결과 확인 필요' : '-' }}
+                                </dd>
                             </div>
                         </dl>
                     </div>
@@ -489,7 +500,6 @@
                 <div class="parking-dialog-header">
                     <div>
                         <span>{{ selectedParkingPanel.modeText }} 화면</span>
-                        <h3>{{ selectedParkingPanel.parkingName }}</h3>
                     </div>
 
                     <button
@@ -639,13 +649,10 @@ const cameraCarNoDraft = ref('')
 const cameraCarNoSaving = ref(false)
 const monitoringCardRef = ref(null)
 const monitoringHeight = ref(0)
-const cameraDataBlockRef = ref(null)
-const cameraDataHeight = ref(0)
 let ocrStatusTimer = null
 let refreshingCarlogs = false
 let cctvClockTimer = null
 let monitoringResizeObserver = null
-let cameraDataResizeObserver = null
 
 // storeToRefs 를 사용하면 store 안의 ref/computed 반응성이 유지된다
 const {
@@ -789,6 +796,17 @@ const needsRecognitionReview = (cameraData) => {
         return false
     }
 
+    const currentCarNo = String(cameraData.carNo || '').trim()
+    const originalOcrCarNo = String(cameraData.ocrCarNo || '').trim()
+    const wasManuallyCorrected = currentCarNo
+        && currentCarNo !== '미인식'
+        && originalOcrCarNo
+        && currentCarNo !== originalOcrCarNo
+
+    if (wasManuallyCorrected) {
+        return false
+    }
+
     const score = Number(cameraData.confidenceScore)
     return !cameraData.carNo
         || cameraData.carNo === '미인식'
@@ -808,6 +826,10 @@ const recognitionStateText = (cameraData) => {
 
 const isCameraPlaying = (cameraNo) => {
     return playingCameraNos.value.has(Number(cameraNo))
+}
+
+const hasStreamSession = (cameraNo) => {
+    return Boolean(streamSessions.value[cameraNo])
 }
 
 const isCameraFinished = (cameraNo) => {
@@ -1026,13 +1048,8 @@ const openGateAndResume = async (panel) => {
 
 const updateCctvClock = () => {
     const now = new Date()
-    const date = now.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    })
     const time = now.toLocaleTimeString('ko-KR', { hour12: false })
-    cctvDateTime.value = `${date} ${time}`
+    cctvDateTime.value = time
 }
 
 const checkOcrEvents = async () => {
@@ -1115,17 +1132,10 @@ onMounted(async () => {
     if (monitoringCardRef.value) {
         monitoringResizeObserver.observe(monitoringCardRef.value)
     }
-    cameraDataResizeObserver = new ResizeObserver(([entry]) => {
-        cameraDataHeight.value = Math.round(entry.target.getBoundingClientRect().height)
-    })
-    if (cameraDataBlockRef.value) {
-        cameraDataResizeObserver.observe(cameraDataBlockRef.value)
-    }
 })
 
 onBeforeUnmount(() => {
     monitoringResizeObserver?.disconnect()
-    cameraDataResizeObserver?.disconnect()
     window.clearInterval(cctvClockTimer)
     window.clearInterval(ocrStatusTimer)
     playingCameraNos.value.forEach((cameraNo) => {

@@ -88,6 +88,8 @@ LOW_LIGHT_BRIGHTNESS = 0.40
 SUNNY_CAMERA_NOS = {7, 8}
 SUNNY_CONTRAST = 1.20
 SUNNY_BRIGHTNESS = 18
+TOP_PADDED_CAMERA_NOS = {5, 6, 7, 8}
+DISPLAY_TOP_CROP_RATIO = 0.08
 
 
 class TestStreamWorker:
@@ -206,18 +208,26 @@ class TestStreamWorker:
     def update_latest_frame(self, frame):
         with self.latest_frame_lock:
             frame_height, frame_width = frame.shape[:2]
+            crop_top = 0
             crop_left = 0
 
             # 테스트 영상은 중앙의 정사각형 영상 양옆에 검은 여백이 포함되어 있다.
             # 탐지에는 원본 프레임을 사용하고, 브라우저로 보낼 화면만 중앙 크롭한다.
-            if frame_width > frame_height:
-                crop_left = (frame_width - frame_height) // 2
+            # Remove the source video's top padding from browser output only.
+            # Detection and OCR still use the untouched source frame.
+            if self.camera_no in TOP_PADDED_CAMERA_NOS:
+                crop_top = int(frame_height * DISPLAY_TOP_CROP_RATIO)
+
+            display_height = frame_height - crop_top
+
+            if frame_width > display_height:
+                crop_left = (frame_width - display_height) // 2
                 display_frame = frame[
-                    :,
-                    crop_left:crop_left + frame_height,
+                    crop_top:frame_height,
+                    crop_left:crop_left + display_height,
                 ].copy()
             else:
-                display_frame = frame.copy()
+                display_frame = frame[crop_top:frame_height, :].copy()
 
             height, width = display_frame.shape[:2]
 
@@ -246,8 +256,10 @@ class TestStreamWorker:
                 x1, y1, x2, y2 = self.latest_detection_box
                 x1 = max(0, x1 - crop_left)
                 x2 = min(width - 1, x2 - crop_left)
+                y1 = max(0, y1 - crop_top)
+                y2 = min(height - 1, y2 - crop_top)
 
-                if x2 <= x1:
+                if x2 <= x1 or y2 <= y1:
                     self.latest_frame = display_frame
                     return
 
