@@ -46,12 +46,6 @@ export const useGateStore =  defineStore("gate", () => {
 
   // 게이트 삭제
   const remove = async (gateNo) => {
-    const result = confirm("게이트를 삭제하시겠습니까?");
-
-    if (!result) {
-        return;
-    }
-
     try {
       const res = await deleteGate(gateNo);
 
@@ -60,14 +54,14 @@ export const useGateStore =  defineStore("gate", () => {
           return gate.gateNo !== gateNo;
         });
         
-        alert("게이트 삭제 완료");
+        return { success: true };
       } else {
-        alert("게이트 삭제 실패");
+        return { success: false, message: "게이트 삭제에 실패했습니다." };
       }  
     } catch (e) {
       console.error(e);
 
-      alert("카메라 입출차 기록에서 사용 중인 게이트는 삭제할 수 없습니다.")
+      return { success: false, message: e.response?.data?.message ?? "카메라 입출차 기록에서 사용 중인 게이트는 삭제할 수 없습니다." };
     }
   };
 

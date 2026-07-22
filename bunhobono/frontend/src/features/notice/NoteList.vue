@@ -1,5 +1,15 @@
 <template>
   <main class="notice-page">
+    <Transition name="notice-toast">
+      <div
+        v-if="noticeStore.feedbackMessage"
+        class="notice-feedback-toast"
+        :class="noticeStore.feedbackType"
+        role="status"
+      >
+        {{ noticeStore.feedbackMessage }}
+      </div>
+    </Transition>
     <div class="notice-header">
       <h1>{{ pageTitle }}</h1>
 
@@ -30,6 +40,27 @@
       </div>
     </div>
 
+    <form class="notice-search" @submit.prevent="handleSearch">
+      <input
+        v-model="carNoKeyword"
+        class="notice-search-input"
+        type="search"
+        placeholder="차량번호 검색"
+        aria-label="차량번호 검색"
+      >
+      <button class="notice-search-button" type="submit" :disabled="loading">
+        {{ loading && searchApplied ? '검색 중...' : '검색' }}
+      </button>
+      <button
+        class="notice-reset-button"
+        type="button"
+        :disabled="loading"
+        @click="resetSearch"
+      >
+        초기화
+      </button>
+    </form>
+
     <p v-if="loading">불러오는 중...</p>
     <p v-else-if="errorMessage">{{ errorMessage }}</p>
     <p v-else-if="sortedNotices.length === 0">선택한 처리상태의 알림이 없습니다.</p>
@@ -46,7 +77,7 @@
             >
               {{ column.label }}
             </th>
-            <th class="col-action"></th>
+            <th class="col-action">관리</th>
           </tr>
         </thead>
 
@@ -76,7 +107,7 @@
                 {{ formatValue(getValue(notice, column), column) }}
               </template>
             </td>
-            <td class="col-action" data-label="관리"><button type="button" @click.stop="noticeStore.remove(getNoticeNo(notice))">삭제</button></td>
+            <td class="col-action" data-label="관리"><button type="button" @click.stop="removeNotice(notice)">삭제</button></td>
           </tr>
         </tbody>
       </table>
@@ -97,6 +128,13 @@
         </button>
     </div>
     </template>
+    <NoticeDeleteConfirm
+      :open="Boolean(pendingDeleteNotice)"
+      :car-no="getDeleteCarNo(pendingDeleteNotice)"
+      :deleting="deleting"
+      @cancel="cancelDelete"
+      @confirm="confirmDelete"
+    />
   </main>
 </template>
 
@@ -107,6 +145,8 @@ import { useNoticeStore } from "./noticeStore";
 import { storeToRefs } from "pinia";
 import { usePagination } from "@/shared/pagination/usePagination";
 import Pagination from "@/shared/pagination/Pagination.vue";
+import { searchNoticesByCarNo } from "./noticeApi";
+import NoticeDeleteConfirm from "./NoticeDeleteConfirm.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -117,6 +157,10 @@ const { notices } = storeToRefs(noticeStore);
 const loading = ref(false);
 const errorMessage = ref("");
 const sortOrder = ref("desc");
+const carNoKeyword = ref("");
+const searchApplied = ref(false);
+const pendingDeleteNotice = ref(null);
+const deleting = ref(false);
 
 const statusOptions = [
   { value: "Unresolved", label: "미확인" },
@@ -318,6 +362,66 @@ const goDetail = (notice) => {
   router.push(`/admin/notice/${noticeNo}`);
 };
 
+const handleSearch = async () => {
+  const carNo = carNoKeyword.value.replace(/\s+/g, "");
+
+  if (!carNo) {
+    await resetSearch();
+    return;
+  }
+
+  loading.value = true;
+  errorMessage.value = "";
+  searchApplied.value = true;
+
+  try {
+    const response = await searchNoticesByCarNo(carNo);
+    notices.value = Array.isArray(response.data) ? response.data : [];
+    currentPage.value = 1;
+  } catch (error) {
+    console.error(error);
+    errorMessage.value = "차량번호 검색 결과를 불러오지 못했습니다.";
+  } finally {
+    loading.value = false;
+  }
+};
+
+const resetSearch = async () => {
+  carNoKeyword.value = "";
+  searchApplied.value = false;
+  currentPage.value = 1;
+  await handleLoadNotices();
+};
+
+const getDeleteCarNo = (notice) => {
+  return notice?.registeredCarNo
+    ?? notice?.registered_car_no
+    ?? notice?.capturedCarNo
+    ?? notice?.captured_car_no
+    ?? "";
+};
+
+const removeNotice = (notice) => {
+  pendingDeleteNotice.value = notice;
+};
+
+const cancelDelete = () => {
+  if (!deleting.value) {
+    pendingDeleteNotice.value = null;
+  }
+};
+
+const confirmDelete = async () => {
+  if (!pendingDeleteNotice.value || deleting.value) {
+    return;
+  }
+
+  deleting.value = true;
+  await noticeStore.remove(getNoticeNo(pendingDeleteNotice.value));
+  deleting.value = false;
+  pendingDeleteNotice.value = null;
+};
+
 onMounted(handleLoadNotices);
 
 watch(
@@ -337,10 +441,131 @@ watch(
 )
 
 </script>
-<<<<<<< HEAD
-=======
 
 <style scoped>
+.notice-table th,
+.notice-table td {
+  box-sizing: border-box;
+  height: 30px !important;
+  padding: 4px 7px !important;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.notice-table .col-action {
+  text-align: center !important;
+}
+
+.notice-table .col-action button {
+  box-sizing: border-box;
+  width: auto;
+  min-width: 52px;
+  height: 22px !important;
+  min-height: 0 !important;
+  padding: 2px 8px !important;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.notice-feedback-toast {
+  position: fixed;
+  z-index: 1200;
+  top: 24px;
+  right: 24px;
+  padding: 11px 16px;
+  border: 1px solid #9fcfb0;
+  border-radius: 8px;
+  color: #1f6840;
+  background: #ecf8f0;
+  box-shadow: 0 8px 24px rgba(23, 45, 34, 0.18);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.notice-feedback-toast.error {
+  border-color: #e3adad;
+  color: #9f2f2f;
+  background: #fff0f0;
+}
+
+.notice-toast-enter-active,
+.notice-toast-leave-active { transition: opacity .18s ease, transform .18s ease; }
+.notice-toast-enter-from,
+.notice-toast-leave-to { opacity: 0; transform: translateY(-8px); }
+
+@media (max-width: 1000px) {
+  .notice-table th,
+  .notice-table td,
+  .notice-table .col-action button { font-size: 12px; }
+}
+
+@media (max-width: 700px) {
+  .notice-table th,
+  .notice-table td,
+  .notice-table .col-action button { font-size: 11px; }
+}
+
+.notice-page form.notice-search {
+  width: auto;
+  max-width: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.notice-page form.notice-search .notice-search-input {
+  width: 170px;
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px !important;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.notice-page form.notice-search .notice-search-input:focus {
+  border-color: #2563eb;
+  outline: 2px solid rgba(37, 99, 235, 0.14);
+}
+
+.notice-search-button,
+.notice-reset-button {
+  width: 56px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .notice-page form.notice-search {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notice-search-input {
+    width: 100%;
+  }
+}
+
 .back-button {
   height: 36px;
   padding: 0 12px;
@@ -357,4 +582,3 @@ watch(
   background: #f3f4f6;
 }
 </style>
->>>>>>> jeongmin

@@ -12,6 +12,18 @@ export const useNoticeStore = defineStore("notice", () => {
 
     // 현재 조회중인 공지사항
     const notice = ref(null);
+    const feedbackMessage = ref("");
+    const feedbackType = ref("success");
+    let feedbackTimer;
+
+    const showFeedback = (message, type = "success") => {
+        feedbackMessage.value = message;
+        feedbackType.value = type;
+        window.clearTimeout(feedbackTimer);
+        feedbackTimer = window.setTimeout(() => {
+            feedbackMessage.value = "";
+        }, 2500);
+    };
 
     // 목록 조회
     const loadNotices = async () => {
@@ -44,16 +56,15 @@ export const useNoticeStore = defineStore("notice", () => {
     };
 
     // 알림 삭제
-    const remove = async (noticeNo, router) => {
-        const result = confirm("알림을 삭제하시겠습니까?");
+    const remove = async (noticeNo) => {
+        try {
+            const response = await deleteNotice(noticeNo);
 
-        if (!result) {
-            return;
-        }
+            if (response.data !== 1) {
+                showFeedback("알림 기록 삭제에 실패했습니다.", "error");
+                return false;
+            }
 
-        const response = await deleteNotice(noticeNo);
-
-        if (response.data === 1) {
             notices.value = notices.value.filter((item) => {
                 const itemNo = item.noticeNo ?? item.notice_no;
 
@@ -68,19 +79,20 @@ export const useNoticeStore = defineStore("notice", () => {
                 }
             }
 
-            alert("알림 삭제 완료");
-
-            if (router) {
-                router.push("/admin/notice");
-            }
-        } else {
-            alert("알림 삭제 실패");
+            showFeedback("알림 기록을 삭제했습니다.");
+            return true;
+        } catch (error) {
+            console.error("알림 삭제 실패", error);
+            showFeedback("알림 기록 삭제에 실패했습니다.", "error");
+            return false;
         }
     };
 
     return {
         notices,
         notice,
+        feedbackMessage,
+        feedbackType,
 
         loadNotices,
         loadNotice,

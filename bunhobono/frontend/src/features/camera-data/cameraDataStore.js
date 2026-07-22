@@ -17,6 +17,18 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
   const detailMap = ref({});
   const carLogs = ref([]);
   const searchMode = ref(false);
+  const feedbackMessage = ref("");
+  const feedbackType = ref("success");
+  let feedbackTimer;
+
+  const showFeedback = (message, type = "success") => {
+    feedbackMessage.value = message;
+    feedbackType.value = type;
+    window.clearTimeout(feedbackTimer);
+    feedbackTimer = window.setTimeout(() => {
+      feedbackMessage.value = "";
+    }, 2500);
+  };
 
   const getField = (source, camelKey, snakeKey) => {
     return source?.[camelKey] ?? source?.[snakeKey];
@@ -338,15 +350,14 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
 
   // 카메라 데이터 삭제
   const remove = async (cameraDataNo) => {
-    const result = confirm("카메라 데이터를 삭제하시겠습니까?");
+    try {
+      const response = await deleteCameraData(cameraDataNo);
 
-    if (!result) {
-      return;
-    }
+      if (response.data !== 1) {
+        showFeedback("카메라 기록 삭제에 실패했습니다.", "error");
+        return false;
+      }
 
-    const response = await deleteCameraData(cameraDataNo);
-
-    if (response.data === 1) {
       list.value = list.value.filter((item) => {
         return Number(item.cameraDataNo ?? item.camera_data_no) !== Number(cameraDataNo);
       });
@@ -356,9 +367,12 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
 
       delete detailMap.value[cameraDataNo];
 
-      alert("카메라 데이터 삭제 완료");
-    } else {
-      alert("카메라 데이터 삭제 실패");
+      showFeedback("카메라 기록을 삭제했습니다.");
+      return true;
+    } catch (error) {
+      console.error("카메라 기록 삭제 실패", error);
+      showFeedback("카메라 기록 삭제에 실패했습니다.", "error");
+      return false;
     }
   };
 
@@ -367,6 +381,8 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
     searchResults,
     detail,
     detailMap,
+    feedbackMessage,
+    feedbackType,
     displayList,
     loadList,
     searchByCarNo,

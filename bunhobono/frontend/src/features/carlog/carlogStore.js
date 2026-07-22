@@ -6,6 +6,18 @@ import { toCarLogView } from "./carlogFormat";
 export const useCarlogStore = defineStore("carlog", () => {
 
     const carLogs = ref([]);
+    const feedbackMessage = ref("");
+    const feedbackType = ref("success");
+    let feedbackTimer;
+
+    const showFeedback = (message, type = "success") => {
+        feedbackMessage.value = message;
+        feedbackType.value = type;
+        window.clearTimeout(feedbackTimer);
+        feedbackTimer = window.setTimeout(() => {
+            feedbackMessage.value = "";
+        }, 2500);
+    };
 
     const search = ref({
         gateNo: null,
@@ -56,28 +68,32 @@ export const useCarlogStore = defineStore("carlog", () => {
 
     // 카로그 삭제
     const remove = async (carLogNo) => {
-        const result = confirm("카로그를 삭제하시겠습니까?");
+        try {
+            const response = await deleteCarLog(carLogNo);
 
-        if (!result) {
-            return;
-        }
+            if (response.data !== 1) {
+                showFeedback("입출차 기록 삭제에 실패했습니다.", "error");
+                return false;
+            }
 
-        const response = await deleteCarLog(carLogNo);
-
-        if (response.data === 1) {
             carLogs.value = carLogs.value.filter((log) => {
                 return Number(log.carLogNo ?? log.car_log_no) !== Number(carLogNo);
             });
 
-            alert("카로그 삭제 완료");
-        } else {
-            alert("카로그 삭제 실패");
+            showFeedback("입출차 기록이 삭제되었습니다.");
+            return true;
+        } catch (error) {
+            console.error("카로그 삭제 실패", error);
+            showFeedback("입출차 기록 삭제에 실패했습니다.", "error");
+            return false;
         }
     };
 
     return {
         carLogs,
         search,
+        feedbackMessage,
+        feedbackType,
 
         totalCount,
         parkingCount,
