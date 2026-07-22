@@ -1,73 +1,91 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-
 import {
-    getResVehicleMemberInfo,
+    createResVehicle,
     getResVehicleList,
-    createResVehicle
+    getResVehicleMemberInfo,
+    getResVehicleNotifications,
+    markResVehicleNotificationsRead
 } from "./resVehicleApi";
-
 import { toVehicleView } from "../vehicle/vehicleFormat";
 
 export const useResVehicleStore = defineStore("resVehicle", () => {
-
     const member = ref({});
     const vehicleList = ref([]);
     const vehicle = ref({});
+    const notifications = ref([]);
 
-    // 로그인한 입주민 정보
     const loadMyInfo = async () => {
         const res = await getResVehicleMemberInfo();
         member.value = res.data;
     };
 
-    // 입주민 본인 차량 목록
-    // 서버가 토큰 loginId 기준으로 본인 차량만 반환한다.
     const loadVehicleList = async () => {
         const res = await getResVehicleList();
         vehicleList.value = res.data.map(toVehicleView);
     };
 
-    // 본인 normal 차량
+    // 로그인한 입주민의 알림 조회
+    const loadNotifications = async () => {
+        const res = await getResVehicleNotifications();
+        notifications.value = res.data;
+    };
+
+    // readAt이 없는 알림만 읽지 않은 알림으로 계산
+    const unreadNotificationCount = computed(() => {
+        return notifications.value.filter((item) => {
+            return item.readAt == null;
+        }).length;
+    });
+
+    // 알림함을 열었을 때 읽지 않은 알림 전체 읽음 처리
+    const markAllNotificationsRead = async () => {
+        if (unreadNotificationCount.value === 0) {
+            return;
+        }
+
+        await markResVehicleNotificationsRead();
+        await loadNotifications();
+    };
+
     const normalVehicles = computed(() => {
         return vehicleList.value.filter((item) => {
             return item.vehicleType === "normal";
         });
     });
 
-    // 본인이 신청한 visit 차량
-    // 최근 차량이 위로 오도록 백에서 DESC 정렬되지만,
-    // 혹시 몰라 프론트에서도 한 번 더 정렬한다.
     const visitVehicles = computed(() => {
         return vehicleList.value
-            .filter((item) => {
-                return item.vehicleType === "visit";
-            })
+            .filter((item) => item.vehicleType === "visit")
             .sort((a, b) => {
                 return Number(b.vehicleCarNo) - Number(a.vehicleCarNo);
             });
     });
 
-    // 유효한 방문차량 존재 여부
-    // WAITING 또는 APPROVED이고 아직 남은기간이 있는 차량이 있으면 신청 버튼을 막는 데 사용한다.
-    // 최종 제한은 백에서도 한 번 더 한다.
+    // 현재 추가 방문차량을 신청할 수 없는지 확인
     const hasActiveVisitVehicle = computed(() => {
-    const now = new Date();
+        const now = Date.now();
 
-    return visitVehicles.value.some((item) => {
-        if (item.vehicleStatus !== "WAITING" && item.vehicleStatus !== "APPROVED") {
-            return false;
-        }
+        return visitVehicles.value.some((item) => {
+            if (item.vehicleStatus === "WAITING") {
+                return true;
+            }
 
-        if (!item.endDate) {
-            return true;
-        }
+            if (item.vehicleStatus !== "APPROVED" || item.outTime) {
+                return false;
+            }
 
-        return new Date(item.endDate) > now;
+            if (item.inTime || !item.startDate) {
+                return true;
+            }
+
+            const noEntryDeadline =
+                new Date(item.startDate).getTime() + (60 * 60 * 1000);
+
+            return now <= noEntryDeadline;
+        });
     });
-});
 
-    // 입주민 방문차량 등록 신청
     const addVisitVehicle = async (data) => {
         await createResVehicle(data);
         await loadVehicleList();
@@ -77,13 +95,15 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         member,
         vehicleList,
         vehicle,
-
+        notifications,
         normalVehicles,
         visitVehicles,
         hasActiveVisitVehicle,
-
+        unreadNotificationCount,
         loadMyInfo,
         loadVehicleList,
+        loadNotifications,
+        markAllNotificationsRead,
         addVisitVehicle
     };
 });
