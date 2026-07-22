@@ -43,7 +43,7 @@
 
         <ResVehicleList
           :vehicles="resVehicleStore.normalVehicles"
-          empty-message="등록된 본인 차량이 없습니다."
+          empty-message="관리실에서 등록이 가능합니다. 문의"
           :show-manage="false"
         />
       </section>
@@ -151,6 +151,11 @@ async function refreshData() {
     resVehicleStore.loadVehicleList(),
     resVehicleStore.loadNotifications()
   ]);
+
+  if (mode.value === "form" && resVehicleStore.hasActiveVisitVehicle) {
+    openList();
+    return;
+  }
 
   if (mode.value === "notification") {
     await resVehicleStore.markAllNotificationsRead();

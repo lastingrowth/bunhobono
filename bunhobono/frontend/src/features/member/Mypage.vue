@@ -24,7 +24,7 @@
 
         <aside class="mypage-actions" aria-label="마이페이지 메뉴">
             <button type="button" class="modify-button" @click="goModify">내 정보 수정</button>
-            <button type="button" class="withdraw-button" @click="openDeleteConfirm">전출 신청</button>
+            <button type="button" class="withdraw-button" @click="openDeleteConfirm">회원 탈퇴</button>
             <button type="button" class="home-button" @click="goHome">
                 <span class="home-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" focusable="false">
@@ -206,7 +206,7 @@ onBeforeUnmount(stopChallengeTimer);
 .resident-mypage { width: min(1120px, 100%); margin: 0 auto; padding: 28px 24px; box-sizing: border-box; }
 .mypage-title { margin-bottom: 22px; text-align: center; }
 .mypage-title h2 { margin: 0; color: #203c58; font-size: 30px; }
-.mypage-card { padding: 34px; display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 38px; border: 1px solid #cbddec; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 14px 34px rgba(50,91,126,.12); }
+.mypage-card { padding: 34px; display: grid; grid-template-columns: 1fr; gap: 20px; border: 1px solid #cbddec; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 14px 34px rgba(50,91,126,.12); }
 .mypage-info h3 { margin: 0 0 20px; color: #203c58; font-size: 25px; }
 .mypage-info table { width: 100%; border-collapse: collapse; border: 1px solid #cbd8e4; background: #fff; font-size: 17px; }
 .mypage-info th,.mypage-info td { height: 58px; padding: 8px 18px; border-bottom: 1px solid #dbe5ed; box-sizing: border-box; }
@@ -216,14 +216,14 @@ onBeforeUnmount(stopChallengeTimer);
 .mypage-info tr:nth-child(1) td,.mypage-info tr:nth-child(3) td { color: #287fd5; font-weight: 700; }
 .mypage-info tr:nth-child(4) td { color: #6478cf; font-weight: 700; }
 .mypage-info tr:last-child td { color: #2ca66a; font-weight: 800; }
-.mypage-actions { display: flex; flex-direction: column; justify-content: center; gap: 18px; }
-.mypage-actions button { width: 100%; min-height: 78px; padding: 14px 18px; border: 1px solid #a9c8df; border-radius: 14px; color: #203c58; background: #f4faff; box-shadow: 0 5px 12px rgba(47,100,140,.1); font-size: 20px; font-weight: 700; cursor: pointer; }
-.mypage-actions .modify-button { min-height: 132px; color: #fff; background: #45bff2; border-color: #45bff2; }
+.mypage-actions { display: flex; flex-direction: row; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.mypage-actions button { width: auto; min-height: 40px; padding: 8px 14px; border: 1px solid #a9c8df; border-radius: 8px; color: #203c58; background: #f4faff; box-shadow: none; font-size: 13px; font-weight: 700; cursor: pointer; }
+.mypage-actions .modify-button { min-height: 40px; color: #fff; background: #45bff2; border-color: #45bff2; }
 .mypage-actions .withdraw-button { color: #8f3942; background: #fff1f2; border-color: #f2b9bf; }
 .mypage-actions .home-button { color: #267047; background: #edfbf3; border-color: #a9dfbf; }
 .mypage-actions .home-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-.home-icon { width: 30px; height: 30px; display: inline-grid; place-items: center; flex: 0 0 30px; border-radius: 50%; color: #fff; background: #42c879; }
-.home-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.home-icon { width: 20px; height: 20px; display: inline-grid; place-items: center; flex: 0 0 20px; border-radius: 50%; color: #fff; background: #42c879; }
+.home-icon svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .mypage-actions button:hover { transform: translateY(-1px); filter: brightness(.97); }
 .security-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(15, 23, 42, .5); }
 .security-dialog { width: min(420px, 100%); padding: 24px; display: grid; gap: 16px; border-radius: 14px; background: #fff; box-shadow: 0 20px 50px rgba(15, 23, 42, .25); }
@@ -239,8 +239,8 @@ onBeforeUnmount(stopChallengeTimer);
 @media (max-width: 760px) {
     .resident-mypage { padding: 20px 14px; }
     .mypage-card { padding: 20px; grid-template-columns: 1fr; gap: 24px; }
-    .mypage-actions { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    .mypage-actions button,.mypage-actions .modify-button { min-height: 68px; }
+    .mypage-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .mypage-actions button,.mypage-actions .modify-button { min-height: 40px; }
     .mypage-info th { width: 115px; }
     .mypage-info th,.mypage-info td { height: 54px; padding: 7px 10px; font-size: 15px; }
 }

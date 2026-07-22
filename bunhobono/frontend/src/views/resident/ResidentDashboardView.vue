@@ -42,7 +42,6 @@
                 >
                     <header class="summary-card-header">
                         <h2>내 정보</h2>
-                        <button type="button" @click.stop="goMypage">상세보기</button>
                     </header>
                     <dl class="member-summary-list">
                         <div><dt>이름</dt><dd>{{ dashboard.member.memName || "-" }}</dd></div>
@@ -57,7 +56,6 @@
                 >
                     <header class="summary-card-header">
                         <h2>차량현황</h2>
-                        <button type="button" @click.stop="openVehicleManagement">차량관리</button>
                     </header>
                     <div class="vehicle-status-groups">
                         <div class="vehicle-status-group">
@@ -112,29 +110,29 @@
 
             <div class="board-bottom-grid">
                 <section
-                    class="recent-log-card recent-log-link"
-                    role="button"
-                    tabindex="0"
-                    @click="openCarlogs"
-                    @keyup.enter="openCarlogs"
+                    class="recent-log-card"
                 >
-                    <h2>최근 입출차</h2>
-                    <div class="recent-log-columns">
-                        <div class="recent-log-item">
-                            <span class="log-label log-in">↓ 입차</span>
-                            <b>{{ latestInLog ? timeOnly(latestInLog.inTime) : "-" }}</b>
-                            <span>{{ latestInLog?.carNo || "기록 없음" }}</span>
-                            <small class="parking-movement-text">
-                                {{ latestInLog ? `${latestInLog.parkingName || "주차장"} 입차` : "-" }}
-                            </small>
-                        </div>
-                        <div class="recent-log-item">
-                            <span class="log-label log-out">↑ 출차</span>
-                            <b>{{ latestOutLog ? timeOnly(latestOutLog.outTime) : "-" }}</b>
-                            <span>{{ latestOutLog?.carNo || "기록 없음" }}</span>
-                            <small class="parking-movement-text">{{ latestOutLog ? `${latestOutLog.parkingName || "주차장"} 출차` : "-" }}</small>
+                    <h2>내 차 최근 입출차</h2>
+                    <div v-if="residentCarLogs.length" class="recent-log-summary-list">
+                        <div
+                            v-for="log in residentCarLogs.slice(0, 5)"
+                            :key="log.carLogNo || `${log.carNo}-${log.inTime}`"
+                            class="recent-log-summary-item"
+                        >
+                            <div class="recent-log-car">
+                                <strong>{{ log.carNo || "차량번호 없음" }}</strong>
+                                <small>{{ log.parkingName || "주차장 정보 없음" }}</small>
+                            </div>
+                            <div class="recent-log-times">
+                                <span><b class="log-direction in">입차</b>{{ dateTimeText(log.inTime) }}</span>
+                                <span><b class="log-direction out">출차</b>{{ dateTimeText(log.outTime) }}</span>
+                            </div>
+                            <span class="carlog-state" :class="{ parking: log.parkingState === 'PARKING' }">
+                                {{ log.parkingState === "PARKING" ? "주차 중" : "출차" }}
+                            </span>
                         </div>
                     </div>
+                    <p v-else class="recent-log-empty">최근 입출차 기록이 없습니다.</p>
                 </section>
 
                 <section class="parking-card">
@@ -252,8 +250,6 @@ let notificationTimer;
 
 const { loading, errorMessage, dashboard, residenceText, normalVehicles, visitVehicles, parkingStatusList } = storeToRefs(dashboardStore);
 
-const latestInLog = computed(() => dashboard.value.recentCarLogs.find((log) => log.inTime) || null);
-const latestOutLog = computed(() => dashboard.value.recentCarLogs.find((log) => log.outTime) || null);
 const residentCarLogs = computed(() => dashboard.value.recentCarLogs || []);
 const {
     currentPage,
@@ -262,10 +258,6 @@ const {
     paginatedItems: paginatedCarLogs,
     setPage,
 } = usePagination(residentCarLogs, 10);
-
-const timeOnly = (value) => value ? new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit", minute: "2-digit", hour12: false,
-}).format(new Date(value)) : "-";
 
 const dateTimeText = (value) => value ? new Intl.DateTimeFormat("ko-KR", {
     year: "2-digit", month: "2-digit", day: "2-digit",
@@ -297,12 +289,9 @@ const parkedCarNumbers = (parking) => normalVehicles.value
     .filter(Boolean);
 const loadDashboard = () => dashboardStore.loadDashboard();
 const openVehicleManagement = () => router.push("/resident/vehicles");
-const openCarlogs = () => router.push("/resident/carlogs");
 const openDashboard = () => router.push("/resident/dashboard");
 const goMypage = () => router.push("/resident/mypage");
 const goWelcome = () => router.push("/resident");
-const refreshFromHeader = () => loadDashboard();
-
 const openVehicleNotifications = () => {
     router.push({
         path: "/resident/vehicles",
@@ -312,7 +301,6 @@ const openVehicleNotifications = () => {
 
 onMounted(() => {
     loadDashboard();
-    window.addEventListener('resident-dashboard-refresh', refreshFromHeader);
     resVehicleStore.loadNotifications();
 
     notificationTimer = window.setInterval(() => {
@@ -321,16 +309,16 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    window.removeEventListener('resident-dashboard-refresh', refreshFromHeader);
     window.clearInterval(notificationTimer);
 });
 </script>
 
 <style scoped>
 :global(.content:has(.resident-board-page)) { padding: 0; }
-.resident-board-page { min-height: calc(100vh - 70px); display: grid; place-items: start center; padding: 0; background: linear-gradient(180deg,#b9e5ff 0%,#d8f0ff 38%,#f0f9ff 72%,#ffffff 100%); }
+:global(.content:has(.resident-board-page) > .resident-board-page) { width: 100%; max-width: none; margin: 0; }
+.resident-board-page { min-height: calc(100vh - var(--header-height)); display: grid; place-items: start center; padding: 0; background-image: linear-gradient(180deg,rgba(248,252,255,.44) 0%,rgba(250,253,255,.63) 45%,rgba(255,255,255,.81) 75%,rgba(255,255,255,.91) 100%),url("@/assets/images/back.jpg"); background-position: center; background-size: cover; background-repeat: no-repeat; background-attachment: fixed; }
 .resident-board { width: min(1500px, 100%); padding: 18px 28px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-.resident-board.resident-carlog-page { align-self: start; width: min(1500px, 100%); padding: 24px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.resident-board.resident-carlog-page { align-self: start; width: min(760px, calc(100% - 200px)); margin: 30px auto; padding: 24px; border: 0; border-radius: 0; background: rgba(255,255,255,.94); box-shadow: 0 14px 38px rgba(39,79,113,.14); }
 .board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .board-navigation-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; margin-right: 10px; }
 .board-navigation-actions button { padding: 9px 14px; border: 1px solid transparent; border-radius: 9px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease; }
@@ -340,7 +328,7 @@ onUnmounted(() => {
 .board-navigation-actions .welcome-button:hover { border-color: #fff !important; color: #fff !important; background: #2f7fdf !important; box-shadow: inset 0 0 0 1px #fff,0 0 0 2px rgba(47,127,223,.25); filter: none; opacity: 1; }
 .board-welcome { display: flex; align-items: center; gap: 11px; }
 .profile-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: #fff; background: #3d86e6; font-size: 0; }
-.profile-icon::before { content: "●"; font-size: 22px; }
+.profile-icon::before { content: "☺"; font-size: 25px; font-weight: 700; line-height: 1; }
 .board-welcome h1 { margin: 0; color: #203c58; font-size: 27px; }
 .welcome-actions { display: flex; align-items: center; gap: 7px; margin-left: 10px; }
 .welcome-actions button { padding: 8px 12px; border: 1px solid #c9dcef; border-radius: 9px; color: #315c86; background: #f5faff; font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -430,9 +418,6 @@ onUnmounted(() => {
 .alert-card time { color: #718398; font-size: 10px; }
 .board-bottom-grid { display: grid; grid-template-columns: 32% 1fr; gap: 18px; margin-top: 18px; }
 .recent-log-card,.parking-card { padding: 13px 15px; border: 1px solid #dfe9f2; border-radius: 15px; background: #fff; }
-.recent-log-link { cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
-.recent-log-link:hover { border-color: #8bb9e5; box-shadow: 0 7px 18px rgba(39, 91, 140, .12); transform: translateY(-1px); }
-.recent-log-link:focus-visible { outline: 3px solid rgba(47, 127, 223, .28); outline-offset: 2px; }
 .recent-log-card h2 { margin-bottom: 22px; }
 .parking-card h2 { margin-bottom: 10px; }
 .recent-log-columns { display: grid; grid-template-columns: 1fr 1fr; }
@@ -443,6 +428,20 @@ onUnmounted(() => {
 .log-out { color: #258b45; background: #e5f6e9; }
 .recent-log-item b { color: #213d58; font-size: 24px; }.recent-log-item > span:not(.log-label) { color: #344f69; font-size: 14px; }.recent-log-item small { color: #6d91b8; font-size: 11px; }
 .recent-log-item small.parking-movement-text { color: #df2f2f; font-weight: 800; }
+.recent-log-summary-list { display: grid; gap: 7px; }
+.recent-log-summary-item { display: grid; grid-template-columns: minmax(125px,.75fr) minmax(270px,1.8fr) auto; align-items: center; gap: 14px; min-width: 0; padding: 11px 13px; border-radius: 10px; background: #f7faff; }
+.recent-log-car { display: grid; gap: 2px; min-width: 0; }
+.recent-log-car strong { overflow: hidden; color: #287fd5; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.recent-log-car small { overflow: hidden; color: #7b8fa1; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.recent-log-times { display: grid; gap: 5px; color: #536b80; font-size: 12px; }
+.recent-log-times span { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.log-direction { display: inline-flex; justify-content: center; min-width: 34px; font-size: 10px; }
+.log-direction.in { color: #176fd0; }.log-direction.out { color: #258b45; }
+.recent-log-empty { margin: 30px 0; color: #8799aa; text-align: center; }
+@media (max-width:600px) {
+    .recent-log-summary-item { grid-template-columns: 1fr auto; gap: 8px; }
+    .recent-log-times { grid-column: 1 / -1; }
+}
 .parking-zones { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
 .parking-zone { position: relative; display: grid; justify-items: center; gap: 4px; padding: 8px 6px 7px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .parking-zone::before { display: none; }
@@ -465,7 +464,7 @@ onUnmounted(() => {
 .resident-carlog-empty { padding: 45px 12px !important; color: #8799aa; text-align: center; }
 .parking-empty,.board-state { color: #667d92; text-align: center; }.board-state { padding: 40px; border-radius: 18px; background: #fff; }.board-error { color: #b83e3e; }.board-state button { padding: 8px 14px; border: 1px solid #ccddeb; border-radius: 10px; background: #fff; cursor: pointer; }
 @media (max-height:760px) and (min-width:901px){
-    .resident-board-page{min-height:calc(100vh - 58px);padding:0}
+    .resident-board-page{min-height:calc(100vh - var(--header-height));padding:0}
     .resident-board{width:min(1500px,100%);padding:10px 18px;border-radius:0}
     .board-header{margin-bottom:8px}
     .profile-icon{width:34px;height:34px}.profile-icon::before{font-size:18px}
@@ -485,11 +484,84 @@ onUnmounted(() => {
     .zone-donut{width:72px;height:72px}.zone-donut-inner{width:51px;height:51px}.zone-donut-inner b{font-size:15px}
     .parking-zone{gap:2px}
 }
-@media (max-width:900px){.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
-@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
+@media (max-width:900px){.resident-board.resident-carlog-page{width:calc(100% - 36px)}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
+@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{width:calc(100% - 12px);margin:6px auto;padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
 .welcome-title-row { display: flex; align-items: center; gap: 10px; }
 .notification-button { position: relative; display: grid; width: 38px; height: 38px; place-items: center; padding: 0; border: 1px solid #c9dcef; border-radius: 9px; color: #315c86; background: #f5faff; cursor: pointer; }
 .notification-button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
 .notification-envelope { font-size: 22px; line-height: 1; }
 .notification-badge { position: absolute; top: -7px; right: -7px; display: grid; min-width: 20px; height: 20px; place-items: center; padding: 0 5px; border: 2px solid #fff; border-radius: 10px; color: #fff; background: #e5484d; font-size: 11px; font-weight: 800; }
+
+/* 대시보드의 각 영역을 하나의 큰 카드 안에서 구분한다. */
+.resident-board:not(.resident-carlog-page) {
+    width: min(760px, calc(100% - 200px));
+    margin: 30px auto;
+    padding: 26px 38px 34px;
+    border: 1px solid rgba(202, 220, 235, .9);
+    border-radius: 0;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 14px 38px rgba(39, 79, 113, .14);
+    backdrop-filter: blur(5px);
+}
+.resident-board:not(.resident-carlog-page) .board-info-grid,
+.resident-board:not(.resident-carlog-page) .board-bottom-grid { gap: 0; }
+.resident-board:not(.resident-carlog-page) .board-info-grid {
+    padding-bottom: 18px;
+    border-bottom: 1px solid #dfe9f2;
+}
+.resident-board:not(.resident-carlog-page) .board-bottom-grid { margin-top: 0; }
+.resident-board:not(.resident-carlog-page) .member-summary-card,
+.resident-board:not(.resident-carlog-page) .vehicle-summary-card,
+.resident-board:not(.resident-carlog-page) .recent-log-card,
+.resident-board:not(.resident-carlog-page) .parking-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.resident-board:not(.resident-carlog-page) .member-summary-card,
+.resident-board:not(.resident-carlog-page) .recent-log-card { padding-left: 0; padding-right: 22px; }
+.resident-board:not(.resident-carlog-page) .vehicle-summary-card,
+.resident-board:not(.resident-carlog-page) .parking-card {
+    padding-right: 0;
+    padding-left: 22px;
+    border-left: 1px solid #dfe9f2;
+}
+.resident-board:not(.resident-carlog-page) .recent-log-card,
+.resident-board:not(.resident-carlog-page) .parking-card { padding-top: 18px; }
+@media (max-width:900px) {
+    .resident-board:not(.resident-carlog-page) { width: calc(100% - 36px); padding-right: 22px; padding-left: 22px; }
+    .resident-board:not(.resident-carlog-page) .board-info-grid { padding-bottom: 0; }
+    .resident-board:not(.resident-carlog-page) .member-summary-card,
+    .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
+    .resident-board:not(.resident-carlog-page) .recent-log-card,
+    .resident-board:not(.resident-carlog-page) .parking-card { padding: 16px 0; border-left: 0; }
+    .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
+    .resident-board:not(.resident-carlog-page) .parking-card { border-top: 1px solid #dfe9f2; }
+}
+@media (max-width:600px) {
+    .resident-board:not(.resident-carlog-page) { width: calc(100% - 12px); margin: 6px 0; padding: 14px; border-radius: 0; }
+}
+
+/* 홈페이지처럼 주요 영역을 위에서 아래로 이어서 보여준다. */
+.resident-board:not(.resident-carlog-page) .board-info-grid,
+.resident-board:not(.resident-carlog-page) .board-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+.resident-board:not(.resident-carlog-page) .board-info-grid { padding-bottom: 0; }
+.resident-board:not(.resident-carlog-page) .member-summary-card,
+.resident-board:not(.resident-carlog-page) .vehicle-summary-card,
+.resident-board:not(.resident-carlog-page) .recent-log-card,
+.resident-board:not(.resident-carlog-page) .parking-card {
+    min-height: 220px;
+    padding: 24px 4px;
+    border: 0;
+    border-top: 1px solid #dfe9f2;
+    background: transparent;
+}
+.resident-board:not(.resident-carlog-page) .member-summary-card {
+    padding-top: 12px;
+    border-top: 0;
+}
+.resident-board:not(.resident-carlog-page) .parking-card { padding-bottom: 8px; }
 </style>

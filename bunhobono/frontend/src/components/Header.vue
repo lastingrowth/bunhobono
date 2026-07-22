@@ -10,8 +10,38 @@
         </div>
 
         <div v-if="isResidentDashboard" class="resident-header-actions">
-            <button type="button" class="resident-refresh-button" @click="refreshResidentDashboard">새로고침</button>
-            <button type="button" class="resident-home-button" @click="goResidentHome">초기화면</button>
+            <div class="resident-menu-wrap">
+                <button
+                    type="button"
+                    class="resident-menu-button"
+                    :aria-expanded="residentMenuOpen"
+                    @click="residentMenuOpen = !residentMenuOpen"
+                >
+                    메뉴 <span aria-hidden="true">▾</span>
+                </button>
+                <nav v-if="residentMenuOpen" class="resident-dropdown-menu" aria-label="입주민 메뉴">
+                    <RouterLink
+                        to="/resident/mypage"
+                        :class="{ 'menu-active': route.path.startsWith('/resident/mypage') }"
+                        @click="closeResidentMenu"
+                    >내 정보 상세보기</RouterLink>
+                    <RouterLink
+                        to="/resident/vehicles"
+                        :class="{ 'menu-active': route.path === '/resident/vehicles' && route.query.mode !== 'notification' }"
+                        @click="closeResidentMenu"
+                    >차량 관리</RouterLink>
+                    <RouterLink
+                        to="/resident/carlogs"
+                        :class="{ 'menu-active': route.path === '/resident/carlogs' }"
+                        @click="closeResidentMenu"
+                    >입출차 내역</RouterLink>
+                    <RouterLink
+                        :to="{ path: '/resident/vehicles', query: { mode: 'notification' } }"
+                        :class="{ 'menu-active': route.path === '/resident/vehicles' && route.query.mode === 'notification' }"
+                        @click="closeResidentMenu"
+                    >차량 알림</RouterLink>
+                </nav>
+            </div>
             <div class="resident-header-clock">
                 <span>▣&nbsp; {{ formattedDate }}</span>
                 <i></i>
@@ -26,7 +56,7 @@
         </div>
 
         <div class="user-info">
-            <span class="user-role">{{ jwtStore.role }}</span>
+            <span class="user-role">{{ roleLabel }}</span>
             <span class="divider">|</span>
             <span class="user-name">{{ jwtStore.userId }}</span>
 
@@ -39,12 +69,12 @@
 <script setup>
 import { useJwtStore } from '@/features/login/jwtStore';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 const jwtStore = useJwtStore()
 const route = useRoute()
-const router = useRouter()
 const now = ref(new Date())
+const residentMenuOpen = ref(false)
 let clockTimer
 
 defineProps({
@@ -68,6 +98,11 @@ const homePath = computed(() => {
 
 const isResidentDashboard = computed(() => route.path.startsWith('/resident'))
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const roleLabel = computed(() => {
+    if (jwtStore.role === 'RESIDENT') return '입주민'
+    if (jwtStore.role === 'ADMIN') return '관리자'
+    return jwtStore.role
+})
 const formattedDate = computed(() => new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short',
 }).format(now.value))
@@ -75,17 +110,8 @@ const formattedTime = computed(() => new Intl.DateTimeFormat('ko-KR', {
     hour: 'numeric', minute: '2-digit', hour12: true,
 }).format(now.value))
 
-function refreshResidentDashboard() {
-    if (route.path === '/resident/dashboard') {
-        window.dispatchEvent(new CustomEvent('resident-dashboard-refresh'))
-        return
-    }
-
-    router.go(0)
-}
-
-function goResidentHome() {
-    router.push('/resident')
+function closeResidentMenu() {
+    residentMenuOpen.value = false
 }
 
 function logout() {
@@ -116,11 +142,82 @@ const emit = defineEmits([
 }
 
 .resident-header-actions {
+  position: relative;
+  flex-shrink: 0;
   margin-left: auto;
   margin-right: 18px;
   display: flex;
   align-items: center;
   gap: 7px;
+}
+
+@media (max-width: 1000px) {
+  .header { gap: 10px; padding-inline: 12px; }
+  .header-left { gap: 8px; }
+  .header .logo { font-size: 17px; white-space: nowrap; }
+  .resident-header-actions { gap: 5px; margin-right: 6px; }
+  .resident-header-actions .resident-menu-button { padding: 3px 5px; font-size: 11px; }
+  .resident-header-clock { gap: 6px; margin-left: 2px; padding: 5px 7px; font-size: 10px; }
+  .header .user-info { flex-shrink: 0; gap: 7px; white-space: nowrap; }
+  .header .user-role { padding: 3px 6px; font-size: 10px; }
+  .header .user-name { font-size: 11px; }
+  .header .logout-btn { flex-shrink: 0; padding: 6px 9px; font-size: 11px; white-space: nowrap; }
+}
+
+@media (max-width: 650px) {
+  .header { gap: 7px; padding-inline: 8px; }
+  .header .logo { font-size: 14px; }
+  .resident-header-actions { margin-left: auto; margin-right: 2px; }
+  .resident-header-clock span:first-child,
+  .resident-header-clock i,
+  .header .user-role,
+  .header .user-name { display: none; }
+}
+
+.resident-menu-wrap {
+  position: relative;
+}
+
+.resident-header-actions .resident-menu-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+}
+
+.resident-header-actions .resident-menu-button:hover {
+  background: transparent;
+}
+
+.resident-dropdown-menu {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 10px);
+  left: 0;
+  display: grid;
+  width: 190px;
+  overflow: hidden;
+  padding: 7px;
+  border: 1px solid #cbddeb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 12px 28px rgba(31, 68, 103, .2);
+}
+
+.resident-dropdown-menu a {
+  padding: 11px 13px;
+  border-radius: 8px;
+  color: #294966;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.resident-dropdown-menu a:hover,
+.resident-dropdown-menu a.menu-active {
+  color: #1768bd;
+  background: #e8f4ff;
 }
 
 .resident-header-actions button {
@@ -174,19 +271,20 @@ const emit = defineEmits([
   background: #69737b;
 }
 
-.resident-refresh-button {
-  background: #42d77d;
+.resident-header-actions .resident-menu-button {
+  min-height: auto;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 0;
+  color: #315c86;
+  background: transparent;
+  font-weight: 700;
 }
 
-.resident-home-button {
-  background: #45bff2;
-}
-
-.resident-refresh-button:hover {
-  background: #2fc86b;
-}
-
-.resident-home-button:hover {
-  background: #2eafe8;
+.resident-header-actions .resident-menu-button:hover {
+  color: #1685c7;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 </style>
