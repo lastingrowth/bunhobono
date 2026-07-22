@@ -4,26 +4,46 @@ BEGIN;
 TRUNCATE TABLE
     trash_bin,
     notice,
+    vehicle_nt,
     car_log,
     camera_data,
     camera,
     vehicle_car,
     gate,
     parking,
+    member_archive,
     member
 RESTART IDENTITY CASCADE;
+
+-- =====================================================
+-- 1. 회원
+-- 총 8동. 각 동 별 20세대
+-- =====================================================
 INSERT INTO member
     (login_id, login_pwd, mem_dong, mem_ho, mem_name, mem_phone,
      role, create_at, delete_at, mem_status)
 VALUES
+    -- << 관리자 >> 
+    -- 근무
     ('admin1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '관리자', '010-1111-1111', 'ADMIN', NOW(), NULL, 'ACTIVE'),
     ('admin2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '경비원', '010-1111-1111', 'ADMIN', NOW(), NULL, 'ACTIVE'),
+    -- 휴직
+    ('admin3', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '관리자', '010-1111-1111', 'ADMIN', NOW(), NULL, 'ON_LEAVE'),
+    -- 퇴사
+    ('admin4', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '경비원', '010-1111-1111', 'ADMIN', NOW(), NULL, 'INACTIVE'),
 
-    -- 101동: 등록 회원 19세대 + 빈집 1세대
+
+    -- << 입주민 >> 
+    -- [101동]
+    -- 거주
     ('res1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 101, '마틴', '010-2222-0101', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
-    ('res2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 201, '제임스', '010-2222-0102', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
-    ('res3', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 301, '오드리', '010-2222-0103', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
-    ('res4', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 401, '닉', '010-2222-0104', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
+    -- 가입 승인 대기
+    ('res2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 201, '제임스', '010-2222-0102', 'PENDING', NOW(), NULL, 'ACTIVE'),
+    -- 전출 신청
+    ('res3', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 301, '오드리', '010-2222-0103', 'RESIDENT', NOW(), NULL, 'WITHDRAW_PENDING'),
+    -- 전출 완료 / 빈 세대
+    ('res4', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 401, '닉', '010-2222-0104', 'RESIDENT', NOW(), NULL, 'EMPTY'),
+    
     ('res5', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 501, '칼', '010-2222-0201', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
     ('res6', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 601, '찰스', '010-2222-0202', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
     ('res7', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 701, '마이클', '010-2222-0203', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
@@ -39,7 +59,7 @@ VALUES
     ('res17', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 702, '피터파커', '010-3000-0017', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
     ('res18', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 802, '스티븐스트레인지', '010-3000-0018', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
     ('res19', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 902, '완다막시모프', '010-3000-0019', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
-    ('unit_101_1002', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1002, '미등록', '미등록', 'RESIDENT', NOW(), NOW(), 'EMPTY'),
+    ('res0', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 1002, '티파록하트', '010-3000-0152', 'RESIDENT', NOW(), NOW(), 'ACTIVE'),
 
     -- 102동: 등록 회원 19세대 + 빈집 1세대
     ('res20', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 101, '비전', '010-3000-0020', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
@@ -192,11 +212,14 @@ VALUES
     ('res149', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 602, '네이선드레이크', '010-3000-0149', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
     ('res150', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 702, '마스터치프', '010-3000-0150', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
     ('res151', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 802, '클라우드스트라이프', '010-3000-0151', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
-    ('res152', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 902, '티파록하트', '010-3000-0152', 'RESIDENT', NOW(), NULL, 'ACTIVE'),
-    ('unit_402_1002', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 1002, '미등록', '미등록', 'RESIDENT', NOW(), NOW(), 'WITHDRAW_PENDING');
+    ('unit_402_902', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 902, '미등록', '미등록', 'RESIDENT', NOW(), NULL, 'EMPTY'),
+    ('unit_402_1002', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 1002, '미등록', '미등록', 'RESIDENT', NOW(), NOW(), 'EMPTY');
 
 
+-- =====================================================
+-- 2. 주차장
 -- 기존과 동일한 주차장 4개
+-- =====================================================
 INSERT INTO parking (parking_name, parking_spaces, parking_location)
 VALUES
     ('A 주차장', 100, 'A 지하 주차장'),
@@ -204,7 +227,11 @@ VALUES
     ('C 주차장', 100, 'C 지하 주차장'),
     ('D 주차장', 50, '지상 주차장');
 
+
+-- =====================================================
+-- 3. 게이트
 -- 기존과 동일한 게이트 8개
+-- =====================================================
 INSERT INTO gate (parking_no, gate_name, gate_type)
 VALUES
     (1, 'A-IN', 'In'),
@@ -216,7 +243,10 @@ VALUES
     (4, 'D-IN', 'In'),
     (4, 'D-OUT', 'Out');
 
+-- =====================================================
+-- 5. 카메라
 -- 기존과 동일한 카메라 8개
+-- =====================================================
 INSERT INTO camera (gate_no, camera_name, camera_type, install_date)
 VALUES
     (1, 'CAM-A1', 'In',   DATE '2025-01-01'),
@@ -230,7 +260,9 @@ VALUES
 
 
     
-
+-- =====================================================
+-- 4. 차량
+-- =====================================================
 -- 입주민 등록 차량 더미
 -- vehicle_type: normal
 -- vehicle_status: APPROVED
@@ -408,10 +440,6 @@ SELECT car_no, COUNT(*) FROM vehicle_car GROUP BY car_no HAVING COUNT(*) > 1;
 
 
 
-
-
-BEGIN;
-
 -- 입주민 방문차량 시연 데이터
 -- EXPIRED : res1 ~ res30의 과거 만료 이력 30건
 -- WAITING : res1 ~ res10, res31 ~ res40의 승인 대기 20건
@@ -518,6 +546,36 @@ GROUP BY vehicle_type, vehicle_status
 ORDER BY vehicle_type, vehicle_status;
 
 
-   
+-- =====================================================
+-- 6. 카메라 데이터
+-- =====================================================
+
+-- =====================================================
+-- 7. 입출차 로그
+-- =====================================================
+
+-- =====================================================
+-- 8. 차량 알림
+-- =====================================================
+
+-- =====================================================
+-- 9. 장기 주차 / 미등록 알림
+-- =====================================================
+
+-- =====================================================
+-- 10. 휴지통
+-- =====================================================
 
 COMMIT;
+
+-- 테이블을 모두 생성한 뒤 애플리케이션 계정에 권한을 부여한다.
+GRANT USAGE ON SCHEMA public TO bono_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bono_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO bono_user;
+
+-- 이후 같은 실행 계정으로 생성되는 테이블과 시퀀스에도 자동으로 권한을 부여한다.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT ALL PRIVILEGES ON TABLES TO bono_user;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT ALL PRIVILEGES ON SEQUENCES TO bono_user;

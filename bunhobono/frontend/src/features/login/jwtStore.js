@@ -43,54 +43,58 @@ export const useJwtStore = defineStore('jwtStore', {
         this.role = decoded.role
         this.memStatus = decoded.memStatus
 
-        // 전출 신청·퇴사·빈 세대 상태의 계정은 로그인할 수 없도록 차단한다.
-        // ON_LEAVE는 기존 휴직 기능을 유지하기 위해 로그인 차단 대상에 넣지 않는다.
-        if (['WITHDRAW_PENDING', 'INACTIVE', 'EMPTY'].includes(this.memStatus)) {
+        // 로그인할 수 없는 상태일 때 토큰과 사용자 정보를 모두 비운다.
+        const blockLogin = (message) => {
           this.token = null
           this.userId = null
           this.role = null
           this.memStatus = null
-          this.errorMessage = '사용할 수 없는 계정 상태입니다.'
+          this.errorMessage = message
 
           localStorage.removeItem('token')
           localStorage.removeItem('userId')
           localStorage.removeItem('memStatus')
+
           return false
         }
 
+        // 가입 승인 대기 회원은 관리자 승인 전까지 로그인할 수 없다.
+        if (this.role === 'PENDING') {
+          return blockLogin('회원가입 승인 대기 중입니다. 관리자 승인 후 로그인할 수 있습니다.')
+        }
+
+        // 전출 신청 중인 입주민은 관리자 처리 전까지 로그인할 수 없다.
+        if (this.memStatus === 'WITHDRAW_PENDING') {
+          return blockLogin('전출 신청이 접수된 계정입니다. 관리자 처리 후 이용 상태가 변경됩니다.')
+        }
+
+        // 전출 완료 후 빈 세대로 남은 계정은 로그인할 수 없다.
+        if (this.memStatus === 'EMPTY') {
+          return blockLogin('회원가입 후 이용해주세요.')
+        }
+
+        // 퇴사 처리된 관리자 계정은 로그인할 수 없다.
+        if (this.memStatus === 'INACTIVE') {
+          return blockLogin('퇴사 처리된 관리자 계정입니다. 로그인할 수 없습니다.')
+        }
+
+        // 휴직 상태의 관리자 계정은 복귀 전까지 로그인할 수 없다.
+        if (this.memStatus === 'ON_LEAVE') {
+          return blockLogin('휴직 상태입니다. 관리자에게 복귀 신청을 문의하세요.')
+        }
+
+        // 로그인 가능한 상태이므로 기존 에러 문구를 비운다.
         this.errorMessage = null
-        
-        /*
-        |--------------------------------------------------------------------------
-        | localStorage 저장
-        |--------------------------------------------------------------------------
-        | apiClient의 Request Interceptor가
-        | localStorage의 jwtToken을 자동으로 읽어
-        | Authorization 헤더를 추가해준다.
-        */
+
         localStorage.setItem('token', token)
         localStorage.setItem('userId', this.userId)
         localStorage.setItem('memStatus', this.memStatus)
 
-
-        // 로그인 성공 후 라우팅
-        if (this.role === "ADMIN") {
-          router.push("/admin")
-        } else if (this.role === "PENDING") {
-          this.token = null
-          this.userId = null
-          this.role = null
-          this.memStatus = null
-          this.errorMessage = null
-
-          localStorage.removeItem('token')
-          localStorage.removeItem('userId')
-          localStorage.removeItem('memStatus')
-
-          alert("관리자 승인 후 로그인할 수 있습니다.")
-          return false
+        // 로그인 성공 후 권한에 따라 화면을 이동한다.
+        if (this.role === 'ADMIN') {
+          router.push('/admin')
         } else {
-          router.push("/resident")
+          router.push('/resident')
         }
 
         // vue에서 성공 판단용
