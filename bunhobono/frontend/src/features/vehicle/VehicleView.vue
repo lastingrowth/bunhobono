@@ -3,6 +3,14 @@
     <div class="vehicle-page-header">
       <h2 class="vehicle-page-title">차량 관리</h2>
 
+      <button
+        v-if="fromStatistics"
+        class="back-button"
+        @click="backToStatistics"
+      >
+        ← 통계로 돌아가기
+      </button>
+
       <nav class="vehicle-tabs" aria-label="차량 관리 메뉴">
         <button
           type="button"
@@ -13,6 +21,7 @@
         >
           차량 등록
         </button>
+
         <button
           type="button"
           class="vehicle-tab approve-tab"
@@ -34,9 +43,13 @@
       </select>
     </div>
 
-    <div v-if="viewMode === 'list'" class="vehicle-list-toolbar">
+    <div
+      v-if="viewMode === 'list'"
+      class="vehicle-list-toolbar"
+    >
       <VehicleSearch
         v-model:filter-type="filterType"
+        @clear-initial-filter="vehicleInitialFilter = 'all'"
       />
     </div>
 
@@ -62,8 +75,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref
+} from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useVehicleStore } from './vehicleStore'
 
 import VehicleSearch from './components/VehicleSearch.vue'
@@ -73,44 +91,74 @@ import VehicleApprove from './components/VehicleApprove.vue'
 
 const vehicleStore = useVehicleStore()
 const route = useRoute()
+const router = useRouter()
 
 const viewMode = ref('list')
 const filterType = ref('all')
 const sortMode = ref('latest')
+const vehicleInitialFilter = ref('all')
 
-// 통계 화면에서 '주차중 방문 만료 차량'을 눌러 들어온 경우
-// 차량 목록 화면은 그대로 쓰되, 처음 필터만 전용 필터로 열어준다.
-const vehicleInitialFilter = computed(() => {
-  if (route.name === 'ParkedExpiredVehicleList') {
-    return 'parkedExpired'
-  }
+let refreshTimer = null
+let isRefreshing = false
 
-  return 'all'
+const fromStatistics = computed(() => {
+  return route.name === 'ParkedExpiredVehicleList'
 })
 
-function openVehicleList() {
+async function openVehicleList() {
   viewMode.value = 'list'
-  vehicleStore.loadVehicleList()
+  await refreshVehicleList()
 }
 
 function openVehicleForm() {
   viewMode.value = 'form'
 }
 
-function openVehicleApprove() {
+async function openVehicleApprove() {
   viewMode.value = 'approve'
-  vehicleStore.loadVehicleApproveList()
+  await vehicleStore.loadVehicleApproveList()
 }
 
-onMounted(() => {
-  if (route.query.mode === 'approve') {
-    viewMode.value = 'approve'
-    vehicleStore.loadVehicleApproveList()
+function backToStatistics() {
+  router.push('/admin/statistics')
+}
+
+// 목록 화면에 있을 때만 차량 목록을 다시 조회한다.
+// 승인대기 화면은 VehicleApprove.vue의 5초 갱신을 사용한다.
+async function refreshVehicleList() {
+  if (viewMode.value !== 'list' || isRefreshing) {
     return
   }
 
-  viewMode.value = 'list'
-  vehicleStore.loadVehicleList()
+  isRefreshing = true
+
+  try {
+    await vehicleStore.loadVehicleList()
+  } finally {
+    isRefreshing = false
+  }
+}
+
+onMounted(async () => {
+  if (route.query.mode === 'approve') {
+    viewMode.value = 'approve'
+    await vehicleStore.loadVehicleApproveList()
+  } else {
+    if (route.name === 'ParkedExpiredVehicleList') {
+      vehicleInitialFilter.value = 'parkedExpired'
+    }
+
+    viewMode.value = 'list'
+    await refreshVehicleList()
+  }
+
+  refreshTimer = window.setInterval(() => {
+    refreshVehicleList()
+  }, 30000)
+})
+
+onBeforeUnmount(() => {
+  window.clearInterval(refreshTimer)
 })
 </script>
 
@@ -156,7 +204,10 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .vehicle-tab:hover {
@@ -202,6 +253,19 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   margin: 12px 0;
+}
+
+.back-button {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background: #f3f4f6;
 }
 
 @media (max-width: 520px) {

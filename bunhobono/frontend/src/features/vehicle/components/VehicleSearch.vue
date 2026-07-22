@@ -26,11 +26,17 @@ import { ref } from 'vue'
 import { useVehicleStore } from '../vehicleStore'
 
 const vehicleStore = useVehicleStore()
+
+const emit = defineEmits(['clear-initial-filter'])
+
 const filterType = defineModel('filterType', { default: 'all' })
 
 const carNo = ref('')
 
 async function search() {
+
+  emit('clear-initial-filter')
+
   if (carNo.value.trim() === '') {
     await vehicleStore.loadVehicleList()
     return
@@ -40,11 +46,14 @@ async function search() {
 }
 
 async function applyFilter() {
-  if (filterType.value === 'expired' || filterType.value === 'all') {
-    carNo.value = ''
-    await vehicleStore.loadVehicleList()
-  }
+
+  emit('clear-initial-filter')
+
+  carNo.value = ''
+
+  await vehicleStore.loadVehicleList()
 }
+
 </script>
 
 <style scoped>

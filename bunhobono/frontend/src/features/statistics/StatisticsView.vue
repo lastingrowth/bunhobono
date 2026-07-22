@@ -1,19 +1,5 @@
 <template>
     <section class="statistics-page">
-        <!-- 페이지 제목 영역 -->
-        <div class="statistics-title-area">
-            <div>
-                <h1>통계</h1>
-                <p>주차 현황, 입차 유형, 장기주차 위험을 한눈에 확인하세요.</p>
-            </div>
-
-            <button
-                type="button"
-                class="refresh-button"
-                @click="statsStore.loadStatistics()">
-                새로고침
-            </button>
-        </div>
 
         <!-- 데이터 조회 상태 -->
         <p
@@ -281,12 +267,41 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStatisticsStore } from '@/features/statistics/statisticsStore'
 
 const router = useRouter()
 const statsStore = useStatisticsStore()
+
+let timer = null
+let midnightTimer = null
+
+const scheduleMidnightUpdate = () => {
+    if (midnightTimer) {
+        clearTimeout(midnightTimer)
+    }
+
+    const now = new Date()
+
+    const nextMidnight = new Date(now)
+    nextMidnight.setDate(now.getDate() + 1)
+    nextMidnight.setHours(0, 0, 0, 0)
+
+    const delay = nextMidnight.getTime() - now.getTime()
+
+    midnightTimer = setTimeout(async () => {
+
+        // 오늘 날짜 갱신
+        statsStore.updateToday()
+
+        // 자정이 되었으므로 통계를 다시 불러온다.
+        await statsStore.loadStatistics()
+
+        // 다음 자정을 다시 예약
+        scheduleMidnightUpdate()
+    }, delay)
+}
 
 // 막대그래프 높이를 계산한다.
 // 값이 너무 작아도 화면에서 보이도록 최소 높이를 8%로 둔다.
@@ -400,7 +415,19 @@ const goWarningPage = (key) => {
 
 // 화면을 처음 열 때 통계 데이터를 불러온다.
 onMounted(async () => {
+    // 다음 자정 예약
+    scheduleMidnightUpdate()
+
     await statsStore.loadStatistics()
+
+    timer = setInterval(async () => {
+        await statsStore.loadStatistics()
+    }, 10000)
+})
+
+onUnmounted(() => {
+    clearInterval(timer)
+    clearTimeout(midnightTimer)
 })
 </script>
 

@@ -11,8 +11,26 @@
             <header class="board-header">
                 <div class="board-welcome">
                     <span class="profile-icon">●</span>
-                    <div>
-                        <h1>{{ dashboard.member.memName || "입주민" }}님 반갑습니다.</h1>
+                    <div class="welcome-title-row">
+                      <h1>{{ dashboard.member.memName || "입주민" }}님 반갑습니다.</h1>
+                                        
+                      <button
+                        type="button"
+                        class="notification-button"
+                        title="차량 알림"
+                        @click="openVehicleNotifications"
+                      >
+                        <span class="notification-envelope">✉</span>
+                                        
+                        <span
+                          v-if="resVehicleStore.unreadNotificationCount > 0"
+                          class="notification-badge"
+                        >
+                          {{ resVehicleStore.unreadNotificationCount > 99
+                            ? "99+"
+                            : resVehicleStore.unreadNotificationCount }}
+                        </span>
+                      </button>
                     </div>
                 </div>
 
@@ -233,13 +251,16 @@ import { storeToRefs } from "pinia";
 import { useResidentDashboardStore } from "@/stores/residentDashboard";
 import { usePagination } from "@/shared/pagination/usePagination";
 import Pagination from "@/shared/pagination/Pagination.vue";
+import { useResVehicleStore } from "@/features/resVehicle/resVehicleStore";
 
 const router = useRouter();
 const route = useRoute();
 const dashboardStore = useResidentDashboardStore();
+const resVehicleStore = useResVehicleStore();
 const now = ref(new Date());
 const mode = computed(() => route.name === "ResidentCarlogList" ? "carlogs" : "dashboard");
 let clockTimer;
+let notificationTimer;
 
 const { loading, errorMessage, dashboard, residenceText, normalVehicles, visitVehicles, parkingStatusList } = storeToRefs(dashboardStore);
 
@@ -301,11 +322,30 @@ const openDashboard = () => router.push("/resident/dashboard");
 const goMypage = () => router.push("/resident/mypage");
 const goWelcome = () => router.push("/resident");
 
+const openVehicleNotifications = () => {
+    router.push({
+        path: "/resident/vehicles",
+        query: { mode: "notification" }
+    });
+};
+
 onMounted(() => {
     loadDashboard();
-    clockTimer = window.setInterval(() => { now.value = new Date(); }, 1000);
+    resVehicleStore.loadNotifications();
+
+    clockTimer = window.setInterval(() => {
+        now.value = new Date();
+    }, 1000);
+
+    notificationTimer = window.setInterval(() => {
+        resVehicleStore.loadNotifications();
+    }, 30000);
 });
-onUnmounted(() => window.clearInterval(clockTimer));
+
+onUnmounted(() => {
+    window.clearInterval(clockTimer);
+    window.clearInterval(notificationTimer);
+});
 </script>
 
 <style scoped>
@@ -462,4 +502,14 @@ onUnmounted(() => window.clearInterval(clockTimer));
 }
 @media (max-width:900px){.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
 @media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:1px solid #edf2f6;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
+
+
+
+.welcome-title-row { display: flex; align-items: center; gap: 10px; }
+.notification-button { position: relative; display: grid; width: 38px; height: 38px; place-items: center; padding: 0; border: 1px solid #c9dcef; border-radius: 9px; color: #315c86; background: #f5faff; cursor: pointer; }
+.notification-button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
+.notification-envelope { font-size: 22px; line-height: 1; }
+.notification-badge { position: absolute; top: -7px; right: -7px; display: grid; min-width: 20px; height: 20px; place-items: center; padding: 0 5px; border: 2px solid #fff; border-radius: 10px; color: #fff; background: #e5484d; font-size: 11px; font-weight: 800; }
+
+
 </style>

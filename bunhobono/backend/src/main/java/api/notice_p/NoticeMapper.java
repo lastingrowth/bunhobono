@@ -98,14 +98,44 @@ public interface NoticeMapper {
             "AND COALESCE(vc.car_no, cd.car_no, cl.snapshot_car_no) IS NOT NULL " +
             "AND COALESCE(vc.car_no, cd.car_no, cl.snapshot_car_no) != '' " +
 
+//            "AND (" +
+//            "(cl.vehicle_car_no IS NULL " +
+//            "AND cl.in_time <= NOW() - INTERVAL '1 day') " +
+//            "OR " +
+//            "(vc.vehicle_status = 'EXPIRED' " +
+//            "AND vc.end_date IS NOT NULL " +
+//            "AND vc.end_date <= NOW() - INTERVAL '1 day')" +
+//            ") " +
             "AND (" +
-            "(cl.vehicle_car_no IS NULL " +
-            "AND cl.in_time <= NOW() - INTERVAL '1 day') " +
-            "OR " +
-            "(vc.vehicle_status = 'EXPIRED' " +
-            "AND vc.end_date IS NOT NULL " +
-            "AND vc.end_date <= NOW() - INTERVAL '1 day')" +
+
+                // 미등록차량이 하루 이상 주차 중
+                "(cl.vehicle_car_no IS NULL " +
+                "AND cl.in_time <= NOW() - INTERVAL '1 day') " +
+
+                "OR " +
+
+                // 승인된 등록차량 또는 방문차량이 만기 후 하루 이상 미출차
+                "(vc.vehicle_status = 'APPROVED' AND (" +
+
+                // 일반 등록차량: 차량 등록 만기일 기준
+                "(vc.vehicle_type = 'normal' " +
+                "AND vc.end_date IS NOT NULL " +
+                "AND vc.end_date <= NOW() - INTERVAL '1 day') " +
+
+                "OR " +
+
+                // 방문차량: 입차시간 + 신청시간 + 30분 기준
+                "(vc.vehicle_type = 'visit' " +
+                "AND vc.start_date IS NOT NULL " +
+                "AND vc.end_date IS NOT NULL " +
+                "AND cl.in_time IS NOT NULL " +
+                "AND cl.in_time + (vc.end_date - vc.start_date) " +
+                "+ INTERVAL '30 minutes' <= NOW() - INTERVAL '1 day')" +
+
+                "))" +
+
             ") " +
+
 
             "AND NOT EXISTS (" +
             "SELECT 1 FROM notice n " +

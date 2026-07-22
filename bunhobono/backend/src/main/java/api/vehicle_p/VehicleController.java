@@ -72,12 +72,23 @@ public class VehicleController {
         return vehicleService.update(dto);
     }
 
-    // 차량 승인 상태 변경
-    // WAITING 차량을 APPROVED / UNKNOWN / EXPIRED 처리한다.
+    // 관리자 차량 승인 또는 반려
+    // APPROVED는 차량 상태로 저장한다.
+    // REJECTED는 알림 저장 후 승인대기 신청을 삭제한다.
     @PatchMapping("/{vehicleCarNo}/status")
-    public int updateVehicleStatus(@PathVariable int vehicleCarNo,
-                                   @RequestBody VehicleDTO dto) {
+    public int updateVehicleStatus(
+            Authentication authentication,
+            @PathVariable int vehicleCarNo,
+            @RequestBody VehicleDTO dto) {
+
+        // URL로 전달된 차량 고유번호를 DTO에 넣는다.
         dto.setVehicleCarNo(vehicleCarNo);
-        return vehicleService.updateStatus(dto);
+
+        // JWT에서 만들어진 Authentication의 loginId를
+        // 관리자 발신자 정보로 Service에 전달한다.
+        return vehicleService.updateStatus(
+                authentication.getName(),
+                dto
+        );
     }
 }
