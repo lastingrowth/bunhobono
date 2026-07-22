@@ -55,7 +55,13 @@
                 <th>상태</th>
                 <td>
                     <select v-model="member.memStatus">
-                        <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+                        <option
+                            v-for="status in statusOptions"
+                            :key="status.value"
+                            :value="status.value"
+                        >
+                            {{ status.label }}
+                        </option>
                     </select>
                 </td>
             </tr>
@@ -93,15 +99,34 @@ const member = reactive({
     memStatus: "",
 });
 
-// RESIDENT는 거주·전출, ADMIN은 근무·휴직·퇴사 상태만 선택한다.
+// RESIDENT는 현재 회원·전출 신청,
+// ADMIN은 근무·휴직·퇴사 상태를 선택한다.
+// 화면에는 한글 label을 보여주고, 서버에는 영어 value를 보낸다.
 const isCurrentAdmin = computed(() =>
-    member.role === "ADMIN" && member.loginId === jwtStore.userId
-);
+    member.role === 'ADMIN' && member.loginId === jwtStore.userId
+)
 
 const statusOptions = computed(() => {
-    if (member.role !== "ADMIN") return ["거주", "전출"];
-    return isCurrentAdmin.value ? ["근무", "휴직"] : ["근무", "휴직", "퇴사"];
-});
+    if (member.role !== 'ADMIN') {
+        return [
+            { value: 'ACTIVE', label: '현재 회원' },
+            { value: 'WITHDRAW_PENDING', label: '전출 확정' },
+        ]
+    }
+
+    if (isCurrentAdmin.value) {
+        return [
+            { value: 'ACTIVE', label: '근무' },
+            { value: 'ON_LEAVE', label: '휴직' },
+        ]
+    }
+
+    return [
+        { value: 'ACTIVE', label: '근무' },
+        { value: 'ON_LEAVE', label: '휴직' },
+        { value: 'INACTIVE', label: '퇴사' },
+    ]
+})
 
 onMounted(async () => {
     await store.loadMember(memberNo);
@@ -164,9 +189,17 @@ const update = async () => {
         memStatus: member.memStatus
     });
     alert("수정되었습니다.");
-    if (["전출", "퇴사"].includes(member.memStatus)) {
-        router.push({ path: "/admin/members", query: { section: "withdrawn" } });
-        return;
+
+    // 입주민 전출 신청 상태로 바뀐 경우 전출 신청 관리 탭으로 이동한다.
+    if (member.memStatus === 'WITHDRAW_PENDING') {
+        router.push({ path: '/admin/members', query: { section: 'archive' } })
+        return
+    }
+
+    // 관리자 퇴사 상태는 전출 신청 관리가 아니므로 회원관리 기본 화면으로 이동한다.
+    if (member.memStatus === 'INACTIVE') {
+        router.push('/admin/members')
+        return
     }
     router.push(`/admin/members/${memberNo}/detail`);
 };

@@ -70,7 +70,7 @@
             </tr>
             <tr>
                 <th>상태</th>
-                <td>{{ member.memStatus || "-" }}</td>
+                <td>{{ member.memStatus === 'ACTIVE' ? '거주' : member.memStatus || '-' }}</td>
             </tr>
         </tbody>
         </table>

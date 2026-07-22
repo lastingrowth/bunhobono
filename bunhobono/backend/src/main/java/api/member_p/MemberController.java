@@ -39,7 +39,7 @@ public class MemberController {
     // 1. 외부 회원가입과 관리자 회원 추가 요청을 구분한다.
     // =====================================================
 
-    // 외부 가입은 PENDING·거주로 고정하고 관리자 요청은 입력한 역할과 상태를 사용한다.
+    // 외부 가입은 PENDING·ACTIVE로 고정하고 관리자 요청은 입력한 역할과 상태를 사용한다.
     @PostMapping("/members")
     public void signup(@RequestBody MemberDTO dto, Authentication authentication) {
         // ADMIN 권한 여부에 따라 '외부 가입'과 '관리자의 회원추가'를 구분한다.
@@ -48,8 +48,9 @@ public class MemberController {
                 .anyMatch(authority -> "ADMIN".equalsIgnoreCase(authority.getAuthority()));
         if (!adminRequest) {
             // 외부 회원은 관리자 승인 전까지 로그인할 수 없는 대기 역할로 저장한다.
+            // PENDING도 해당 동·호수를 점유하므로 상태는 ACTIVE로 둔다.
             dto.setRole("PENDING");
-            dto.setMemStatus("거주");
+            dto.setMemStatus("ACTIVE");
         }
         service.signup(dto);
     }
@@ -204,7 +205,7 @@ public class MemberController {
         }
     }
 
-    // 비밀번호와 보안문자를 다시 확인한 뒤 회원 상태를 전출로 변경한다.
+    // 비밀번호와 보안문자를 다시 확인한 뒤 회원 상태를 WITHDRAW_PENDING으로 변경한다.
     @DeleteMapping("/resident/mypage/delete")
     public ResponseEntity<Map<String, String>> residentDelete(
             Authentication authentication,
