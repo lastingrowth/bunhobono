@@ -22,6 +22,18 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     const loading = ref(false);
     const errorMessage = ref("");
+    const vehicleFeedbackMessage = ref("");
+    const vehicleFeedbackType = ref("success");
+    let vehicleFeedbackTimer;
+
+    const showVehicleFeedback = (message, type = "success") => {
+        vehicleFeedbackMessage.value = message;
+        vehicleFeedbackType.value = type;
+        window.clearTimeout(vehicleFeedbackTimer);
+        vehicleFeedbackTimer = window.setTimeout(() => {
+            vehicleFeedbackMessage.value = "";
+        }, 3000);
+    };
 
     // 관리자 대시보드 상단 차량 등록 입력값
     const quickVehicle = ref({
@@ -309,17 +321,17 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         const normalizedCarNo = quickVehicle.value.carNo.trim().replace(/\s/g, "");
 
         if (normalizedCarNo === "") {
-            alert("차량번호를 입력하세요");
+            showVehicleFeedback("차량번호를 입력해주세요.", "error");
             return;
         }
 
         if (!carNoPattern.test(normalizedCarNo)) {
-            alert("차량번호 형식이 올바르지 않습니다. 예: 12가3456");
+            showVehicleFeedback("차량번호 형식이 올바르지 않습니다. 예: 12가3456", "error");
             return;
         }
 
         if (!quickVehicle.value.memberNo) {
-            alert("회원을 선택하세요");
+            showVehicleFeedback("등록할 회원을 선택해주세요.", "error");
             return;
         }
 
@@ -345,17 +357,15 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             await vehicleStore.loadVehicleList();
             await loadQuickRegisterMembers();
 
-            alert("차량이 등록되었습니다");
+            showVehicleFeedback(`${normalizedCarNo} 차량을 등록했습니다.`);
             resetQuickVehicle();
         } catch (e) {
             console.error(e);
-
-            if (e.response?.status === 409) {
-                alert("차량 등록 조건에 맞지 않습니다");
-                return;
-            }
-
-            alert("차량 등록 중 오류가 발생했습니다");
+            const responseMessage = e.response?.data?.message;
+            const fallbackMessage = e.response?.status === 409
+                ? "이미 등록된 차량이거나 선택한 회원의 등록 가능 대수를 초과했습니다."
+                : "차량 등록 중 오류가 발생했습니다.";
+            showVehicleFeedback(responseMessage || fallbackMessage, "error");
         }
     };
 
@@ -402,6 +412,9 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     return {
         loading,
         errorMessage,
+        vehicleFeedbackMessage,
+        vehicleFeedbackType,
+        showVehicleFeedback,
 
         quickVehicle,
         quickPeriodOptions,

@@ -2,9 +2,12 @@ package api.vehicle_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -13,6 +16,15 @@ public class VehicleController {
 
     @Resource
     VehicleService vehicleService;
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> vehicleRequestError(ResponseStatusException exception) {
+        return ResponseEntity
+                .status(exception.getStatusCode())
+                .body(Map.of("message", exception.getReason() == null
+                        ? "차량 요청을 처리하지 못했습니다."
+                        : exception.getReason()));
+    }
 
     // 전체 차량 목록 조회
     // 관리자 화면에서는 전체 차량 목록으로 사용한다.

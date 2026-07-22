@@ -25,15 +25,13 @@ export const useParkingsStore = defineStore("parkings", () => {
 
   // 삭제
   const remove = async (parkingNo) => {
-    if (confirm("정말 삭제하시겠습니까?")) {
-      try {
-        await deleteParking(parkingNo);
-        list.value = list.value.filter((p) => p.parkingNo !== parkingNo);
-        alert("삭제 완료");
-      } catch (err) {
-        console.error("삭제 실패:", err);
-        alert("삭제 실패");
-      }
+    try {
+      await deleteParking(parkingNo);
+      list.value = list.value.filter((p) => p.parkingNo !== parkingNo);
+      return { success: true };
+    } catch (error) {
+      console.error("주차장 삭제 실패:", error);
+      return { success: false, message: error.response?.data?.message ?? "주차장 삭제에 실패했습니다." };
     }
   };
 

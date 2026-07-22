@@ -2,14 +2,7 @@ package api.notice_p;
 
 import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -45,5 +38,12 @@ public class NoticeController {
     public int delete(@PathVariable int noticeNo) {
         trashService.moveNotice(noticeNo, "MANUAL");
         return 1;
+    }
+
+    @GetMapping("/search")
+    public List<NoticeDTO> search(
+            @RequestParam(required = false) String carNo
+    ) {
+        return noticeService.search(carNo);
     }
 }

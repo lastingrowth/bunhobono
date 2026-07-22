@@ -5,6 +5,11 @@ export const getNoteList = () =>{
     return api.get("/notice");
 };
 
+// 차량번호로 알림 목록 검색
+export const searchNoticesByCarNo = (carNo) => {
+    return api.get("/notice/search", { params: { carNo } });
+};
+
 // 알림 확인 상태 변경
 export const updateNoticeStatus = (noticeNo, alertStat, handledByMemberName) => {
     return api.put(`/notice/${noticeNo}/status`, { alertStat, handledByMemberName });

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="admin-table-scroll">
+    <div class="admin-table-scroll management-list-table">
     <table border="">
       <thead>
         <tr>
@@ -33,7 +33,7 @@
           <td>{{ vehicle.periodText || '-' }}</td>
           <td>{{ vehicle.endDateText || '-' }}</td>
           <td>{{ vehicle.remainingTimeText || '-' }}</td>
-          <td><button @click="remove(vehicle.vehicleCarNo)">삭제</button></td>
+          <td><button @click="requestDelete(vehicle)">삭제</button></td>
         </tr>
 
         <tr v-if="sortedVehicles.length === 0">
@@ -52,6 +52,13 @@
         @change-page="setPage"/>
       <slot name="pagination-action" />
     </div>
+    <VehicleDeleteConfirm
+      :open="Boolean(pendingDeleteVehicle)"
+      :car-no="pendingDeleteVehicle?.carNo || ''"
+      :deleting="deleting"
+      @cancel="cancelDelete"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -60,6 +67,9 @@ import { computed, ref, watch } from 'vue'
 import { usePagination } from '@/shared/pagination/usePagination'
 import Pagination from '@/shared/pagination/Pagination.vue'
 import { useVehicleStore } from '../vehicleStore'
+import VehicleDeleteConfirm from './VehicleDeleteConfirm.vue'
+
+const emit = defineEmits(['feedback'])
 
 const props = defineProps({
   vehicles: {
@@ -81,6 +91,8 @@ const props = defineProps({
 })
 
 const vehicleStore = useVehicleStore()
+const pendingDeleteVehicle = ref(null)
+const deleting = ref(false)
 
 // 통계 화면에서 전용 주소로 들어왔는지 구분
 const isInitialMode = ref(
@@ -212,12 +224,38 @@ watch(
   }
 )
 
-async function remove(vehicleNo) {
-  if (!confirm('삭제할까요?')) {
+function requestDelete(vehicle) {
+  pendingDeleteVehicle.value = vehicle
+}
+
+function cancelDelete() {
+  if (!deleting.value) {
+    pendingDeleteVehicle.value = null
+  }
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteVehicle.value || deleting.value) {
     return
   }
 
-  await vehicleStore.removeVehicle(vehicleNo)
+  const vehicle = pendingDeleteVehicle.value
+  deleting.value = true
+
+  try {
+    await vehicleStore.removeVehicle(vehicle.vehicleCarNo)
+    pendingDeleteVehicle.value = null
+    emit('feedback', `${vehicle.carNo || '차량'} 정보를 삭제했습니다.`, 'success')
+  } catch (error) {
+    console.error('차량 삭제 실패', error)
+    emit(
+      'feedback',
+      error.response?.data?.message || '차량 정보를 삭제하지 못했습니다.',
+      'error'
+    )
+  } finally {
+    deleting.value = false
+  }
 }
 </script>
 

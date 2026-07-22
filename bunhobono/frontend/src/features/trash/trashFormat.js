@@ -66,11 +66,14 @@ export const showConfidence = (value) => {
 export const getCarKindText = (value) => {
     const carKindText = {
         REGISTERED: "등록 차량",
+        RESIDENT: "등록 차량",
+        NORMAL: "등록 차량",
         VISIT: "방문 차량",
         UNKNOWN: "미등록 차량",
+        UNREGISTERED: "미등록 차량",
     };
 
-    return carKindText[value] ?? showValue(value);
+    return carKindText[String(value ?? "").toUpperCase()] ?? showValue(value);
 };
 
 export const parseDataJson = (dataJson) => {

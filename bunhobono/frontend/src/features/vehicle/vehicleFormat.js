@@ -93,8 +93,8 @@ function vehicleEndDateText(item) {
 // 남은기간 표시
 function vehicleRemainingTimeText(item) {
 
-    // 출차 로그가 있으면 남은시간 대신 출차완료
-    if (item.outTime) {
+    // 방문차량이 출차한 경우에만 남은시간 대신 출차완료
+    if (item.vehicleType === "visit" && item.outTime) {
         return "출차완료";
     }
 

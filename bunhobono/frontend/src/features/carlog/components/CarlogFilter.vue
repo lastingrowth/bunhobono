@@ -1,7 +1,7 @@
 <template>
   <div class="carlog-filter">
-    <div class="carlog-heading-row">
-      <h2>입출차 기록</h2>
+    <div class="carlog-heading-row management-list-header">
+      <h2 class="management-list-title">입출차 기록</h2>
 
       <select
         v-model="carlogStore.search.sort"
@@ -13,10 +13,10 @@
       </select>
     </div>
 
-    <div class="carlog-filter-bar">
+    <div class="carlog-filter-bar management-list-toolbar">
       <input
         v-model="carNoKeyword"
-        class="carlog-search-input"
+        class="carlog-search-input management-car-search-input"
         placeholder="차량번호 검색"
         @keyup.enter="searchLogs"
       >
@@ -40,6 +40,7 @@
       <select
         v-model="carKindInput"
         class="filter-select kind-select"
+        @change="applyCarKind"
       >
         <option value="">전체차량</option>
         <option value="REGISTERED">등록차량</option>
@@ -47,11 +48,11 @@
         <option value="UNKNOWN">미등록차량</option>
       </select>
 
-      <button class="search-btn" @click="searchLogs">
+      <button class="search-btn management-search-button" @click="searchLogs">
         검색
       </button>
 
-      <button class="search-btn reset-btn" @click="resetAll">
+      <button class="search-btn reset-btn management-reset-button" @click="resetAll">
         초기화
       </button>
     </div>
@@ -99,6 +100,11 @@ async function resetAll() {
 }
 
 async function loadCarLogs() {
+  await carlogStore.loadCarLogs()
+}
+
+async function applyCarKind() {
+  carlogStore.search.carKind = carKindInput.value
   await carlogStore.loadCarLogs()
 }
 </script>

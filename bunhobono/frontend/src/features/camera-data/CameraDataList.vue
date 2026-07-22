@@ -1,21 +1,34 @@
 <template>
-  <div>
-    <h2>카메라 기록 관리</h2>
+  <div class="management-list-page camera-data-list-page">
+    <Transition name="camera-data-toast">
+      <div
+        v-if="dStore.feedbackMessage"
+        class="camera-data-feedback-toast"
+        :class="dStore.feedbackType"
+        role="status"
+      >
+        {{ dStore.feedbackMessage }}
+      </div>
+    </Transition>
+    <div class="management-list-header camera-data-heading-row">
+      <h2 class="management-list-title">카메라 기록 관리</h2>
+    </div>
 
-    <div class="camera-data-toolbar">
+    <div class="camera-data-toolbar management-list-toolbar">
       <div class="camera-data-search">
         <input
           v-model="keyword"
+          class="management-car-search-input"
           type="search"
-          placeholder="차량번호를 입력하세요"
+          placeholder="차량번호 검색"
           aria-label="차량번호 검색"
           @keyup.enter="searchGo"
         >
-        <button type="button" :disabled="isSearching" @click="searchGo">
+        <button class="management-search-button" type="button" :disabled="isSearching" @click="searchGo">
           {{ isSearching ? '검색 중...' : '검색' }}
         </button>
-        <button type="button" :disabled="isSearching" @click="resetList">
-          전체보기
+        <button class="management-reset-button" type="button" :disabled="isSearching" @click="resetList">
+          초기화
         </button>
       </div>
 
@@ -39,17 +52,17 @@
 
     <p v-if="searchError" class="search-error">{{ searchError }}</p>
 
-    <div class="admin-table-scroll">
-    <table border="1">
+    <div class="admin-table-scroll management-list-table">
+    <table class="camera-data-table" border="1">
       <thead>
         <tr>
-          <th>기록 번호</th>
+          <th>번호</th>
           <th>주차장</th>
           <th>등록 상태</th>
           <th>차량 번호</th>
           <th>촬영 시각</th>
           <th>입출차 구분</th>
-          <th>인식률</th>
+          <th>인식 신뢰도</th>
           <th>상세보기</th>
           <th>관리</th>
         </tr>
@@ -64,8 +77,8 @@
           <td>{{ formatDate(d.captureTime) }}</td>
           <td>{{ d.movementTypeText }}</td>
           <td>{{ formatConfidence(d.confidenceScore) }}</td>
-          <td><router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo: d.cameraDataNo } }"><button>이미지보기</button></router-link></td>
-          <td><button type="button" @click="dStore.remove(d.cameraDataNo)">삭제</button></td>
+          <td class="camera-data-action"><router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo: d.cameraDataNo } }"><button>이미지보기</button></router-link></td>
+          <td class="camera-data-action"><button type="button" @click="requestDelete(d)">삭제</button></td>
         </tr>
 
         <tr v-if="filteredCameraDataList.length === 0">
@@ -81,6 +94,13 @@
       :page-numbers="pageNumbers"
       @change-page="setPage"/>
     </div>
+    <CameraDataDeleteConfirm
+      :open="Boolean(pendingDeleteData)"
+      :car-no="pendingDeleteData?.carNo || ''"
+      :deleting="deleting"
+      @cancel="cancelDelete"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -90,6 +110,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useCameraDataStore } from './cameraDataStore';
 import { usePagination } from '@/shared/pagination/usePagination';
 import Pagination from '@/shared/pagination/Pagination.vue';
+import CameraDataDeleteConfirm from './CameraDataDeleteConfirm.vue';
 
 const dStore = useCameraDataStore();
 const route = useRoute();
@@ -98,6 +119,8 @@ const router = useRouter();
 const keyword = ref("");
 const isSearching = ref(false);
 const searchError = ref("");
+const pendingDeleteData = ref(null);
+const deleting = ref(false);
 const parkingButtons = [
   { parkingNo: 1, label: 'A' },
   { parkingNo: 2, label: 'B' },
@@ -189,12 +212,114 @@ const formatConfidence = (value) => {
   return `${Number(value).toFixed(1)}%`;
 };
 
+const requestDelete = (cameraData) => {
+  pendingDeleteData.value = cameraData;
+};
+
+const cancelDelete = () => {
+  if (!deleting.value) {
+    pendingDeleteData.value = null;
+  }
+};
+
+const confirmDelete = async () => {
+  if (!pendingDeleteData.value || deleting.value) {
+    return;
+  }
+
+  deleting.value = true;
+  await dStore.remove(pendingDeleteData.value.cameraDataNo);
+  deleting.value = false;
+  pendingDeleteData.value = null;
+};
+
 onMounted(async () => {
   await dStore.loadList();
 });
 </script>
 
 <style scoped>
+.camera-data-table th,
+.camera-data-table td {
+  box-sizing: border-box;
+  height: 30px !important;
+  padding: 4px 7px !important;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.camera-data-table tbody tr {
+  height: 30px !important;
+}
+
+.camera-data-action {
+  height: 30px !important;
+  line-height: 1;
+}
+
+.camera-data-action a {
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+.camera-data-action button {
+  box-sizing: border-box;
+  width: auto;
+  min-width: 52px;
+  height: 22px !important;
+  min-height: 0 !important;
+  padding: 2px 8px !important;
+  line-height: 16px;
+  font-size: 12px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.camera-data-feedback-toast {
+  position: fixed;
+  z-index: 1200;
+  top: 24px;
+  right: 24px;
+  padding: 11px 16px;
+  border: 1px solid #9fcfb0;
+  border-radius: 8px;
+  color: #1f6840;
+  background: #ecf8f0;
+  box-shadow: 0 8px 24px rgba(23, 45, 34, 0.18);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.camera-data-feedback-toast.error {
+  border-color: #e3adad;
+  color: #9f2f2f;
+  background: #fff0f0;
+}
+
+.camera-data-toast-enter-active,
+.camera-data-toast-leave-active { transition: opacity .18s ease, transform .18s ease; }
+.camera-data-toast-enter-from,
+.camera-data-toast-leave-to { opacity: 0; transform: translateY(-8px); }
+
+@media (max-width: 1000px) {
+  .camera-data-table th,
+  .camera-data-table td,
+  .camera-data-action button { font-size: 12px; }
+}
+
+@media (max-width: 700px) {
+  .camera-data-table th,
+  .camera-data-table td,
+  .camera-data-action button { font-size: 11px; }
+}
+
 .camera-data-toolbar {
   margin-bottom: 16px;
   display: flex;

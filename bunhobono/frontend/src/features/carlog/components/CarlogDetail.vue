@@ -1,6 +1,29 @@
 <template>
-  <div class="carlog-table-wrap">
+  <Transition name="carlog-toast">
+    <div
+      v-if="carlogStore.feedbackMessage"
+      class="carlog-feedback-toast"
+      :class="carlogStore.feedbackType"
+      role="status"
+    >
+      {{ carlogStore.feedbackMessage }}
+    </div>
+  </Transition>
+  <div class="carlog-table-wrap management-list-table">
   <table class="carlog-table" border="">
+    <colgroup>
+      <col class="number-col">
+      <col class="car-number-col">
+      <col class="state-col">
+      <col class="kind-col">
+      <col class="in-time-col">
+      <col class="out-time-col">
+      <col class="parking-time-col">
+      <col class="gate-col">
+      <col class="gate-col">
+      <col class="parking-col">
+      <col class="manage-col">
+    </colgroup>
     <thead>
       <tr>
         <th>번호</th>
@@ -32,7 +55,7 @@
         <td :class="{ 'short-text': isShortText(log.inGateText) }">{{ log.inGateText }}</td>
         <td :class="{ 'short-text': isShortText(log.outGateText) }">{{ log.outGateText }}</td>
         <td :class="{ 'short-text': isShortText(log.parkingName || '-') }">{{ log.parkingName || '-' }}</td>
-        <td class="manage-column"><button class="delete-btn" type="button" @click="carlogStore.remove(log.carLogNo)">삭제</button></td>
+        <td class="manage-column"><button class="delete-btn" type="button" @click="requestDelete(log)">삭제</button></td>
       </tr>
 
       <tr v-if="logs.length === 0">
@@ -50,16 +73,38 @@
     :page-numbers="pageNumbers"
     @change-page="setPage"/>
   </div>
+  <CarlogDeleteConfirm
+    :open="Boolean(pendingDeleteLog)"
+    :car-no="pendingDeleteLog?.carNo || ''"
+    :deleting="deleting"
+    @cancel="cancelDelete"
+    @confirm="confirmDelete"
+  />
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useCarlogStore } from '../carlogStore'
 import { usePagination } from '@/shared/pagination/usePagination';
 import Pagination from '@/shared/pagination/Pagination.vue';
+import CarlogDeleteConfirm from './CarlogDeleteConfirm.vue';
 
 
 const carlogStore = useCarlogStore()
+const pendingDeleteLog = ref(null)
+const deleting = ref(false)
+
+const requestDelete = (log) => { pendingDeleteLog.value = log }
+const cancelDelete = () => {
+  if (!deleting.value) pendingDeleteLog.value = null
+}
+const confirmDelete = async () => {
+  if (!pendingDeleteLog.value || deleting.value) return
+  deleting.value = true
+  await carlogStore.remove(pendingDeleteLog.value.carLogNo)
+  deleting.value = false
+  pendingDeleteLog.value = null
+}
 
 const props = defineProps({
   logs: {
@@ -88,6 +133,32 @@ const {
 </script>
 
 <style scoped>
+.carlog-feedback-toast {
+  position: fixed;
+  z-index: 1200;
+  top: 24px;
+  right: 24px;
+  padding: 11px 16px;
+  border: 1px solid #9fcfb0;
+  border-radius: 8px;
+  color: #1f6840;
+  background: #ecf8f0;
+  box-shadow: 0 8px 24px rgba(23, 45, 34, 0.18);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.carlog-feedback-toast.error {
+  border-color: #e3adad;
+  color: #9f2f2f;
+  background: #fff0f0;
+}
+
+.carlog-toast-enter-active,
+.carlog-toast-leave-active { transition: opacity .18s ease, transform .18s ease; }
+.carlog-toast-enter-from,
+.carlog-toast-leave-to { opacity: 0; transform: translateY(-8px); }
+
 .carlog-table-wrap {
   width: 100%;
   max-width: 100%;
@@ -95,17 +166,30 @@ const {
 }
 
 .carlog-table {
-  width: max-content;
-  min-width: 760px;
-  table-layout: auto;
+  width: 100%;
+  min-width: 1080px;
+  table-layout: fixed;
 }
+
+.carlog-table .number-col { width: 5%; }
+.carlog-table .car-number-col { width: 12%; }
+.carlog-table .state-col { width: 7%; }
+.carlog-table .kind-col { width: 8%; }
+.carlog-table .in-time-col,
+.carlog-table .out-time-col { width: 14%; }
+.carlog-table .parking-time-col { width: 9%; }
+.carlog-table .gate-col,
+.carlog-table .parking-col { width: 8%; }
+.carlog-table .manage-col { width: 7%; }
 
 .carlog-table th,
 .carlog-table td {
-  padding: 10px 6px;
+  box-sizing: border-box;
+  height: 30px !important;
+  padding: 4px 7px !important;
   overflow: hidden;
   font-size: 13px;
-  line-height: 1.35;
+  line-height: 1.3;
   text-align: center;
   text-overflow: ellipsis;
   white-space: normal;
@@ -118,12 +202,7 @@ const {
   white-space: nowrap;
 }
 
-.carlog-table td.short-text {
-  width: 1% !important;
-}
-
-.carlog-table td:not(.short-text) {
-  width: auto !important;
+.carlog-table td {
   white-space: nowrap;
 }
 
@@ -139,15 +218,17 @@ const {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 30px;
+  width: auto;
+  min-width: 52px;
+  height: 22px !important;
+  min-height: 0 !important;
   box-sizing: border-box;
-  padding: 0;
+  padding: 2px 8px !important;
   border: 1px solid #111827;
   border-radius: 5px;
   background: #fff;
   color: #111827;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -162,37 +243,38 @@ const {
 
 @media (max-width: 1000px) {
   .carlog-table {
-    min-width: 720px;
+    min-width: 1080px;
   }
 
   .carlog-table th,
   .carlog-table td {
-    padding-right: 4px;
-    padding-left: 4px;
+    padding: 4px 7px !important;
     font-size: 12px;
   }
 
   .carlog-table .delete-btn {
-    width: 50px;
-    height: 28px;
+    width: auto;
+    min-width: 52px;
+    height: 22px !important;
     font-size: 12px;
   }
 }
 
 @media (max-width: 700px) {
   .carlog-table {
-    min-width: 680px;
+    min-width: 1080px;
   }
 
   .carlog-table th,
   .carlog-table td {
-    padding: 8px 3px;
+    padding: 4px 7px !important;
     font-size: 11px;
   }
 
   .carlog-table .delete-btn {
-    width: 44px;
-    height: 26px;
+    width: auto;
+    min-width: 52px;
+    height: 22px !important;
     font-size: 11px;
   }
 }

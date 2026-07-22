@@ -47,13 +47,6 @@ export const useCameraStore =  defineStore("camera", () => {
 
   // 카메라 삭제
   const remove = async (cameraNo) => {
-    const result =
-      confirm("카메라를 삭제하시겠습니까?");
-
-    if (!result) {
-      return;
-    }
-
     try {
       const res = await deleteCamera(cameraNo);
 
@@ -62,14 +55,14 @@ export const useCameraStore =  defineStore("camera", () => {
           return camera.cameraNo !== cameraNo;
         });
 
-        alert("카메라 삭제 완료");
+        return { success: true };
       } else {
-        alert("카메라 삭제 실패");
+        return { success: false, message: "카메라 삭제에 실패했습니다." };
       }
     } catch (e) {
       console.error(e);
 
-      alert("카메라 데이터가 연결되어 있어 삭제할 수 없습니다.");
+      return { success: false, message: e.response?.data?.message ?? "카메라 데이터가 연결되어 있어 삭제할 수 없습니다." };
     }
     
   };
