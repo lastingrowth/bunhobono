@@ -35,7 +35,12 @@
                 <label class="form-field">
                     <span>상태</span>
                     <select v-model="member.memStatus">
-                        <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+                        <option
+                            v-for="status in statusOptions"
+                            :key="status.value"
+                            :value="status.value" >
+                            {{ status.label }}
+                        </option>
                     </select>
                 </label>
             </div>
@@ -129,17 +134,30 @@ const member = ref({
     memPhone: "",
     loginId: "",
     loginPwd: "",
-    // 공개 입주민 회원가입의 초기 상태는 항상 거주로 고정.
-    memStatus: "거주",
+    // 공개 입주민 회원가입의 초기 상태는 항상 ACTIVE로 고정한다.
+    // role이 PENDING이어도 해당 동·호수는 가입 신청자가 점유한 상태다.
+    memStatus: 'ACTIVE',
 });
 const idChecked = ref(false);
 const checkedLoginId = ref("");
 const phoneParts = reactive({ first: "", middle: "", last: "" });
 
 const needsAvailableUnit = computed(() => !props.adminMode || member.value.role === "RESIDENT");
-const statusOptions = computed(() => member.value.role === "ADMIN"
-    ? ["근무", "휴직", "퇴사"]
-    : ["거주", "전출"]);
+
+const statusOptions = computed(() => {
+    if (member.value.role === 'ADMIN') {
+        return [
+            { value: 'ACTIVE', label: '근무' },
+            { value: 'ON_LEAVE', label: '휴직' },
+            { value: 'INACTIVE', label: '퇴사' },
+        ]
+    }
+
+    return [
+        { value: 'ACTIVE', label: '현재 회원' },
+    ]
+})
+
 const hasAvailableUnits = computed(() => store.availableSignupUnits.length > 0);
 const availableDongs = computed(() => [
     ...new Set(store.availableSignupUnits.map((unit) => Number(unit.memDong)))
@@ -168,7 +186,8 @@ onMounted(loadAvailableUnits);
 
 // 관리자 모드에서 가입유형에 맞는 상태와 동·호수 기본값을 설정한다.
 const syncStatusWithRole = () => {
-    member.value.memStatus = statusOptions.value[0];
+    // role을 바꾸면 해당 role에서 사용할 수 있는 첫 번째 상태값으로 초기화한다.
+    member.value.memStatus = statusOptions.value[0]?.value ?? 'ACTIVE'
     member.value.memDong = member.value.role === "ADMIN" ? 0 : "";
     member.value.memHo = member.value.role === "ADMIN" ? 0 : "";
 };

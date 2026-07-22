@@ -53,13 +53,13 @@ public class MemberService {
         if (!Set.of("PENDING", "RESIDENT", "ADMIN").contains(dto.getRole())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 회원 역할입니다.");
         }
-        // 공개 가입은 전출로 비어 있고 다른 승인 대기·거주 회원이 없는 세대만 허용한다.
+        // 공개 가입은 EMPTY 상태이고 다른 승인 대기·현재 회원이 없는 세대만 허용한다.
         if ("PENDING".equals(dto.getRole())) {
             validateAvailableSignupUnit(dto.getMemDong(), dto.getMemHo());
         }
         // 비밀번호 암호화
         dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
-        // ADMIN은 새 행으로 등록하고 RESIDENT·PENDING은 기존 전출 세대 행을 갱신한다.
+        // ADMIN은 새 행으로 등록하고 RESIDENT·PENDING은 기존 EMPTY 세대 행을 갱신한다.
         int savedCount = "ADMIN".equals(dto.getRole())
                 ? mapper.signupAdmin(dto)
                 : mapper.signup(dto);
@@ -90,7 +90,7 @@ public class MemberService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 동·호수입니다.");
         }
 
-        // 같은 전출 세대의 동시 가입 요청을 순서대로 처리한다.
+        // 같은 EMPTY 세대의 동시 가입 요청을 순서대로 처리한다.
         Long withdrawnMemberNo = mapper.lockWithdrawnUnit(dong, ho);
         if (withdrawnMemberNo == null || mapper.countActiveMembersAtUnit(dong, ho) > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 거주 중이거나 가입 신청이 접수된 세대입니다.");
@@ -134,18 +134,20 @@ public class MemberService {
 
         if (savedMember.getLoginId().equals(currentLoginId)
                 && "ADMIN".equalsIgnoreCase(savedMember.getRole())
-                && "퇴사".equals(dto.getMemStatus())) {
+                && "INACTIVE".equals(dto.getMemStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "로그인한 관리자는 본인 계정을 퇴사 처리할 수 없습니다."
             );
         }
 
-        // 입주민을 전출로 변경하면 일반 수정 대신 전출 신청 상태로 전환한다.
+        // 관리자가 입주민 상태를 WITHDRAW_PENDING으로 변경하면
+        // 전출 신청 관리에 남기지 않고 즉시 전출 확정 처리한다.
         if ("RESIDENT".equalsIgnoreCase(savedMember.getRole())
-                && "전출".equals(dto.getMemStatus())) {
+                && "WITHDRAW_PENDING".equals(dto.getMemStatus())) {
 
-            delete((int) dto.getMemberNo(), currentLoginId);
+            mapper.requestWithdrawnMember((int) dto.getMemberNo());
+            confirmWithdrawnMember((int) dto.getMemberNo());
             return;
         }
 
@@ -210,7 +212,7 @@ public class MemberService {
     // 3. 전출 신청 회원을 복원하거나 이력을 보관한 뒤 전출을 확정한다.
     // =====================================================
 
-    // 아직 이력 보관 전인 전출 신청 회원을 다시 거주 상태로 복원한다.
+    // 아직 이력 보관 전인 전출 신청 회원을 다시 ACTIVE 상태로 복원한다.
     @Transactional
     public void restoreWithdrawnMember(int memberNo) {
         MemberDTO savedMember = mapper.detail(memberNo);
@@ -453,7 +455,7 @@ public class MemberService {
         return savedPassword;
     }
 
-    // 보안 검증 후 본인 회원 상태를 전출로 변경하고 탈퇴일을 기록한다.
+    // 보안 검증 후 본인 회원 상태를 WITHDRAW_PENDING으로 변경하고 신청일을 기록한다.
     @Transactional
     public void residentDelete(
             String loginId,

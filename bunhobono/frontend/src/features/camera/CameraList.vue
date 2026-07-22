@@ -1,5 +1,6 @@
 <template>
   <section class="camera-page">
+    <ManagementFeedbackToast :message="feedbackMessage" :type="feedbackType" />
     <!-- 카메라 목록 제목 -->
     <div class="page-heading">
       <div>
@@ -37,8 +38,8 @@
             <td>{{ c.parkingName ?? '-' }}</td>
             <td>{{ c.cameraName }}</td>
             <td>{{ c.cameraType }}</td>
-            <td>{{ c.installDate }}</td>
-            <td><button class="delete-button" type="button" @click="cStore.remove(c.cameraNo)">삭제</button></td>
+            <td>{{ formatInstallDate(c.installDate) }}</td>
+            <td><button class="delete-button" type="button" @click="requestDelete(c)">삭제</button></td>
           </tr>
           <tr v-if="cStore.list.length === 0">
             <td class="empty-row" colspan="7">등록된 카메라가 없습니다.</td>
@@ -129,6 +130,16 @@
         </div>
       </form>
     </dialog>
+    <ManagementDeleteConfirm
+      :open="Boolean(pendingDeleteItem)"
+      title="카메라 삭제"
+      :item-name="pendingDeleteItem?.cameraName || ''"
+      message="카메라를 삭제하시겠습니까?"
+      caution="연결된 카메라 데이터가 있으면 삭제할 수 없습니다."
+      :deleting="deleting"
+      @cancel="cancelDelete"
+      @confirm="confirmDelete"
+    />
   </section>
 </template>
 
@@ -137,12 +148,41 @@ import { computed, onMounted, ref } from 'vue';
 import { useCameraStore } from './cameraStore';
 import { useGateStore } from '@/features/gates/gateStore';
 import { useParkingsStore } from '@/features/parking/parkingsStore';
+import ManagementDeleteConfirm from '@/shared/components/ManagementDeleteConfirm.vue';
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
 
 const cStore = useCameraStore();
 const gStore = useGateStore();
 const pStore = useParkingsStore();
 
 const registerDialog = ref(null);
+const pendingDeleteItem = ref(null);
+const deleting = ref(false);
+const feedbackMessage = ref('');
+const feedbackType = ref('success');
+let feedbackTimer;
+
+const showFeedback = (message, type = 'success') => {
+  feedbackMessage.value = message;
+  feedbackType.value = type;
+  window.clearTimeout(feedbackTimer);
+  feedbackTimer = window.setTimeout(() => { feedbackMessage.value = ''; }, 2500);
+};
+
+const requestDelete = (item) => { pendingDeleteItem.value = item; };
+const cancelDelete = () => { if (!deleting.value) pendingDeleteItem.value = null; };
+const confirmDelete = async () => {
+  if (!pendingDeleteItem.value || deleting.value) return;
+  deleting.value = true;
+  const result = await cStore.remove(pendingDeleteItem.value.cameraNo);
+  deleting.value = false;
+  pendingDeleteItem.value = null;
+  if (result?.success) {
+    showFeedback('카메라를 삭제했습니다.');
+  } else {
+    showFeedback(result?.message || '카메라 삭제에 실패했습니다.', 'error');
+  }
+};
 
 // 빈 카메라 등록 정보 생성
 const createEmptyCamera = () => ({
@@ -154,6 +194,13 @@ const createEmptyCamera = () => ({
 });
 
 const camera = ref(createEmptyCamera());
+
+const formatInstallDate = (value) => {
+  if (!value) return '-';
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value).split('T')[0] : date.toLocaleDateString('ko-KR');
+};
 
 // 선택한 주차장에 포함된 게이트만 표시
 const filteredGates = computed(() =>
@@ -196,6 +243,45 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.table-wrap th,
+.table-wrap td {
+  box-sizing: border-box;
+  height: 30px !important;
+  padding: 4px 7px !important;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.table-wrap tbody tr {
+  height: 30px !important;
+}
+
+.table-wrap td button {
+  box-sizing: border-box;
+  width: auto;
+  min-width: 52px;
+  height: 22px !important;
+  min-height: 0 !important;
+  padding: 2px 8px !important;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1000px) {
+  .table-wrap th,
+  .table-wrap td,
+  .table-wrap td button { font-size: 12px; }
+}
+
+@media (max-width: 700px) {
+  .table-wrap th,
+  .table-wrap td,
+  .table-wrap td button { font-size: 11px; }
+}
+
 .camera-page {
   padding: 8px 0 32px;
   color: #253047;

@@ -56,6 +56,35 @@ public class NoticeService {
         );
     }
 
+    //차량검색
+    public List<NoticeDTO> search(String carNo) {
+        String keyword = normalizeCarNo(carNo);
+
+        if (keyword.isEmpty()) {
+            return noticeMapper.list();
+        }
+
+        return noticeMapper.list().stream()
+                .filter(notice -> {
+                    String registeredCarNo = normalizeCarNo(
+                            notice.getRegisteredCarNo()
+                    );
+                    String capturedCarNo = normalizeCarNo(
+                            notice.getCapturedCarNo()
+                    );
+
+                    return registeredCarNo.contains(keyword)
+                            || capturedCarNo.contains(keyword);
+                })
+                .toList();
+    }
+
+    private String normalizeCarNo(String carNo) {
+        return carNo == null
+                ? ""
+                : carNo.replaceAll("\\s+", "");
+    }
+
     // 24시 통일  장기 주차/미등록 차량 알림 생성
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void createNoticesFromCarLog() {

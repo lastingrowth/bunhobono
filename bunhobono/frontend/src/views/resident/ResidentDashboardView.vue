@@ -47,7 +47,7 @@
                         <div><dt>이름</dt><dd>{{ dashboard.member.memName || "-" }}</dd></div>
                         <div><dt>동·호수</dt><dd>{{ residenceText }}</dd></div>
                         <div><dt>연락처</dt><dd>{{ dashboard.member.memPhone || "-" }}</dd></div>
-                        <div><dt>상태</dt><dd><span class="member-status-badge">{{ dashboard.member.memStatus || "-" }}</span></dd></div>
+                        <div><dt>상태</dt><dd><span class="member-status-badge">{{ dashboard.member.memStatus === 'ACTIVE' ? '거주' : dashboard.member.memStatus || '-' }}</span></dd></div>
                     </dl>
                 </section>
 

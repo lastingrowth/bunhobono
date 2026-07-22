@@ -1,5 +1,9 @@
 <template>
   <main class="trash-detail-page">
+    <TrashFeedbackToast
+      :message="trashStore.feedbackMessage"
+      :type="trashStore.feedbackType"
+    />
     <section class="trash-detail-dialog">
     <div class="detail-header">
       <div>
@@ -53,13 +57,6 @@
       </section>
       </div>
 
-      <!-- 개발 확인용 JSON -->
-      <details class="json-card">
-        <summary>원본 JSON 보기</summary>
-
-        <pre>{{ formatJson(trashStore.trashDetail.dataJson) }}</pre>
-      </details>
-
       <div class="detail-actions">
         <button type="button" @click="goList">
           목록으로
@@ -69,13 +66,20 @@
           type="button"
           class="restore-button"
           :disabled="restoring"
-          @click="handleRestore"
+          @click="requestRestore"
         >
           {{ restoring ? "복원 중..." : "이 기록 복원" }}
         </button>
       </div>
     </template>
     </section>
+    <TrashRestoreConfirm
+      :open="restoreConfirmOpen"
+      :car-no="restoreCarNo"
+      :restoring="restoring"
+      @cancel="cancelRestore"
+      @confirm="confirmRestore"
+    />
   </main>
 </template>
 
@@ -84,12 +88,16 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useTrashStore } from "./trashStore";
+import { useCameraStore } from "@/features/camera/cameraStore";
+import { useMemStore } from "@/features/member/memStore";
+import { useGateStore } from "@/features/gates/gateStore";
+import TrashRestoreConfirm from "./TrashRestoreConfirm.vue";
+import TrashFeedbackToast from "./TrashFeedbackToast.vue";
 
 import {
   getDataTypeText,
   getDeleteTypeText,
   formatDate,
-  formatJson,
   showValue,
   getRecognitionText,
   showConfidence,
@@ -100,7 +108,11 @@ import {
 const route = useRoute();
 const router = useRouter();
 const trashStore = useTrashStore();
+const cameraStore = useCameraStore();
+const memberStore = useMemStore();
+const gateStore = useGateStore();
 const restoring = ref(false);
+const restoreConfirmOpen = ref(false);
 
 const originalData = computed(() => {
   return parseDataJson(
@@ -123,10 +135,6 @@ const commonRows = computed(() => {
     {
       label: "데이터 종류",
       value: getDataTypeText(detail.dataType),
-    },
-    {
-      label: "기존 데이터 번호",
-      value: showValue(detail.originalNo),
     },
     {
       label: "삭제 방식",
@@ -155,6 +163,62 @@ const detailTitle = computed(() => {
   return title[dataType] ?? "원본 데이터";
 });
 
+const restoreCarNo = computed(() => {
+  const data = originalData.value;
+  return data.captured_car_no
+    ?? data.car_no
+    ?? data.snapshot_car_no
+    ?? data.snapshot_captured_car_no
+    ?? "";
+});
+
+const getCameraName = (cameraNo) => {
+  const camera = cameraStore.list.find((item) => {
+    const itemCameraNo = item.cameraNo ?? item.camera_no;
+    return Number(itemCameraNo) === Number(cameraNo);
+  });
+
+  return camera?.cameraName
+    ?? camera?.camera_name
+    ?? (cameraNo ? `카메라 ${cameraNo}` : "-");
+};
+
+const getAlertStatusText = (value) => {
+  const statusText = {
+    UNRESOLVED: "미확인",
+    CHECKED: "확인",
+    RESOLVED: "처리완료",
+  };
+
+  return statusText[String(value ?? "").toUpperCase()] ?? showValue(value);
+};
+
+const getHandlerName = (memberNo) => {
+  if (!memberNo) {
+    return "-";
+  }
+
+  const member = memberStore.memberList.find((item) => {
+    const itemMemberNo = item.memberNo ?? item.member_no;
+    return Number(itemMemberNo) === Number(memberNo);
+  });
+
+  return member?.memName ?? member?.mem_name ?? `관리자 ${memberNo}`;
+};
+
+const getGateName = (gateNo) => {
+  if (!gateNo) {
+    return "-";
+  }
+
+  const gate = gateStore.list.find((item) => {
+    const itemGateNo = item.gateNo ?? item.gate_no;
+    return Number(itemGateNo) === Number(gateNo);
+  });
+
+  return gate?.gateName ?? gate?.gate_name ?? `게이트 ${gateNo}`;
+};
+
 const detailRows = computed(() => {
   const dataType = trashStore.trashDetail?.dataType;
   const data = originalData.value;
@@ -166,8 +230,8 @@ const detailRows = computed(() => {
         value: showValue(data.camera_data_no),
       },
       {
-        label: "카메라 번호",
-        value: showValue(data.camera_no),
+        label: "카메라 이름",
+        value: getCameraName(data.camera_no),
       },
       {
         label: "등록 차량 번호",
@@ -186,7 +250,7 @@ const detailRows = computed(() => {
         value: getRecognitionText(data.recognition_state),
       },
       {
-        label: "인식 정확도",
+        label: "인식 신뢰도",
         value: showConfidence(data.confidence_score),
       },
       {
@@ -209,24 +273,16 @@ const detailRows = computed(() => {
         ),
       },
       {
-        label: "등록 차량 번호",
-        value: showValue(data.vehicle_car_no),
-      },
-      {
-        label: "카메라 데이터 번호",
-        value: showValue(data.camera_data_no),
-      },
-      {
-        label: "입차 게이트 번호",
-        value: showValue(data.in_gate_no),
+        label: "입차 게이트 이름",
+        value: getGateName(data.in_gate_no),
       },
       {
         label: "입차 일시",
         value: formatDate(data.in_time),
       },
       {
-        label: "출차 게이트 번호",
-        value: showValue(data.out_gate_no),
+        label: "출차 게이트 이름",
+        value: getGateName(data.out_gate_no),
       },
       {
         label: "출차 일시",
@@ -283,18 +339,16 @@ const detailRows = computed(() => {
         value: formatDate(data.detect_at),
       },
       {
-        label: "주차 일수",
+        label: "초과 일수",
         value: showValue(data.stay_days),
       },
       {
         label: "처리 상태",
-        value: showValue(data.alert_stat),
+        value: getAlertStatusText(data.alert_stat),
       },
       {
-        label: "처리 관리자 번호",
-        value: showValue(
-          data.handled_by_member_no
-        ),
+        label: "처리 관리자",
+        value: getHandlerName(data.handled_by_member_no),
       },
       {
         label: "처리 일시",
@@ -310,39 +364,38 @@ const goList = () => {
   router.push("/admin/trash");
 };
 
-const handleRestore = async () => {
-  const trashNo = Number(route.params.trashNo);
+const requestRestore = () => {
+  restoreConfirmOpen.value = true;
+};
 
-  if (!window.confirm("이 기록을 복원하시겠습니까?")) {
+const cancelRestore = () => {
+  if (!restoring.value) {
+    restoreConfirmOpen.value = false;
+  }
+};
+
+const confirmRestore = async () => {
+  if (restoring.value) {
     return;
   }
 
   restoring.value = true;
+  const restored = await trashStore.restoreTrashItem(Number(route.params.trashNo));
+  restoring.value = false;
 
-  try {
-    const result = await trashStore.restoreTrashItem(trashNo);
-
-    if (!result?.success) {
-      throw new Error("복원 응답을 확인할 수 없습니다.");
-    }
-
-    window.alert("기록이 복원되었습니다.");
-    router.push("/admin/trash");
-  } catch (error) {
-    window.alert(
-      error.response?.data?.message
-      ?? error.message
-      ?? "기록 복원에 실패했습니다."
-    );
-  } finally {
-    restoring.value = false;
+  if (restored) {
+    restoreConfirmOpen.value = false;
+    await router.push("/admin/trash");
   }
 };
 
 onMounted(async () => {
-  await trashStore.loadTrashDetail(
-    route.params.trashNo
-  );
+  await Promise.all([
+    trashStore.loadTrashDetail(route.params.trashNo),
+    cameraStore.loadList(),
+    memberStore.loadmemberList(),
+    gateStore.loadList(),
+  ]);
 });
 </script>
 
@@ -417,7 +470,7 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 0 24px 24px;
+  padding: 22px 24px 24px;
 }
 
 .restore-button {

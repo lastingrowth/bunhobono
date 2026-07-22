@@ -17,7 +17,7 @@
                     <tr><th>연락처</th><td>{{ store.member.memPhone }}</td></tr>
                     <tr><th>동</th><td>{{ store.member.memDong }}</td></tr>
                     <tr><th>호수</th><td>{{ store.member.memHo }}</td></tr>
-                    <tr><th>상태</th><td>{{ store.member.memStatus }}</td></tr>
+                    <tr><th>상태</th><td>{{ store.member.memStatus === 'ACTIVE' ? '거주' : store.member.memStatus }}</td></tr>
                 </tbody>
             </table>
         </div>

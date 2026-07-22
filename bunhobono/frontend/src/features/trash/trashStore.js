@@ -13,6 +13,18 @@ export const useTrashStore = defineStore("trash", () => {
     const trashDetail = ref(null);
     const selectedDataType = ref("");
     const searchCarNo = ref("");
+    const feedbackMessage = ref("");
+    const feedbackType = ref("success");
+    let feedbackTimer;
+
+    const showFeedback = (message, type = "success") => {
+        feedbackMessage.value = message;
+        feedbackType.value = type;
+        window.clearTimeout(feedbackTimer);
+        feedbackTimer = window.setTimeout(() => {
+            feedbackMessage.value = "";
+        }, 2500);
+    };
 
     // 휴지통 목록 조회
     const loadTrashList = async () => {
@@ -60,9 +72,14 @@ export const useTrashStore = defineStore("trash", () => {
     };
 
     const restoreTrashItem = async (trashNo) => {
-        const response = await restoreTrash(trashNo);
+        try {
+            const response = await restoreTrash(trashNo);
 
-        if (response.data?.success) {
+            if (!response.data?.success) {
+                showFeedback("기록 복원에 실패했습니다.", "error");
+                return false;
+            }
+
             trashList.value = trashList.value.filter(
                 (item) => item.trashNo !== trashNo
             );
@@ -70,9 +87,13 @@ export const useTrashStore = defineStore("trash", () => {
             if (trashDetail.value?.trashNo === trashNo) {
                 trashDetail.value = null;
             }
+            showFeedback("기록을 복원했습니다.");
+            return true;
+        } catch (error) {
+            console.error("지난기록 복원 실패", error);
+            showFeedback(error.response?.data?.message ?? "기록 복원에 실패했습니다.", "error");
+            return false;
         }
-
-        return response.data;
     };
 
     
@@ -82,6 +103,8 @@ export const useTrashStore = defineStore("trash", () => {
         trashDetail,
         selectedDataType,
         searchCarNo,
+        feedbackMessage,
+        feedbackType,
 
         loadTrashList,
         loadTrashDetail,

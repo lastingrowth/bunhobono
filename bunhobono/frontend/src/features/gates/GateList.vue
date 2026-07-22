@@ -1,5 +1,6 @@
 <template>
   <section class="gate-page">
+    <ManagementFeedbackToast :message="feedbackMessage" :type="feedbackType" />
     <!-- 게이트 목록 제목 -->
     <div class="page-heading">
       <div>
@@ -36,7 +37,7 @@
             <td>{{ g.gateType }}</td>
             <td>{{ g.gateStatus === 1 ? '열림' : '닫힘' }}</td>
             <td>
-              <button class="delete-button" type="button" @click="gStore.remove(g.gateNo)">삭제</button>
+              <button class="delete-button" type="button" @click="requestDelete(g)">삭제</button>
             </td>
           </tr>
 
@@ -119,6 +120,16 @@
         </div>
       </form>
     </dialog>
+    <ManagementDeleteConfirm
+      :open="Boolean(pendingDeleteItem)"
+      title="게이트 삭제"
+      :item-name="pendingDeleteItem?.gateName || ''"
+      message="게이트를 삭제하시겠습니까?"
+      caution="연결된 카메라나 입출차 기록이 있으면 삭제할 수 없습니다."
+      :deleting="deleting"
+      @cancel="cancelDelete"
+      @confirm="confirmDelete"
+    />
   </section>
 </template>
 
@@ -126,11 +137,40 @@
 import { onMounted, ref } from 'vue';
 import { useGateStore } from './gateStore';
 import { useParkingsStore } from '@/features/parking/parkingsStore';
+import ManagementDeleteConfirm from '@/shared/components/ManagementDeleteConfirm.vue';
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
 
 const gStore = useGateStore();
 const pStore = useParkingsStore();
 
 const registerDialog = ref(null);
+const pendingDeleteItem = ref(null);
+const deleting = ref(false);
+const feedbackMessage = ref('');
+const feedbackType = ref('success');
+let feedbackTimer;
+
+const showFeedback = (message, type = 'success') => {
+  feedbackMessage.value = message;
+  feedbackType.value = type;
+  window.clearTimeout(feedbackTimer);
+  feedbackTimer = window.setTimeout(() => { feedbackMessage.value = ''; }, 2500);
+};
+
+const requestDelete = (item) => { pendingDeleteItem.value = item; };
+const cancelDelete = () => { if (!deleting.value) pendingDeleteItem.value = null; };
+const confirmDelete = async () => {
+  if (!pendingDeleteItem.value || deleting.value) return;
+  deleting.value = true;
+  const result = await gStore.remove(pendingDeleteItem.value.gateNo);
+  deleting.value = false;
+  pendingDeleteItem.value = null;
+  if (result?.success) {
+    showFeedback('게이트를 삭제했습니다.');
+  } else {
+    showFeedback(result?.message || '게이트 삭제에 실패했습니다.', 'error');
+  }
+};
 
 // 빈 게이트 등록 정보 생성
 const createEmptyGate = () => ({
@@ -181,6 +221,45 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.table-wrap th,
+.table-wrap td {
+  box-sizing: border-box;
+  height: 30px !important;
+  padding: 4px 7px !important;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.table-wrap tbody tr {
+  height: 30px !important;
+}
+
+.table-wrap td button {
+  box-sizing: border-box;
+  width: auto;
+  min-width: 52px;
+  height: 22px !important;
+  min-height: 0 !important;
+  padding: 2px 8px !important;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1000px) {
+  .table-wrap th,
+  .table-wrap td,
+  .table-wrap td button { font-size: 12px; }
+}
+
+@media (max-width: 700px) {
+  .table-wrap th,
+  .table-wrap td,
+  .table-wrap td button { font-size: 11px; }
+}
+
 .gate-page {
   padding: 8px 0 32px;
   color: #253047;
