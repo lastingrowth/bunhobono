@@ -1,5 +1,5 @@
 <template>
-  <section>
+  <section class="management-list-page carlog-list-page">
     <CarlogFilter @apply-in-time="applyInTimeFilter" />
 
     <CarlogDetail :logs="filteredCarLogs" />

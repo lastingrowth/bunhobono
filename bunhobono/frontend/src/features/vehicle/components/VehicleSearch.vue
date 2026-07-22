@@ -1,13 +1,16 @@
 <template>
-  <div class="vehicle-search-bar">
+  <div class="vehicle-search-bar management-list-toolbar">
     <input
       v-model="carNo"
-      class="vehicle-search-input"
+      class="vehicle-search-input management-car-search-input"
       placeholder="차량번호 검색"
       @keyup.enter="search"
     >
 
-    <button class="search-action-btn" @click="search">검색</button>
+    <button class="search-action-btn management-search-button" @click="search">검색</button>
+    <button class="search-action-btn show-all-action-btn management-reset-button" type="button" @click="showAll">
+      초기화
+    </button>
     <select
       v-model="filterType"
       class="vehicle-filter-select"
@@ -54,6 +57,13 @@ async function applyFilter() {
   await vehicleStore.loadVehicleList()
 }
 
+async function showAll() {
+  carNo.value = ''
+  filterType.value = 'all'
+  emit('clear-initial-filter')
+  await vehicleStore.loadVehicleList()
+}
+
 </script>
 
 <style scoped>
@@ -87,6 +97,18 @@ async function applyFilter() {
 .search-action-btn {
   width: 56px;
   height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.show-all-action-btn {
+  width: 68px;
   white-space: nowrap;
 }
 

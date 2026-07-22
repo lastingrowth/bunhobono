@@ -1,10 +1,10 @@
 <template>
-  <section class="parking-page">
+  <section class="parking-page management-list-page facility-list-page">
     <ManagementFeedbackToast :message="feedbackMessage" :type="feedbackType" />
     <!-- 주차장 목록 제목 + 등록 버튼 -->
-    <div class="page-heading">
+    <div class="page-heading facility-list-heading">
       <div>
-        <h2>주차장 관리</h2>
+        <h2 class="management-list-title">주차장 관리</h2>
         <p>주차장 구역과 전체 주차 면수를 관리합니다</p>
       </div>
 
@@ -17,7 +17,7 @@
     </div>
     
     <!-- 주차장 목록 -->
-    <div class="table-wrap">
+    <div class="table-wrap management-list-table facility-list-table">
       <table>
         <thead>
           <tr>

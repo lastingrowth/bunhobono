@@ -1,20 +1,35 @@
 <template>
   <div class="vehicle-management-section">
+    <ManagementFeedbackToast
+      :message="feedbackMessage"
+      :type="feedbackType"
+    />
     <div class="form-header">
       <h3>차량 등록</h3>
     </div>
 
-    <form @submit.prevent="add">
-      <table border="">
+    <form class="vehicle-register-form" novalidate @submit.prevent="add">
+      <table class="vehicle-register-table">
         <tbody>
           <tr>
             <th>차량번호</th>
             <td>
-              <input
-                v-model="carNo"
-                placeholder="차량번호 예: 12가3456"
-                required
-              >
+              <div class="car-number-input-wrap">
+                <input
+                  ref="carNoInput"
+                  v-model="carNo"
+                  placeholder="차량번호 예: 12가3456"
+                  required
+                >
+                <button
+                  v-if="carNo"
+                  type="button"
+                  class="car-number-clear"
+                  aria-label="차량번호 지우기"
+                  title="차량번호 지우기"
+                  @click="clearCarNo"
+                >×</button>
+              </div>
             </td>
           </tr>
 
@@ -70,7 +85,7 @@
           </tr>
 
           <tr>
-            <td colspan="2" align="right">
+            <td colspan="2" class="vehicle-form-actions">
               <button type="submit">등록</button>
               <button type="button" @click="reset">초기화</button>
             </td>
@@ -82,17 +97,31 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useVehicleStore } from '../vehicleStore'
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue'
 
 const vehicleStore = useVehicleStore()
-const emit = defineEmits(['back'])
+const emit = defineEmits(['back', 'registered'])
 
 const carNo = ref('')
+const carNoInput = ref(null)
 const vehicleType = ref('normal')
 const role = ref('RESIDENT')
 const periodValue = ref(1)
 const memberNo = ref(null)
+const feedbackMessage = ref('')
+const feedbackType = ref('success')
+let feedbackTimer = null
+
+function showFeedback(message, type = 'success') {
+  feedbackMessage.value = message
+  feedbackType.value = type
+  window.clearTimeout(feedbackTimer)
+  feedbackTimer = window.setTimeout(() => {
+    feedbackMessage.value = ''
+  }, 3000)
+}
 
 const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
 
@@ -154,6 +183,10 @@ onMounted(() => {
   loadRegisterMembers()
 })
 
+onBeforeUnmount(() => {
+  window.clearTimeout(feedbackTimer)
+})
+
 async function loadRegisterMembers() {
   await vehicleStore.loadRegisterMembers({
     vehicleType: vehicleType.value,
@@ -165,17 +198,17 @@ async function add() {
   const normalizedCarNo = carNo.value.trim().replace(/\s/g, '')
 
   if (normalizedCarNo === '') {
-    alert('차량번호를 입력하세요')
+    showFeedback('차량번호를 입력하세요.', 'error')
     return
   }
 
   if (!carNoPattern.test(normalizedCarNo)) {
-    alert('차량번호 형식이 올바르지 않습니다. 예: 12가3456, 서울12가3456')
+    showFeedback('차량번호 형식이 올바르지 않습니다. 예: 12가3456, 서울12가3456', 'error')
     return
   }
 
   if (!memberNo.value) {
-    alert('회원을 선택하세요')
+    showFeedback('회원을 선택하세요.', 'error')
     return
   }
 
@@ -192,30 +225,29 @@ async function add() {
     const data = error.response?.data
 
     if (typeof data === 'string' && data.trim() !== '') {
-      alert(data)
+      showFeedback(data, 'error')
       return
     }
 
     if (data?.message) {
-      alert(data.message)
+      showFeedback(data.message, 'error')
       return
     }
 
     if (error.response?.status === 409) {
-      alert('차량 등록 조건에 맞지 않습니다.')
+      showFeedback('차량 등록 조건에 맞지 않습니다.', 'error')
       return
     }
 
     if (error.response?.status === 403) {
-      alert('권한 또는 보안 설정 때문에 차량 등록 요청이 차단되었습니다.')
+      showFeedback('권한 또는 보안 설정 때문에 차량 등록 요청이 차단되었습니다.', 'error')
       return
     }
 
-    alert('차량 등록 중 오류가 발생했습니다.')
+    showFeedback('차량 등록 중 오류가 발생했습니다.', 'error')
     return
   }
 
-  alert('차량이 승인 등록되었습니다.')
   reset()
 
   try {
@@ -223,6 +255,8 @@ async function add() {
   } catch (error) {
     console.error(error)
   }
+
+  emit('registered', '차량이 승인 등록되었습니다.')
 }
 
 function reset() {
@@ -231,6 +265,12 @@ function reset() {
   role.value = 'RESIDENT'
   periodValue.value = 1
   memberNo.value = null
+}
+
+async function clearCarNo() {
+  carNo.value = ''
+  await nextTick()
+  carNoInput.value?.focus()
 }
 
 function memberLabel(member) {
@@ -271,10 +311,64 @@ function formatDateTimeValue(date) {
 <style scoped>
 .vehicle-management-section {
   padding: 22px 24px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-header);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-layout .content .vehicle-register-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content .vehicle-register-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content .vehicle-register-table th,
+.admin-layout .content .vehicle-register-table td {
+  box-sizing: border-box;
+  overflow: hidden;
+  border-top: 0 !important;
+  border-right: 0 !important;
+  border-left: 0 !important;
+  border-bottom: 0 !important;
+}
+
+.admin-layout .content .vehicle-register-table tr {
+  border-bottom: 1px solid var(--admin-line, var(--border-color));
+}
+
+.admin-layout .content .vehicle-register-table tr:last-child {
+  border-bottom: 0 !important;
+}
+
+.admin-layout .content .vehicle-register-table input,
+.admin-layout .content .vehicle-register-table select {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+.admin-layout .content .vehicle-register-table .car-number-input-wrap {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .form-header {
@@ -293,5 +387,49 @@ function formatDateTimeValue(date) {
   min-width: 88px;
   height: 36px;
   white-space: nowrap;
+}
+
+.car-number-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.car-number-input-wrap input {
+  padding-right: 38px !important;
+}
+
+.car-number-clear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  color: #aeb6bd;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  background: transparent;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.car-number-clear:hover {
+  color: #ffffff;
+  background: #454c52;
+}
+
+.vehicle-form-actions {
+  text-align: right !important;
+}
+
+.vehicle-form-actions button + button {
+  margin-left: 6px;
 }
 </style>

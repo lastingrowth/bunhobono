@@ -58,7 +58,8 @@ public class VehicleService {
 
         if (dto.getMemberNo() == null) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST
+                    HttpStatus.BAD_REQUEST,
+                    "등록할 회원을 선택해주세요."
             );
         }
 
@@ -71,7 +72,8 @@ public class VehicleService {
                 ) > 0
         ) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT
+                    HttpStatus.CONFLICT,
+                    "이미 등록되어 있거나 사용 중인 차량번호입니다."
             );
         }
 
@@ -83,7 +85,8 @@ public class VehicleService {
                 ) >= 2
         ) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT
+                    HttpStatus.CONFLICT,
+                    "선택한 회원은 등록차량을 최대 2대까지 등록할 수 있습니다."
             );
         }
 
@@ -198,7 +201,8 @@ public class VehicleService {
 
         if (carNo.isEmpty()) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST
+                    HttpStatus.BAD_REQUEST,
+                    "차량번호를 입력해주세요."
             );
         }
 
@@ -220,7 +224,8 @@ public class VehicleService {
                         && !"visit".equals(type)
         ) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST
+                    HttpStatus.BAD_REQUEST,
+                    "올바르지 않은 차량 종류입니다."
             );
         }
 
@@ -237,7 +242,8 @@ public class VehicleService {
                 )
         ) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST
+                    HttpStatus.BAD_REQUEST,
+                    "차량 등록 시작일과 종료일을 확인해주세요."
             );
         }
     }

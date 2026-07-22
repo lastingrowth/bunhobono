@@ -1,7 +1,11 @@
 <template>
-  <section>
-    <div class="vehicle-page-header">
-      <h2 class="vehicle-page-title">차량 관리</h2>
+  <section class="management-list-page vehicle-list-page">
+    <ManagementFeedbackToast
+      :message="feedbackMessage"
+      :type="feedbackType"
+    />
+    <div class="vehicle-page-header management-list-header">
+      <h2 class="vehicle-page-title management-list-title">차량 관리</h2>
 
       <button
         v-if="fromStatistics"
@@ -23,14 +27,6 @@
         </button>
 
         <button
-          v-if="viewMode === 'form'"
-          type="button"
-          class="vehicle-tab list-tab"
-          @click="openVehicleList"
-        >
-          목록으로
-        </button>
-        <button
           type="button"
           class="vehicle-tab approve-tab"
           :class="{ active: viewMode === 'approve' }"
@@ -38,6 +34,14 @@
           @click="openVehicleApprove"
         >
           승인 대기
+        </button>
+        <button
+          v-if="viewMode === 'form'"
+          type="button"
+          class="vehicle-tab list-tab"
+          @click="openVehicleList"
+        >
+          목록으로
         </button>
         <button
           v-if="viewMode === 'approve'"
@@ -75,6 +79,7 @@
       :initial-filter="vehicleInitialFilter"
       :filter-type="filterType"
       :sort-mode="sortMode"
+      @feedback="showFeedback"
     >
       <template v-if="fromStatistics" #pagination-action>
         <button
@@ -90,6 +95,7 @@
     <VehicleForm
       v-if="viewMode === 'form'"
       @back="openVehicleList"
+      @registered="handleRegistered"
     />
 
     <VehicleApprove
@@ -103,6 +109,7 @@
 <script setup>
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   ref
@@ -114,6 +121,7 @@ import VehicleSearch from './components/VehicleSearch.vue'
 import VehicleForm from './components/VehicleForm.vue'
 import VehicleList from './components/VehicleList.vue'
 import VehicleApprove from './components/VehicleApprove.vue'
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue'
 
 const vehicleStore = useVehicleStore()
 const route = useRoute()
@@ -123,9 +131,21 @@ const viewMode = ref('list')
 const filterType = ref('all')
 const sortMode = ref('latest')
 const vehicleInitialFilter = ref('all')
+const feedbackMessage = ref('')
+const feedbackType = ref('success')
 
 let refreshTimer = null
+let feedbackTimer = null
 let isRefreshing = false
+
+function showFeedback(message, type = 'success') {
+  feedbackMessage.value = message
+  feedbackType.value = type
+  window.clearTimeout(feedbackTimer)
+  feedbackTimer = window.setTimeout(() => {
+    feedbackMessage.value = ''
+  }, 3000)
+}
 
 const fromStatistics = computed(() => {
   return route.name === 'ParkedExpiredVehicleList'
@@ -134,6 +154,18 @@ const fromStatistics = computed(() => {
 async function openVehicleList() {
   viewMode.value = 'list'
   await refreshVehicleList()
+}
+
+function handleRegistered(message) {
+  viewMode.value = 'list'
+
+  nextTick(() => {
+    showFeedback(message)
+  })
+
+  refreshVehicleList().catch((error) => {
+    console.error('등록 후 차량 목록 갱신 실패', error)
+  })
 }
 
 function openVehicleForm() {
@@ -185,6 +217,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.clearInterval(refreshTimer)
+  window.clearTimeout(feedbackTimer)
 })
 </script>
 

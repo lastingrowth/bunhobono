@@ -1,10 +1,10 @@
 <template>
-  <section class="camera-page">
+  <section class="camera-page management-list-page facility-list-page">
     <ManagementFeedbackToast :message="feedbackMessage" :type="feedbackType" />
     <!-- 카메라 목록 제목 -->
-    <div class="page-heading">
+    <div class="page-heading facility-list-heading">
       <div>
-        <h2>카메라</h2>
+        <h2 class="management-list-title">카메라</h2>
         <p>주차장 출입구에 설치된 카메라를 관리합니다.</p>
       </div>
 
@@ -18,7 +18,7 @@
     
 
     <!-- 카메라 목록 -->
-    <div class="table-wrap">
+    <div class="table-wrap management-list-table facility-list-table">
       <table>
         <thead>
           <tr>

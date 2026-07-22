@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="management-list-page camera-data-list-page">
     <Transition name="camera-data-toast">
       <div
         v-if="dStore.feedbackMessage"
@@ -10,22 +10,25 @@
         {{ dStore.feedbackMessage }}
       </div>
     </Transition>
-    <h2>카메라 기록 관리</h2>
+    <div class="management-list-header camera-data-heading-row">
+      <h2 class="management-list-title">카메라 기록 관리</h2>
+    </div>
 
-    <div class="camera-data-toolbar">
+    <div class="camera-data-toolbar management-list-toolbar">
       <div class="camera-data-search">
         <input
           v-model="keyword"
+          class="management-car-search-input"
           type="search"
-          placeholder="차량번호를 입력하세요"
+          placeholder="차량번호 검색"
           aria-label="차량번호 검색"
           @keyup.enter="searchGo"
         >
-        <button type="button" :disabled="isSearching" @click="searchGo">
+        <button class="management-search-button" type="button" :disabled="isSearching" @click="searchGo">
           {{ isSearching ? '검색 중...' : '검색' }}
         </button>
-        <button type="button" :disabled="isSearching" @click="resetList">
-          전체보기
+        <button class="management-reset-button" type="button" :disabled="isSearching" @click="resetList">
+          초기화
         </button>
       </div>
 
@@ -49,17 +52,17 @@
 
     <p v-if="searchError" class="search-error">{{ searchError }}</p>
 
-    <div class="admin-table-scroll">
+    <div class="admin-table-scroll management-list-table">
     <table class="camera-data-table" border="1">
       <thead>
         <tr>
-          <th>기록 번호</th>
+          <th>번호</th>
           <th>주차장</th>
           <th>등록 상태</th>
           <th>차량 번호</th>
           <th>촬영 시각</th>
           <th>입출차 구분</th>
-          <th>인식률</th>
+          <th>인식 신뢰도</th>
           <th>상세보기</th>
           <th>관리</th>
         </tr>

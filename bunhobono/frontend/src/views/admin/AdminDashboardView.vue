@@ -1,5 +1,8 @@
 <template>
     <section class="admin-dashboard"> 
+        <ManagementFeedbackToast
+            :message="vehicleFeedbackMessage"
+            :type="vehicleFeedbackType" />
         <!-- 데이터 조회 상태 -->
         <p v-if="loading" class="dashboard-message">
             대시보드 정보를 불러오는 중입니다
@@ -314,7 +317,7 @@
                                 <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">{{ recognitionStateText(selectedCameraData) }}</dd>
                             </div>
                             <div>
-                                <dt>인식률</dt>
+                                <dt>인식 신뢰도</dt>
                                 <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">{{ formatConfidence(selectedCameraData.confidenceScore) }}</dd>
                             </div>
                             <div>
@@ -624,6 +627,7 @@ import { editCameraDataCarNo, getCameraDataDetail } from '@/features/camera-data
 import { storeToRefs } from 'pinia';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
 
 
 const router = useRouter()
@@ -659,6 +663,8 @@ let monitoringResizeObserver = null
 const {
     loading,
     errorMessage,
+    vehicleFeedbackMessage,
+    vehicleFeedbackType,
     quickVehicle,
     quickPeriodOptions,
     quickRegisterMembers,
@@ -672,6 +678,7 @@ const {
 
 const {
     memberLabel,
+    showVehicleFeedback,
     submitQuickVehicle,
     loadQuickRegisterMembers,
     toggleParkingCamera,
@@ -732,7 +739,7 @@ const saveCameraCarNo = async () => {
     const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
 
     if (!carNoPattern.test(carNo)) {
-        alert('차량번호 형식을 확인하세요. 예: 123가4567, 경기37바1083')
+        showVehicleFeedback('차량번호 형식을 확인하세요. 예: 123가4567, 경기37바1083', 'error')
         return
     }
 
@@ -752,9 +759,13 @@ const saveCameraCarNo = async () => {
         await refreshCarlogs()
         isEditingCameraCarNo.value = false
         cameraCarNoDraft.value = ''
+        showVehicleFeedback(`${carNo} 차량번호로 수정했습니다.`)
     } catch (error) {
         console.error('차량번호 수정 실패', error)
-        alert(error.response?.data?.message || '차량번호 수정에 실패했습니다')
+        showVehicleFeedback(
+            error.response?.data?.message || '차량번호 수정에 실패했습니다.',
+            'error',
+        )
     } finally {
         cameraCarNoSaving.value = false
     }
