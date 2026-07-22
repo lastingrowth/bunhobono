@@ -9,9 +9,11 @@ import java.util.List;
 @Data
 public class MemberDTO {
 
-    // 회원 가입·조회·수정에 사용하는 기본 회원 정보다.
+    // =====================================================
+    // 1. 회원가입·조회·수정에 사용하는 기본 회원 정보를 전달한다.
+    // =====================================================
     private long memberNo;
-    private long displayNo;     // 흔들리지 않는 인덱스
+    private long displayNo;     // 회원 목록에 표시할 조회 순번이다.
     private String loginId;
     private String loginPwd;
     private String memName;
@@ -23,9 +25,11 @@ public class MemberDTO {
     private LocalDateTime memCreateAt;
     private LocalDateTime memDeleteAt;
 
-    private Boolean archived;
+    private Boolean archived;   // 전출 이력이 보관되었는지 표시한다.
 
-    // 입주민 대시보드에 표시할 본인 차량 정보를 전달한다.
+    // =====================================================
+    // 2. 입주민 대시보드에 표시할 본인 차량 정보를 전달한다.
+    // =====================================================
     @Data
     public static class ResidentVehicle {
 
@@ -40,7 +44,9 @@ public class MemberDTO {
         private String parkingName;
     }
 
-    // 입주민 차량의 최근 입차·출차 기록을 전달한다.
+    // =====================================================
+    // 3. 입주민 차량의 입차·출차 기록을 전달한다.
+    // =====================================================
     @Data
     public static class ResidentCarLog {
 
@@ -52,7 +58,9 @@ public class MemberDTO {
         private LocalDateTime outTime;
     }
 
-    // 회원 정보·본인 차량·최근 입출차 기록을 대시보드 응답 하나로 묶는다.
+    // =====================================================
+    // 4. 회원 정보·본인 차량·입출차 기록을 대시보드 응답 하나로 묶는다.
+    // =====================================================
     @Data
     public static class ResidentDashboard {
 
@@ -60,4 +68,14 @@ public class MemberDTO {
         private List<ResidentVehicle> vehicles;
         private List<ResidentCarLog> recentCarLogs;
     }
+
+    // =====================================================
+    // 5. 입주민 본인 확인에 필요한 비밀번호와 보안문자 값을 전달한다.
+    // =====================================================
+    public record ResidentSecurityRequest(
+            String currentPassword,
+            String newPassword,
+            String challengeId,
+            String challengeAnswer
+    ) {}
 }
