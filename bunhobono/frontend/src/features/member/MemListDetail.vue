@@ -26,7 +26,7 @@
             <tr><th>아이디</th><td>{{ store.member.loginId }}</td></tr>
             <tr><th>가입일</th><td>{{ store.member.memCreateAt }}</td></tr>
             <tr><th>탈퇴일</th><td>{{ store.member.memDeleteAt }}</td></tr>
-            <tr><th>상태</th><td>{{ store.member.memStatus }}</td></tr>
+            <tr><th>상태</th><td>{{ formatMemberStatus(store.member.memStatus, store.member.role) }}</td></tr>
         </tbody>
     </table>
     </section>
@@ -50,6 +50,21 @@ const canEditMember = computed(() =>
 
 const isWithdrawnMember = computed(() => Boolean(store.member.memDeleteAt));
 
+const formatMemberStatus = (status, role) => {
+    if (status === 'ACTIVE') {
+        return role === 'ADMIN' ? '근무' : '거주'
+    }
+
+    const statusMap = {
+        WITHDRAW_PENDING: '전출 신청',
+        EMPTY: '빈 세대',
+        INACTIVE: '퇴사',
+        ON_LEAVE: '휴직',
+    }
+
+    return statusMap[status] ?? status ?? '-'
+}
+
 function goList() { router.push('/admin/members'); }
 function goEdit() { router.push(`/admin/members/${memberNo}/edit`); }
 
@@ -62,14 +77,14 @@ async function approveMember() {
 }
 
 async function permanentlyDeleteMember() {
-    if (!confirm('이 회원을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    if (!confirm('이 회원의 전출 확정하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
 
     const deletedCount = await store.removeWithdrawnMembers([Number(memberNo)]);
     if (deletedCount === 0) {
-        alert('영구삭제 조건을 충족하지 않아 삭제되지 않았습니다.');
+        alert('전출 조건을 충족하지 않아 삭제되지 않았습니다.');
         return;
     }
-    alert('회원이 영구 삭제되었습니다.');
+    alert('회원의 전출이 승인되었습니다.');
     router.push('/admin/members');
 }
 

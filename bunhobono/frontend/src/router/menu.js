@@ -29,10 +29,6 @@ export const adminMenu = [
     path: '/admin/members'
   },
   {
-    title: '전출 회원 관리',
-    path: '/admin/member-archive'
-  },
-  {
     title: '지난기록',
     path: '/admin/trash'
   },

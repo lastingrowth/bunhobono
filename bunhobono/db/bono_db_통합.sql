@@ -31,7 +31,14 @@ CREATE TABLE member (
         CHECK (role IN ('ADMIN', 'RESIDENT', 'PENDING')),
     create_at TIMESTAMP,
     delete_at TIMESTAMP,
-    mem_status VARCHAR(30)
+	
+    -- ACTIVE: 입주민 거주 중 또는 관리자 근무 중
+    -- WITHDRAW_PENDING: 입주민 전출 신청 후 관리자 승인 대기
+    -- EMPTY: 전출 확정 후 비어 있는 동/호수
+    -- INACTIVE: 관리자 퇴사
+    -- ON_LEAVE: 관리자 휴직
+    mem_status VARCHAR(30) NOT NULL
+        CHECK (mem_status IN ('ACTIVE', 'WITHDRAW_PENDING', 'EMPTY', 'INACTIVE', 'ON_LEAVE'))
 );
 
 -- =====================================================
@@ -45,7 +52,7 @@ CREATE TABLE member_archive (
     mem_name VARCHAR(50),
     mem_phone VARCHAR(20),
     role VARCHAR(20),
-    mem_status VARCHAR(20),
+    mem_status VARCHAR(30),
 
     mem_dong INTEGER,
     mem_ho INTEGER,
@@ -99,7 +106,7 @@ CREATE TABLE vehicle_car (
     alias_car_no VARCHAR(50) UNIQUE,
 
     vehicle_status VARCHAR(20) NOT NULL DEFAULT 'WAITING'
-        CHECK (vehicle_status IN ('WAITING', 'APPROVED')),
+        CHECK (vehicle_status IN ('WAITING', 'APPROVED', 'EXPIRED', 'UNKNOWN')),
 
     -- normal: 등록 유효 시작시간
     -- visit: 예상 방문시간

@@ -11,7 +11,7 @@ public interface MemberMapper {
     // 1. 회원가입 및 가입 가능한 세대 확인
     // =====================================================
 
-    // 입주민 회원가입은 기존 전출 세대 행에 확정된 역할과 회원 상태를 저장한다.
+    // 입주민 회원가입은 전출 확정 후 비어 있는 세대(EMPTY)에만 저장한다.
     @Update("""
     UPDATE member
     SET login_id = #{loginId},
@@ -25,7 +25,7 @@ public interface MemberMapper {
     WHERE mem_dong = #{memDong}
       AND mem_ho = #{memHo}
       AND UPPER(TRIM(role)) = 'RESIDENT'
-      AND TRIM(mem_status) = '전출'
+      AND TRIM(mem_status) = 'EMPTY'
 """)
     int signup(MemberDTO dto);
 
@@ -61,51 +61,49 @@ public interface MemberMapper {
     @Select("SELECT EXISTS (SELECT 1 FROM member WHERE login_id = #{loginId})" )
     boolean checkLoginId(String loginId);
 
-    // 전출 이력이 있고 현재 거주·승인대기 회원이 없는 세대만 공개 회원가입 대상으로 조회한다.
+    // 전출 확정 후 비어 있고, 현재 사용 중이거나 전출 신청 중인 회원이 없는 세대만 가입 대상으로 조회한다.
     @Select("""
-        SELECT DISTINCT departed.mem_dong, departed.mem_ho
-        FROM member departed
-        WHERE UPPER(TRIM(departed.role)) = 'RESIDENT'
-          AND TRIM(departed.mem_status) = '전출'
-          AND departed.mem_dong IN (101, 102, 201, 202, 301, 302, 401, 402)
-          AND (departed.mem_ho / 100) BETWEEN 1 AND 10
-          AND MOD(departed.mem_ho, 100) BETWEEN 1 AND 2
+        SELECT DISTINCT empty_unit.mem_dong, empty_unit.mem_ho
+        FROM member empty_unit
+        WHERE UPPER(TRIM(empty_unit.role)) = 'RESIDENT'
+          AND TRIM(empty_unit.mem_status) = 'EMPTY'
+          AND empty_unit.mem_dong IN (101, 102, 201, 202, 301, 302, 401, 402)
+          AND (empty_unit.mem_ho / 100) BETWEEN 1 AND 10
+          AND MOD(empty_unit.mem_ho, 100) BETWEEN 1 AND 2
           AND NOT EXISTS (
               SELECT 1
               FROM member active
-              WHERE active.mem_dong = departed.mem_dong
-                AND active.mem_ho = departed.mem_ho
+              WHERE active.mem_dong = empty_unit.mem_dong
+                AND active.mem_ho = empty_unit.mem_ho
                 AND UPPER(TRIM(active.role)) IN ('PENDING', 'RESIDENT')
-                AND TRIM(active.mem_status) <> '전출'
-                AND active.delete_at IS NULL
+                AND TRIM(active.mem_status) IN ('ACTIVE', 'WITHDRAW_PENDING')
           )
-        ORDER BY departed.mem_dong, departed.mem_ho
+        ORDER BY empty_unit.mem_dong, empty_unit.mem_ho
         """)
     List<MemberDTO> availableSignupUnits();
 
-    // 가입 처리 중 같은 전출 세대 행을 잠가 동시 중복 신청을 방지한다.
+    // 가입 처리 중 같은 빈 세대 행을 잠가 동시 중복 신청을 방지한다.
     @Select("""
         SELECT member_no
         FROM member
         WHERE mem_dong = #{dong}
           AND mem_ho = #{ho}
           AND UPPER(TRIM(role)) = 'RESIDENT'
-          AND TRIM(mem_status) = '전출'
-        ORDER BY delete_at DESC NULLS LAST, member_no DESC
+          AND TRIM(mem_status) = 'EMPTY'
+        ORDER BY member_no DESC
         LIMIT 1
         FOR UPDATE
         """)
     Long lockWithdrawnUnit(@Param("dong") int dong, @Param("ho") int ho);
 
-    // 동일 동·호수에 승인대기 또는 거주 회원이 있는지 확인한다.
+    // 동일 동·호수에 가입 승인 대기, 현재 회원, 전출 신청 회원이 있는지 확인한다.
     @Select("""
         SELECT COUNT(*)
         FROM member
         WHERE mem_dong = #{dong}
           AND mem_ho = #{ho}
           AND UPPER(TRIM(role)) IN ('PENDING', 'RESIDENT')
-          AND TRIM(mem_status) <> '전출'
-          AND delete_at IS NULL
+          AND TRIM(mem_status) IN ('ACTIVE', 'WITHDRAW_PENDING')
         """)
     int countActiveMembersAtUnit(@Param("dong") int dong, @Param("ho") int ho);
 
@@ -168,7 +166,7 @@ public interface MemberMapper {
             @Param("ho") Integer ho
     );
 
-    // 연락처, 비밀번호와 상태를 수정하고 전출·퇴사 전환 시 탈퇴일을 기록한다.
+    // 연락처, 비밀번호와 상태를 수정하고 전출 신청·퇴사 전환 시 처리일을 기록한다.
     @Update("""
         UPDATE member
         SET mem_phone = #{memPhone},
@@ -176,8 +174,8 @@ public interface MemberMapper {
             mem_status = #{memStatus},
             delete_at = CASE
                 WHEN delete_at IS NULL
-                    AND ((UPPER(TRIM(role)) = 'RESIDENT' AND TRIM(#{memStatus}) = '전출')
-                        OR (UPPER(TRIM(role)) = 'ADMIN' AND TRIM(#{memStatus}) = '퇴사'))
+                    AND ((UPPER(TRIM(role)) = 'RESIDENT' AND TRIM(#{memStatus}) = 'WITHDRAW_PENDING')
+                        OR (UPPER(TRIM(role)) = 'ADMIN' AND TRIM(#{memStatus}) = 'INACTIVE'))
                 THEN CURRENT_TIMESTAMP
                 ELSE delete_at
             END
@@ -229,19 +227,19 @@ public interface MemberMapper {
         """)
     int saveMemberArchive(@Param("memberNo") int memberNo);
 
-    // 이력 보관 전인 전출 신청 회원을 다시 거주 상태로 복원한다.
+    // 이력 보관 전인 전출 신청 회원을 다시 현재 회원 상태로 복원한다.
     @Update("""
         UPDATE member
-        SET mem_status = '거주',
+        SET mem_status = 'ACTIVE',
             delete_at = NULL
         WHERE member_no = #{memberNo}
         """)
     int restoreWithdrawnMember(@Param("memberNo") int memberNo);
 
-    // 회원을 전출 신청 상태로 변경하고 탈퇴일을 현재 시각으로 기록한다.
+    // 회원을 전출 신청 상태로 변경하고 신청 시각을 기록한다.
     @Update("""
         UPDATE member
-        SET mem_status = '전출',
+        SET mem_status = 'WITHDRAW_PENDING',
             delete_at = CURRENT_TIMESTAMP
         WHERE member_no = #{memberNo}
         """)
@@ -254,7 +252,7 @@ public interface MemberMapper {
         """)
     int deleteVehiclesByMemberNo(@Param("memberNo") int memberNo);
 
-    // 전출 확정 후 동·호수 자리를 유지하면서 원본 회원 정보를 미등록 상태로 초기화한다.
+    // 전출 확정 후 동·호수 자리를 유지하면서 원본 회원 정보를 빈 세대 상태로 초기화한다.
     @Update("""
         UPDATE member
         SET login_id = CONCAT('unit_', mem_dong, '_', mem_ho),
@@ -262,7 +260,7 @@ public interface MemberMapper {
             mem_name = '미등록',
             mem_phone = '미등록',
             role = 'RESIDENT',
-            mem_status = '전출',
+            mem_status = 'EMPTY',
             delete_at = CURRENT_TIMESTAMP
         WHERE member_no = #{memberNo}
         """)
@@ -370,9 +368,9 @@ public interface MemberMapper {
             @Param("encodedPassword") String encodedPassword
     );
 
-    // 입주민이 직접 탈퇴하면 상태를 전출로 변경하고 최초 탈퇴 시각을 기록한다.
+    // 입주민이 직접 전출 신청하면 관리자 승인 대기 상태로 변경하고 신청 시각을 기록한다.
     @Update("UPDATE member " +
-            "SET mem_status = '전출', " +
+            "SET mem_status = 'WITHDRAW_PENDING', " +
             "delete_at = COALESCE(delete_at, CURRENT_TIMESTAMP) " +
             "WHERE login_id = #{loginId} " +
             "AND UPPER(TRIM(role)) = 'RESIDENT' " +

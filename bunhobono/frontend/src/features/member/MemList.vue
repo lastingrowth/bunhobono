@@ -103,7 +103,7 @@
                         <td>{{ mem.memDong }}</td>
                         <td>{{ mem.memHo }}</td>
                         <td>{{ mem.loginId }}</td>
-                        <td>{{ mem.memStatus }}</td>
+                        <td>{{ formatMemberStatus(mem.memStatus, mem.role) }}</td>
                         <td>{{ mem.memDeleteAt }}</td>
                         <td>{{ getElapsedDays(mem.memDeleteAt) }}일</td>
                     </tr>
@@ -120,6 +120,59 @@
                 :total-pages="totalPages"
                 :page-numbers="pageNumbers"
                 @change-page="setPage"/>
+            </div>
+        </section>
+    </template>
+
+    <template v-if="activeSection === 'archive'">
+        <!-- 전출 확정 후 member_archive에 보관된 과거 거주 이력을 조회한다. -->
+        <section class="archive-alert-section">
+            <h3>전출 이력 ({{ archiveList.length }}명)</h3>
+
+            <div class="admin-table-scroll">
+                <table class="member-list-table" border="">
+                    <thead>
+                        <tr>
+                            <th>번호</th>
+                            <th>이름</th>
+                            <th>아이디</th>
+                            <th>동</th>
+                            <th>호수</th>
+                            <th>연락처</th>
+                            <th>권한</th>
+                            <th>전출일</th>
+                            <th>보관일</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr
+                            v-for="(member, index) in paginatedMembers"
+                            :key="member.archiveNo">
+                            <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                            <td>{{ member.memName || '-' }}</td>
+                            <td>{{ member.loginId || '-' }}</td>
+                            <td>{{ member.memDong || '-' }}</td>
+                            <td>{{ member.memHo || '-' }}</td>
+                            <td>{{ member.memPhone || '-' }}</td>
+                            <td>{{ member.role || '-' }}</td>
+                            <td>{{ member.deleteAt || '-' }}</td>
+                            <td>{{ member.archivedAt || '-' }}</td>
+                        </tr>
+
+                        <tr v-if="archiveList.length === 0">
+                            <td colspan="9">전출 이력이 없습니다.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-pagination-area">
+                <pagination
+                    :current-page="currentPage"
+                    :total-pages="totalPages"
+                    :page-numbers="pageNumbers"
+                    @change-page="setPage"/>
             </div>
         </section>
     </template>
@@ -169,7 +222,7 @@
                 <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
                 <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.memPhone }}</td>
                 <td>{{ mem.loginId }}</td><td>{{ mem.memCreateAt }}</td>
-                <td>{{ mem.memStatus }}</td>
+                <td>{{ formatMemberStatus(mem.memStatus, mem.role) }}</td>
             </tr>
         </tbody>
     </table>
@@ -191,11 +244,14 @@ import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
 import { usePagination } from '@/shared/pagination/usePagination';
 import Pagination from '@/shared/pagination/Pagination.vue';
+import { useMemberArchiveStore } from '../member-archive/memberArchiveStore';
 
 const store = useMemStore();
+const archiveStore = useMemberArchiveStore()
 const route = useRoute();
 const router = useRouter();
 const { memberList } = storeToRefs(store);
+const { list: archiveList } = storeToRefs(archiveStore)
 const searchType = ref('all');
 const searchKeyword = ref('');
 const dong = ref('');
@@ -206,9 +262,10 @@ const currentTime = ref(Date.now());
 const pageSize = 10;
 let elapsedCheckTimer;
 const managementSections = [
-    { value: 'approved', label: '승인회원관리' },
-    { value: 'pending', label: '승인대기회원' },
-    { value: 'withdrawn', label: '전출신청관리' }
+    { value: 'approved', label: '입주민 목록' },
+    { value: 'pending', label: '가입 승인 대기' },
+    { value: 'withdrawn', label: '전출 신청 관리' },
+    { value: 'archive', label: '전출 이력'}
 ];
 const requestedSection = String(route.query.section || 'approved');
 const activeSection = ref(
@@ -229,6 +286,22 @@ const toDateTime = (value) => {
 
     return new Date(value).getTime();
 };
+
+// 서버 상태값은 영어로 받고, 화면에는 사용자가 이해하기 쉬운 한글로 표시한다.
+const formatMemberStatus = (status, role) => {
+    if (status === 'ACTIVE') {
+        return role === 'ADMIN' ? '근무' : '거주'
+    }
+
+    const statusMap = {
+        WITHDRAW_PENDING: '전출 신청',
+        EMPTY: '빈 세대',
+        INACTIVE: '퇴사',
+        ON_LEAVE: '휴직',
+    }
+
+    return statusMap[status] ?? status ?? '-'
+}
 
 // PENDING 역할 회원만 승인 대기 목록으로 분류한다.
 const pendingMembers = computed(() => memberList.value.filter(
@@ -262,20 +335,22 @@ const hoOptions = computed(() => [...new Set(
     .filter(Number.isFinite)
     .sort((left, right) => left - right));
 
+// 전출 신청 관리는 아직 member 테이블에 남아 있고,
+// 관리자 확정을 기다리는 WITHDRAW_PENDING 회원만 보여준다.
 const withdrawnMembers = computed(() => memberList.value
     .filter((member) => {
-        return Boolean(member.memDeleteAt)
-            && !member.archived
-            && member.memName !== '미등록';
+        return member.memStatus === 'WITHDRAW_PENDING'
+            && member.memName !== '미등록'
     })
     .sort((left, right) => toDateTime(right.memDeleteAt) - toDateTime(left.memDeleteAt))
-);
+)
 
 const activeMembers = computed(() => {
-    if (activeSection.value === 'pending') return pendingMembers.value;
-    if (activeSection.value === 'withdrawn') return withdrawnMembers.value;
-    return approvedMembers.value;
-});
+    if (activeSection.value === 'pending') return pendingMembers.value
+    if (activeSection.value === 'withdrawn') return withdrawnMembers.value
+    if (activeSection.value === 'archive') return archiveList.value
+    return approvedMembers.value
+})
 
 const {
     currentPage,
@@ -335,14 +410,20 @@ const resetSearchInputs = () => {
 };
 
 const changeSection = async (section) => {
-    activeSection.value = section;
-    currentPage.value = 1;
-    resetSearchInputs();
-    searchType.value = 'all';
-    selectedMemberNos.value = [];
-    selectedWithdrawnMemberNos.value = [];
-    await store.loadmemberList();
-};
+    activeSection.value = section
+    currentPage.value = 1
+    resetSearchInputs()
+    searchType.value = 'all'
+    selectedMemberNos.value = []
+    selectedWithdrawnMemberNos.value = []
+
+    if (section === 'archive') {
+        await archiveStore.loadList()
+        return
+    }
+
+    await store.loadmemberList()
+}
 
 const restoreSelectedWithdrawnMembers = async () => {
     if (selectedWithdrawnMemberNos.value.length === 0) {
@@ -407,6 +488,7 @@ const searchGo = async () => {
 
 onMounted(async () => {
     await store.loadmemberList();
+    await archiveStore.loadList();
     elapsedCheckTimer = window.setInterval(() => {
         currentTime.value = Date.now();
     }, 60 * 1000);
