@@ -8,10 +8,10 @@ import java.util.List;
 public interface MemberMapper {
 
     // =====================================================
-    // 회원가입 및 가입 가능한 세대 확인
+    // 1. 회원가입 및 가입 가능한 세대 확인
     // =====================================================
 
-    // 입주민 회원가입은 기존 전출 세대 행에 Controller가 결정한 역할과 상태를 저장한다.
+    // 입주민 회원가입은 기존 전출 세대 행에 확정된 역할과 회원 상태를 저장한다.
     @Update("""
     UPDATE member
     SET login_id = #{loginId},
@@ -29,7 +29,7 @@ public interface MemberMapper {
 """)
     int signup(MemberDTO dto);
 
-    // 관리자가 추가한 관리자 계정은 기존 세대 행을 사용하지 않고 새 회원으로 등록한다.
+    // 관리자가 추가한 ADMIN 계정은 기존 세대 행을 사용하지 않고 새 행으로 등록한다.
     @Insert("""
         INSERT INTO member (
             login_id,
@@ -68,8 +68,8 @@ public interface MemberMapper {
         WHERE UPPER(TRIM(departed.role)) = 'RESIDENT'
           AND TRIM(departed.mem_status) = '전출'
           AND departed.mem_dong IN (101, 102, 201, 202, 301, 302, 401, 402)
-          AND (departed.mem_ho / 100) BETWEEN 1 AND 15
-          AND MOD(departed.mem_ho, 100) BETWEEN 1 AND 4
+          AND (departed.mem_ho / 100) BETWEEN 1 AND 10
+          AND MOD(departed.mem_ho, 100) BETWEEN 1 AND 2
           AND NOT EXISTS (
               SELECT 1
               FROM member active
@@ -97,6 +97,7 @@ public interface MemberMapper {
         """)
     Long lockWithdrawnUnit(@Param("dong") int dong, @Param("ho") int ho);
 
+    // 동일 동·호수에 승인대기 또는 거주 회원이 있는지 확인한다.
     @Select("""
         SELECT COUNT(*)
         FROM member
@@ -109,11 +110,10 @@ public interface MemberMapper {
     int countActiveMembersAtUnit(@Param("dong") int dong, @Param("ho") int ho);
 
     // =====================================================
-    // 관리자 회원 목록·상세·검색·수정·승인·삭제
+    // 2. 관리자 회원 목록·상세·검색·수정·승인·전출 관리
     // =====================================================
 
-    // 회원목록
-
+    // 가입일과 회원번호 역순으로 전체 회원 목록을 조회한다.
     @Select("""
     SELECT
         ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) display_no,
@@ -130,13 +130,13 @@ public interface MemberMapper {
     ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC
     """)
     List<MemberDTO> list();
-    // 회원상세
+    // 회원번호에 해당하는 상세 정보를 조회한다.
     @Select("SELECT m.*, " +
             "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
             "FROM member m WHERE member_no = #{memberNo}")
     MemberDTO detail(int memberNo);
 
-    // 회원검색
+    // 역할, 이름 또는 동·호수 조건에 맞는 회원을 조회한다.
     @Select("""
         SELECT ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) AS display_no,
                m.*,
@@ -168,7 +168,7 @@ public interface MemberMapper {
             @Param("ho") Integer ho
     );
 
-    // 관리자는 연락처, 비밀번호, 회원 상태만 수정하며 탈퇴일 생성을 유지한다.
+    // 연락처, 비밀번호와 상태를 수정하고 전출·퇴사 전환 시 탈퇴일을 기록한다.
     @Update("""
         UPDATE member
         SET mem_phone = #{memPhone},
@@ -199,9 +199,7 @@ public interface MemberMapper {
         """)
     int approvePendingMembers(@Param("memberNos") List<Long> memberNos);
 
-    // 전출 처리 전, 현재 회원 정보를 member_archive에 복사한다.
-    // member 테이블은 동/호수 자리를 유지해야 하므로 실제 삭제하지 않고,
-    // 삭제 당시의 회원 정보만 archive 테이블에 이력으로 남긴다.
+    // 전출 확정 전에 현재 회원 정보를 member_archive 이력으로 복사한다.
     @Insert("""
         INSERT INTO member_archive (
             original_member_no,
@@ -231,8 +229,7 @@ public interface MemberMapper {
         """)
     int saveMemberArchive(@Param("memberNo") int memberNo);
 
-    // 탈퇴 신청 상태의 회원을 다시 거주 상태로 복원한다.
-    // 아직 member_archive로 이동하기 전 단계에서 사용하는 복원 기능이다.
+    // 이력 보관 전인 전출 신청 회원을 다시 거주 상태로 복원한다.
     @Update("""
         UPDATE member
         SET mem_status = '거주',
@@ -241,8 +238,7 @@ public interface MemberMapper {
         """)
     int restoreWithdrawnMember(@Param("memberNo") int memberNo);
 
-    // 회원을 탈퇴 신청 상태로 변경한다.
-    // 이 단계에서는 archive 저장, 차량 삭제, 회원 정보 초기화를 하지 않는다.
+    // 회원을 전출 신청 상태로 변경하고 탈퇴일을 현재 시각으로 기록한다.
     @Update("""
         UPDATE member
         SET mem_status = '전출',
@@ -251,14 +247,14 @@ public interface MemberMapper {
         """)
     int requestWithdrawnMember(@Param("memberNo") int memberNo);
 
+    // 전출 확정 회원에게 연결된 등록 차량을 삭제한다.
     @Delete("""
         DELETE FROM vehicle_car
         WHERE member_no = #{memberNo}
         """)
     int deleteVehiclesByMemberNo(@Param("memberNo") int memberNo);
 
-    // 전출 확정 후 member 원본 행을 미등록 상태로 비운다.
-    // member 행 자체는 삭제하지 않고 동/호수 자리만 유지한다.
+    // 전출 확정 후 동·호수 자리를 유지하면서 원본 회원 정보를 미등록 상태로 초기화한다.
     @Update("""
         UPDATE member
         SET login_id = CONCAT('unit_', mem_dong, '_', mem_ho),
@@ -274,16 +270,16 @@ public interface MemberMapper {
 
 
     // =====================================================
-    // 입주민 마이페이지·차량·입출차 조회
+    // 3. 입주민 마이페이지·차량·입출차 조회
     // =====================================================
 
-    // 입주민 마이페이지
+    // 로그인 아이디에 해당하는 입주민 본인 정보를 조회한다.
     @Select("SELECT m.*, " +
             "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
             "FROM member m WHERE login_id = #{loginId}")
     MemberDTO residentMypage(String loginId);
 
-    // 로그인 회원과 vehicle_car.member_no를 조인해 해당 입주민의 차량만 조회한다.
+    // member_no로 회원과 등록 차량을 연결해 본인 차량과 최신 주차 상태를 조회한다.
     @Select("""
         SELECT
             vc.vehicle_car_no,
@@ -318,7 +314,7 @@ public interface MemberMapper {
         """)
     List<MemberDTO.ResidentVehicle> residentVehicles(String loginId);
 
-    // 새 DB의 vehicle_car.member_no를 기준으로 로그인 입주민 차량의 최근 입출차 기록을 조회한다.
+    // 본인 등록 차량의 입출차 기록과 입차 게이트의 주차장명을 최신순으로 조회한다.
     @Select("""
         SELECT
             cl.car_log_no,
@@ -339,10 +335,10 @@ public interface MemberMapper {
     List<MemberDTO.ResidentCarLog> residentCarLogs(String loginId);
 
     // =====================================================
-    // 입주민 정보 수정·비밀번호 확인·탈퇴
+    // 4. 입주민 정보 수정·비밀번호 확인·탈퇴
     // =====================================================
 
-    // 입주민은 마이페이지에서 '연락처'와 '비밀번호'만 변경할 수 있다.
+    // 입주민의 연락처를 수정하고 비밀번호가 전달된 경우에만 함께 변경한다.
     @Update("""
         <script>
         UPDATE member
@@ -355,7 +351,7 @@ public interface MemberMapper {
         """)
     void residentMypageEdit(MemberDTO dto);
 
-    // [pw변경시/회원탈퇴시] 현재 로그인한 입주민의 암호화된 비밀번호를 한번 더 조회.
+    // 비밀번호 변경과 회원탈퇴 검증에 사용할 현재 암호화 비밀번호를 조회한다.
     @Select("SELECT login_pwd " +
             "FROM member " +
             "WHERE login_id = #{loginId} " +
@@ -363,7 +359,7 @@ public interface MemberMapper {
             "AND delete_at IS NULL")
     String findResPw(String loginId);
 
-    // 현재 비밀번호가 확인된 입주민의 비밀번호를 변경함.
+    // 본인 확인이 끝난 입주민의 비밀번호를 새 암호화 값으로 변경한다.
     @Update("UPDATE member " +
             "SET login_pwd = #{encodedPassword} " +
             "WHERE login_id = #{loginId} " +
@@ -374,7 +370,7 @@ public interface MemberMapper {
             @Param("encodedPassword") String encodedPassword
     );
 
-    // 입주민이 직접 회원탈퇴하면 stauts를 '전출'로 변경 '탈퇴 시각'을 기록함.
+    // 입주민이 직접 탈퇴하면 상태를 전출로 변경하고 최초 탈퇴 시각을 기록한다.
     @Update("UPDATE member " +
             "SET mem_status = '전출', " +
             "delete_at = COALESCE(delete_at, CURRENT_TIMESTAMP) " +

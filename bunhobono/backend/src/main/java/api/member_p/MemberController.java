@@ -14,16 +14,10 @@ import java.util.Map;
 @RestController
 public class MemberController {
 
-    public record ResidentSecurityRequest(
-            String currentPassword,
-            String newPassword,
-            String challengeId,
-            String challengeAnswer
-    ) {}
-
     @Resource
     MemberService service;
 
+    // 인증된 사용자의 로그인 아이디를 반환하고 비로그인 요청은 거부한다.
     private String authenticatedLoginId(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
@@ -31,7 +25,7 @@ public class MemberController {
         return authentication.getName();
     }
 
-    // 비밀번호·보안문자 검증 실패 사유를 화면에서 그대로 안내할 수 있도록 응답한다.
+    // 보안 검증 실패 상태와 안내 문구를 응답 본문에 담는다.
     private ResponseEntity<Map<String, String>> securityFailure(ResponseStatusException exception) {
         String message = exception.getReason() == null
                 ? "요청을 처리하지 못했습니다."
@@ -41,62 +35,70 @@ public class MemberController {
                 .body(Map.of("message", message));
     }
 
-    // 회원가입
+    // =====================================================
+    // 1. 외부 회원가입과 관리자 회원 추가 요청을 구분한다.
+    // =====================================================
+
+    // 외부 가입은 PENDING·거주로 고정하고 관리자 요청은 입력한 역할과 상태를 사용한다.
     @PostMapping("/members")
     public void signup(@RequestBody MemberDTO dto, Authentication authentication) {
-        // 공개 회원가입에서는 요청 Body와 관계없이 입주민 권한만 허용한다.
+        // ADMIN 권한 여부에 따라 '외부 가입'과 '관리자의 회원추가'를 구분한다.
         boolean adminRequest = authentication != null
                 && authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ADMIN".equalsIgnoreCase(authority.getAuthority()));
         if (!adminRequest) {
-            // 외부 회원가입은 승인 전까지 대기 역할로 고정한다.
+            // 외부 회원은 관리자 승인 전까지 로그인할 수 없는 대기 역할로 저장한다.
             dto.setRole("PENDING");
             dto.setMemStatus("거주");
         }
         service.signup(dto);
     }
 
-    // 관리자 회원 수정: 연락처, 비밀번호, 회원 상태만 변경
+    // 입력한 로그인 아이디가 이미 존재하는지 확인한다.
+    @GetMapping("/signup/check-id")
+    public boolean checkLoginId(@RequestParam String loginId){
+        return service.checkLoginId(loginId);
+    }
+
+    // 전출 이력이 있고 현재 활성 회원이 없는 동·호수만 반환한다.
+    @GetMapping("/signup/available-units")
+    public List<MemberDTO> availableSignupUnits() {
+        return service.availableSignupUnits();
+    }
+
+    // =====================================================
+    // 2. 관리자가 회원을 조회·검색·수정·승인한다.
+    // =====================================================
+
+    // 관리자가 회원의 연락처, 비밀번호와 상태를 수정한다.
     @PutMapping("/members/{memberNo}/edit")
     public void update(@PathVariable int memberNo,
                        @RequestBody MemberDTO dto,
                        Authentication authentication) {
         dto.setMemberNo(memberNo);
+        // 로그인한 관리자 본인은 본인을 탈퇴시킬 수 없도록 하는 조치.
         service.update(dto, authentication.getName());
     }
 
-    // 대기 역할 회원을 입주민 역할로 변경해 승인한다.
+    // 선택한 PENDING 회원의 역할을 RESIDENT로 변경한다.
     @PutMapping("/members/approve")
     public void approvePendingMembers(@RequestBody List<Long> memberNos) {
         service.approvePendingMembers(memberNos);
     }
 
-    // 회원 리스트
+    // 관리자 회원관리 화면에 표시할 전체 회원을 조회한다.
     @GetMapping("/members")
     public List<MemberDTO> list(){
         return service.list();
     }
 
-    // 선택한 탈퇴 신청 회원들을 다시 거주 상태로 복원한다.
-    @PutMapping("/members/restore")
-    public int restoreWithdrawnMembers(@RequestBody List<Long> memberNos) {
-        return service.restoreWithdrawnMembers(memberNos);
-    }
-
-    // 선택한 탈퇴 신청 회원들을 전출 확정 처리한다.
-    // 실제 member 삭제가 아니라 member_archive에 보관 후 member 원본을 미등록 상태로 비운다.
-    @DeleteMapping("/members/withdrawn")
-    public int permanentlyDeleteWithdrawnMembers(@RequestBody List<Long> memberNos) {
-        return service.permanentlyDeleteWithdrawnMembers(memberNos);
-    }
-
-    // 회원 상세내용
+    // 회원 번호에 해당하는 상세 정보를 조회한다.
     @GetMapping("/members/{memberNo}/detail")
     public MemberDTO detail(@PathVariable int memberNo){
         return service.detail(memberNo);
     }
 
-    // 회원 검색
+    // 이름, 역할 또는 동·호수 조건으로 회원을 검색한다.
     @GetMapping("/members/search")
     public List<MemberDTO> search(
             @RequestParam String type,
@@ -106,27 +108,46 @@ public class MemberController {
     ) {
         return service.search(type, keyword, dong, ho);
     }
-    // 관리자 회원 탈퇴 처리
+
+    // =====================================================
+    // 3. 전출 신청 회원을 복원하거나 전출을 확정한다.
+    // =====================================================
+
+    // 선택한 전출 신청 회원들을 다시 거주 상태로 복원한다.
+    @PutMapping("/members/restore")
+    public int restoreWithdrawnMembers(@RequestBody List<Long> memberNos) {
+        return service.restoreWithdrawnMembers(memberNos);
+    }
+
+    // 선택한 전출 신청 회원의 이력을 보관하고 원본 회원 행을 미등록 상태로 초기화한다.
+    @DeleteMapping("/members/withdrawn")
+    public int permanentlyDeleteWithdrawnMembers(@RequestBody List<Long> memberNos) {
+        return service.permanentlyDeleteWithdrawnMembers(memberNos);
+    }
+
+    // 관리자가 회원을 전출 신청 상태로 변경하고 탈퇴일을 기록한다.
     @DeleteMapping("/members/{memberNo}/delete")
     public void delete(@PathVariable int memberNo, Authentication authentication) {
         service.delete(memberNo, authentication.getName());
     }
 
-    // 탈퇴 신청된 회원을 다시 거주 상태로 복원한다.
-    // 관리자가 탈퇴 신청을 취소할 때 사용한다.
+    // 전출 신청된 회원 한 명을 다시 거주 상태로 복원한다.
     @PutMapping("/members/{memberNo}/restore")
     public void restoreWithdrawnMember(@PathVariable int memberNo) {
         service.restoreWithdrawnMember(memberNo);
     }
 
-    // 탈퇴 신청된 회원을 전출 확정 처리한다.
-    // 회원 정보를 member_archive에 보관하고 member 원본은 미등록 상태로 비운다.
+    // 전출 신청된 회원 한 명의 이력을 보관하고 원본 회원 행을 초기화한다.
     @PutMapping("/members/{memberNo}/confirm-withdrawn")
     public void confirmWithdrawnMember(@PathVariable int memberNo) {
         service.confirmWithdrawnMember(memberNo);
     }
 
-    // 입주민 마이페이지
+    // =====================================================
+    // 4. 로그인 입주민의 마이페이지와 대시보드 정보를 제공한다.
+    // =====================================================
+
+    // 로그인 아이디를 기준으로 입주민 본인 정보를 조회한다.
     @GetMapping("/resident/mypage")
     public MemberDTO residentMypage(Authentication authentication) {
 
@@ -136,14 +157,14 @@ public class MemberController {
     }
 
 
-    // 로그인 입주민 정보와 차량·입출차 기록을 한 번의 요청으로 반환한다.
+    // 본인 정보, 등록 차량과 입출차 기록을 대시보드 응답으로 반환한다.
     @GetMapping("/resident/mypage/dashboard")
     public MemberDTO.ResidentDashboard residentDashboard(Authentication authentication) {
         return service.residentDashboard(authentication.getName());
     }
 
 
-    // 입주민이 마이페이지에서 본인 연락처와 비밀번호 수정
+    // 로그인 아이디를 고정해 본인의 연락처와 입력된 비밀번호만 수정한다.
     @PutMapping("/resident/mypage/edit")
     public void residentMypageEdit(Authentication authentication, @RequestBody MemberDTO dto){
 
@@ -153,18 +174,22 @@ public class MemberController {
         service.residentMypageEdit(dto);
     }
 
-    // 로그인 입주민이 민감한 작업에 사용할 일회용 보안문자를 발급한다.
+    // =====================================================
+    // 5. 회원탈퇴와 비밀번호 변경을 위한 본인 확인을 처리한다.
+    // =====================================================
+
+    // 로그인 입주민에게 3분 동안 사용할 일회용 보안문자를 발급한다.
     @GetMapping("/resident/security-challenge")
     public Map<String, String> issueSecurityChallenge(Authentication authentication) {
         authenticatedLoginId(authentication);
         return service.issueSecurityChallenge();
     }
 
-    // 입주민 본인 회원 탈퇴
+    // 실제 탈퇴 전에 현재 비밀번호와 보안문자가 맞는지만 확인한다.
     @PostMapping("/resident/mypage/delete/verify")
     public ResponseEntity<Map<String, String>> verifyResidentWithdrawal(
             Authentication authentication,
-            @RequestBody ResidentSecurityRequest request
+            @RequestBody MemberDTO.ResidentSecurityRequest request
     ) {
         try {
             service.verifyResidentWithdrawal(
@@ -179,11 +204,11 @@ public class MemberController {
         }
     }
 
-    // 비밀번호와 보안문자 확인 후 최종 동의를 받은 입주민 본인 회원 탈퇴
+    // 비밀번호와 보안문자를 다시 확인한 뒤 회원 상태를 전출로 변경한다.
     @DeleteMapping("/resident/mypage/delete")
     public ResponseEntity<Map<String, String>> residentDelete(
             Authentication authentication,
-            @RequestBody ResidentSecurityRequest request
+            @RequestBody MemberDTO.ResidentSecurityRequest request
     ) {
         try {
             service.residentDelete(
@@ -198,11 +223,11 @@ public class MemberController {
         }
     }
 
-    // 입주민이 현재 비밀번호와 보안문자를 확인한 뒤 비밀번호를 변경한다.
+    // 현재 비밀번호와 보안문자를 확인한 뒤 새 비밀번호를 저장한다.
     @PutMapping("/resident/mypage/password")
     public ResponseEntity<Map<String, String>> changeResidentPassword(
             Authentication authentication,
-            @RequestBody ResidentSecurityRequest request
+            @RequestBody MemberDTO.ResidentSecurityRequest request
     ) {
         try {
             service.changeResidentPassword(
@@ -216,18 +241,6 @@ public class MemberController {
         } catch (ResponseStatusException exception) {
             return securityFailure(exception);
         }
-    }
-
-    // 아이디 중복 확인
-    @GetMapping("/signup/check-id")
-    public boolean checkLoginId(@RequestParam String loginId){
-        return service.checkLoginId(loginId);
-    }
-
-    // 전출 처리되어 공개 회원가입이 가능한 세대의 동·호수만 반환한다.
-    @GetMapping("/signup/available-units")
-    public List<MemberDTO> availableSignupUnits() {
-        return service.availableSignupUnits();
     }
 
 }

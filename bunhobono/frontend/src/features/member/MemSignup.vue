@@ -149,7 +149,6 @@ const selectedDongUnits = computed(() => store.availableSignupUnits.filter(
 ));
 const line12HoOptions = computed(() => selectedDongUnits.value
     .map((unit) => Number(unit.memHo))
-    .filter((ho) => [1, 2].includes(ho % 100))
     .sort((left, right) => left - right));
 
 const loadAvailableUnits = async () => {
