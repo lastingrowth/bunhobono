@@ -2,11 +2,9 @@
   <div>
     <div class="approve-header">
       <h3>승인 대기 차량</h3>
-      <button type="button" class="back-btn" @click="emit('back')">
-        목록으로
-      </button>
     </div>
 
+    <div class="admin-table-scroll">
     <table border="">
       <thead>
         <tr>
@@ -56,6 +54,7 @@
             <button @click="reject(vehicle)">반려</button>
             <button @click="expire(vehicle)">만료</button>
           </td>
+
         </tr>
 
         <tr v-if="vehicles.length === 0">
@@ -63,11 +62,14 @@
         </tr>
       </tbody>
     </table>
+    </div>
+    <div class="admin-pagination-area">
     <Pagination
       :current-page="currentPage"
       :total-pages="totalPages"
       :page-numbers="pageNumbers"
       @change-page="setPage"/>
+    </div>
   </div>
 </template>
 

@@ -1,19 +1,6 @@
 <template>
   <div class="carlog-table-wrap">
   <table class="carlog-table" border="">
-    <colgroup>
-      <col class="col-number">
-      <col class="col-car-number">
-      <col class="col-state">
-      <col class="col-kind">
-      <col class="col-in-time">
-      <col class="col-out-time">
-      <col class="col-parking-time">
-      <col class="col-in-gate">
-      <col class="col-out-gate">
-      <col class="col-parking">
-      <col class="col-manage">
-    </colgroup>
     <thead>
       <tr>
         <th>번호</th>
@@ -36,36 +23,16 @@
         <td :class="{ 'short-text': isShortText(log.carNo || '미인식') }">{{ log.carNo || '미인식' }}</td>
         <td :class="{ 'short-text': isShortText(log.parkingStateText) }">{{ log.parkingStateText }}</td>
         <td :class="{ 'short-text': isShortText(log.carKindText) }">{{ log.carKindText }}</td>
-        <td :class="{ 'short-text': isShortText(log.inTimeText) }">
-          <span
-            v-for="line in timeLines(log.inTimeText)"
-            :key="line"
-            class="time-line"
-          >{{ line }}</span>
-        </td>
+        <td :class="{ 'short-text': isShortText(log.inTimeText) }">{{ log.inTimeText }}</td>
         <td
           class="out-time-column"
           :class="{ 'short-text': isShortText(log.outTimeText) }"
-        >
-          <span
-            v-for="line in timeLines(log.outTimeText)"
-            :key="line"
-            class="time-line"
-          >{{ line }}</span>
-        </td>
+        >{{ log.outTimeText }}</td>
         <td :class="{ 'short-text': isShortText(log.parkingTimeText) }">{{ log.parkingTimeText }}</td>
         <td :class="{ 'short-text': isShortText(log.inGateText) }">{{ log.inGateText }}</td>
         <td :class="{ 'short-text': isShortText(log.outGateText) }">{{ log.outGateText }}</td>
         <td :class="{ 'short-text': isShortText(log.parkingName || '-') }">{{ log.parkingName || '-' }}</td>
-        <td class="manage-column">
-          <button
-            class="delete-btn"
-            type="button"
-            @click="carlogStore.remove(log.carLogNo)"
-          >
-            삭제
-          </button>
-        </td>
+        <td class="manage-column"><button class="delete-btn" type="button" @click="carlogStore.remove(log.carLogNo)">삭제</button></td>
       </tr>
 
       <tr v-if="logs.length === 0">
@@ -76,11 +43,13 @@
     </tbody>
   </table>
   </div>
+  <div class="admin-pagination-area">
   <Pagination
     :current-page="currentPage"
     :total-pages="totalPages"
     :page-numbers="pageNumbers"
     @change-page="setPage"/>
+  </div>
 </template>
 
 <script setup>
@@ -105,8 +74,7 @@ const logList = computed(() => {
 
 const pageSize = 10
 
-const isShortText = (value) => String(value ?? '').length <= 6
-const timeLines = (value) => String(value ?? '-').split(' ')
+const isShortText = (value) => String(value ?? '').length <= 5
 
 const {
   currentPage,
@@ -127,9 +95,9 @@ const {
 }
 
 .carlog-table {
-  width: 100%;
+  width: max-content;
   min-width: 760px;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .carlog-table th,
@@ -150,47 +118,13 @@ const {
   white-space: nowrap;
 }
 
-.time-line {
-  display: block;
+.carlog-table td.short-text {
+  width: 1% !important;
+}
+
+.carlog-table td:not(.short-text) {
+  width: auto !important;
   white-space: nowrap;
-}
-
-.col-number {
-  width: 4%;
-}
-
-.col-car-number {
-  width: 10%;
-}
-
-.col-state {
-  width: 8%;
-}
-
-.col-kind {
-  width: 9%;
-}
-
-.col-in-time,
-.col-out-time {
-  width: 11%;
-}
-
-.col-parking-time {
-  width: 11%;
-}
-
-.col-in-gate,
-.col-out-gate {
-  width: 9%;
-}
-
-.col-parking {
-  width: 10%;
-}
-
-.col-manage {
-  width: 8%;
 }
 
 .out-time-column {

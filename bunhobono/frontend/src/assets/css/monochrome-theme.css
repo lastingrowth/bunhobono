@@ -523,6 +523,33 @@ textarea:focus {
   color: #929ba3;
 }
 
+/* 입출차 기록의 날짜·시간 입력값과 달력 아이콘을 다크 배경에서 선명하게 표시한다. */
+.admin-layout .content .carlog-filter .in-time-input {
+  border-color: #596168 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+  background: #343a40 !important;
+  color-scheme: dark;
+}
+
+.admin-layout .content .carlog-filter .in-time-input::-webkit-datetime-edit,
+.admin-layout .content .carlog-filter .in-time-input::-webkit-datetime-edit-fields-wrapper,
+.admin-layout .content .carlog-filter .in-time-input::-webkit-datetime-edit-text,
+.admin-layout .content .carlog-filter .in-time-input::-webkit-datetime-edit-year-field,
+.admin-layout .content .carlog-filter .in-time-input::-webkit-datetime-edit-month-field,
+.admin-layout .content .carlog-filter .in-time-input::-webkit-datetime-edit-day-field,
+.admin-layout .content .carlog-filter .in-time-input::-webkit-datetime-edit-hour-field,
+.admin-layout .content .carlog-filter .in-time-input::-webkit-datetime-edit-minute-field {
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+}
+
+.admin-layout .content .carlog-filter .in-time-input::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  filter: brightness(0) invert(1);
+  cursor: pointer;
+}
+
 .admin-layout input:focus,
 .admin-layout select:focus,
 .admin-layout textarea:focus {
@@ -592,6 +619,688 @@ textarea:focus {
   border-color: var(--admin-line);
   background: var(--admin-surface);
   box-shadow: none;
+}
+
+/* 관리자 라우트에서는 카드, 폼, 버튼, 배지 등 모든 UI를 각진 형태로 통일한다. */
+.admin-layout,
+.admin-layout *,
+.admin-layout *::before,
+.admin-layout *::after {
+  border-radius: 0 !important;
+}
+
+/* 통계 화면의 도넛 차트는 데이터 시각화를 위해 원형을 유지한다. */
+.admin-layout .current-parking-donut,
+.admin-layout .current-parking-donut-inner,
+.admin-layout .parking-circle,
+.admin-layout .parking-circle-inner {
+  border-radius: 50% !important;
+}
+
+/*
+ * 관리자 표는 셀 내용 길이를 기준으로 열 너비를 계산한다.
+ * 짧은 값의 열은 좁게 유지하고 긴 값은 줄바꿈 없이 한 줄로 표시한다.
+ */
+.admin-layout .content table,
+.admin-layout .content .admin-dashboard .dashboard-log-table {
+  width: max-content !important;
+  min-width: 100%;
+  table-layout: auto !important;
+}
+
+.admin-layout .content table th,
+.admin-layout .content table td,
+.admin-layout .dashboard-log-table th,
+.admin-layout .dashboard-log-table td {
+  width: 1%;
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+.admin-layout .carlog-table-wrap {
+  overflow-x: auto;
+}
+
+/* 밝게 남아 있던 보조 카드와 다이얼로그를 관리자 모노톤에 맞춘다. */
+.admin-layout :is(
+  .table-wrap,
+  .gate-dialog,
+  .camera-dialog,
+  .parking-dialog,
+  .member-detail-dialog,
+  .trash-detail-dialog,
+  .notice-detail-dialog,
+  .detail-card,
+  .json-card,
+  .security-dialog,
+  .monitoring-card,
+  .dashboard-message,
+  .dashboard-error,
+  .admin-control-left,
+  .admin-control-right
+) {
+  border-color: var(--admin-line) !important;
+  color: var(--admin-ink) !important;
+  background: var(--admin-surface) !important;
+  box-shadow: none !important;
+}
+
+.admin-layout :is(.gate-dialog, .camera-dialog, .parking-dialog) .dialog-heading p {
+  color: var(--admin-muted) !important;
+}
+
+.admin-layout :is(.current-parking-donut-inner, .parking-circle-inner) {
+  color: var(--admin-ink);
+  background: var(--admin-surface) !important;
+}
+
+/* 주차장별 도넛은 바깥 흰 카드 없이 차트와 안쪽 원만 보이게 한다. */
+.admin-layout .parking-circle-item {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+}
+
+.admin-layout .parking-circle-inner {
+  color: #f4f6f7 !important;
+  background: #30363b !important;
+}
+
+.admin-layout .statistics-page .current-parking-donut-inner {
+  background: #30363b !important;
+}
+
+.admin-layout .statistics-page :is(.current-parking-donut, .parking-circle) {
+  box-shadow:
+    0 0 8px rgba(57, 255, 136, 0.7),
+    0 0 20px rgba(32, 232, 123, 0.34) !important;
+}
+
+.admin-layout .statistics-page :is(.current-parking-donut-inner, .parking-circle-inner) {
+  box-shadow: inset 0 0 12px rgba(57, 255, 136, 0.16) !important;
+}
+
+/* 주차장별 작은 도넛에는 아주 약한 초록빛 외곽광만 적용한다. */
+.admin-layout .statistics-page .parking-circle {
+  box-shadow:
+    0 0 5px rgba(57, 255, 136, 0.28),
+    0 0 11px rgba(57, 255, 136, 0.12) !important;
+}
+
+.admin-layout .statistics-page .parking-circle-inner {
+  box-shadow: none !important;
+}
+
+.admin-layout .current-parking-donut-inner strong {
+  color: #f4f6f7 !important;
+}
+
+/* 통계 페이지에 남아 있는 라이트 테마 글자색을 다크 배경용으로 통일한다. */
+.admin-layout .statistics-page :is(h1, h2, h3, p, span, strong, small, label) {
+  color: var(--admin-ink) !important;
+}
+
+.admin-layout .statistics-page :is(
+  .card-help-text,
+  .card-title-row p,
+  .current-parking-donut-inner span,
+  .parking-type-row small
+) {
+  color: var(--admin-muted) !important;
+}
+
+.admin-layout .statistics-page .statistics-message.error {
+  color: var(--admin-danger) !important;
+}
+
+.admin-layout .statistics-page .chart-value {
+  fill: var(--admin-ink) !important;
+}
+
+.admin-layout .statistics-page .chart-label {
+  fill: var(--admin-muted) !important;
+}
+
+/* 통계의 비교 항목과 주의 수치에는 의미별 강조색을 사용한다. */
+/* 통계 화면 배경은 유지하고 카드 표면만 한 단계 밝게 구분한다. */
+.admin-layout .statistics-page .statistics-card {
+  border-color: #596168 !important;
+  border-radius: 7px !important;
+  background: #30363b !important;
+}
+
+.admin-layout .statistics-page .current-parking-donut-inner strong {
+  color: #efff5a !important;
+}
+
+.admin-layout .statistics-page .parking-type-row:nth-child(1) strong {
+  color: #39ff88 !important;
+}
+
+.admin-layout .statistics-page .parking-type-row:nth-child(2) strong {
+  color: #55c7ff !important;
+}
+
+.admin-layout .statistics-page .parking-type-row:nth-child(3) strong {
+  color: #efff5a !important;
+}
+
+.admin-layout .statistics-page .legend-color.resident {
+  background: #39ff88 !important;
+}
+
+.admin-layout .statistics-page .legend-color.visit {
+  background: #55c7ff !important;
+}
+
+.admin-layout .statistics-page .legend-color.non-resident {
+  background: #4fd3a0 !important;
+}
+
+.admin-layout .statistics-page .legend-color.unknown {
+  background: #efff5a !important;
+}
+
+.admin-layout .statistics-page :is(.hourly-polyline, .hourly-point) {
+  stroke: #ff9f43 !important;
+}
+
+.admin-layout .statistics-page .hourly-point {
+  fill: var(--admin-surface) !important;
+}
+
+.admin-layout .statistics-page .chart-value {
+  fill: #ffb76f !important;
+}
+
+.admin-layout .statistics-page .warning-row.visitLongStay strong {
+  color: #ffae57 !important;
+}
+
+.admin-layout .statistics-page .warning-row.unknownLongStay strong {
+  color: #ff7479 !important;
+}
+
+.admin-layout .statistics-page .warning-row.expiredVisit strong {
+  color: #b79cff !important;
+}
+
+/* 비입주민 장기주차 알림은 1건 이상일 때 모두 동일한 경고색을 사용한다. */
+.admin-layout .statistics-page .warning-row.has-warning strong {
+  color: #ff7479 !important;
+  -webkit-text-fill-color: #ff7479;
+}
+
+.admin-layout .statistics-page .bar.resident {
+  background: #39ff88 !important;
+}
+
+.admin-layout .statistics-page .bar.non-resident {
+  background: #55c7ff !important;
+}
+
+.admin-layout .statistics-page .entry-bar-chart {
+  border-top: 0 !important;
+}
+
+.admin-layout .statistics-page .bar.resident span,
+.admin-layout .statistics-page .chart-legend span:first-child {
+  color: #39ff88 !important;
+}
+
+.admin-layout .statistics-page .bar.non-resident span,
+.admin-layout .statistics-page .chart-legend span:last-child {
+  color: #55c7ff !important;
+}
+
+.admin-layout .statistics-page .chart-legend .legend-color.resident {
+  background: #39ff88 !important;
+}
+
+.admin-layout .statistics-page .chart-legend .legend-color.non-resident {
+  background: #55c7ff !important;
+}
+
+/* 비교 막대그래프는 기둥 윗부분만 살짝 둥글게 표현한다. */
+.admin-layout .statistics-page .entry-bar-chart .bar {
+  border-radius: 7px 7px 2px 2px !important;
+}
+
+.admin-layout .statistics-page .parking-circle-item small {
+  color: var(--parking-color) !important;
+}
+
+.admin-layout .statistics-page .average-time-row.visit :is(strong, span) {
+  color: #55c7ff !important;
+}
+
+.admin-layout .statistics-page .average-time-row.visit .average-time-bar {
+  background: #55c7ff !important;
+}
+
+.admin-layout .statistics-page .average-time-row.unknown :is(strong, span) {
+  color: #efff5a !important;
+}
+
+.admin-layout .statistics-page .average-time-row.unknown .average-time-bar {
+  background: #efff5a !important;
+}
+
+.admin-layout .statistics-page .period-buttons button.active {
+  border-color: #d9aa1f !important;
+  color: #171b1f !important;
+  background: #ffc928 !important;
+}
+
+/* 통계에서 진입한 상세 목록의 복귀 버튼은 작은 보조 액션으로 표시한다. */
+.admin-layout .pagination-action-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 52px;
+  margin-top: 8px;
+  padding: 4px 8px 12px;
+  box-sizing: border-box;
+}
+
+.admin-layout .pagination-action-row > .pagination {
+  grid-column: 2;
+  margin-top: 0;
+}
+
+.admin-layout .pagination-action-row > .statistics-back-button {
+  grid-column: 3;
+  justify-self: end;
+  align-self: center;
+}
+
+.admin-layout .admin-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.admin-layout .admin-pagination-area {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .admin-pagination-area:not(.pagination-action-row) {
+  min-height: 52px;
+  padding: 4px 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.admin-layout .admin-pagination-area > .pagination {
+  margin-top: 0;
+}
+
+/* 검색, 필터, 탭, 버튼 묶음에 남은 라이트 테마 배경을 제거한다. */
+.admin-layout .content :is(
+  .carlog-filter,
+  .carlog-filter-bar,
+  .camera-data-toolbar,
+  .camera-data-search,
+  .vehicle-list-toolbar,
+  .vehicle-search-bar,
+  .notice-actions,
+  .status-filters,
+  .trash-filter,
+  .trash-search,
+  .member-search,
+  .member-search-fields,
+  .approval-actions,
+  .member-management-tabs,
+  .vehicle-tabs,
+  .form-actions,
+  .detail-actions,
+  .info-detail-actions,
+  .notice-detail-actions,
+  .member-detail-header-actions,
+  .security-actions,
+  .parking-dialog-actions,
+  .camera-car-number-edit-actions,
+  .dashboard-alert-chips
+) {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content :is(.status-filter, .member-search, .carlog-filter-bar, .vehicle-search-bar) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 카메라 데이터 목록의 주차장 필터는 둥근 캡슐 버튼으로 표시한다. */
+.admin-layout .content .camera-data-toolbar .status-filter span {
+  border-radius: 999px !important;
+}
+
+/* 알림 목록의 처리 상태 필터는 둥근 캡슐 버튼으로 표시한다. */
+.admin-layout .content .notice-page .status-filter span {
+  border-radius: 999px !important;
+}
+
+/* 회원관리 상단 메뉴와 추가 버튼은 일반 굵기의 글자로 표시한다. */
+.admin-layout .content .member-header-actions button {
+  font-weight: 400 !important;
+}
+
+/* 상세 화면 하단 작업 영역도 별도 흰 띠 없이 본문에 이어지게 한다. */
+.admin-layout .content :is(.info-detail-actions, .notice-detail-actions) {
+  border-top-color: var(--admin-line) !important;
+}
+
+.admin-layout .content :is(.pending-section, .archive-alert-section, .availability-guide) {
+  border-color: var(--admin-line) !important;
+  color: var(--admin-ink) !important;
+  background: var(--admin-surface) !important;
+  box-shadow: none !important;
+}
+
+/* 관리자 버튼의 모든 상태에서 텍스트 대비를 보장한다. */
+.admin-layout button,
+.admin-layout input:is([type="button"], [type="submit"], [type="reset"]) {
+  color: #f4f6f7 !important;
+  -webkit-text-fill-color: #f4f6f7;
+  text-shadow: none !important;
+}
+
+.admin-layout button :is(span, strong, small, i, b) {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+.admin-layout .content button :is(span, strong, small, i, b),
+.admin-layout .statistics-page button :is(span, strong, small, i, b) {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+.admin-layout button:hover:not(:disabled),
+.admin-layout button:focus-visible {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+}
+
+.admin-layout button:disabled,
+.admin-layout input:is([type="button"], [type="submit"], [type="reset"]):disabled {
+  color: #c2c8cd !important;
+  -webkit-text-fill-color: #c2c8cd;
+  opacity: 0.62;
+}
+
+/* 통계 기간 버튼은 둥근 개별 버튼으로 표시하고 선택 상태는 흰색으로 강조한다. */
+.admin-layout .statistics-page .period-buttons {
+  gap: 8px;
+  overflow: visible;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.admin-layout .statistics-page .period-buttons button {
+  border: 1px solid #69737b !important;
+  border-radius: 999px !important;
+}
+
+.admin-layout .statistics-page .period-buttons button.active {
+  border-color: #ffffff !important;
+  color: #171b1f !important;
+  -webkit-text-fill-color: #171b1f;
+  background: #ffffff !important;
+}
+
+/* 셀렉트의 현재 선택값과 펼쳐진 옵션 모두 다크 테마 대비를 유지한다. */
+.admin-layout select {
+  border-color: var(--admin-line) !important;
+  color: #f4f6f7 !important;
+  -webkit-text-fill-color: #f4f6f7;
+  background-color: #30363b !important;
+  color-scheme: dark;
+  opacity: 1;
+}
+
+.admin-layout select option,
+.admin-layout select optgroup {
+  color: #f4f6f7 !important;
+  -webkit-text-fill-color: #f4f6f7;
+  background: #30363b !important;
+}
+
+.admin-layout select option:checked {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+  background: #4a5259 !important;
+}
+
+.admin-layout select:disabled {
+  color: #b8c0c6 !important;
+  -webkit-text-fill-color: #b8c0c6;
+  background-color: #282e33 !important;
+  opacity: 0.68;
+}
+
+/* 관리자 목록의 검색 입력창은 모두 동일한 옅은 회색 톤을 사용한다. */
+.admin-layout .content :is(
+  .carlog-search-input,
+  .vehicle-search-input,
+  .camera-data-search input,
+  .member-search input,
+  .trash-search input,
+  input[type="search"]
+) {
+  border-color: #69737b !important;
+  color: #f7f8f9 !important;
+  -webkit-text-fill-color: #f7f8f9;
+  background: #454c52 !important;
+  box-shadow: none !important;
+  caret-color: #ffffff;
+}
+
+.admin-layout .content :is(
+  .carlog-search-input,
+  .vehicle-search-input,
+  .camera-data-search input,
+  .member-search input,
+  .trash-search input,
+  input[type="search"]
+)::placeholder {
+  color: #c2c8cd !important;
+  -webkit-text-fill-color: #c2c8cd;
+  opacity: 1;
+}
+
+.admin-layout .content :is(
+  .carlog-search-input,
+  .vehicle-search-input,
+  .camera-data-search input,
+  .member-search input,
+  .trash-search input,
+  input[type="search"]
+):focus {
+  border-color: #9aa3aa !important;
+  background: #50585f !important;
+  box-shadow: 0 0 0 2px rgba(255, 201, 40, 0.16) !important;
+}
+
+/* 지난 기록의 검색 컨트롤 크기를 다른 관리자 검색 영역과 통일한다. */
+.admin-layout .content .trash-filter select {
+  width: 130px;
+  min-width: 130px;
+  height: 36px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  font-size: 13px;
+}
+
+.admin-layout .content .trash-search input {
+  width: 280px;
+  min-width: 220px;
+  max-width: 100%;
+  height: 36px;
+  flex: 0 1 280px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  font-size: 13px;
+}
+
+.admin-layout .content .trash-search {
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
+  overflow-x: auto;
+}
+
+.admin-layout .content .trash-search .trash-filter {
+  flex: 0 0 auto;
+}
+
+.admin-layout .content .trash-search button {
+  min-width: 56px;
+  height: 36px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+/* 지난 기록 상세 표는 목록용 압축 규칙 대신 상세 화면 크기를 사용한다. */
+.admin-layout .content .trash-detail-page .detail-table {
+  width: 100% !important;
+  min-width: 100%;
+  font-size: 13px;
+  table-layout: auto !important;
+}
+
+.admin-layout .content .trash-detail-page .detail-table th,
+.admin-layout .content .trash-detail-page .detail-table td {
+  height: 30px;
+  padding: 4px 7px;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.admin-layout .content .trash-detail-page .detail-table th {
+  width: 150px;
+  min-width: 150px;
+}
+
+.admin-layout .content .trash-detail-page .detail-table td {
+  width: auto;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+/* 대시보드 전체를 제외한 관리자 목록·상세 표의 행 높이를 동일하게 통일한다. */
+.admin-layout .content table:not(.admin-dashboard *) th,
+.admin-layout .content table:not(.admin-dashboard *) td {
+  box-sizing: border-box;
+  height: 30px;
+  padding: 4px 7px;
+  line-height: 1.3;
+}
+
+/* 셀 안의 관리 버튼이 행 높이를 밀어내지 않도록 공통 행 안에 맞춘다. */
+.admin-layout .content table:not(.admin-dashboard *) tbody tr {
+  height: 30px;
+}
+
+.admin-layout .content table:not(.admin-dashboard *) td > button {
+  box-sizing: border-box;
+  height: 22px;
+  min-height: 0;
+  padding: 2px 8px;
+  line-height: 16px;
+}
+
+/* 대시보드 게이트 개방 버튼은 노란 배경과 진한 글자로 강조한다. */
+.admin-layout .content .admin-dashboard :is(
+  .camera-gate-button,
+  .approval-wait-panel button
+) {
+  border-color: #d9aa1f !important;
+  color: #171b1f !important;
+  -webkit-text-fill-color: #171b1f;
+  background: #ffc928 !important;
+  text-shadow: none !important;
+}
+
+.admin-layout .content .admin-dashboard :is(
+  .camera-gate-button,
+  .approval-wait-panel button
+):hover:not(:disabled) {
+  border-color: #f0c43c !important;
+  color: #111417 !important;
+  -webkit-text-fill-color: #111417;
+  background: #ffd75a !important;
+}
+
+.admin-layout .content .admin-dashboard :is(
+  .camera-gate-button,
+  .approval-wait-panel button
+):disabled {
+  color: #35300f !important;
+  -webkit-text-fill-color: #35300f;
+  background: #9b8330 !important;
+}
+
+.admin-layout .content button.statistics-back-button {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  height: 26px;
+  padding: 0 7px;
+  border-color: #596168 !important;
+  color: var(--admin-muted) !important;
+  background: transparent !important;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.admin-layout .content button.statistics-back-button:hover {
+  border-color: #7b858d !important;
+  color: var(--admin-ink) !important;
+  background: #30363b !important;
+  transform: none;
+}
+
+/* 대시보드 하단 알림 버튼은 개수가 있을 때 숫자 칸만 닫힘 색상으로 강조한다. */
+.admin-layout .content .admin-dashboard .dashboard-alert-chips .alert-chip > strong {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50% !important;
+}
+
+.admin-layout .content .admin-dashboard .dashboard-alert-chips .alert-chip.has-count > strong {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: #f87171 !important;
+}
+
+/* 관리자 페이지네이션의 현재 위치를 다크 화면에서도 명확하게 표시한다. */
+.admin-layout .content .pagination .page-status {
+  color: #f4f6f7 !important;
+}
+
+.admin-layout .content .pagination button.active {
+  border-color: #ffffff !important;
+  color: #171b1f !important;
+  -webkit-text-fill-color: #171b1f;
+  background: #ffffff !important;
 }
 
 @media (max-width: 700px) {

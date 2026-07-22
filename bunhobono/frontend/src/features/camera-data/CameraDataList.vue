@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>카메라 데이터 목록</h2>
+    <h2>카메라 기록 관리</h2>
 
     <div class="camera-data-toolbar">
       <div class="camera-data-search">
@@ -20,16 +20,6 @@
       </div>
 
       <div class="status-filters" aria-label="주차장 카메라 로그 필터">
-      <label class="status-filter">
-        <input
-          type="radio"
-          name="cameraDataParking"
-          :checked="!selectedParkingNo"
-          @change="selectParking(null)"
-        >
-        <span>전체</span>
-      </label>
-
       <label
         v-for="parking in parkingButtons"
         :key="parking.parkingNo"
@@ -49,6 +39,7 @@
 
     <p v-if="searchError" class="search-error">{{ searchError }}</p>
 
+    <div class="admin-table-scroll">
     <table border="1">
       <thead>
         <tr>
@@ -73,14 +64,8 @@
           <td>{{ formatDate(d.captureTime) }}</td>
           <td>{{ d.movementTypeText }}</td>
           <td>{{ formatConfidence(d.confidenceScore) }}</td>
-          <td>
-            <router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo: d.cameraDataNo } }">
-              <button>이미지보기</button>
-            </router-link>
-          </td>
-          <td>
-            <button type="button" @click="dStore.remove(d.cameraDataNo)">삭제</button>
-          </td>
+          <td><router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo: d.cameraDataNo } }"><button>이미지보기</button></router-link></td>
+          <td><button type="button" @click="dStore.remove(d.cameraDataNo)">삭제</button></td>
         </tr>
 
         <tr v-if="filteredCameraDataList.length === 0">
@@ -88,11 +73,14 @@
         </tr>
       </tbody>
     </table>
+    </div>
+    <div class="admin-pagination-area">
     <pagination
       :current-page="currentPage"
       :total-pages="totalPages"
       :page-numbers="pageNumbers"
       @change-page="setPage"/>
+    </div>
   </div>
 </template>
 

@@ -24,6 +24,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
     // 입주민 / 비입주민 입차 비교 그래프의 기간 상태
     // weekly: 주간, monthly: 월간, yearly: 연간
     const entryPeriod = ref('weekly')
+    const entryPeriodOffset = ref(0)
 
     // 문자열 날짜를 Date 객체로 바꾼다.
     // 잘못된 날짜가 들어오면 계산 오류를 막기 위해 null을 반환한다.
@@ -157,13 +158,13 @@ export const useStatisticsStore = defineStore('statistics', () => {
             },
             {
                 key: 'visit',
-                label: '방문차량',
+                label: '방문',
                 count: visitCount,
                 percent: Math.round((visitCount / total) * 100),
             },
             {
                 key: 'unknown',
-                label: '미등록 차량',
+                label: '미등록',
                 count: unknownCount,
                 percent: Math.round((unknownCount / total) * 100),
             },
@@ -178,7 +179,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
     // 시간대별 주차 대수
     // 현재 가진 carlog 데이터만으로 계산하므로, 실제 평균이라기보다 해당 시간대에 주차 상태였던 차량 수에 가깝다.
     const hourlyParkingStats = computed(() => {
-        const hours = [0, 6, 12, 18, 24]
+        const hours = Array.from({ length: 9 }, (_, index) => index * 3)
 
         return hours.map((hour) => {
             const target = new Date(today.value)
@@ -237,7 +238,13 @@ export const useStatisticsStore = defineStore('statistics', () => {
     // 주간 입차 비교 데이터
     // 최근 7일을 날짜별로 나눈다.
     const getWeeklyEntryStats = () => {
-        return recentSevenDays.value.map((date) => {
+        const dates = recentSevenDays.value.map((date) => {
+            const shiftedDate = new Date(date)
+            shiftedDate.setDate(shiftedDate.getDate() + (entryPeriodOffset.value * 7))
+            return shiftedDate
+        })
+
+        return dates.map((date) => {
             const logs = carlogStore.carLogs.filter((log) => {
                 return isSameDate(log.inTime, date)
             })
@@ -252,8 +259,9 @@ export const useStatisticsStore = defineStore('statistics', () => {
     // 월간 입차 비교 데이터
     // 이번 달 데이터를 1주차 ~ 5주차로 나눈다.
     const getMonthlyEntryStats = () => {
-        const currentYear = today.value.getFullYear()
-        const currentMonth = today.value.getMonth()
+        const targetMonth = new Date(today.value.getFullYear(), today.value.getMonth() + entryPeriodOffset.value, 1)
+        const currentYear = targetMonth.getFullYear()
+        const currentMonth = targetMonth.getMonth()
 
         return Array.from({ length: 5 }, (_, index) => {
             const weekNo = index + 1
@@ -282,7 +290,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
     // 연간 입차 비교 데이터
     // 올해 데이터를 1월 ~ 12월로 나눈다.
     const getYearlyEntryStats = () => {
-        const currentYear = today.value.getFullYear()
+        const currentYear = today.value.getFullYear() + entryPeriodOffset.value
 
         return Array.from({ length: 12 }, (_, index) => {
             const logs = carlogStore.carLogs.filter((log) => {
@@ -332,7 +340,39 @@ export const useStatisticsStore = defineStore('statistics', () => {
     // 입차 비교 그래프 기간 변경
     const changeEntryPeriod = (period) => {
         entryPeriod.value = period
+        entryPeriodOffset.value = 0
     }
+
+    // 입차 비교 그래프의 이전/다음 조회 기간으로 이동한다.
+    const moveEntryPeriod = (direction) => {
+        if (direction === 'previous') {
+            entryPeriodOffset.value -= 1
+            return
+        }
+
+        entryPeriodOffset.value = Math.min(entryPeriodOffset.value + 1, 0)
+    }
+
+    const canMoveEntryPeriodNext = computed(() => entryPeriodOffset.value < 0)
+
+    // 현재 그래프가 나타내는 날짜 범위를 상단에 표시한다.
+    const entryPeriodLabel = computed(() => {
+        if (entryPeriod.value === 'monthly') {
+            const target = new Date(today.value.getFullYear(), today.value.getMonth() + entryPeriodOffset.value, 1)
+            return `${target.getFullYear()}년 ${target.getMonth() + 1}월`
+        }
+
+        if (entryPeriod.value === 'yearly') {
+            return `${today.value.getFullYear() + entryPeriodOffset.value}년`
+        }
+
+        const end = new Date(today.value)
+        end.setDate(end.getDate() + (entryPeriodOffset.value * 7))
+        const start = new Date(end)
+        start.setDate(start.getDate() - 6)
+
+        return `${start.getMonth() + 1}.${start.getDate()} ~ ${end.getMonth() + 1}.${end.getDate()}`
+    })
 
     // 주차장별 현재 사용률
     const parkingUsageStats = computed(() => {
@@ -461,14 +501,14 @@ export const useStatisticsStore = defineStore('statistics', () => {
         return [
             {
                 key: 'visit',
-                label: '방문차량',
+                label: '방문',
                 minutes: visitMinutes,
                 text: formatMinutes(visitMinutes),
                 percent: Math.round((visitMinutes / maxMinutes) * 100),
             },
             {
                 key: 'unknown',
-                label: '미등록 차량',
+                label: '미등록',
                 minutes: unknownMinutes,
                 text: formatMinutes(unknownMinutes),
                 percent: Math.round((unknownMinutes / maxMinutes) * 100),
@@ -502,7 +542,11 @@ export const useStatisticsStore = defineStore('statistics', () => {
         errorMessage,
 
         entryPeriod,
+        entryPeriodOffset,
+        entryPeriodLabel,
+        canMoveEntryPeriodNext,
         changeEntryPeriod,
+        moveEntryPeriod,
 
         todayInCount,
         todayOutCount,

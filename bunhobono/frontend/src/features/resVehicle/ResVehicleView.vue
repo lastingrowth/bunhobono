@@ -119,7 +119,11 @@ async function submitVisitVehicle(data) {
 }
 
 .resident-vehicle-member {
-  color: var(--text-muted);
+  padding: 12px 16px;
+  border-left: 5px solid #45bff2;
+  color: #315c86;
+  background: #eef9ff;
+  font-weight: 700;
 }
 
 .vehicle-management-section {
@@ -132,6 +136,15 @@ async function submitVisitVehicle(data) {
 
 .vehicle-management-section h3 {
   margin-bottom: 16px;
+  color: #287fd5;
+}
+
+.vehicle-management-visit-section {
+  border-color: #bfe8cf;
+}
+
+.vehicle-management-visit-section h3 {
+  color: #2ca66a;
 }
 
 .vehicle-management-section-header {
@@ -144,6 +157,22 @@ async function submitVisitVehicle(data) {
 
 .vehicle-management-section-header h3 {
   margin-bottom: 0;
+}
+
+.vehicle-management-section-header button {
+  border-color: #42d77d;
+  color: #ffffff;
+  background: #42d77d;
+}
+
+.vehicle-management-section-header button:hover:not(:disabled) {
+  background: #2fc86b;
+}
+
+.vehicle-management-section-header button:disabled {
+  border-color: #bdd8c8;
+  color: #789487;
+  background: #e7f2ec;
 }
 
 .vehicle-management-visit-section > div:nth-child(2) {

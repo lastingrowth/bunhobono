@@ -23,6 +23,10 @@
             @click="$emit('change-page', pageNumbers[pageNumbers.length - 1] + 1)">
             다음
         </button>
+
+        <span class="page-status" aria-live="polite">
+            {{ currentPage }} / {{ totalPages }} 페이지
+        </span>
     </div>
 </template>
 
@@ -85,5 +89,15 @@ defineEmits([
 .pagination button:disabled {
   cursor: default;
   opacity: 0.45;
+}
+
+.page-status {
+  min-width: 86px;
+  margin-left: 8px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
 }
 </style>

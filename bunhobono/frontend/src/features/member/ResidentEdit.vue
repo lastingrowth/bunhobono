@@ -1,13 +1,13 @@
 <template>
-    <header class="detail-header">
-        <h2>회원정보 수정</h2>
-
-        <div class="detail-actions">
-            <button @click="goHome">뒤로</button>
-        </div>
+  <main class="resident-edit-page">
+    <header class="edit-page-title">
+        <h2>정보 수정페이지</h2>
     </header>
 
-    <table border="">
+    <section class="edit-card">
+      <div class="edit-form-area">
+        <h3>내 정보 수정</h3>
+        <table>
         <tbody>
             <tr>
                 <th>가입유형</th>
@@ -44,9 +44,6 @@
             <tr>
                 <th>비밀번호</th>
                 <td>
-                    <button type="button" @click="togglePasswordChange">
-                        {{ showPasswordField ? "변경 취소" : "비밀번호 변경" }}
-                    </button>
                     <div v-if="showPasswordField" class="password-change-fields">
                         <input v-model="currentPassword" type="password" autocomplete="current-password" placeholder="현재 비밀번호">
                         <input
@@ -76,11 +73,18 @@
                 <td>{{ member.memStatus || "-" }}</td>
             </tr>
         </tbody>
-    </table>
+        </table>
+      </div>
 
-    <div class="form-actions">
-        <button type="button" @click="update">수정완료</button>
-    </div>
+      <aside class="edit-page-actions" aria-label="정보 수정 메뉴">
+        <button type="button" class="save-button" @click="update">수정 완료</button>
+        <button type="button" class="password-button" @click="togglePasswordChange">
+          {{ showPasswordField ? "비밀번호 변경 취소" : "비밀번호 변경" }}
+        </button>
+        <button type="button" class="back-button" @click="goHome">마이페이지로</button>
+      </aside>
+    </section>
+  </main>
 </template>
 
 <script setup>
@@ -260,6 +264,25 @@ onBeforeUnmount(stopChallengeTimer);
 </script>
 
 <style scoped>
+.resident-edit-page { width: min(1120px,100%); margin: 0 auto; padding: 28px 24px; box-sizing: border-box; }
+.edit-page-title { margin-bottom: 22px; text-align: center; }
+.edit-page-title h2 { margin: 0; color: #203c58; font-size: 30px; }
+.edit-card { padding: 34px; display: grid; grid-template-columns: minmax(0,1fr) 250px; gap: 38px; border: 1px solid #cbddec; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 14px 34px rgba(50,91,126,.12); }
+.edit-form-area h3 { margin: 0 0 20px; color: #203c58; font-size: 25px; }
+.edit-form-area table { width: 100%; border-collapse: collapse; border: 1px solid #cbd8e4; background: #fff; font-size: 16px; }
+.edit-form-area th,.edit-form-area td { min-height: 58px; padding: 10px 18px; border-bottom: 1px solid #dbe5ed; box-sizing: border-box; }
+.edit-form-area tr:last-child th,.edit-form-area tr:last-child td { border-bottom: 0; }
+.edit-form-area th { width: 170px; border-right: 1px solid #dbe5ed; color: #38536d; background: #f5faff; text-align: center; }
+.edit-form-area td { color: #243f58; }
+.edit-form-area tr:nth-child(1) td,.edit-form-area tr:nth-child(2) td { color: #287fd5; font-weight: 700; }
+.edit-form-area tr:last-child td { color: #2ca66a; font-weight: 800; }
+.edit-form-area input:focus { border-color: #45bff2; outline: 3px solid rgba(69,191,242,.16); }
+.edit-page-actions { display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+.edit-page-actions button { width: 100%; min-height: 78px; padding: 14px 18px; border: 1px solid #a9c8df; border-radius: 14px; box-shadow: 0 5px 12px rgba(47,100,140,.1); font-size: 20px; font-weight: 700; cursor: pointer; }
+.edit-page-actions .save-button { min-height: 132px; border-color: #45bff2; color: #fff; background: #45bff2; }
+.edit-page-actions .password-button { border-color: #f2c889; color: #85551d; background: #fff7e8; }
+.edit-page-actions .back-button { border-color: #a9dfbf; color: #267047; background: #edfbf3; }
+.edit-page-actions button:hover { transform: translateY(-1px); filter: brightness(.97); }
 .phone-fields {
     display: flex;
     align-items: center;
@@ -277,5 +300,15 @@ onBeforeUnmount(stopChallengeTimer);
 .captcha-box img { width: 180px; height: 60px; border: 1px solid #cbd5e1; border-radius: 8px; }
 .captcha-timer { margin: 0; color: #2563eb; font-size: 14px; }
 .captcha-timer.expired { color: #dc2626; font-weight: 700; }
-.form-actions { margin-top: 16px; display: flex; justify-content: flex-end; }
+
+@media (max-width: 760px) {
+    .resident-edit-page { padding: 20px 14px; }
+    .edit-card { padding: 20px; grid-template-columns: 1fr; gap: 24px; }
+    .edit-page-actions { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .edit-page-actions button,.edit-page-actions .save-button { min-height: 68px; }
+    .edit-form-area th { width: 115px; }
+    .edit-form-area th,.edit-form-area td { padding: 8px 10px; font-size: 14px; }
+    .phone-fields { flex-wrap: nowrap; }
+    .phone-fields input { width: min(72px,23%); }
+}
 </style>

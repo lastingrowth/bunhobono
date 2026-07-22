@@ -35,9 +35,6 @@
                             <div v-else class="parking-video-placeholder">
                                 <strong v-if="isCameraFinished(panel.cameraNo)">영상 재생이 끝났습니다</strong>
                                 <strong v-else>{{ panel.modeText }}</strong>
-                                <small>
-                                    CCTV {{ panel.cameraNo }} · {{ isCameraFinished(panel.cameraNo) ? 'END OF VIDEO' : '재생 대기' }}
-                                </small>
 
                                 <span
                                     v-if="panel.gate"
@@ -49,6 +46,10 @@
                                 <span v-else class="video-gate-status closed">
                                     게이트 없음
                                 </span>
+
+                                <small>
+                                    CCTV {{ panel.cameraNo }} · {{ isCameraFinished(panel.cameraNo) ? 'END OF VIDEO' : '재생 대기' }}
+                                </small>
                             </div>
 
                             <div class="cctv-overlay">
@@ -57,7 +58,6 @@
                                         <i></i>{{ isCameraPlaying(panel.cameraNo) ? 'REC' : (isCameraFinished(panel.cameraNo) ? 'ENDED' : 'STANDBY') }}
                                     </span>
                                     <div class="cctv-camera-mode-group">
-                                        <span class="cctv-camera-label">CAM {{ String(panel.cameraNo).padStart(2, '0') }}</span>
                                         <button
                                             type="button"
                                             class="cctv-mode-control"
@@ -455,6 +455,7 @@
                     :key="alert.key"
                     type="button"
                     class="alert-chip"
+                    :class="{ 'has-count': Number(alert.count) > 0 }"
                     @click="router.push(alert.path)">
                     <span>{{ alert.title }}</span>
                     <strong>{{ alert.count }}</strong>

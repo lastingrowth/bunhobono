@@ -3,7 +3,7 @@
     <!-- 게이트 목록 제목 -->
     <div class="page-heading">
       <div>
-        <h2>게이트 목록</h2>
+        <h2>게이트</h2>
         <p>주차장별 입·출차 게이트를 관리합니다.</p>
       </div>
 
@@ -33,16 +33,10 @@
             <td>{{ g.gateNo }}</td>
             <td>{{ g.gateName }}</td>
             <td>{{ g.parkingName ?? '-' }}</td>
-            <td><span class="type-badge">{{ g.gateType }}</span></td>
+            <td>{{ g.gateType }}</td>
+            <td>{{ g.gateStatus === 1 ? '열림' : '닫힘' }}</td>
             <td>
-              <span :class="g.gateStatus === 1 ? 'status-badge open' : 'status-badge closed'">
-                {{ g.gateStatus === 1 ? '열림' : '닫힘' }}
-              </span>
-            </td>
-            <td>
-              <button class="delete-button" type="button" @click="gStore.remove(g.gateNo)">
-                삭제
-              </button>
+              <button class="delete-button" type="button" @click="gStore.remove(g.gateNo)">삭제</button>
             </td>
           </tr>
 
@@ -246,39 +240,6 @@ tbody tr:last-child td {
 
 tbody tr:hover {
   background: #fbfcff;
-}
-
-.type-badge {
-  padding: 5px 10px;
-  display: inline-flex;
-  border-radius: 999px;
-  color: #2864c7;
-  background: #edf4ff;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-/* 게이트 열림/닫힘 상태 표시 */
-.status-badge {
-  padding: 5px 10px;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-/* 게이트 열림 상태 */
-.status-badge.open {
-  color: #0f8f4f;
-  background: #e7f8ef;
-}
-
-/* 게이트 닫힘 상태 */
-.status-badge.closed {
-  color: #7a8497;
-  background: #eef1f5;
 }
 
 /* 게이트 열기/닫기 버튼 */

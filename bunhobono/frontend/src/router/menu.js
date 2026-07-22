@@ -1,11 +1,11 @@
 export const adminMenu = [
   {
     title: '대시보드',
-    path: '/admin/dashboard'
+    path: '/admin/statistics'
   },
   {
-    title: '통계',
-    path: '/admin/statistics'
+    title: '차량 출입 관제',
+    path: '/admin/dashboard'
   },
   {
     title: "카메라 기록 관리",
@@ -23,8 +23,21 @@ export const adminMenu = [
     title: '차량 관리',
     path: '/admin/vehicles'
   },
+
   {
-    title: '주차장 관리',
+    title: '회원관리',
+    path: '/admin/members'
+  },
+  {
+    title: '전출 회원 관리',
+    path: '/admin/member-archive'
+  },
+  {
+    title: '지난기록',
+    path: '/admin/trash'
+  },
+  {
+    title: '주차장',
     path: '/admin/parkings'
   },
   {
@@ -34,18 +47,6 @@ export const adminMenu = [
   {
     title: '카메라',
     path: '/admin/cameras'
-  },
-  {
-    title: '지난기록',
-    path: '/admin/trash'
-  },
-  {
-    title: '회원관리',
-    path: '/admin/members'
-  },
-  {
-    title: '전출 회원 관리',
-    path: '/admin/member-archive'
   },
 ];
 

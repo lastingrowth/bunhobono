@@ -19,7 +19,7 @@
             <!-- 현재 주차 현황 -->
             <article class="statistics-card current-parking-card">
                 <div class="card-title-row">
-                    <h2>현재 주차 현황</h2>
+                    <h2>주차 현황</h2>
                 </div>
 
                 <div class="current-parking-content">
@@ -116,7 +116,7 @@
             <!-- 비입주민 주차 주의 현황 -->
             <article class="statistics-card warning-card">
                 <div class="card-title-row">
-                    <h2>비입주민 주차 주의 현황</h2>
+                    <h2>비입주민 장기주차 알림</h2>
                 </div>
 
                 <div class="warning-list">
@@ -124,7 +124,7 @@
                         v-for="item in statsStore.nonResidentWarningStats"
                         :key="item.key"
                         type="button"
-                        :class="['warning-row', item.key]"
+                        :class="['warning-row', item.key, { 'has-warning': Number(item.count) > 0 }]"
                         @click="goWarningPage(item.key)">
                         <span>{{ item.label }}</span>
                         <strong>{{ item.count }}건</strong>
@@ -141,46 +141,67 @@
         <article class="statistics-card entry-compare-card">
             <div class="card-title-row">
                 <div>
-                    <h2>입주민 / 비입주민 입차 비교</h2>
+                    <h2>입차 비교</h2>
                     <p>비입주민 = 방문차량 + 미등록 차량</p>
                 </div>
 
-                <!-- 주간 / 월간 / 연간 버튼 -->
-                <div class="period-buttons">
-                    <button
-                        type="button"
-                        :class="{ active: statsStore.entryPeriod === 'weekly' }"
-                        @click="statsStore.changeEntryPeriod('weekly')">
-                        주간
-                    </button>
+                <div class="entry-header-tools">
+                    <!-- 막대그래프 범례 -->
+                    <div class="chart-legend">
+                        <span>
+                            <i class="legend-color resident"></i>
+                            입주민
+                        </span>
 
-                    <button
-                        type="button"
-                        :class="{ active: statsStore.entryPeriod === 'monthly' }"
-                        @click="statsStore.changeEntryPeriod('monthly')">
-                        월간
-                    </button>
+                        <span>
+                            <i class="legend-color non-resident"></i>
+                            비입주민
+                        </span>
+                    </div>
 
-                    <button
-                        type="button"
-                        :class="{ active: statsStore.entryPeriod === 'yearly' }"
-                        @click="statsStore.changeEntryPeriod('yearly')">
-                        연간
-                    </button>
+                    <!-- 주간 / 월간 / 연간 버튼 -->
+                    <div class="period-buttons">
+                        <button
+                            type="button"
+                            :class="{ active: statsStore.entryPeriod === 'weekly' }"
+                            @click="statsStore.changeEntryPeriod('weekly')">
+                            주간
+                        </button>
+
+                        <button
+                            type="button"
+                            :class="{ active: statsStore.entryPeriod === 'monthly' }"
+                            @click="statsStore.changeEntryPeriod('monthly')">
+                            월간
+                        </button>
+
+                        <button
+                            type="button"
+                            :class="{ active: statsStore.entryPeriod === 'yearly' }"
+                            @click="statsStore.changeEntryPeriod('yearly')">
+                            연간
+                        </button>
+                    </div>
+
+                    <div class="period-navigation" aria-label="입차 비교 조회 기간 이동">
+                        <button
+                            type="button"
+                            class="period-nav-button"
+                            aria-label="이전 기간"
+                            @click="statsStore.moveEntryPeriod('previous')">
+                            ‹
+                        </button>
+                        <span>{{ statsStore.entryPeriodLabel }}</span>
+                        <button
+                            type="button"
+                            class="period-nav-button"
+                            aria-label="다음 기간"
+                            :disabled="!statsStore.canMoveEntryPeriodNext"
+                            @click="statsStore.moveEntryPeriod('next')">
+                            ›
+                        </button>
+                    </div>
                 </div>
-            </div>
-
-            <!-- 막대그래프 범례 -->
-            <div class="chart-legend">
-                <span>
-                    <i class="legend-color resident"></i>
-                    입주민
-                </span>
-
-                <span>
-                    <i class="legend-color non-resident"></i>
-                    비입주민
-                </span>
             </div>
 
             <!-- 주간 / 월간 / 연간이 같은 위치에서 바뀌는 막대그래프 -->
@@ -213,7 +234,7 @@
             <!-- 현재 주차장 현황 -->
             <article class="statistics-card parking-rate-card">
                 <div class="card-title-row">
-                    <h2>현재 주차장 현황</h2>
+                    <h2>주차장 현황</h2>
                 </div>
 
                 <div class="parking-circle-grid">
@@ -241,7 +262,7 @@
             <!-- 방문차량 / 미등록 차량 평균 주차 시간 -->
             <article class="statistics-card average-time-card">
                 <div class="card-title-row">
-                    <h2>방문차량 / 미등록 차량 평균 주차 시간</h2>
+                    <h2>차량 평균 주차 시간</h2>
                 </div>
 
                 <div class="average-time-list">
@@ -313,23 +334,7 @@ const getBarHeight = (count, maxCount) => {
 
 // 주차장 이름에 따라 원형 게이지 색상을 다르게 준다.
 const getParkingColor = (parkingName) => {
-    if (parkingName?.includes('A')) {
-        return '#2f80ed'
-    }
-
-    if (parkingName?.includes('B')) {
-        return '#20c997'
-    }
-
-    if (parkingName?.includes('C')) {
-        return '#ff8a00'
-    }
-
-    if (parkingName?.includes('D')) {
-        return '#7048e8'
-    }
-
-    return '#2f80ed'
+    return '#39ff88'
 }
 
 // 주차장 사용률 원형 그래프 스타일을 만든다.
@@ -338,7 +343,7 @@ const getCircleStyle = (percent, parkingName) => {
 
     return {
         '--parking-color': color,
-        background: `conic-gradient(${color} 0% ${percent}%, #e7edf5 ${percent}% 100%)`,
+        background: `conic-gradient(${color} 0% ${percent}%, #224236 ${percent}% 100%)`,
     }
 }
 
@@ -357,9 +362,9 @@ const currentParkingDonutStyle = computed(() => {
 
     return {
         background: `conic-gradient(
-            #2f80ed 0% ${residentEnd}%,
-            #20c997 ${residentEnd}% ${visitEnd}%,
-            #ff8a00 ${visitEnd}% 100%
+            #39ff88 0% ${residentEnd}%,
+            #55c7ff ${residentEnd}% ${visitEnd}%,
+            #efff5a ${visitEnd}% 100%
         )`,
     }
 })
@@ -634,7 +639,7 @@ onUnmounted(() => {
 
 .hourly-polyline {
     fill: none;
-    stroke: #2f80ed;
+    stroke: #ff9f43;
     stroke-width: 4;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -642,7 +647,7 @@ onUnmounted(() => {
 
 .hourly-point {
     fill: #fff;
-    stroke: #2f80ed;
+    stroke: #ff9f43;
     stroke-width: 4;
 }
 
@@ -747,7 +752,50 @@ onUnmounted(() => {
     display: flex;
     justify-content: center;
     gap: 28px;
-    margin-bottom: 12px;
+    margin: 0;
+}
+
+.entry-header-tools {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.period-navigation {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.period-navigation > span {
+    min-width: 112px;
+    color: #647086;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.period-navigation .period-nav-button {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    border-radius: 50% !important;
+    font-size: 20px;
+    line-height: 28px;
+}
+
+.entry-compare-card .card-title-row {
+    position: relative;
+}
+
+.entry-header-tools .chart-legend {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .chart-legend span {
@@ -872,15 +920,15 @@ onUnmounted(() => {
 .average-time-list {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 34px;
     padding-top: 14px;
 }
 
 .average-time-row {
     display: grid;
-    grid-template-columns: 110px 1fr 110px;
+    grid-template-columns: 58px 1fr 110px;
     align-items: center;
-    gap: 18px;
+    gap: 10px;
 }
 
 .average-time-row span {
@@ -891,6 +939,7 @@ onUnmounted(() => {
     text-align: right;
     font-size: 21px;
     font-weight: 900;
+    white-space: nowrap;
 }
 
 .average-time-bar-wrap {
@@ -1108,13 +1157,13 @@ onUnmounted(() => {
     }
 
     .average-time-list {
-        gap: 13px;
-        padding-top: 5px;
+        gap: 20px;
+        padding-top: 36px;
     }
 
     .average-time-row {
-        grid-template-columns: 85px 1fr 82px;
-        gap: 10px;
+        grid-template-columns: 48px 1fr 82px;
+        gap: 8px;
         font-size: 12px;
     }
 
@@ -1139,6 +1188,17 @@ onUnmounted(() => {
 
     .period-buttons {
         width: 100%;
+    }
+
+    .entry-header-tools {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .entry-header-tools .chart-legend {
+        position: static;
+        transform: none;
     }
 
     .period-buttons button {

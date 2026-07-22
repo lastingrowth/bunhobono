@@ -3,7 +3,7 @@
     <!-- 카메라 목록 제목 -->
     <div class="page-heading">
       <div>
-        <h2>카메라 목록</h2>
+        <h2>카메라</h2>
         <p>주차장 출입구에 설치된 카메라를 관리합니다.</p>
       </div>
 
@@ -36,11 +36,9 @@
             <td>{{ c.gateName ?? '-' }}</td>
             <td>{{ c.parkingName ?? '-' }}</td>
             <td>{{ c.cameraName }}</td>
-            <td><span class="type-badge">{{ c.cameraType }}</span></td>
+            <td>{{ c.cameraType }}</td>
             <td>{{ c.installDate }}</td>
-            <td>
-              <button class="delete-button" type="button" @click="cStore.remove(c.cameraNo)">삭제</button>
-            </td>
+            <td><button class="delete-button" type="button" @click="cStore.remove(c.cameraNo)">삭제</button></td>
           </tr>
           <tr v-if="cStore.list.length === 0">
             <td class="empty-row" colspan="7">등록된 카메라가 없습니다.</td>
@@ -257,16 +255,6 @@ tbody tr:last-child td {
 
 tbody tr:hover {
   background: #fbfcff;
-}
-
-.type-badge {
-  padding: 5px 10px;
-  display: inline-flex;
-  border-radius: 999px;
-  background: #edf4ff;
-  color: #2864c7;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .empty-row {

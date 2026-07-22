@@ -14,6 +14,7 @@
             {{ archiveStore.errorMessage }}
         </p>
 
+        <div class="admin-table-scroll">
         <table border="">
             <thead>
                 <tr>
@@ -43,11 +44,7 @@
                     <td>{{ member.role || '-' }}</td>
                     <td>{{ formatDate(member.deleteAt) }}</td>
                     <td>{{ formatDate(member.archivedAt) }}</td>
-                    <td>
-                        <button type="button" @click="remove(member.archiveNo)">
-                            이력 삭제
-                        </button>
-                    </td>
+                    <td><button type="button" @click="remove(member.archiveNo)">이력 삭제</button></td>
                 </tr>
 
                 <tr v-if="list.length === 0">
@@ -55,11 +52,14 @@
                 </tr>
             </tbody>
         </table>
+        </div>
+        <div class="admin-pagination-area">
         <Pagination
             :current-page="currentPage"
             :total-pages="totalPages"
             :page-numbers="pageNumbers"
             @change-page="setPage" />
+        </div>
     </main>
 </template>
 

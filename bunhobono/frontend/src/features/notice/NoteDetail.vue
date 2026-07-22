@@ -289,12 +289,20 @@ watch(noticeNo, async () => {
 <style scoped>
 .notice-detail-page {
   width: 100%;
-  max-width: 760px;
+  max-width: none;
+  min-height: calc(100dvh - 120px);
   margin: 0 auto;
+  padding: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .notice-detail-dialog {
+  width: min(100%, 760px);
   overflow: hidden;
+  text-align: center;
   border-radius: 10px;
   background: var(--bg-header);
   box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18);
@@ -319,6 +327,11 @@ watch(noticeNo, async () => {
   width: 190px;
 }
 
+.detail-table th,
+.detail-table td {
+  text-align: center;
+}
+
 .notice-detail-actions {
   padding: 18px 24px;
   display: flex;
@@ -334,6 +347,12 @@ watch(noticeNo, async () => {
 }
 
 @media (max-width: 760px) {
+  .notice-detail-page {
+    min-height: 0;
+    padding: 12px 0;
+    align-items: flex-start;
+  }
+
   .detail-actions {
     width: 100%;
     flex-wrap: wrap;

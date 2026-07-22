@@ -2,9 +2,6 @@
   <div class="vehicle-management-section">
     <div class="form-header">
       <h3>차량 등록</h3>
-      <button type="button" class="back-btn" @click="emit('back')">
-        목록으로
-      </button>
     </div>
 
     <form @submit.prevent="add">

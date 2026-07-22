@@ -17,6 +17,7 @@
     </div>
 
     <template v-else>
+      <div class="trash-detail-grid">
       <!-- 삭제 정보 -->
       <section class="detail-card">
         <h3>삭제 정보</h3>
@@ -50,6 +51,7 @@
           </tbody>
         </table>
       </section>
+      </div>
 
       <!-- 개발 확인용 JSON -->
       <details class="json-card">
@@ -347,7 +349,7 @@ onMounted(async () => {
 <style scoped>
 .trash-detail-page {
   width: 100%;
-  max-width: 900px;
+  max-width: 1180px;
   margin: 0 auto;
 }
 
@@ -371,6 +373,20 @@ onMounted(async () => {
 
 .detail-card {
   padding: 20px 24px 0;
+}
+
+.trash-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 18px;
+  padding: 0 24px;
+}
+
+.trash-detail-grid .detail-card {
+  min-width: 0;
+  padding-right: 0;
+  padding-left: 0;
 }
 
 .detail-card h3 {
@@ -412,5 +428,18 @@ onMounted(async () => {
 .restore-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+  .trash-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .trash-detail-grid {
+    gap: 14px;
+    padding: 0 14px;
+  }
 }
 </style>

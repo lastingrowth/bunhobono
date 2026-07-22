@@ -3,15 +3,6 @@
     <div class="vehicle-page-header">
       <h2 class="vehicle-page-title">차량 관리</h2>
 
-      <!-- 통계에서 들어온 경우에만 표시 -->
-      <button
-        v-if="fromStatistics"
-        class="back-button"
-        @click="backToStatistics"
-      >
-        ← 통계로 돌아가기
-      </button>
-
       <nav class="vehicle-tabs" aria-label="차량 관리 메뉴">
         <button
           type="button"
@@ -23,6 +14,14 @@
           차량 등록
         </button>
         <button
+          v-if="viewMode === 'form'"
+          type="button"
+          class="vehicle-tab list-tab"
+          @click="openVehicleList"
+        >
+          목록으로
+        </button>
+        <button
           type="button"
           class="vehicle-tab approve-tab"
           :class="{ active: viewMode === 'approve' }"
@@ -30,6 +29,14 @@
           @click="openVehicleApprove"
         >
           승인 대기
+        </button>
+        <button
+          v-if="viewMode === 'approve'"
+          type="button"
+          class="vehicle-tab list-tab"
+          @click="openVehicleList"
+        >
+          목록으로
         </button>
       </nav>
 
@@ -56,7 +63,17 @@
       :initial-filter="vehicleInitialFilter"
       :filter-type="filterType"
       :sort-mode="sortMode"
-    />
+    >
+      <template v-if="fromStatistics" #pagination-action>
+        <button
+          class="back-button statistics-back-button"
+          type="button"
+          @click="backToStatistics"
+        >
+          ← 통계로 돌아가기
+        </button>
+      </template>
+    </VehicleList>
 
     <VehicleForm
       v-if="viewMode === 'form'"

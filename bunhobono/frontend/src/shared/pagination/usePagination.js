@@ -57,10 +57,13 @@ export const usePagination = (items, pageSize = 10) => {
         currentPage.value = page
     }
 
-    // 검색이나 필터로 목록 길이가 바뀌었을 때, 현재 페이지가 범위를 벗어나지 않게 보장
+    // 삭제나 목록 갱신 뒤에도 현재 페이지를 유지한다.
+    // 마지막 행 삭제로 현재 페이지가 사라진 경우에만 마지막 유효 페이지로 이동한다.
     watch(items, () => {
-        currentPage.value = 1
-    })
+        if (currentPage.value > totalPages.value) {
+            currentPage.value = totalPages.value
+        }
+    }, { flush: "sync" })
 
     return {
         currentPage,

@@ -3,7 +3,7 @@
     <!-- 주차장 목록 제목 + 등록 버튼 -->
     <div class="page-heading">
       <div>
-        <h2>주차장 목록</h2>
+        <h2>주차장 관리</h2>
         <p>주차장 구역과 전체 주차 면수를 관리합니다</p>
       </div>
 
@@ -64,26 +64,17 @@
             <td>
               {{ p.parkingSpaces - p.availableSpaces }}/{{ p.parkingSpaces }}
             </td>
-
             <td>
               <template v-if="editingParkingNo === p.parkingNo">
-                <button class="edit-button" type="button" @click="completeEdit">
-                  완료
-                </button>
-                <button class="delete-button" type="button" @click="cancelEdit">
-                  취소
-                </button>
+                <button class="edit-button" type="button" @click="completeEdit">완료</button>
+                <button class="delete-button" type="button" @click="cancelEdit">취소</button>
               </template>
-
               <template v-else>
-                <button class="edit-button" type="button" @click="startEdit(p)">
-                  수정
-                </button>
-                <button class="delete-button" type="button" @click="pStore.remove(p.parkingNo)">
-                  삭제
-                </button>
+                <button class="edit-button" type="button" @click="startEdit(p)">수정</button>
+                <button class="delete-button" type="button" @click="pStore.remove(p.parkingNo)">삭제</button>
               </template>
             </td>
+
           </tr>
 
           <tr v-if="pStore.list.length === 0">

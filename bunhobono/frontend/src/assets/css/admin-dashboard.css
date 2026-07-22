@@ -404,6 +404,7 @@
 }
 
 .parking-video-placeholder strong {
+  margin-top: 12px;
   font-size: 15px;
   font-weight: 900;
   color: #cbd5e1;
@@ -482,8 +483,8 @@
 /* 영상 위 모드 전환은 일반 폼 버튼이 아닌 CCTV 오버레이처럼 표시한다. */
 .content .parking-video-box .cctv-mode-control {
   position: absolute;
-  top: 17px;
-  right: 14px;
+  top: -3px;
+  right: 6px;
   width: 38px;
   height: 14px;
   min-height: 0;
@@ -806,6 +807,7 @@
 }
 
 .video-gate-status {
+  margin-top: 24px;
   font-size: 34px;
   font-weight: 900;
 }

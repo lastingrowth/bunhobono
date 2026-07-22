@@ -1,20 +1,21 @@
 <template>
     <div class="list-header">
         <h2>회원 관리</h2>
-        <button type="button" @click="router.push('/admin/signup')">회원 추가</button>
+        <div class="member-header-actions">
+            <nav class="member-management-tabs" aria-label="회원관리 메뉴">
+                <button
+                    v-for="section in managementSections"
+                    :key="section.value"
+                    type="button"
+                    :class="{ active: activeSection === section.value }"
+                    @click="changeSection(section.value)"
+                >
+                    {{ section.label }}
+                </button>
+            </nav>
+            <button type="button" @click="router.push('/admin/signup')">회원 추가</button>
+        </div>
     </div>
-
-    <nav class="member-management-tabs" aria-label="회원관리 메뉴">
-        <button
-            v-for="section in managementSections"
-            :key="section.value"
-            type="button"
-            :class="{ active: activeSection === section.value }"
-            @click="changeSection(section.value)"
-        >
-            {{ section.label }}
-        </button>
-    </nav>
 
     <template v-if="activeSection === 'pending'">
     <!-- 승인 대기 회원을 선택해 입주민 역할로 변경한다. -->
@@ -27,7 +28,8 @@
     <!-- 승인 대기 회원에 대해서 분리해서 확인. -->
     <section class="pending-section">
         <h3>승인 대기 회원 ({{ pendingMembers.length }}명)</h3>
-        <table border="">
+        <div class="admin-table-scroll">
+        <table class="member-list-table" border="">
             <thead>
                 <tr>
                     <th>선택</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th>
@@ -45,11 +47,14 @@
                 <tr v-if="pendingMembers.length === 0"><td colspan="7">승인 대기 회원이 없습니다.</td></tr>
             </tbody>
         </table>
+        </div>
+        <div class="admin-pagination-area">
         <pagination
             :current-page="currentPage"
             :total-pages="totalPages"
             :page-numbers="pageNumbers"
             @change-page="setPage"/>
+        </div>
     </section>
     </template>
 
@@ -66,7 +71,8 @@
         <!-- 전출 신청 상태의 회원을 확인하고 복원 또는 전출 확정 처리한다. -->
         <section class="archive-alert-section">
             <h3>전출 신청 회원 목록 ({{ withdrawnMembers.length }}명)</h3>
-            <table border="">
+            <div class="admin-table-scroll">
+            <table class="member-list-table" border="">
                 <thead>
                     <tr>
                         <th>선택</th>
@@ -107,11 +113,14 @@
                     </tr>
                 </tbody>
             </table>
+            </div>
+            <div class="admin-pagination-area">
             <pagination
                 :current-page="currentPage"
                 :total-pages="totalPages"
                 :page-numbers="pageNumbers"
                 @change-page="setPage"/>
+            </div>
         </section>
     </template>
 
@@ -145,7 +154,8 @@
         </div>
     </div>
 
-    <table border="">
+    <div class="admin-table-scroll">
+    <table class="member-list-table" border="">
         <thead>
             <tr>
                 <th>번호</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th><th>연락처</th>
@@ -163,11 +173,14 @@
             </tr>
         </tbody>
     </table>
+    </div>
+    <div class="admin-pagination-area">
     <pagination
             :current-page="currentPage"
             :total-pages="totalPages"
             :page-numbers="pageNumbers"
             @change-page="setPage"/>
+    </div>
     </template>
 </template>
 
@@ -405,12 +418,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.list-header { display: flex; align-items: center; justify-content: space-between; }
+.list-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .list-header h2 { margin: 0; }
+.member-header-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; }
 .pending-section { margin: 24px 0; padding: 16px; border: 1px solid #f0b8b8; background: #fff8f8; }
 .archive-alert-section { margin: 24px 0; padding: 16px; border: 1px solid #e6a23c; background: #fffaf0; }
 .approval-actions { display: flex; align-items: center; gap: 8px; margin: 16px 0; }
-.member-management-tabs { display: flex; align-items: center; gap: 4px; margin: 18px 0; }
+.member-management-tabs { display: flex; align-items: center; gap: 4px; margin: 0; }
 .member-management-tabs button { padding: 9px 14px; border: 1px solid var(--border-color); border-radius: 7px; cursor: pointer; font-weight: 700; color: var(--text-color); background: var(--bg-header); }
 .member-management-tabs button:hover { border-color: var(--primary); color: var(--primary); }
 .member-management-tabs button.active { border-color: var(--bg-sidebar); color: var(--text-white); background: var(--bg-sidebar); box-shadow: 0 4px 10px rgba(35, 37, 38, 0.18); }

@@ -5,21 +5,20 @@
 
       <h2>지난기록</h2>
 
-      <div class="trash-filter">
-        <label for="dataType">데이터 종류</label>
-        <br/>
-        <select
-          id="dataType"
-          :value="trashStore.selectedDataType"
-          @change="changeDataType"
-        >
-          <option value="">전체</option>
-          <option value="CAMERA_DATA">카메라 데이터</option>
-          <option value="CAR_LOG">입출차 기록</option>
-          <option value="NOTICE">알림</option>
-        </select>
-      </div>
       <div class="trash-search">
+        <div class="trash-filter">
+          <select
+            id="dataType"
+            :value="trashStore.selectedDataType"
+            @change="changeDataType"
+          >
+            <option value="">전체</option>
+            <option value="CAMERA_DATA">카메라 데이터</option>
+            <option value="CAR_LOG">입출차 기록</option>
+            <option value="NOTICE">알림</option>
+          </select>
+        </div>
+
         <input
           v-model="trashStore.searchCarNo"
           type="text"
@@ -79,23 +78,13 @@
 
             <td>
               <div class="trash-actions">
-                <button
-                  type="button"
-                  @click="goDetail(item.trashNo)"
-                >
-                  상세보기
-                </button>
-
-                <button
-                  type="button"
-                  class="restore-button"
-                  :disabled="restoringTrashNo === item.trashNo"
-                  @click="handleRestore(item)"
-                >
-                  {{ restoringTrashNo === item.trashNo ? "복원 중..." : "복원" }}
+                <button type="button" @click="goDetail(item.trashNo)">상세보기</button>
+                <button type="button" class="restore-button" :disabled="restoringTrashNo === item.trashNo" @click="handleRestore(item)">
+                  {{ restoringTrashNo === item.trashNo ? '복원 중...' : '복원' }}
                 </button>
               </div>
             </td>
+
           </tr>
 
           <tr v-if="trashList.length === 0">
@@ -105,7 +94,9 @@
           </tr>
         </tbody>
       </table>
-      <Pagination 
+    </div>
+    <div class="admin-pagination-area">
+      <Pagination
         :current-page="currentPage"
         :total-pages="totalPages"
         :page-numbers="pageNumbers"

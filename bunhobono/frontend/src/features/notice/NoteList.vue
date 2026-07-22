@@ -3,16 +3,6 @@
     <div class="notice-header">
       <h1>{{ pageTitle }}</h1>
 
-      <!-- 통계 화면에서 들어온 경우에만 표시 -->
-      <button
-        v-if="fromStatistics"
-        type="button"
-        class="back-button"
-        @click="backToStatistics"
-      >
-        ← 통계로 돌아가기
-      </button>
-
       <div class="notice-actions">
         <div class="status-filters">
           <label
@@ -44,7 +34,8 @@
     <p v-else-if="errorMessage">{{ errorMessage }}</p>
     <p v-else-if="sortedNotices.length === 0">선택한 처리상태의 알림이 없습니다.</p>
 
-    <div v-else class="notice-table-wrap">
+    <template v-else>
+    <div class="notice-table-wrap">
       <table class="notice-table" border="1">
         <thead>
           <tr>
@@ -77,31 +68,35 @@
                 {{ (currentPage - 1) * pageSize + index + 1 }}
               </span>
 
-              <span v-else-if="column.key === 'alertStat'">
+              <template v-else-if="column.key === 'alertStat'">
                 {{ getStatusLabel(getAlertStat(notice)) }}
-              </span>
+              </template>
 
               <template v-else>
                 {{ formatValue(getValue(notice, column), column) }}
               </template>
             </td>
-            <td class="col-action" data-label="관리">
-              <button
-                type="button"
-                @click.stop="noticeStore.remove(getNoticeNo(notice))"
-              >
-                삭제
-              </button>
-            </td>
+            <td class="col-action" data-label="관리"><button type="button" @click.stop="noticeStore.remove(getNoticeNo(notice))">삭제</button></td>
           </tr>
         </tbody>
       </table>
-      <Pagination
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        :page-numbers="pageNumbers"
-        @change-page="setPage"/>
     </div>
+    <div class="pagination-action-row admin-pagination-area">
+        <Pagination
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :page-numbers="pageNumbers"
+          @change-page="setPage"/>
+        <button
+          v-if="fromStatistics"
+          type="button"
+          class="back-button statistics-back-button"
+          @click="backToStatistics"
+        >
+          ← 통계로 돌아가기
+        </button>
+    </div>
+    </template>
   </main>
 </template>
 
@@ -186,7 +181,7 @@ const pageTitle = computed(() => {
     return '비등록 장기주차 알림'
   }
 
-  return '알림 리스트'
+  return '알림 관리'
 })
 
 const columns = [

@@ -1,5 +1,6 @@
 <template>
   <div>
+    <div class="admin-table-scroll">
     <table border="">
       <thead>
         <tr>
@@ -29,9 +30,7 @@
           <td>{{ vehicle.periodText || '-' }}</td>
           <td>{{ vehicle.endDateText || '-' }}</td>
           <td>{{ vehicle.remainingTimeText || '-' }}</td>
-          <td>
-            <button @click="remove(vehicle.vehicleCarNo)">삭제</button>
-          </td>
+          <td><button @click="remove(vehicle.vehicleCarNo)">삭제</button></td>
         </tr>
 
         <tr v-if="sortedVehicles.length === 0">
@@ -39,11 +38,15 @@
         </tr>
       </tbody>
     </table>
-    <Pagination
-      :current-page="currentPage"
-      :total-pages="totalPages"
-      :page-numbers="pageNumbers"
-      @change-page="setPage"/>
+    </div>
+    <div class="pagination-action-row admin-pagination-area">
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :page-numbers="pageNumbers"
+        @change-page="setPage"/>
+      <slot name="pagination-action" />
+    </div>
   </div>
 </template>
 

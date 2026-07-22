@@ -16,16 +16,6 @@
                     </div>
                 </div>
 
-                <div class="board-navigation-actions">
-                    <button type="button" class="refresh-button" @click="loadDashboard">새로고침</button>
-                    <button type="button" class="welcome-button" @click="goWelcome">초기화면</button>
-                </div>
-
-                <div class="board-date-time">
-                    <span>▣&nbsp; {{ formattedDate }}</span>
-                    <i></i>
-                    <span>◷&nbsp; {{ formattedTime }}</span>
-                </div>
             </header>
 
             <div class="board-info-grid">
@@ -113,7 +103,7 @@
                     <h2>최근 입출차</h2>
                     <div class="recent-log-columns">
                         <div class="recent-log-item">
-                            <span class="log-label log-in">↓ 최근 입차</span>
+                            <span class="log-label log-in">↓ 입차</span>
                             <b>{{ latestInLog ? timeOnly(latestInLog.inTime) : "-" }}</b>
                             <span>{{ latestInLog?.carNo || "기록 없음" }}</span>
                             <small class="parking-movement-text">
@@ -121,7 +111,7 @@
                             </small>
                         </div>
                         <div class="recent-log-item">
-                            <span class="log-label log-out">↑ 최근 출차</span>
+                            <span class="log-label log-out">↑ 출차</span>
                             <b>{{ latestOutLog ? timeOnly(latestOutLog.outTime) : "-" }}</b>
                             <span>{{ latestOutLog?.carNo || "기록 없음" }}</span>
                             <small class="parking-movement-text">{{ latestOutLog ? `${latestOutLog.parkingName || "주차장"} 출차` : "-" }}</small>
@@ -130,7 +120,7 @@
                 </section>
 
                 <section class="parking-card">
-                    <h2>구역별 주차 현황</h2>
+                    <h2>주차장 현황</h2>
                     <div v-if="parkingStatusList.length" class="parking-zones">
                         <div
                             v-for="parking in parkingStatusList.slice(0, 4)"
@@ -227,7 +217,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useResidentDashboardStore } from "@/stores/residentDashboard";
@@ -237,19 +227,9 @@ import Pagination from "@/shared/pagination/Pagination.vue";
 const router = useRouter();
 const route = useRoute();
 const dashboardStore = useResidentDashboardStore();
-const now = ref(new Date());
 const mode = computed(() => route.name === "ResidentCarlogList" ? "carlogs" : "dashboard");
-let clockTimer;
 
 const { loading, errorMessage, dashboard, residenceText, normalVehicles, visitVehicles, parkingStatusList } = storeToRefs(dashboardStore);
-
-const formattedDate = computed(() => new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
-}).format(now.value));
-
-const formattedTime = computed(() => new Intl.DateTimeFormat("ko-KR", {
-    hour: "numeric", minute: "2-digit", hour12: true,
-}).format(now.value));
 
 const latestInLog = computed(() => dashboard.value.recentCarLogs.find((log) => log.inTime) || null);
 const latestOutLog = computed(() => dashboard.value.recentCarLogs.find((log) => log.outTime) || null);
@@ -286,7 +266,7 @@ const approvalPeriodText = (vehicle) => {
     return `~ ${approvalDateText(endDate)}`;
 };
 
-const parkingColor = (rate) => rate >= 80 ? "#f04f4f" : rate >= 60 ? "#f29b18" : rate >= 40 ? "#35a554" : "#2f7ddd";
+const parkingColor = () => "#39e98a";
 const parkedCarNumbers = (parking) => normalVehicles.value
     .filter((vehicle) => {
         return vehicle.parkingState === "PARKING"
@@ -300,17 +280,20 @@ const openCarlogs = () => router.push("/resident/carlogs");
 const openDashboard = () => router.push("/resident/dashboard");
 const goMypage = () => router.push("/resident/mypage");
 const goWelcome = () => router.push("/resident");
+const refreshFromHeader = () => loadDashboard();
 
 onMounted(() => {
     loadDashboard();
-    clockTimer = window.setInterval(() => { now.value = new Date(); }, 1000);
+    window.addEventListener('resident-dashboard-refresh', refreshFromHeader);
 });
-onUnmounted(() => window.clearInterval(clockTimer));
+onUnmounted(() => {
+    window.removeEventListener('resident-dashboard-refresh', refreshFromHeader);
+});
 </script>
 
 <style scoped>
 :global(.content:has(.resident-board-page)) { padding: 0; }
-.resident-board-page { min-height: calc(100vh - 70px); display: grid; place-items: start center; padding: 0; background: #f2f7fc; }
+.resident-board-page { min-height: calc(100vh - 70px); display: grid; place-items: start center; padding: 0; background: linear-gradient(180deg,#b9e5ff 0%,#d8f0ff 38%,#f0f9ff 72%,#ffffff 100%); }
 .resident-board { width: min(1500px, 100%); padding: 18px 28px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .resident-board.resident-carlog-page { align-self: start; width: min(1500px, 100%); padding: 24px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -339,27 +322,34 @@ onUnmounted(() => window.clearInterval(clockTimer));
 .summary-card-header button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
 .summary-card-header h2,.recent-log-card h2,.parking-card h2 { display: flex; align-items: center; gap: 7px; }
 .summary-card-header h2::before,.recent-log-card h2::before,.parking-card h2::before { width: 4px; height: 15px; border-radius: 999px; background: #4b91d6; content: ""; }
-.member-summary-list { display: grid; flex: 1; grid-template-columns: 1fr; overflow: hidden; margin: 0; border: 1px solid #e1eaf2; border-radius: 11px; background: rgba(255,255,255,.9); }
+.member-summary-list { display: grid; flex: 1; grid-template-columns: 1fr; overflow: hidden; margin: 0; border: 0; border-radius: 11px; background: rgba(255,255,255,.9); }
 .member-summary-list div { display: grid; grid-template-columns: 72px minmax(0,1fr); align-items: center; column-gap: 12px; min-width: 0; padding: 6px 11px; }
-.member-summary-list div + div { border-top: 1px solid #edf2f6; }
+.member-summary-list div + div { border-top: 0; }
 .member-summary-list dt { color: #8495a5; font-size: 13px; font-weight: 600; }
 .member-summary-list dd { overflow: hidden; margin: 0; color: #455d72; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.member-summary-list div:nth-child(1) dd { color: #287fd5; font-weight: 800; }
+.member-summary-list div:nth-child(2) dd { color: #23a6d5; font-weight: 800; }
+.member-summary-list div:nth-child(3) dd { color: #6478cf; font-weight: 700; }
 .member-status-badge { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 10px; border-radius: 999px; color: #287a4a; background: #e9f7ee; font-size: 13px; font-weight: 700; }
-.vehicle-status-groups { overflow: hidden; border: 1px solid #e3ebf3; border-radius: 11px; }
+.vehicle-status-groups { overflow: hidden; border: 0; border-radius: 11px; }
 .vehicle-status-group { display: grid; grid-template-columns: 110px 1fr; align-items: center; min-height: 52px; padding: 7px 11px; background: #f7faff; }
-.vehicle-status-group + .vehicle-status-group { border-top: 1px solid #dce7f1; }
+.vehicle-status-group + .vehicle-status-group { border-top: 0; }
 .vehicle-status-group.visit-group { background: #f8fbf8; }
 .vehicle-group-title { display: grid; gap: 2px; padding-right: 11px; }
 .vehicle-group-title strong { color: #294761; font-size: 14px; }
 .vehicle-group-title span { color: #1768bd; font-size: 12px; font-weight: 800; }
 .visit-group .vehicle-group-title span { color: #26844a; }
 .vehicle-slots { display: grid; grid-template-columns: 1fr; align-items: center; gap: 6px; min-width: 0; }
-.vehicle-summary-row { display: grid; grid-template-columns: minmax(120px,.8fr) minmax(0,1.6fr) minmax(90px,.7fr); align-items: center; gap: 12px; min-width: 0; padding: 8px 10px; border: 1px solid #e1eaf2; border-radius: 9px; background: #fff; box-shadow: 0 2px 6px rgba(48,78,108,.06); }
+.vehicle-summary-row { display: grid; grid-template-columns: minmax(120px,.8fr) minmax(0,1.6fr) minmax(90px,.7fr); align-items: center; gap: 12px; min-width: 0; padding: 8px 10px; border: 0; border-radius: 9px; background: #fff; box-shadow: none; }
 .vehicle-info-section { display: grid; gap: 2px; min-width: 0; color: #526b81; font-size: 11px; font-weight: 600; line-height: 1.3; word-break: keep-all; }
-.vehicle-info-section + .vehicle-info-section { padding-left: 12px; border-left: 1px solid #e7edf3; }
+.vehicle-info-section + .vehicle-info-section { padding-left: 12px; border-left: 0; }
 .vehicle-info-section small { color: #8a9aaa; font-size: 9px; font-weight: 600; }
 .vehicle-info-section span { min-width: 0; }
 .vehicle-number-section strong { overflow: hidden; color: #243f58; font-size: 16px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.vehicle-status-group:not(.visit-group) .vehicle-number-section strong { color: #287fd5 !important; }
+.vehicle-status-group.visit-group .vehicle-number-section strong { color: #2ca66a !important; }
+.vehicle-status-group:not(.visit-group) .vehicle-info-section:last-child span { color: #287fd5; font-weight: 800; }
+.vehicle-status-group.visit-group .vehicle-info-section:last-child span { color: #2ca66a; font-weight: 800; }
 .vehicle-slots p { margin: 0; color: #8799aa; font-size: 12px; }
 .board-top-grid { display: grid; grid-template-columns: 29% 34% 1fr; gap: 14px; height: 256px; }
 .board-top-grid > * { min-width: 0; min-height: 0; }
@@ -423,12 +413,12 @@ onUnmounted(() => window.clearInterval(clockTimer));
 .parking-zone::before { display: none; }
 .zone-heading { display: flex; align-items: center; justify-content: center; width: 100%; }
 .zone-heading > span { overflow: hidden; color: #202b36; font-size: 17px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
-.zone-donut { display: grid; place-items: center; width: 86px; height: 86px; margin: 3px 0; border-radius: 50%; background: conic-gradient(var(--zone-color) 0 var(--usage-rate), #e7edf3 var(--usage-rate) 360deg); box-shadow: inset 0 0 0 1px rgba(37,61,85,.05); }
+.zone-donut { --zone-color: #39e98a !important; display: grid; place-items: center; width: 86px; height: 86px; margin: 3px 0; border-radius: 50%; background: conic-gradient(var(--zone-color) 0 var(--usage-rate), #e7edf3 var(--usage-rate) 360deg); box-shadow: inset 0 0 0 1px rgba(37,61,85,.05); }
 .zone-donut-inner { display: grid; place-items: center; align-content: center; width: 61px; height: 61px; border-radius: 50%; background: #fff; box-shadow: 0 2px 7px rgba(48,78,108,.12); }
 .zone-donut-inner small { color: #73869a; font-size: 8px; line-height: 1.1; }
-.zone-donut-inner b { color: var(--zone-color); font-size: 17px; line-height: 1.2; }
+.zone-donut-inner b { color: #39e98a !important; font-size: 17px; line-height: 1.2; }
 .zone-space-count { display: flex; align-items: baseline; gap: 2px; color: #6f8193; font-size: 9px; }
-.zone-space-count strong { color: #2d4964; font-size: 15px; }
+.zone-space-count strong { color: #39e98a !important; font-size: 15px; }
 .my-parked-cars { display: grid; justify-items: center; gap: 2px; width: 100%; margin-top: 1px; }
 .my-parked-cars b { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; padding: 3px 4px; border-radius: 6px; color: #294761; background: #fff0f0; font-size: 9px; text-align: center; }
 .my-parked-cars i { color: #e33232; font-size: 13px; font-style: normal; font-weight: 900; line-height: 1; }
@@ -461,5 +451,5 @@ onUnmounted(() => window.clearInterval(clockTimer));
     .parking-zone{gap:2px}
 }
 @media (max-width:900px){.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
-@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:1px solid #edf2f6;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
+@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
 </style>

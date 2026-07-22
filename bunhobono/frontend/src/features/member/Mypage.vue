@@ -1,47 +1,40 @@
 <template>
-    <header class="detail-header">
+  <main class="resident-mypage">
+    <header class="mypage-title">
         <h2>마이페이지</h2>
-
-        <div class="detail-actions">
-            <button @click="goHome">홈</button>
-            <button @click="goModify">회원정보수정</button>
-            <button @click="openDeleteConfirm">회원탈퇴</button>
-        </div>
     </header>
 
-    <!-- 비밀번호는 조회 응답과 마이페이지 화면에 표시하지 않는다. -->
-    <table border="">
-        <tbody>
-            <tr>
-                <th>가입유형</th>
-                <td>{{ store.member.role }}</td>
-            </tr>
-            <tr>
-                <th>이름</th>
-                <td>{{ store.member.memName }}</td>
-            </tr>
-            <tr>
-                <th>동</th>
-                <td>{{ store.member.memDong }}</td>
-            </tr>
-            <tr>
-                <th>호수</th>
-                <td>{{ store.member.memHo }}</td>
-            </tr>
-            <tr>
-                <th>연락처</th>
-                <td>{{ store.member.memPhone }}</td>
-            </tr>
-            <tr>
-                <th>아이디</th>
-                <td>{{ store.member.loginId }}</td>
-            </tr>
-            <tr>
-                <th>상태</th>
-                <td>{{ store.member.memStatus }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <section class="mypage-card">
+        <div class="mypage-info">
+            <h3>내 정보</h3>
+
+            <!-- 비밀번호는 조회 응답과 마이페이지 화면에 표시하지 않는다. -->
+            <table>
+                <tbody>
+                    <tr><th>가입유형</th><td>{{ store.member.role }}</td></tr>
+                    <tr><th>이름</th><td>{{ store.member.memName }}</td></tr>
+                    <tr><th>아이디</th><td>{{ store.member.loginId }}</td></tr>
+                    <tr><th>연락처</th><td>{{ store.member.memPhone }}</td></tr>
+                    <tr><th>동</th><td>{{ store.member.memDong }}</td></tr>
+                    <tr><th>호수</th><td>{{ store.member.memHo }}</td></tr>
+                    <tr><th>상태</th><td>{{ store.member.memStatus }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <aside class="mypage-actions" aria-label="마이페이지 메뉴">
+            <button type="button" class="modify-button" @click="goModify">내 정보 수정</button>
+            <button type="button" class="withdraw-button" @click="openDeleteConfirm">전출 신청</button>
+            <button type="button" class="home-button" @click="goHome">
+                <span class="home-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M3 11.2 12 4l9 7.2M5.5 10v9h13v-9M9.5 19v-5h5v5" />
+                    </svg>
+                </span>
+                홈으로
+            </button>
+        </aside>
+    </section>
 
     <div v-if="showDeleteConfirm" class="security-modal" @click.self="closeDeleteConfirm">
         <section class="security-dialog">
@@ -74,6 +67,7 @@
             </div>
         </section>
     </div>
+  </main>
 </template>
 
 <script setup>
@@ -209,6 +203,28 @@ onBeforeUnmount(stopChallengeTimer);
 </script>
 
 <style scoped>
+.resident-mypage { width: min(1120px, 100%); margin: 0 auto; padding: 28px 24px; box-sizing: border-box; }
+.mypage-title { margin-bottom: 22px; text-align: center; }
+.mypage-title h2 { margin: 0; color: #203c58; font-size: 30px; }
+.mypage-card { padding: 34px; display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 38px; border: 1px solid #cbddec; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 14px 34px rgba(50,91,126,.12); }
+.mypage-info h3 { margin: 0 0 20px; color: #203c58; font-size: 25px; }
+.mypage-info table { width: 100%; border-collapse: collapse; border: 1px solid #cbd8e4; background: #fff; font-size: 17px; }
+.mypage-info th,.mypage-info td { height: 58px; padding: 8px 18px; border-bottom: 1px solid #dbe5ed; box-sizing: border-box; }
+.mypage-info tr:last-child th,.mypage-info tr:last-child td { border-bottom: 0; }
+.mypage-info th { width: 170px; border-right: 1px solid #dbe5ed; color: #38536d; background: #f5faff; font-weight: 700; text-align: center; }
+.mypage-info td { color: #243f58; font-weight: 500; text-align: left; }
+.mypage-info tr:nth-child(1) td,.mypage-info tr:nth-child(3) td { color: #287fd5; font-weight: 700; }
+.mypage-info tr:nth-child(4) td { color: #6478cf; font-weight: 700; }
+.mypage-info tr:last-child td { color: #2ca66a; font-weight: 800; }
+.mypage-actions { display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+.mypage-actions button { width: 100%; min-height: 78px; padding: 14px 18px; border: 1px solid #a9c8df; border-radius: 14px; color: #203c58; background: #f4faff; box-shadow: 0 5px 12px rgba(47,100,140,.1); font-size: 20px; font-weight: 700; cursor: pointer; }
+.mypage-actions .modify-button { min-height: 132px; color: #fff; background: #45bff2; border-color: #45bff2; }
+.mypage-actions .withdraw-button { color: #8f3942; background: #fff1f2; border-color: #f2b9bf; }
+.mypage-actions .home-button { color: #267047; background: #edfbf3; border-color: #a9dfbf; }
+.mypage-actions .home-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.home-icon { width: 30px; height: 30px; display: inline-grid; place-items: center; flex: 0 0 30px; border-radius: 50%; color: #fff; background: #42c879; }
+.home-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mypage-actions button:hover { transform: translateY(-1px); filter: brightness(.97); }
 .security-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(15, 23, 42, .5); }
 .security-dialog { width: min(420px, 100%); padding: 24px; display: grid; gap: 16px; border-radius: 14px; background: #fff; box-shadow: 0 20px 50px rgba(15, 23, 42, .25); }
 .security-dialog h3, .security-dialog p { margin: 0; }
@@ -219,4 +235,13 @@ onBeforeUnmount(stopChallengeTimer);
 .captcha-timer { margin: -8px 0 0; color: #2563eb; font-size: 14px; }
 .captcha-timer.expired { color: #dc2626; font-weight: 700; }
 .security-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+@media (max-width: 760px) {
+    .resident-mypage { padding: 20px 14px; }
+    .mypage-card { padding: 20px; grid-template-columns: 1fr; gap: 24px; }
+    .mypage-actions { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .mypage-actions button,.mypage-actions .modify-button { min-height: 68px; }
+    .mypage-info th { width: 115px; }
+    .mypage-info th,.mypage-info td { height: 54px; padding: 7px 10px; font-size: 15px; }
+}
 </style>
