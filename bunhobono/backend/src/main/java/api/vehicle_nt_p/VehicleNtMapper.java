@@ -347,12 +347,13 @@ public interface VehicleNtMapper {
     int createVisitOverdueExitNotifications();
 
 
-    // 초과 방문차량의 출차가 확인되어 처리 완료된 알림을 3개월 후 삭제한다.
-    // VISIT_OVERDUE_EXIT 알림은 출차 확인 직후 생성되므로 created_at을 완료 시점으로 사용한다.
+    // 읽은 지 7일이 지난 일반 알림만 자동 삭제
+    // 초과 후 출차 알림은 자동 삭제하지 않는다.
     @Delete("""
     DELETE FROM vehicle_nt
-    WHERE notification_type = 'VISIT_OVERDUE_EXIT'
-      AND created_at < CURRENT_TIMESTAMP - INTERVAL '3 months'
+    WHERE read_at IS NOT NULL
+      AND read_at < CURRENT_TIMESTAMP - INTERVAL '7 days'
+      AND notification_type <> 'VISIT_OVERDUE_EXIT'
     """)
-    int deleteOldCompletedNotifications();
+    int deleteOldReadNotifications();
 }
