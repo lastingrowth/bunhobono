@@ -20,6 +20,12 @@ export const useStatisticsStore = defineStore('statistics', () => {
     // 통계 데이터를 불러오는 중인지 표시한다.
     const loading = ref(false)
 
+    // 자동 갱신 요청이 겹치지 않도록 현재 조회 상태를 표시한다.
+    const refreshing = ref(false)
+
+    // 최초 조회가 끝났는지 표시한다.
+    const initialized = ref(false)
+
     // 통계 데이터 조회 실패 시 화면에 보여줄 메시지
     const errorMessage = ref('')
 
@@ -57,20 +63,12 @@ export const useStatisticsStore = defineStore('statistics', () => {
             carLogNo: data.car_log_no,
             vehicleCarNo: data.vehicle_car_no,
             carNo: data.snapshot_car_no ?? data.captured_car_no,
-<<<<<<< HEAD
-<<<<<<< HEAD
-            carKind: resolveArchivedCarKind(data),
-=======
-=======
->>>>>>> d6de9e1fc5ecc791933d7fbeb6251a89d2165b93
+
             // [지난 기록 통계] 새 스냅샷을 우선 사용하고 기존 더미 car_kind도 호환한다.
             carKind: data.snapshot_car_kind
                 ?? data.car_kind
                 ?? resolveArchivedCarKind(data),
-<<<<<<< HEAD
->>>>>>> origin/jeongmin
-=======
->>>>>>> d6de9e1fc5ecc791933d7fbeb6251a89d2165b93
+
             inTime: data.in_time,
             outTime: data.out_time,
             statisticsScope: data.statistics_scope ?? 'ENTRY_AVERAGE',
@@ -618,8 +616,19 @@ export const useStatisticsStore = defineStore('statistics', () => {
     })
 
     // 통계 페이지에서 필요한 데이터를 한 번에 불러온다.
-    const loadStatistics = async () => {
-        loading.value = true
+    const loadStatistics = async ({ silent = false } = {}) => {
+        if (refreshing.value) {
+            return
+        }
+
+        refreshing.value = true
+
+        // 최초 진입 조회에서만 로딩 문구를 표시한다.
+        // 자동 갱신은 기존 화면을 유지한 채 백그라운드에서 처리한다.
+        if (!silent && !initialized.value) {
+            loading.value = true
+        }
+
         errorMessage.value = ''
 
         try {
@@ -640,11 +649,14 @@ export const useStatisticsStore = defineStore('statistics', () => {
                         : []
                 }),
             ])
+
+            initialized.value = true
         } catch (error) {
             console.error(error)
             errorMessage.value = '통계 데이터를 불러오지 못했습니다.'
         } finally {
             loading.value = false
+            refreshing.value = false
         }
     }
 
