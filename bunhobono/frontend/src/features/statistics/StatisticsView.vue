@@ -142,6 +142,7 @@
             <div class="card-title-row">
                 <div>
                     <h2>입차 비교</h2>
+                    <p>비입주민 = 방문차량 + 미등록 차량</p>
                 </div>
 
                 <div class="entry-header-tools">
@@ -793,7 +794,7 @@ onUnmounted(() => {
 .entry-header-tools .chart-legend {
     position: absolute;
     top: 50%;
-    left: 22%;
+    left: 50%;
     transform: translate(-50%, -50%);
 }
 

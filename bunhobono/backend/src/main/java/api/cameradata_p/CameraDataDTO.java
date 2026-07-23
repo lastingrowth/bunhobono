@@ -38,7 +38,4 @@ CameraDataDTO {
 
     //crop 이미지 저장
     private String cropImagePath;
-    
-    //메모
-    private String camNote;
 }

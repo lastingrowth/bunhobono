@@ -3,6 +3,7 @@ import api.trash_p.TrashService;
 
 import api.cameradata_p.CameraDataDTO;
 import jakarta.annotation.Resource;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -66,7 +67,9 @@ public class CarLogService {
     }
 
     // 테스트용: 매분 실행
+    // @Scheduled(cron = "0 * * * * *")
     // 매일 자정: 출차 후 15일 지난 입출차 기록을 휴지통으로 이동
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void moveOldCarLogsToTrash() {
         List<Integer> carLogNos =
                 carLogMapper.findOldCarLogNosForTrash();

@@ -1,5 +1,4 @@
-import { getCarLogs } from "@/features/carlog/carlogApi";
-import { toCarLogView } from "@/features/carlog/carlogFormat";
+import { useCarlogStore } from "@/features/carlog/carlogStore";
 import { openGateByCameraData } from "@/features/camera-data/cameraDataApi";
 import { getCameraDataList } from "@/features/camera-data/cameraDataApi";
 import { useGateStore } from "@/features/gates/gateStore";
@@ -18,6 +17,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     const gateStore = useGateStore();
     const parkingStore = useParkingsStore();
+
+    const carlogStore = useCarlogStore();
 
     const loading = ref(false);
     const errorMessage = ref("");
@@ -85,7 +86,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     const selectedParkingPanel = ref(null);
     const selectedCarlog = ref(null);
-    const carlogLogs = ref([]);
     const cameraDataLogs = ref([]);
 
     // 예: 12가3456, 123가4567, 서울12가3456
@@ -178,11 +178,22 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
     const recentCarlogs = computed(() => {
-        return carlogLogs.value.slice(0, 10);
+        return [...carlogStore.carLogs]
+            .sort((left, right) => {
+                const rightTime = new Date(right.outTime ?? right.inTime ?? 0);
+                const leftTime = new Date(left.outTime ?? left.inTime ?? 0);
+
+                return rightTime - leftTime;
+            })
+            .slice(0, 10);
     });
 
     const recentCameraData = computed(() => {
-        return cameraDataLogs.value.slice(0, 10);
+        return [...cameraDataLogs.value]
+            .sort((left, right) => {
+                return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0);
+            })
+            .slice(0, 10);
     });
 
     const toggleParkingCamera = (parkingName) => {
@@ -211,19 +222,16 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     const refreshCarlogs = async () => {
         const selectedNo = selectedCarlog.value?.carLogNo;
 
-        const [carlogResponse, cameraDataResponse] = await Promise.all([
-            getCarLogs({ sort: "latest" }),
+        const [, cameraDataResponse] = await Promise.all([
+            carlogStore.loadCarLogs(),
             getCameraDataList(),
         ]);
 
-        carlogLogs.value = Array.isArray(carlogResponse.data)
-            ? carlogResponse.data.map(toCarLogView)
-            : [];
         cameraDataLogs.value = Array.isArray(cameraDataResponse.data)
             ? cameraDataResponse.data
             : [];
 
-        selectedCarlog.value = carlogLogs.value.find((log) => {
+        selectedCarlog.value = carlogStore.carLogs.find((log) => {
             return Number(log.carLogNo) === Number(selectedNo);
         }) ?? recentCarlogs.value[0] ?? null;
     };
@@ -383,8 +391,13 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 memberStore.loadmemberList(),
                 parkingStore.loadList(),
                 gateStore.loadList(),
+                carlogStore.loadCarLogs(),
                 loadQuickRegisterMembers(),
-                refreshCarlogs(),
+                getCameraDataList().then((response) => {
+                    cameraDataLogs.value = Array.isArray(response.data)
+                        ? response.data
+                        : [];
+                }),
             ]);
 
             selectedCarlog.value = recentCarlogs.value[0] ?? null;

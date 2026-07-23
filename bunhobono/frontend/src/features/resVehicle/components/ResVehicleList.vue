@@ -33,14 +33,6 @@
         <tr v-if="vehicles.length === 0">
           <td :colspan="showManage ? 8 : 7" align="center">
             {{ emptyMessage }}
-            <a
-              v-if="emptyActionLabel"
-              href="#resident-contact"
-              class="empty-action-link"
-              @click.prevent="$emit('empty-action')"
-            >
-              {{ emptyActionLabel }}
-            </a>
           </td>
         </tr>
       </tbody>
@@ -58,30 +50,11 @@ defineProps({
     type: String,
     default: "조회된 차량이 없습니다."
   },
-  emptyActionLabel: {
-    type: String,
-    default: ""
-  },
   showManage: {
     type: Boolean,
     default: false
   }
 });
 
-defineEmits(["edit", "remove", "empty-action"]);
+defineEmits(["edit", "remove"]);
 </script>
-
-<style scoped>
-.empty-action-link {
-  margin-left: 5px;
-  color: #287fd5;
-  font-size: inherit;
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.empty-action-link:hover {
-  color: #175fa9;
-}
-</style>
