@@ -30,8 +30,63 @@ textarea {
   flex-direction: column;
 }
 
+.resident-layout .content {
+  min-height: calc(100vh - var(--header-height));
+  padding: 0;
+  background-image:
+    linear-gradient(180deg, rgba(248, 252, 255, 0.44) 0%, rgba(250, 253, 255, 0.63) 45%, rgba(255, 255, 255, 0.81) 75%, rgba(255, 255, 255, 0.91) 100%),
+    url('../images/back.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.resident-layout .header-left,
+.resident-layout .logo,
+.resident-layout .logo a,
+.resident-layout .user-info {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 전체 배경 페이지를 제외한 입주민 콘텐츠 폭을 대시보드와 통일한다. */
+.resident-layout .content > :not(.resident-board-page):not(.resident-welcome) {
+  width: min(760px, calc(100% - 200px));
+  max-width: 760px;
+  min-height: 0;
+  margin: 30px auto;
+  padding: 26px 38px 34px;
+  border: 1px solid rgba(202, 220, 235, 0.9);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 38px rgba(39, 79, 113, 0.14);
+  backdrop-filter: blur(5px);
+}
+
+@media (max-width: 900px) {
+  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome) {
+    width: calc(100% - 36px);
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+}
+
+@media (max-width: 600px) {
+  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome) {
+    width: calc(100% - 12px);
+    margin: 6px auto;
+    padding: 14px;
+  }
+}
+
 /* 헤더 */
 .header {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  right: 0;
+  left: 0;
   height: var(--header-height);
   padding: 0 32px;
   display: flex;
@@ -120,6 +175,7 @@ textarea {
 /* 헤더 아래 영역 */
 .container {
   min-height: 0;
+  padding-top: var(--header-height);
   display: flex;
   flex: 1;
 }
@@ -648,7 +704,7 @@ textarea {
   justify-content: center;
   align-items: center;
   background:
-    linear-gradient(rgba(13, 35, 55, 0.24), rgba(13, 35, 55, 0.38)),
+    linear-gradient(180deg, rgba(248, 252, 255, 0.44) 0%, rgba(250, 253, 255, 0.63) 45%, rgba(255, 255, 255, 0.81) 75%, rgba(255, 255, 255, 0.91) 100%),
     url('../images/back.jpg') center center / cover fixed no-repeat;
 }
 

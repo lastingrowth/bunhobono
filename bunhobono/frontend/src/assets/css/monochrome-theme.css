@@ -1726,3 +1726,52 @@ textarea:focus {
     z-index: 5;
   }
 }
+
+/* 좁은 화면에서도 관리자 헤더가 세로로 찌그러지지 않게 단계적으로 축소한다. */
+.admin-layout .header,
+.admin-layout .header-left,
+.admin-layout .logo,
+.admin-layout .logo a,
+.admin-layout .admin-header-clock,
+.admin-layout .user-info,
+.admin-layout .logout-btn {
+  white-space: nowrap;
+}
+
+.admin-layout .header-left,
+.admin-layout .admin-header-clock,
+.admin-layout .user-info,
+.admin-layout .logout-btn {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1000px) {
+  .admin-layout .header {
+    gap: 10px;
+    padding-inline: 12px;
+  }
+
+  .admin-layout .header-left { gap: 8px; }
+  .admin-layout .sidebar-toggle { width: 34px; height: 34px; font-size: 17px; }
+  .admin-layout .logo { font-size: 17px; letter-spacing: -.7px; }
+  .admin-layout .admin-header-clock {
+    gap: 6px;
+    margin-right: 6px;
+    padding: 5px 7px;
+    font-size: 10px;
+  }
+  .admin-layout .user-info { gap: 7px; }
+  .admin-layout .user-role { padding: 3px 6px; font-size: 10px; }
+  .admin-layout .user-name { font-size: 11px; }
+  .admin-layout .logout-btn { padding: 6px 9px; font-size: 11px; }
+}
+
+@media (max-width: 650px) {
+  .admin-layout .header { gap: 7px; padding-inline: 8px; }
+  .admin-layout .logo { font-size: 14px; }
+  .admin-layout .admin-header-clock { margin-left: auto; margin-right: 2px; }
+  .admin-layout .admin-header-clock span:first-child,
+  .admin-layout .admin-header-clock i,
+  .admin-layout .user-role,
+  .admin-layout .user-name { display: none; }
+}
