@@ -305,6 +305,26 @@
   font-weight: 900;
 }
 
+.dashboard-follow-title {
+  cursor: pointer;
+  opacity: 0.72;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.dashboard-follow-title:hover,
+.dashboard-follow-title:focus-visible,
+.dashboard-follow-title.active {
+  color: #ffffff !important;
+  opacity: 1;
+}
+
+.dashboard-follow-title.active::after {
+  content: " · 자동 갱신 중";
+  font-size: 10px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
 .dashboard-view-all-button {
   height: 24px;
   display: inline-flex;

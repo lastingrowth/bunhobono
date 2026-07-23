@@ -178,7 +178,13 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
     const recentCarlogs = computed(() => {
-        return carlogLogs.value.slice(0, 10);
+        return [...carlogLogs.value]
+            .sort((left, right) => {
+                const leftTime = new Date(left.outTime ?? left.inTime ?? 0).getTime();
+                const rightTime = new Date(right.outTime ?? right.inTime ?? 0).getTime();
+                return rightTime - leftTime;
+            })
+            .slice(0, 10);
     });
 
     const recentCameraData = computed(() => {
@@ -212,7 +218,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         const selectedNo = selectedCarlog.value?.carLogNo;
 
         const [carlogResponse, cameraDataResponse] = await Promise.all([
-            getCarLogs({ sort: "latest" }),
+            getCarLogs({ sort: "activity" }),
             getCameraDataList(),
         ]);
 
@@ -259,14 +265,11 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             return false;
         }
 
-        Promise.all([
+        await Promise.all([
             gateStore.loadList(),
             refreshCarlogs(),
-        ]).then(() => {
-            refreshSelectedParkingPanel();
-        }).catch((error) => {
-            console.error("게이트 개방 후 화면 갱신 실패", error);
-        });
+        ]);
+        refreshSelectedParkingPanel();
 
         setTimeout(() => {
             gateStore.loadList()
