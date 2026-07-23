@@ -71,6 +71,9 @@ public interface CarLogMapper {
         </if>
         <choose>
             <when test="sort == 'oldest'">ORDER BY cl.in_time ASC</when>
+            <when test="sort == 'activity'">
+                ORDER BY COALESCE(cl.out_time, cl.in_time) DESC
+            </when>
             <otherwise>ORDER BY cl.in_time DESC</otherwise>
         </choose>
         </script>
