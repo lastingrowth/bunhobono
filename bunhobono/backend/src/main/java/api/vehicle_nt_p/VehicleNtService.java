@@ -1,7 +1,6 @@
 package api.vehicle_nt_p;
 
 import jakarta.annotation.Resource;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,12 +38,8 @@ public class VehicleNtService {
         );
     }
 
-    // 매분 방문차량 신청과 주차시간을 확인한다.
+    // 10분마다 방문차량 신청과 주차시간을 확인한다.
     // 동일 알림의 중복 여부는 각 Mapper SQL에서 검사한다.
-    @Scheduled(
-            cron = "0 * * * * *",
-            zone = "Asia/Seoul"
-    )
     @Transactional
     public void processVisitNotifications() {
 
@@ -61,13 +56,9 @@ public class VehicleNtService {
         vehicleNtMapper.createVisitOverdueExitNotifications();
     }
 
-    // 매일 한 번: 오래된 읽음 알림 정리
-    @Scheduled(
-            cron = "30 10 3 * * *",
-            zone = "Asia/Seoul"
-    )
+    // 매일 자정: 처리 완료 후 3개월이 지난 방문차량 알림 정리
     @Transactional
-    public void deleteOldReadNotifications() {
-        vehicleNtMapper.deleteOldReadNotifications();
+    public void deleteOldCompletedNotifications() {
+        vehicleNtMapper.deleteOldCompletedNotifications();
     }
 }
