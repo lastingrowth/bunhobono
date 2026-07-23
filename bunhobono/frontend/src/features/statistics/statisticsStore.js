@@ -57,10 +57,13 @@ export const useStatisticsStore = defineStore('statistics', () => {
             carLogNo: data.car_log_no,
             vehicleCarNo: data.vehicle_car_no,
             carNo: data.snapshot_car_no ?? data.captured_car_no,
+            carKind: resolveArchivedCarKind(data),
+
             // [지난 기록 통계] 새 스냅샷을 우선 사용하고 기존 더미 car_kind도 호환한다.
             carKind: data.snapshot_car_kind
                 ?? data.car_kind
                 ?? resolveArchivedCarKind(data),
+
             inTime: data.in_time,
             outTime: data.out_time,
             statisticsScope: data.statistics_scope ?? 'ENTRY_AVERAGE',
