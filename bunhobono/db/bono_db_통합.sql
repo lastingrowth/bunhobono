@@ -186,6 +186,9 @@ CREATE TABLE car_log (
     out_time TIMESTAMP,
     free_time INTEGER,
     snapshot_car_no VARCHAR(50),
+    -- [지난 기록 통계] 입차 당시 차량 종류를 보존한다.
+    snapshot_car_kind VARCHAR(20) NOT NULL
+        CHECK (snapshot_car_kind IN ('REGISTERED', 'VISIT', 'UNKNOWN')),
 
     CONSTRAINT fk_log_vehicle_car
         FOREIGN KEY (vehicle_car_no)

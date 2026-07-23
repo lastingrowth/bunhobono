@@ -115,7 +115,8 @@ public interface TrashMapper {
     @Insert("""
         INSERT INTO car_log
             (car_log_no, vehicle_car_no, camera_data_no, in_gate_no, in_time,
-             out_gate_no, out_time, free_time, snapshot_car_no)
+             out_gate_no, out_time, free_time, snapshot_car_no,
+             snapshot_car_kind)
         SELECT
             (tb.data_json ->> 'car_log_no')::int,
             CASE
@@ -137,7 +138,12 @@ public interface TrashMapper {
             NULLIF(tb.data_json ->> 'out_gate_no', '')::int,
             NULLIF(tb.data_json ->> 'out_time', '')::timestamp,
             NULLIF(tb.data_json ->> 'free_time', '')::int,
-            COALESCE(tb.data_json ->> 'snapshot_car_no', tb.data_json ->> 'captured_car_no')
+            COALESCE(tb.data_json ->> 'snapshot_car_no', tb.data_json ->> 'captured_car_no'),
+            COALESCE(
+                tb.data_json ->> 'snapshot_car_kind',
+                tb.data_json ->> 'car_kind',
+                'UNKNOWN'
+            )
         FROM trash_bin tb
         WHERE tb.trash_no = #{trashNo}
           AND tb.data_type = 'CAR_LOG'

@@ -41,6 +41,7 @@ public class CarLogDTO {
     @JsonIgnore
     private String gateType;
 
-    //스냅샷 칼럼
+    // [지난 기록 통계] 입차 당시 차량번호와 차량 종류를 보존한다.
     private String snapshotCarNo;
+    private String snapshotCarKind;
 }

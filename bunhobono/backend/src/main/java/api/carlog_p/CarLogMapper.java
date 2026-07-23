@@ -19,11 +19,14 @@ public interface CarLogMapper {
             ROW_NUMBER() OVER (ORDER BY cl.in_time ASC) AS display_no,
             cl.car_log_no,
             COALESCE(vc.car_no, cd.car_no, cl.snapshot_car_no) AS car_no,
-            CASE
-                WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
-                WHEN vc.vehicle_type = 'visit' THEN 'VISIT'
-                ELSE 'REGISTERED'
-            END AS car_kind,
+            COALESCE(
+                cl.snapshot_car_kind,
+                CASE
+                    WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
+                    WHEN vc.vehicle_type = 'visit' THEN 'VISIT'
+                    ELSE 'REGISTERED'
+                END
+            ) AS car_kind,
             CASE WHEN cl.out_time IS NULL THEN 'PARKING' ELSE 'OUT' END AS parking_state,
             cl.vehicle_car_no,
             vc.vehicle_type,
@@ -57,20 +60,24 @@ public interface CarLogMapper {
         <if test="parkingState == 'OUT'">
             AND cl.out_time IS NOT NULL
         </if>
-        <if test="carKind == 'UNKNOWN'">
-            AND cl.vehicle_car_no IS NULL
-        </if>
-        <if test="carKind == 'VISIT'">
-            AND vc.vehicle_type = 'visit'
-        </if>
-        <if test="carKind == 'REGISTERED'">
-            AND vc.vehicle_type = 'normal'
+        <if test="carKind != null and carKind != ''">
+            AND COALESCE(
+                cl.snapshot_car_kind,
+                CASE
+                    WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
+                    WHEN vc.vehicle_type = 'visit' THEN 'VISIT'
+                    ELSE 'REGISTERED'
+                END
+            ) = #{carKind}
         </if>
         <if test="carNo != null and carNo != ''">
             AND COALESCE(vc.car_no, cd.car_no, cl.snapshot_car_no) LIKE CONCAT('%', #{carNo}, '%')
         </if>
         <choose>
             <when test="sort == 'oldest'">ORDER BY cl.in_time ASC</when>
+            <when test="sort == 'activity'">
+                ORDER BY COALESCE(cl.out_time, cl.in_time) DESC
+            </when>
             <otherwise>ORDER BY cl.in_time DESC</otherwise>
         </choose>
         </script>
@@ -143,12 +150,20 @@ public interface CarLogMapper {
     """)
     CarLogDTO findOpenLog(CameraDataDTO dto);
 
-    //데이터 추가할때 스냅샷 칼럼도 추가
-    @Insert("INSERT INTO car_log " +
-            "(vehicle_car_no, camera_data_no, in_gate_no, in_time, snapshot_car_no) " +
-            "VALUES " +
-            "(#{data.vehicleCarNo}, #{data.cameraDataNo}, #{gateNo}, " +
-            "#{data.captureTime}, #{data.carNo})")
+    // [지난 기록 통계] 입차 당시 차량번호와 차량 종류를 함께 보존한다.
+    @Insert("""
+        INSERT INTO car_log
+            (vehicle_car_no, camera_data_no, in_gate_no, in_time,
+             snapshot_car_no, snapshot_car_kind)
+        VALUES
+            (#{data.vehicleCarNo}, #{data.cameraDataNo}, #{gateNo},
+             #{data.captureTime}, #{data.carNo},
+             CASE
+                 WHEN #{data.vehicleCarNo} IS NULL THEN 'UNKNOWN'
+                 WHEN #{data.vehicleType} = 'visit' THEN 'VISIT'
+                 ELSE 'REGISTERED'
+             END)
+        """)
     int insertEntry(
             @Param("data") CameraDataDTO data,
             @Param("gateNo") int gateNo
@@ -194,10 +209,17 @@ public interface CarLogMapper {
         <choose>
             <when test="vehicleCarNo != null">
                 SET vehicle_car_no = #{vehicleCarNo},
-                    snapshot_car_no = #{carNo}
+                    snapshot_car_no = #{carNo},
+                    snapshot_car_kind =
+                        CASE
+                            WHEN #{vehicleType} = 'visit' THEN 'VISIT'
+                            ELSE 'REGISTERED'
+                        END
             </when>
             <otherwise>
-                SET vehicle_car_no = NULL
+                SET vehicle_car_no = NULL,
+                    snapshot_car_no = #{carNo},
+                    snapshot_car_kind = 'UNKNOWN'
             </otherwise>
         </choose>
         WHERE camera_data_no = #{cameraDataNo}

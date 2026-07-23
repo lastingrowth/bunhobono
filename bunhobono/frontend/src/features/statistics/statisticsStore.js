@@ -32,18 +32,45 @@ export const useStatisticsStore = defineStore('statistics', () => {
     // 지난 기록 통계 포함: 일반 목록에는 섞지 않고 통계 화면 내부에서만 사용한다.
     const archivedCarlogs = ref([])
 
+    // [ARCHIVED STATISTICS]
+    // Prefer the car_kind snapshot saved in trash_bin. Until the minimal backend
+    // change is approved, fall back to the current vehicle list when possible.
+    const resolveArchivedCarKind = (data) => {
+        if (data.car_kind) {
+            return data.car_kind
+        }
+
+        if (!data.vehicle_car_no) {
+            return 'UNKNOWN'
+        }
+
+        const vehicle = vehicleStore.vehicleList.find((item) => {
+            return Number(item.vehicleCarNo) === Number(data.vehicle_car_no)
+        })
+
+        if (!vehicle) {
+            return 'UNKNOWN'
+        }
+
+        return vehicle.vehicleType === 'visit' ? 'VISIT' : 'REGISTERED'
+    }
+
     // 지난 기록 통계 포함: trash_bin의 JSON을 기존 carlog 화면 형식으로 정규화한다.
     const normalizeArchivedCarlog = (item) => {
         const data = parseDataJson(item.dataJson ?? item.data_json)
 
         return {
             carLogNo: data.car_log_no,
+            vehicleCarNo: data.vehicle_car_no,
             carNo: data.snapshot_car_no ?? data.captured_car_no,
-            carKind: data.car_kind ?? 'UNKNOWN',
+            // [지난 기록 통계] 새 스냅샷을 우선 사용하고 기존 더미 car_kind도 호환한다.
+            carKind: data.snapshot_car_kind
+                ?? data.car_kind
+                ?? resolveArchivedCarKind(data),
             inTime: data.in_time,
             outTime: data.out_time,
             statisticsScope: data.statistics_scope ?? 'ENTRY_AVERAGE',
-            statisticsDate: data.statistics_date,
+            statisticsDate: data.statistics_date ?? data.in_time?.slice(0, 10),
             archived: true,
         }
     }
@@ -53,6 +80,16 @@ export const useStatisticsStore = defineStore('statistics', () => {
         ...carlogStore.carLogs,
         ...archivedCarlogs.value.filter((log) => {
             return log.statisticsScope === 'ENTRY_AVERAGE'
+        }),
+    ])
+
+    // [ARCHIVED STATISTICS]
+    // Scheduler archives keep normal in/out timestamps. Exclude demo HOURLY
+    // snapshots here so real logs and snapshots are never counted together.
+    const operationalStatisticsLogs = computed(() => [
+        ...carlogStore.carLogs,
+        ...archivedCarlogs.value.filter((log) => {
+            return log.statisticsScope !== 'HOURLY'
         }),
     ])
 
@@ -213,6 +250,9 @@ export const useStatisticsStore = defineStore('statistics', () => {
 
     // 지난 기록 통계 포함: 최근 7개 완료일의 시간대별 평균을 계산한다.
     // HOURLY 자료를 분리해 입차 비교/평균시간과 중복 집계하지 않는다.
+    // [ARCHIVED STATISTICS]
+    // A demo date uses its HOURLY snapshots to preserve the requested graph shape.
+    // A normal date without snapshots uses active and archived in/out intervals.
     const hourlyParkingStats = computed(() => {
         const hours = Array.from({ length: 9 }, (_, index) => index * 3)
         const hourlyLogs = archivedCarlogs.value.filter((log) => {
@@ -235,11 +275,19 @@ export const useStatisticsStore = defineStore('statistics', () => {
                     String(day.getDate()).padStart(2, '0'),
                 ].join('-')
 
-                return hourlyLogs.filter((log) => {
+                const snapshotLogs = hourlyLogs.filter((log) => {
+                    return log.statisticsDate === statisticsDate
+                })
+                const sourceLogs = snapshotLogs.length > 0
+                    ? snapshotLogs
+                    : operationalStatisticsLogs.value
+
+                return sourceLogs.filter((log) => {
                     const inTime = toDate(log.inTime)
                     const outTime = toDate(log.outTime)
 
-                    return log.statisticsDate === statisticsDate
+                    return (snapshotLogs.length === 0
+                        || log.statisticsDate === statisticsDate)
                         && inTime
                         && inTime <= target
                         && (!outTime || outTime >= target)
@@ -582,12 +630,16 @@ export const useStatisticsStore = defineStore('statistics', () => {
         errorMessage.value = ''
 
         try {
+            // [지난 기록 통계 포함]
+            // 백엔드 car_kind 스냅샷 적용 전 자료는 현재 차량 목록으로 임시 분류하므로
+            // 차량 목록을 먼저 불러온 뒤 휴지통 JSON을 정규화한다.
+            await vehicleStore.loadVehicleList()
+
             await Promise.all([
                 carlogStore.resetSearch(),
                 cameraDataStore.loadList(),
                 parkingStore.loadList(),
                 noticeStore.loadNotices(),
-                vehicleStore.loadVehicleList(),
                 // 지난 기록 통계 포함: CAR_LOG 휴지통 자료를 통계 화면에서만 조회한다.
                 getTrashList('CAR_LOG').then((response) => {
                     archivedCarlogs.value = Array.isArray(response.data)

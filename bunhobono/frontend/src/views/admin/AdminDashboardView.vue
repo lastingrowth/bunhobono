@@ -137,7 +137,16 @@
             <section class="admin-control-right">
                 <section class="dashboard-card carlog-dashboard-block">
                     <div class="section-heading">
-                        <h3>입출차 로그</h3>
+                        <h3
+                            class="dashboard-follow-title"
+                            :class="{ active: detailFollowMode === 'CAR_LOG' }"
+                            role="button"
+                            tabindex="0"
+                            @click="followLatestCarlog"
+                            @keydown.enter.prevent="followLatestCarlog"
+                            @keydown.space.prevent="followLatestCarlog">
+                            입출차 로그
+                        </h3>
                         <button
                             type="button"
                             class="dashboard-view-all-button"
@@ -154,7 +163,7 @@
                                     <th>구분</th>
                                     <th>상태</th>
                                     <th>주차장</th>
-                                    <th>입차</th>
+                                    <th>최근 활동</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -171,7 +180,7 @@
                                         </span>
                                     </td>
                                     <td>{{ log.parkingName || '-' }}</td>
-                                    <td>{{ formatCameraDataTime(log.inTime) }}</td>
+                                    <td>{{ formatCameraDataTime(log.outTime || log.inTime) }}</td>
                                 </tr>
                                 <tr v-if="recentCarlogs.length === 0">
                                     <td colspan="5">입출차 로그가 없습니다</td>
@@ -183,7 +192,16 @@
 
                 <section class="dashboard-card camera-dashboard-block">
                     <div class="section-heading">
-                        <h3>카메라 데이터</h3>
+                        <h3
+                            class="dashboard-follow-title"
+                            :class="{ active: detailFollowMode === 'CAMERA_DATA' }"
+                            role="button"
+                            tabindex="0"
+                            @click="followLatestCameraData"
+                            @keydown.enter.prevent="followLatestCameraData"
+                            @keydown.space.prevent="followLatestCameraData">
+                            카메라 데이터
+                        </h3>
                         <button
                             type="button"
                             class="dashboard-view-all-button"
@@ -676,6 +694,7 @@ const cameraCarNoSaving = ref(false)
 const isEditingCameraNote = ref(false)
 const cameraNoteDraft = ref('')
 const cameraNoteSaving = ref(false)
+const detailFollowMode = ref('CAR_LOG')
 const monitoringCardRef = ref(null)
 const monitoringHeight = ref(0)
 let ocrStatusTimer = null
@@ -729,9 +748,10 @@ const closeParkingDialog = () => {
 const showCarlogDetail = (log) => {
     selectCarlog(log)
     selectedDetailType.value = 'CAR_LOG'
+    detailFollowMode.value = 'MANUAL'
 }
 
-const showCameraDataDetail = async (cameraData) => {
+const selectCameraDataDetail = async (cameraData) => {
     isEditingCameraCarNo.value = false
     cameraCarNoDraft.value = ''
     isEditingCameraNote.value = false
@@ -750,7 +770,30 @@ const showCameraDataDetail = async (cameraData) => {
     }
 }
 
+const showCameraDataDetail = async (cameraData) => {
+    detailFollowMode.value = 'MANUAL'
+    await selectCameraDataDetail(cameraData)
+}
+
+const followLatestCarlog = () => {
+    detailFollowMode.value = 'CAR_LOG'
+    const latestLog = recentCarlogs.value[0]
+    if (latestLog) {
+        selectCarlog(latestLog)
+        selectedDetailType.value = 'CAR_LOG'
+    }
+}
+
+const followLatestCameraData = async () => {
+    detailFollowMode.value = 'CAMERA_DATA'
+    const latestCameraData = recentCameraData.value[0]
+    if (latestCameraData) {
+        await selectCameraDataDetail(latestCameraData)
+    }
+}
+
 const startCameraCarNoEdit = () => {
+    detailFollowMode.value = 'MANUAL'
     cameraCarNoDraft.value = selectedCameraData.value?.carNo ?? ''
     isEditingCameraCarNo.value = true
 }
@@ -798,6 +841,7 @@ const saveCameraCarNo = async () => {
 }
 
 const startCameraNoteEdit = () => {
+    detailFollowMode.value = 'MANUAL'
     cameraNoteDraft.value = selectedCameraData.value?.camNote ?? ''
     isEditingCameraNote.value = true
 }
@@ -1093,6 +1137,10 @@ const openGateAndResume = async (panel) => {
         return
     }
 
+    if (detailFollowMode.value === 'CAR_LOG') {
+        followLatestCarlog()
+    }
+
     try {
         const endpoint = pendingCameraDataNo ? 'complete' : 'resume'
         await fetch(`${FASTAPI_URL}/cctv/${panel.cameraNo}/${endpoint}`, {
@@ -1178,6 +1226,19 @@ const checkOcrEvents = async () => {
                 refreshCarlogs(),
                 refreshGateStatuses(),
             ])
+
+            if (detailFollowMode.value === 'CAR_LOG') {
+                const latestLog = recentCarlogs.value[0]
+                if (latestLog) {
+                    selectCarlog(latestLog)
+                    selectedDetailType.value = 'CAR_LOG'
+                }
+            } else if (detailFollowMode.value === 'CAMERA_DATA') {
+                const latestCameraData = recentCameraData.value[0]
+                if (latestCameraData) {
+                    await selectCameraDataDetail(latestCameraData)
+                }
+            }
 
             // The backend closes an automatically opened gate after five seconds.
             // Reload once more so the closed state is also reflected in the UI.
