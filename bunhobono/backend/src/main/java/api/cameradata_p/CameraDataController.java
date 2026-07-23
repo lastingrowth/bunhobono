@@ -24,9 +24,12 @@ public class CameraDataController {
     @Resource
     private TrashService trashService;
 
-    @GetMapping
+    @GetMapping("")
     public List<CameraDataDTO> list(CameraDataDTO dto){
-        return cameraDataService.listservice(dto);
+        List<CameraDataDTO> list = cameraDataService.listservice(dto);
+        System.out.println("카메라정보 확인: " + list);
+        System.out.println(cameraDataService);
+        return list;
     }
 
     // 카메라 장치가 호출하는 API  이거 하드웨어도 post로 api처리한다고 함
@@ -110,18 +113,6 @@ public class CameraDataController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .body(image);
-    }
-
-    //메모
-    @PatchMapping("/{cameraDataNo}/note")
-    public CameraDataDTO updateNote(
-            @PathVariable int cameraDataNo,
-            @RequestBody CameraDataDTO dto) {
-
-        return cameraDataService.updateNote(
-                cameraDataNo,
-                dto.getCamNote()
-        );
     }
 
 }

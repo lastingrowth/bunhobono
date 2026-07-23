@@ -87,16 +87,11 @@
           </tr>
 
           <tr>
-            <td colspan="2" class="visit-form-actions">
-              <div class="visit-form-action-buttons">
-                <button type="submit">신청</button>
-                <button type="button" @click="emit('cancel')">
-                  돌아가기
-                </button>
-                <button type="button" class="reset-button" @click="resetForm">
-                  입력 초기화
-                </button>
-              </div>
+            <td colspan="2" align="right">
+              <button type="submit">신청</button>
+              <button type="button" @click="emit('cancel')">
+                취소
+              </button>
             </td>
           </tr>
         </tbody>
@@ -225,15 +220,6 @@ function submit() {
   })
 }
 
-function resetForm() {
-  form.carNo = ''
-  form.visitDate = ''
-  form.visitHour = ''
-  form.visitMinute = ''
-  form.periodHours = 2
-  currentTime.value = new Date()
-}
-
 function isHourDisabled(hour) {
   if (!form.visitDate) {
     return false
@@ -349,26 +335,6 @@ function pad(value) {
   grid-template-columns: minmax(150px, 1fr) 100px 100px;
   gap: 8px;
   margin-bottom: 6px;
-}
-
-.visit-form-action-buttons {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.visit-form-actions .reset-button {
-  border-color: #b9c8d5;
-  color: #536b80;
-  background: #eef3f7;
-}
-
-.visit-form-actions .reset-button:hover {
-  border-color: #8fa5b7;
-  color: #294761;
-  background: #e3ebf1;
 }
 
 @media (max-width: 600px) {

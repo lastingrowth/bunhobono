@@ -351,8 +351,9 @@ public interface VehicleNtMapper {
     // 초과 후 출차 알림은 자동 삭제하지 않는다.
     @Delete("""
     DELETE FROM vehicle_nt
-    WHERE notification_type = 'VISIT_OVERDUE_EXIT'
-      AND created_at < CURRENT_TIMESTAMP - INTERVAL '3 months'
+    WHERE read_at IS NOT NULL
+      AND read_at < CURRENT_TIMESTAMP - INTERVAL '7 days'
+      AND notification_type <> 'VISIT_OVERDUE_EXIT'
     """)
-    int deleteOldCompletedNotifications();
+    int deleteOldReadNotifications();
 }
