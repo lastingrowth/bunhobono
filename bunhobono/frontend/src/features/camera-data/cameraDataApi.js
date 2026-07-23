@@ -34,6 +34,12 @@ export const editCameraDataCarNo = (cameraDataNo, carNo, saveAlias = true) => {
   });
 };
 
+export const editCameraDataNote = (cameraDataNo, camNote) => {
+  return api.patch(`/camera-data/${cameraDataNo}/note`, {
+    camNote,
+  });
+};
+
 //이미지 추가 
 export const getCameraDataImage = (cameraDataNo) => {
   return api.get(`/camera-data/${cameraDataNo}/image`, {
