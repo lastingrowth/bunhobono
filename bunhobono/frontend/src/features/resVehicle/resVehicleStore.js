@@ -75,6 +75,10 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
                 return false;
             }
 
+            if (item.expiryType === "NO_ENTRY" || item.expiryType === "OVERSTAY") {
+                return false;
+            }
+
             if (item.inTime || !item.startDate) {
                 return true;
             }

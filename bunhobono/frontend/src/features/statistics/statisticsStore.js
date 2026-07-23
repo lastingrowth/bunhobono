@@ -58,13 +58,19 @@ export const useStatisticsStore = defineStore('statistics', () => {
             vehicleCarNo: data.vehicle_car_no,
             carNo: data.snapshot_car_no ?? data.captured_car_no,
 <<<<<<< HEAD
+<<<<<<< HEAD
             carKind: resolveArchivedCarKind(data),
 =======
+=======
+>>>>>>> d6de9e1fc5ecc791933d7fbeb6251a89d2165b93
             // [지난 기록 통계] 새 스냅샷을 우선 사용하고 기존 더미 car_kind도 호환한다.
             carKind: data.snapshot_car_kind
                 ?? data.car_kind
                 ?? resolveArchivedCarKind(data),
+<<<<<<< HEAD
 >>>>>>> origin/jeongmin
+=======
+>>>>>>> d6de9e1fc5ecc791933d7fbeb6251a89d2165b93
             inTime: data.in_time,
             outTime: data.out_time,
             statisticsScope: data.statistics_scope ?? 'ENTRY_AVERAGE',

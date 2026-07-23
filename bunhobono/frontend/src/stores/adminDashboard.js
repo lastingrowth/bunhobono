@@ -1,4 +1,5 @@
-import { useCarlogStore } from "@/features/carlog/carlogStore";
+import { getCarLogs } from "@/features/carlog/carlogApi";
+import { toCarLogView } from "@/features/carlog/carlogFormat";
 import { openGateByCameraData } from "@/features/camera-data/cameraDataApi";
 import { getCameraDataList } from "@/features/camera-data/cameraDataApi";
 import { useGateStore } from "@/features/gates/gateStore";
@@ -17,8 +18,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     const gateStore = useGateStore();
     const parkingStore = useParkingsStore();
-
-    const carlogStore = useCarlogStore();
 
     const loading = ref(false);
     const errorMessage = ref("");
@@ -86,6 +85,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     const selectedParkingPanel = ref(null);
     const selectedCarlog = ref(null);
+    const carlogLogs = ref([]);
     const cameraDataLogs = ref([]);
 
     // 예: 12가3456, 123가4567, 서울12가3456
@@ -188,11 +188,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     });
 
     const recentCameraData = computed(() => {
-        return [...cameraDataLogs.value]
-            .sort((left, right) => {
-                return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0);
-            })
-            .slice(0, 10);
+        return cameraDataLogs.value.slice(0, 10);
     });
 
     const toggleParkingCamera = (parkingName) => {
@@ -226,11 +222,14 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             getCameraDataList(),
         ]);
 
+        carlogLogs.value = Array.isArray(carlogResponse.data)
+            ? carlogResponse.data.map(toCarLogView)
+            : [];
         cameraDataLogs.value = Array.isArray(cameraDataResponse.data)
             ? cameraDataResponse.data
             : [];
 
-        selectedCarlog.value = carlogStore.carLogs.find((log) => {
+        selectedCarlog.value = carlogLogs.value.find((log) => {
             return Number(log.carLogNo) === Number(selectedNo);
         }) ?? recentCarlogs.value[0] ?? null;
     };
@@ -387,13 +386,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 memberStore.loadmemberList(),
                 parkingStore.loadList(),
                 gateStore.loadList(),
-                carlogStore.loadCarLogs(),
                 loadQuickRegisterMembers(),
-                getCameraDataList().then((response) => {
-                    cameraDataLogs.value = Array.isArray(response.data)
-                        ? response.data
-                        : [];
-                }),
+                refreshCarlogs(),
             ]);
 
             selectedCarlog.value = recentCarlogs.value[0] ?? null;

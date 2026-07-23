@@ -297,6 +297,18 @@ const signupGo = async () => {
     margin: 20px auto 40px;
 }
 
+:global(.admin-layout .signup-card.admin-signup-card) {
+    border: 1px solid var(--admin-line) !important;
+    background: var(--admin-surface) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22) !important;
+}
+
+:global(.admin-layout .admin-signup-card .signup-header p),
+:global(.admin-layout .admin-signup-card .form-field > span),
+:global(.admin-layout .admin-signup-card .phone-fields > span) {
+    color: var(--admin-ink) !important;
+}
+
 .signup-header {
     margin-bottom: 28px;
     display: flex;

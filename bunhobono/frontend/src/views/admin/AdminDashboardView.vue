@@ -340,8 +340,29 @@
                             </div>
                             <div>
                                 <dt>비고</dt>
-                                <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">
-                                    {{ needsRecognitionReview(selectedCameraData) ? '인식 결과 확인 필요' : '-' }}
+                                <dd class="camera-note-field">
+                                    <template v-if="!isEditingCameraNote">
+                                        <span>{{ selectedCameraData.camNote || '-' }}</span>
+                                        <button type="button" class="camera-note-edit-button" @click="startCameraNoteEdit">
+                                            메모 수정
+                                        </button>
+                                    </template>
+                                    <form v-else class="camera-note-edit-form" @submit.prevent="saveCameraNote">
+                                        <textarea
+                                            v-model="cameraNoteDraft"
+                                            rows="3"
+                                            placeholder="메모를 입력하세요"
+                                            aria-label="카메라 데이터 메모"
+                                        ></textarea>
+                                        <div class="camera-note-edit-actions">
+                                            <button type="submit" :disabled="cameraNoteSaving">
+                                                {{ cameraNoteSaving ? '저장 중' : '저장' }}
+                                            </button>
+                                            <button type="button" class="cancel" :disabled="cameraNoteSaving" @click="cancelCameraNoteEdit">
+                                                취소
+                                            </button>
+                                        </div>
+                                    </form>
                                 </dd>
                             </div>
                         </dl>
@@ -641,7 +662,7 @@
 
 <script setup>
 import { useAdminDashboardStore } from '@/stores/adminDashboard';
-import { editCameraDataCarNo, getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
+import { editCameraDataCarNo, editCameraDataNote, getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
 import { storeToRefs } from 'pinia';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -733,6 +754,8 @@ const showCarlogDetail = (log) => {
 const selectCameraDataDetail = async (cameraData) => {
     isEditingCameraCarNo.value = false
     cameraCarNoDraft.value = ''
+    isEditingCameraNote.value = false
+    cameraNoteDraft.value = ''
     selectedCameraData.value = cameraData
     selectedDetailType.value = 'CAMERA_DATA'
 

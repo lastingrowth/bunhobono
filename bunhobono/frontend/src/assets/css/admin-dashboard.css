@@ -2049,6 +2049,79 @@ body:has(.admin-dashboard),
   display: none;
 }
 
+.admin-dashboard .camera-note-field {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.admin-dashboard .camera-note-field > span {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-layout .content .admin-dashboard .camera-note-edit-button {
+  min-width: 48px;
+  height: 22px;
+  flex: 0 0 auto;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.admin-layout .content .admin-dashboard form.camera-note-edit-form {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .content .admin-dashboard form.camera-note-edit-form textarea {
+  width: auto;
+  min-width: 0;
+  min-height: 34px;
+  height: 34px;
+  flex: 1 1 auto;
+  resize: none;
+  padding: 3px 5px;
+  border: 1px solid #69727a;
+  border-radius: 3px;
+  color: #f1d77b;
+  font-size: 10px;
+  line-height: 1.25;
+  background: #252b30;
+  box-shadow: none;
+}
+
+.admin-dashboard .camera-note-edit-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-layout .content .admin-dashboard .camera-note-edit-actions button {
+  min-width: 34px;
+  min-height: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 14px;
+}
+
 .admin-dashboard .selected-log-card,
 .admin-dashboard .combined-detail-section,
 .admin-dashboard .selected-log-content,

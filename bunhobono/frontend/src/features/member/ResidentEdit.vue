@@ -271,7 +271,7 @@ onBeforeUnmount(stopChallengeTimer);
 .resident-edit-page { width: min(1120px,100%); margin: 0 auto; padding: 28px 24px; box-sizing: border-box; }
 .edit-page-title { margin-bottom: 22px; text-align: center; }
 .edit-page-title h2 { margin: 0; color: #203c58; font-size: 30px; }
-.edit-card { padding: 34px; display: grid; grid-template-columns: minmax(0,1fr) 250px; gap: 38px; border: 1px solid #cbddec; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 14px 34px rgba(50,91,126,.12); }
+.edit-card { padding: 34px; display: grid; grid-template-columns: 1fr; gap: 20px; border: 1px solid #cbddec; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 14px 34px rgba(50,91,126,.12); }
 .edit-form-area h3 { margin: 0 0 20px; color: #203c58; font-size: 25px; }
 .edit-form-area table { width: 100%; border-collapse: collapse; border: 1px solid #cbd8e4; background: #fff; font-size: 16px; }
 .edit-form-area th,.edit-form-area td { min-height: 58px; padding: 10px 18px; border-bottom: 1px solid #dbe5ed; box-sizing: border-box; }
@@ -281,9 +281,9 @@ onBeforeUnmount(stopChallengeTimer);
 .edit-form-area tr:nth-child(1) td,.edit-form-area tr:nth-child(2) td { color: #287fd5; font-weight: 700; }
 .edit-form-area tr:last-child td { color: #2ca66a; font-weight: 800; }
 .edit-form-area input:focus { border-color: #45bff2; outline: 3px solid rgba(69,191,242,.16); }
-.edit-page-actions { display: flex; flex-direction: column; justify-content: center; gap: 18px; }
-.edit-page-actions button { width: 100%; min-height: 78px; padding: 14px 18px; border: 1px solid #a9c8df; border-radius: 14px; box-shadow: 0 5px 12px rgba(47,100,140,.1); font-size: 20px; font-weight: 700; cursor: pointer; }
-.edit-page-actions .save-button { min-height: 132px; border-color: #45bff2; color: #fff; background: #45bff2; }
+.edit-page-actions { display: flex; flex-direction: row; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.edit-page-actions button { width: auto; min-height: 40px; padding: 8px 14px; border: 1px solid #a9c8df; border-radius: 8px; box-shadow: none; font-size: 13px; font-weight: 700; cursor: pointer; }
+.edit-page-actions .save-button { min-height: 40px; border-color: #45bff2; color: #fff; background: #45bff2; }
 .edit-page-actions .password-button { border-color: #f2c889; color: #85551d; background: #fff7e8; }
 .edit-page-actions .back-button { border-color: #a9dfbf; color: #267047; background: #edfbf3; }
 .edit-page-actions button:hover { transform: translateY(-1px); filter: brightness(.97); }
@@ -308,8 +308,8 @@ onBeforeUnmount(stopChallengeTimer);
 @media (max-width: 760px) {
     .resident-edit-page { padding: 20px 14px; }
     .edit-card { padding: 20px; grid-template-columns: 1fr; gap: 24px; }
-    .edit-page-actions { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    .edit-page-actions button,.edit-page-actions .save-button { min-height: 68px; }
+    .edit-page-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .edit-page-actions button,.edit-page-actions .save-button { min-height: 40px; }
     .edit-form-area th { width: 115px; }
     .edit-form-area th,.edit-form-area td { padding: 8px 10px; font-size: 14px; }
     .phone-fields { flex-wrap: nowrap; }
