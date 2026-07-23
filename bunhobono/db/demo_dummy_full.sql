@@ -564,9 +564,17 @@ SELECT cam_note, camera_data_no FROM inserted;
 
 INSERT INTO car_log
     (vehicle_car_no, camera_data_no, out_camera_data_no,
+<<<<<<< HEAD
      in_gate_no, in_time, out_gate_no, out_time, snapshot_car_no)
 SELECT vc.vehicle_car_no, cin.camera_data_no, cout.camera_data_no,
        e.in_gate_no, e.in_time, e.out_gate_no, e.out_time, e.car_no
+=======
+     in_gate_no, in_time, out_gate_no, out_time,
+     snapshot_car_no, snapshot_car_kind)
+SELECT vc.vehicle_car_no, cin.camera_data_no, cout.camera_data_no,
+       e.in_gate_no, e.in_time, e.out_gate_no, e.out_time,
+       e.car_no, e.car_kind
+>>>>>>> origin/jeongmin
 FROM demo_event e
 LEFT JOIN vehicle_car vc ON vc.car_no = e.car_no
 JOIN demo_capture_link cin ON cin.capture_key = e.event_key || '-IN'
