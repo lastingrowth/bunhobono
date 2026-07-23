@@ -39,12 +39,13 @@
                 <th>비밀번호</th>
                 <td>
                     <input
+                        class="password-input"
                         type="password"
                         :value="member.loginPwd"
-                        inputmode="numeric"
-                        minlength="4"
+                        inputmode=""
+                        minlength="8"
                         maxlength="20"
-                        placeholder="숫자 4~20자"
+                        placeholder="영문, 숫자, 특수문자 포함 8~20자"
                         autocomplete="off"
                         @input="handlePasswordInput"
                     />
@@ -87,6 +88,9 @@ const jwtStore = useJwtStore();
 
 const memberNo = route.params.memberNo;
 const phoneParts = reactive({ first: "", middle: "", last: "" });
+
+// 새 비밀번호의 형식을 회원가입 규칙과 동일하게 검사한다.
+const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,20}$/;
 
 const member = reactive({
     role: "",
@@ -153,14 +157,14 @@ const handlePhoneInput = (event, part, maxLength) => {
     phoneParts[part] = numericValue;
 };
 
-// 새 비밀번호에는 숫자만 입력한다.
+// 허용되지 않은 문자를 제거하고 새 비밀번호를 최대 20자로 제한한다.
 const handlePasswordInput = (event) => {
-    const numericValue = event.target.value.replace(/\D/g, "").slice(0, 20);
-    event.target.value = numericValue;
-    member.loginPwd = numericValue;
+    const passwordValue = event.target.value.replace(/[^A-Za-z\d!@#$%^&*]/g, "").slice(0, 20);
+    event.target.value = passwordValue;
+    member.loginPwd = passwordValue;
 };
 
-// 관리자가 초기화 버튼을 누르면 저장할 새 비밀번호를 0000으로 지정한다.
+// 관리자가 초기화하면 정규식 예외인 임시 비밀번호 0000을 지정한다.
 const resetPassword = () => {
     member.loginPwd = "0000";
     alert("수정완료를 누르면 비밀번호가 0000으로 초기화됩니다.");
@@ -177,8 +181,9 @@ const update = async () => {
     }
     member.memPhone = `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`;
 
-    if (member.loginPwd && !/^\d{4,20}$/.test(member.loginPwd)) {
-        alert("비밀번호는 숫자 4~20자로 입력하세요.");
+    // 관리자 초기화 값 0000은 예외로 두고 직접 입력한 새 비밀번호만 형식을 확인한다.
+    if (member.loginPwd && member.loginPwd !== "0000" && !passwordPattern.test(member.loginPwd)) {
+        alert("비밀번호는 영문+숫자+특수문자 조합으로 8~20자로 입력하세요.");
         return;
     }
 
@@ -215,6 +220,12 @@ const update = async () => {
 .phone-fields input {
     width: 72px;
     text-align: center;
+}
+
+.password-input {
+    width: 360px;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .form-actions {

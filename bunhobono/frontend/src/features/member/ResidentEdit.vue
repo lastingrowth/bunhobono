@@ -49,14 +49,14 @@
                         <input
                             type="password"
                             :value="member.loginPwd"
-                            inputmode="numeric"
-                            minlength="4"
+                            inputmode="text"
+                            minlength="8"
                             maxlength="20"
                             autocomplete="new-password"
-                            placeholder="새 비밀번호(숫자 4~20자)"
+                            placeholder="새 비밀번호를 입력하세요 (영문, 숫자, 특수문자 포함 8~20자)"
                             @input="handlePasswordInput"
                         >
-                        <input v-model="newPasswordConfirm" type="password" inputmode="numeric" maxlength="20" autocomplete="new-password" placeholder="새 비밀번호 확인">
+                        <input v-model="newPasswordConfirm" type="password" inputmode="text" minlength="8" maxlength="20" autocomplete="new-password" placeholder="새 비밀번호 확인">
                         <div class="captcha-box">
                             <img :src="challengeImage" alt="보안문자">
                             <button type="button" @click="loadChallenge">새로고침</button>
@@ -108,6 +108,9 @@ const challengeAnswer = ref("");
 const challengeRemainingSeconds = ref(0);
 let challengeTimer = null;
 const phoneParts = reactive({ first: "", middle: "", last: "" });
+
+// 새 비밀번호의 형식을 회원가입 규칙과 동일하게 검사한다.
+const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,20}$/;
 
 const challengeTimeLabel = computed(() => {
     if (challengeRemainingSeconds.value <= 0) return "만료됨";
@@ -171,11 +174,11 @@ const handlePhoneInput = (event, part, maxLength) => {
     phoneParts[part] = numericValue;
 };
 
-// 새 비밀번호에는 숫자만 입력한다.
+// 허용되지 않은 문자를 제거하고 새 비밀번호를 최대 20자로 제한한다.
 const handlePasswordInput = (event) => {
-    const numericValue = event.target.value.replace(/\D/g, "").slice(0, 20);
-    event.target.value = numericValue;
-    member.loginPwd = numericValue;
+    const passwordValue = event.target.value.replace(/[^A-Za-z\d!@#$%^&*]/g, "").slice(0, 20);
+    event.target.value = passwordValue;
+    member.loginPwd = passwordValue;
 };
 
 const goHome = () => {
@@ -215,8 +218,9 @@ const update = async () => {
     }
     member.memPhone = `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`;
 
-    if (showPasswordField.value && !/^\d{4,20}$/.test(member.loginPwd)) {
-        alert("비밀번호는 숫자 4~20자로 입력하세요.");
+    // 비밀번호 변경 시 회원가입과 동일한 새 비밀번호 형식인지 확인한다.
+    if (showPasswordField.value && !passwordPattern.test(member.loginPwd)) {
+        alert("비밀번호는 영문+숫자+특수문자 조합으로 8~20자로 입력하세요.");
         return;
     }
 
@@ -294,8 +298,8 @@ onBeforeUnmount(stopChallengeTimer);
     text-align: center;
 }
 
-.password-change-fields { margin-top: 10px; display: grid; gap: 8px; max-width: 360px; }
-.password-change-fields input { min-height: 40px; padding: 0 10px; }
+.password-change-fields { margin-top: 10px; display: grid; gap: 8px; width: 440px; max-width: 100%; }
+.password-change-fields input { width: 100%; min-height: 40px; padding: 0 10px; box-sizing: border-box; }
 .captcha-box { display: flex; align-items: center; gap: 10px; }
 .captcha-box img { width: 180px; height: 60px; border: 1px solid #cbd5e1; border-radius: 8px; }
 .captcha-timer { margin: 0; color: #2563eb; font-size: 14px; }
