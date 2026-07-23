@@ -9,8 +9,21 @@
       {{ carlogStore.feedbackMessage }}
     </div>
   </Transition>
-  <div class="carlog-table-wrap">
+  <div class="carlog-table-wrap management-list-table">
   <table class="carlog-table" border="">
+    <colgroup>
+      <col class="number-col">
+      <col class="car-number-col">
+      <col class="state-col">
+      <col class="kind-col">
+      <col class="in-time-col">
+      <col class="out-time-col">
+      <col class="parking-time-col">
+      <col class="gate-col">
+      <col class="gate-col">
+      <col class="parking-col">
+      <col class="manage-col">
+    </colgroup>
     <thead>
       <tr>
         <th>번호</th>
@@ -153,10 +166,21 @@ const {
 }
 
 .carlog-table {
-  width: max-content;
-  min-width: 760px;
-  table-layout: auto;
+  width: 100%;
+  min-width: 1080px;
+  table-layout: fixed;
 }
+
+.carlog-table .number-col { width: 5%; }
+.carlog-table .car-number-col { width: 12%; }
+.carlog-table .state-col { width: 7%; }
+.carlog-table .kind-col { width: 8%; }
+.carlog-table .in-time-col,
+.carlog-table .out-time-col { width: 14%; }
+.carlog-table .parking-time-col { width: 9%; }
+.carlog-table .gate-col,
+.carlog-table .parking-col { width: 8%; }
+.carlog-table .manage-col { width: 7%; }
 
 .carlog-table th,
 .carlog-table td {
@@ -178,12 +202,7 @@ const {
   white-space: nowrap;
 }
 
-.carlog-table td.short-text {
-  width: 1% !important;
-}
-
-.carlog-table td:not(.short-text) {
-  width: auto !important;
+.carlog-table td {
   white-space: nowrap;
 }
 
@@ -224,7 +243,7 @@ const {
 
 @media (max-width: 1000px) {
   .carlog-table {
-    min-width: 720px;
+    min-width: 1080px;
   }
 
   .carlog-table th,
@@ -243,7 +262,7 @@ const {
 
 @media (max-width: 700px) {
   .carlog-table {
-    min-width: 680px;
+    min-width: 1080px;
   }
 
   .carlog-table th,

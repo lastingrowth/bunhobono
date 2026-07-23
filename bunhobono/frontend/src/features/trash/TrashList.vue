@@ -1,15 +1,15 @@
 <template>
-  <main class="trash-page">
+  <main class="trash-page management-list-page trash-list-page">
     <TrashFeedbackToast
       :message="trashStore.feedbackMessage"
       :type="trashStore.feedbackType"
     />
     <div class="trash-header">
-      
+      <div class="trash-heading-row management-list-header">
+        <h2 class="management-list-title">지난기록</h2>
+      </div>
 
-      <h2>지난기록</h2>
-
-      <div class="trash-search">
+      <div class="trash-search management-list-toolbar">
         <div class="trash-filter">
           <select
             id="dataType"
@@ -25,12 +25,14 @@
 
         <input
           v-model="trashStore.searchCarNo"
-          type="text"
-          placeholder="차량번호를 입력하세요"
+          class="management-car-search-input"
+          type="search"
+          placeholder="차량번호 검색"
           @keyup.enter="trashStore.searchByCarNo"
         />
 
         <button
+          class="management-search-button"
           type="button"
           @click="trashStore.searchByCarNo"
         >
@@ -38,16 +40,25 @@
         </button>
 
         <button
+          class="management-reset-button"
           type="button"
           @click="trashStore.resetTrashList"
         >
-          목록 초기화
+          초기화
         </button>
       </div>
     </div>
 
-    <div class="trash-table-wrap">
+    <div class="trash-table-wrap management-list-table">
       <table class="trash-table">
+        <colgroup>
+          <col class="trash-number-col">
+          <col class="trash-type-col">
+          <col class="trash-car-col">
+          <col class="trash-delete-type-col">
+          <col class="trash-date-col">
+          <col class="trash-manage-col">
+        </colgroup>
         <thead>
           <tr>
             <th>지난기록 번호</th>
@@ -217,6 +228,18 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.trash-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.trash-number-col { width: 8%; }
+.trash-type-col { width: 20%; }
+.trash-car-col { width: 17%; }
+.trash-delete-type-col { width: 15%; }
+.trash-date-col { width: 25%; }
+.trash-manage-col { width: 15%; }
+
 .trash-table th,
 .trash-table td {
   box-sizing: border-box;

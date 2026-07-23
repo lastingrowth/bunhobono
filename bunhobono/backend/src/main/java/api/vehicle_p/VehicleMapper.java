@@ -60,7 +60,10 @@ public interface VehicleMapper {
             -- 양수: 남은 분, 음수: 초과한 분
             CASE
                 WHEN vc.vehicle_status = 'APPROVED'
-                     AND cl.out_time IS NULL
+                     AND (
+                         vc.vehicle_type = 'normal'
+                         OR cl.out_time IS NULL
+                     )
                      AND expiry.real_end_date IS NOT NULL
                 THEN TRUNC(
                     EXTRACT(
@@ -244,11 +247,11 @@ public interface VehicleMapper {
             #{dto.endDate},
 
             CASE
-                WHEN #{loginId} IS NOT NULL
+                WHEN CAST(#{loginId} AS VARCHAR) IS NOT NULL
                 THEN (
                     SELECT m.member_no
                     FROM member m
-                    WHERE m.login_id = #{loginId}
+                    WHERE m.login_id = CAST(#{loginId} AS VARCHAR)
                 )
                 ELSE #{dto.memberNo}
             END,

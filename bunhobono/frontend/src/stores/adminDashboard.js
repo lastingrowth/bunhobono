@@ -1,4 +1,5 @@
-import { useCarlogStore } from "@/features/carlog/carlogStore";
+import { getCarLogs } from "@/features/carlog/carlogApi";
+import { toCarLogView } from "@/features/carlog/carlogFormat";
 import { openGateByCameraData } from "@/features/camera-data/cameraDataApi";
 import { getCameraDataList } from "@/features/camera-data/cameraDataApi";
 import { useGateStore } from "@/features/gates/gateStore";
@@ -18,10 +19,20 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     const gateStore = useGateStore();
     const parkingStore = useParkingsStore();
 
-    const carlogStore = useCarlogStore();
-
     const loading = ref(false);
     const errorMessage = ref("");
+    const vehicleFeedbackMessage = ref("");
+    const vehicleFeedbackType = ref("success");
+    let vehicleFeedbackTimer;
+
+    const showVehicleFeedback = (message, type = "success") => {
+        vehicleFeedbackMessage.value = message;
+        vehicleFeedbackType.value = type;
+        window.clearTimeout(vehicleFeedbackTimer);
+        vehicleFeedbackTimer = window.setTimeout(() => {
+            vehicleFeedbackMessage.value = "";
+        }, 3000);
+    };
 
     // 관리자 대시보드 상단 차량 등록 입력값
     const quickVehicle = ref({
@@ -74,6 +85,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     const selectedParkingPanel = ref(null);
     const selectedCarlog = ref(null);
+    const carlogLogs = ref([]);
     const cameraDataLogs = ref([]);
 
     // 예: 12가3456, 123가4567, 서울12가3456
@@ -166,22 +178,11 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
     const recentCarlogs = computed(() => {
-        return [...carlogStore.carLogs]
-            .sort((left, right) => {
-                const rightTime = new Date(right.outTime ?? right.inTime ?? 0);
-                const leftTime = new Date(left.outTime ?? left.inTime ?? 0);
-
-                return rightTime - leftTime;
-            })
-            .slice(0, 10);
+        return carlogLogs.value.slice(0, 10);
     });
 
     const recentCameraData = computed(() => {
-        return [...cameraDataLogs.value]
-            .sort((left, right) => {
-                return new Date(right.captureTime ?? 0) - new Date(left.captureTime ?? 0);
-            })
-            .slice(0, 10);
+        return cameraDataLogs.value.slice(0, 10);
     });
 
     const toggleParkingCamera = (parkingName) => {
@@ -210,16 +211,19 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     const refreshCarlogs = async () => {
         const selectedNo = selectedCarlog.value?.carLogNo;
 
-        const [, cameraDataResponse] = await Promise.all([
-            carlogStore.loadCarLogs(),
+        const [carlogResponse, cameraDataResponse] = await Promise.all([
+            getCarLogs({ sort: "latest" }),
             getCameraDataList(),
         ]);
 
+        carlogLogs.value = Array.isArray(carlogResponse.data)
+            ? carlogResponse.data.map(toCarLogView)
+            : [];
         cameraDataLogs.value = Array.isArray(cameraDataResponse.data)
             ? cameraDataResponse.data
             : [];
 
-        selectedCarlog.value = carlogStore.carLogs.find((log) => {
+        selectedCarlog.value = carlogLogs.value.find((log) => {
             return Number(log.carLogNo) === Number(selectedNo);
         }) ?? recentCarlogs.value[0] ?? null;
     };
@@ -309,17 +313,17 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         const normalizedCarNo = quickVehicle.value.carNo.trim().replace(/\s/g, "");
 
         if (normalizedCarNo === "") {
-            alert("차량번호를 입력하세요");
+            showVehicleFeedback("차량번호를 입력해주세요.", "error");
             return;
         }
 
         if (!carNoPattern.test(normalizedCarNo)) {
-            alert("차량번호 형식이 올바르지 않습니다. 예: 12가3456");
+            showVehicleFeedback("차량번호 형식이 올바르지 않습니다. 예: 12가3456", "error");
             return;
         }
 
         if (!quickVehicle.value.memberNo) {
-            alert("회원을 선택하세요");
+            showVehicleFeedback("등록할 회원을 선택해주세요.", "error");
             return;
         }
 
@@ -345,17 +349,15 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
             await vehicleStore.loadVehicleList();
             await loadQuickRegisterMembers();
 
-            alert("차량이 등록되었습니다");
+            showVehicleFeedback(`${normalizedCarNo} 차량을 등록했습니다.`);
             resetQuickVehicle();
         } catch (e) {
             console.error(e);
-
-            if (e.response?.status === 409) {
-                alert("차량 등록 조건에 맞지 않습니다");
-                return;
-            }
-
-            alert("차량 등록 중 오류가 발생했습니다");
+            const responseMessage = e.response?.data?.message;
+            const fallbackMessage = e.response?.status === 409
+                ? "이미 등록된 차량이거나 선택한 회원의 등록 가능 대수를 초과했습니다."
+                : "차량 등록 중 오류가 발생했습니다.";
+            showVehicleFeedback(responseMessage || fallbackMessage, "error");
         }
     };
 
@@ -381,13 +383,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 memberStore.loadmemberList(),
                 parkingStore.loadList(),
                 gateStore.loadList(),
-                carlogStore.loadCarLogs(),
                 loadQuickRegisterMembers(),
-                getCameraDataList().then((response) => {
-                    cameraDataLogs.value = Array.isArray(response.data)
-                        ? response.data
-                        : [];
-                }),
+                refreshCarlogs(),
             ]);
 
             selectedCarlog.value = recentCarlogs.value[0] ?? null;
@@ -402,6 +399,9 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     return {
         loading,
         errorMessage,
+        vehicleFeedbackMessage,
+        vehicleFeedbackType,
+        showVehicleFeedback,
 
         quickVehicle,
         quickPeriodOptions,

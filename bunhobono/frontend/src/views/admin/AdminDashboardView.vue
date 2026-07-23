@@ -1,5 +1,8 @@
 <template>
     <section class="admin-dashboard"> 
+        <ManagementFeedbackToast
+            :message="vehicleFeedbackMessage"
+            :type="vehicleFeedbackType" />
         <!-- 데이터 조회 상태 -->
         <p v-if="loading" class="dashboard-message">
             대시보드 정보를 불러오는 중입니다
@@ -314,13 +317,34 @@
                                 <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">{{ recognitionStateText(selectedCameraData) }}</dd>
                             </div>
                             <div>
-                                <dt>인식률</dt>
+                                <dt>인식 신뢰도</dt>
                                 <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">{{ formatConfidence(selectedCameraData.confidenceScore) }}</dd>
                             </div>
                             <div>
                                 <dt>비고</dt>
-                                <dd :class="{ 'danger-text': needsRecognitionReview(selectedCameraData) }">
-                                    {{ needsRecognitionReview(selectedCameraData) ? '인식 결과 확인 필요' : '-' }}
+                                <dd class="camera-note-field">
+                                    <template v-if="!isEditingCameraNote">
+                                        <span>{{ selectedCameraData.camNote || '-' }}</span>
+                                        <button type="button" class="camera-note-edit-button" @click="startCameraNoteEdit">
+                                            메모 수정
+                                        </button>
+                                    </template>
+                                    <form v-else class="camera-note-edit-form" @submit.prevent="saveCameraNote">
+                                        <textarea
+                                            v-model="cameraNoteDraft"
+                                            rows="3"
+                                            placeholder="메모를 입력하세요"
+                                            aria-label="카메라 데이터 메모"
+                                        ></textarea>
+                                        <div class="camera-note-edit-actions">
+                                            <button type="submit" :disabled="cameraNoteSaving">
+                                                {{ cameraNoteSaving ? '저장 중' : '저장' }}
+                                            </button>
+                                            <button type="button" class="cancel" :disabled="cameraNoteSaving" @click="cancelCameraNoteEdit">
+                                                취소
+                                            </button>
+                                        </div>
+                                    </form>
                                 </dd>
                             </div>
                         </dl>
@@ -620,10 +644,11 @@
 
 <script setup>
 import { useAdminDashboardStore } from '@/stores/adminDashboard';
-import { editCameraDataCarNo, getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
+import { editCameraDataCarNo, editCameraDataNote, getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
 import { storeToRefs } from 'pinia';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
 
 
 const router = useRouter()
@@ -648,6 +673,9 @@ const cameraStatuses = ref({})
 const isEditingCameraCarNo = ref(false)
 const cameraCarNoDraft = ref('')
 const cameraCarNoSaving = ref(false)
+const isEditingCameraNote = ref(false)
+const cameraNoteDraft = ref('')
+const cameraNoteSaving = ref(false)
 const monitoringCardRef = ref(null)
 const monitoringHeight = ref(0)
 let ocrStatusTimer = null
@@ -659,6 +687,8 @@ let monitoringResizeObserver = null
 const {
     loading,
     errorMessage,
+    vehicleFeedbackMessage,
+    vehicleFeedbackType,
     quickVehicle,
     quickPeriodOptions,
     quickRegisterMembers,
@@ -672,6 +702,7 @@ const {
 
 const {
     memberLabel,
+    showVehicleFeedback,
     submitQuickVehicle,
     loadQuickRegisterMembers,
     toggleParkingCamera,
@@ -703,6 +734,8 @@ const showCarlogDetail = (log) => {
 const showCameraDataDetail = async (cameraData) => {
     isEditingCameraCarNo.value = false
     cameraCarNoDraft.value = ''
+    isEditingCameraNote.value = false
+    cameraNoteDraft.value = ''
     selectedCameraData.value = cameraData
     selectedDetailType.value = 'CAMERA_DATA'
 
@@ -732,7 +765,7 @@ const saveCameraCarNo = async () => {
     const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
 
     if (!carNoPattern.test(carNo)) {
-        alert('차량번호 형식을 확인하세요. 예: 123가4567, 경기37바1083')
+        showVehicleFeedback('차량번호 형식을 확인하세요. 예: 123가4567, 경기37바1083', 'error')
         return
     }
 
@@ -752,11 +785,51 @@ const saveCameraCarNo = async () => {
         await refreshCarlogs()
         isEditingCameraCarNo.value = false
         cameraCarNoDraft.value = ''
+        showVehicleFeedback(`${carNo} 차량번호로 수정했습니다.`)
     } catch (error) {
         console.error('차량번호 수정 실패', error)
-        alert(error.response?.data?.message || '차량번호 수정에 실패했습니다')
+        showVehicleFeedback(
+            error.response?.data?.message || '차량번호 수정에 실패했습니다.',
+            'error',
+        )
     } finally {
         cameraCarNoSaving.value = false
+    }
+}
+
+const startCameraNoteEdit = () => {
+    cameraNoteDraft.value = selectedCameraData.value?.camNote ?? ''
+    isEditingCameraNote.value = true
+}
+
+const cancelCameraNoteEdit = () => {
+    isEditingCameraNote.value = false
+    cameraNoteDraft.value = ''
+}
+
+const saveCameraNote = async () => {
+    cameraNoteSaving.value = true
+
+    try {
+        const response = await editCameraDataNote(
+            selectedCameraData.value.cameraDataNo,
+            cameraNoteDraft.value,
+        )
+        selectedCameraData.value = {
+            ...selectedCameraData.value,
+            ...(response.data ?? {}),
+        }
+        await refreshCarlogs()
+        cancelCameraNoteEdit()
+        showVehicleFeedback('메모가 저장되었습니다.')
+    } catch (error) {
+        console.error('카메라 데이터 메모 수정 실패', error)
+        showVehicleFeedback(
+            error.response?.data?.message || '메모 저장에 실패했습니다.',
+            'error',
+        )
+    } finally {
+        cameraNoteSaving.value = false
     }
 }
 

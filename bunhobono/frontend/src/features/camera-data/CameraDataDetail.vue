@@ -7,52 +7,55 @@
       </div>
     </div>
 
-    <!-- 촬영 이미지를 상세 정보보다 먼저 크게 표시 -->
-    <div class="camera-image-preview">
-      <img
-        v-if="imageUrl"
-        :src="imageUrl"
-        class="capture-image"
-        alt="차량 촬영 이미지"
-      />
+    <div class="camera-detail-content">
+      <div class="camera-image-preview">
+        <img
+          v-if="imageUrl"
+          :src="imageUrl"
+          class="capture-image"
+          alt="차량 촬영 이미지"
+        />
 
-      <span v-else-if="imageLoading">
-        이미지를 불러오는 중...
-      </span>
+        <span v-else-if="imageLoading">
+          이미지를 불러오는 중...
+        </span>
 
-      <span v-else class="image-error">
-        이미지를 불러올 수 없습니다.
-      </span>
-    </div>
-
-    <div class="info-detail-highlight">
-      <span>인식 차량번호</span>
-      <div class="car-number-edit-row">
-        <strong v-if="!isEditingCarNo">{{ dStore.detail.carNo || '-' }}</strong>
-
-        <form v-else class="car-number-edit-form" @submit.prevent="saveCarNo">
-          <input
-            v-model="carNoDraft"
-            type="text"
-            maxlength="12"
-            placeholder="예: 경기37바1083"
-            aria-label="수정할 차량번호"
-          />
-          <button type="submit" :disabled="carNoSaving">
-            {{ carNoSaving ? '저장 중' : '저장' }}
-          </button>
-          <button type="button" class="cancel" :disabled="carNoSaving" @click="cancelCarNoEdit">
-            취소
-          </button>
-        </form>
-
-        <button v-if="!isEditingCarNo" type="button" class="car-number-edit-button" @click="startCarNoEdit">
-          번호 수정
-        </button>
+        <span v-else class="image-error">
+          이미지를 불러올 수 없습니다.
+        </span>
       </div>
-    </div>
 
-    <dl class="info-detail-list">
+      <div class="camera-detail-information">
+        <div class="info-detail-highlight">
+          <span>인식 차량번호</span>
+          <div class="car-number-edit-row">
+            <strong v-if="!isEditingCarNo">{{ dStore.detail.carNo || '-' }}</strong>
+
+            <form v-else class="car-number-edit-form" @submit.prevent="saveCarNo">
+              <input
+                v-model="carNoDraft"
+                type="text"
+                maxlength="12"
+                placeholder="예: 경기37바1083"
+                aria-label="수정할 차량번호"
+              />
+              <div class="car-number-edit-actions">
+                <button type="submit" :disabled="carNoSaving">
+                  {{ carNoSaving ? '저장 중' : '저장' }}
+                </button>
+                <button type="button" class="cancel" :disabled="carNoSaving" @click="cancelCarNoEdit">
+                  취소
+                </button>
+              </div>
+            </form>
+
+            <button v-if="!isEditingCarNo" type="button" class="car-number-edit-button" @click="startCarNoEdit">
+              번호 수정
+            </button>
+          </div>
+        </div>
+
+        <dl class="info-detail-list">
       <div>
         <dt>데이터 번호</dt>
         <dd>{{ dStore.detail.cameraDataNo }}</dd>
@@ -79,20 +82,49 @@
       <template v-if="dStore.detail.vehicleCarNo">
         <div>
           <dt>등록 기간</dt>
-          <dd>{{ registrationPeriod }}</dd>
+          <dd class="registration-period">
+            <span>{{ formatDate(dStore.detail.startDate) }} ~</span>
+            <span>{{ formatDate(dStore.detail.endDate) }}</span>
+          </dd>
         </div>
 
         <div>
-          <dt>만료일</dt>
-          <dd>{{ formatDate(dStore.detail.endDate) }}</dd>
-        </div>
-
-        <div>
-          <dt>남은 시간</dt>
+          <dt>남은 기간</dt>
           <dd>{{ remainingTime }}</dd>
         </div>
       </template>
-    </dl>
+
+      <div>
+        <dt>비고</dt>
+        <dd class="camera-note-field">
+          <template v-if="!isEditingNote">
+            <span>{{ dStore.detail.camNote || '-' }}</span>
+            <button type="button" class="camera-note-edit-button" @click="startNoteEdit">
+              메모 수정
+            </button>
+          </template>
+
+          <form v-else class="camera-note-edit-form" @submit.prevent="saveNote">
+            <textarea
+              v-model="noteDraft"
+              rows="3"
+              placeholder="메모를 입력하세요"
+              aria-label="카메라 데이터 메모"
+            ></textarea>
+            <div class="camera-note-edit-actions">
+              <button type="submit" :disabled="noteSaving">
+                {{ noteSaving ? '저장 중' : '저장' }}
+              </button>
+              <button type="button" class="cancel" :disabled="noteSaving" @click="cancelNoteEdit">
+                취소
+              </button>
+            </div>
+          </form>
+        </dd>
+      </div>
+        </dl>
+      </div>
+    </div>
 
     <div class="info-detail-actions">
       <button @click="router.back()">뒤로가기</button>
@@ -108,7 +140,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCameraDataStore } from './cameraDataStore'
-import { editCameraDataCarNo, getCameraDataImage } from './cameraDataApi'
+import { editCameraDataCarNo, editCameraDataNote, getCameraDataImage } from './cameraDataApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -118,6 +150,9 @@ const imageLoading = ref(false)
 const isEditingCarNo = ref(false)
 const carNoDraft = ref('')
 const carNoSaving = ref(false)
+const isEditingNote = ref(false)
+const noteDraft = ref('')
+const noteSaving = ref(false)
 
 const startCarNoEdit = () => {
   carNoDraft.value = dStore.detail?.carNo ?? ''
@@ -153,6 +188,35 @@ const saveCarNo = async () => {
   }
 }
 
+const startNoteEdit = () => {
+  noteDraft.value = dStore.detail?.camNote ?? ''
+  isEditingNote.value = true
+}
+
+const cancelNoteEdit = () => {
+  noteDraft.value = ''
+  isEditingNote.value = false
+}
+
+const saveNote = async () => {
+  noteSaving.value = true
+
+  try {
+    const cameraDataNo = route.params.cameraDataNo
+    const response = await editCameraDataNote(cameraDataNo, noteDraft.value)
+    dStore.detail = {
+      ...dStore.detail,
+      ...(response.data ?? {}),
+    }
+    cancelNoteEdit()
+  } catch (error) {
+    console.error('카메라 데이터 메모 수정 실패:', error)
+    alert(error.response?.data?.message || '메모 저장에 실패했습니다.')
+  } finally {
+    noteSaving.value = false
+  }
+}
+
 const formatDate = value => {
   if (!value) {
     return '-'
@@ -166,13 +230,6 @@ const formatDate = value => {
 
   return date.toLocaleString('ko-KR')
 }
-
-const registrationPeriod = computed(() => {
-  const { startDate, endDate } = dStore.detail || {};
-  if (!startDate && !endDate) return '-';
-  if (!endDate) return '기간 제한 없음';
-  return `${formatDate(startDate)} ~ ${formatDate(endDate)}`;
-});
 
 const remainingTime = computed(() => {
   const endDate = dStore.detail?.endDate;
@@ -218,19 +275,111 @@ onBeforeUnmount(() => {
 }
 
 .info-detail-card {
-  max-width: 760px;
+  width: min(1180px, 100%);
+  max-width: 1180px;
   margin: 0 auto;
+  overflow: hidden;
   border: 0;
   border-radius: 10px;
   box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18);
 }
 
 .info-detail-header {
-  padding: 22px 24px;
+  padding: 16px 20px;
 }
 
 .info-detail-highlight {
-  padding: 22px 24px;
+  padding: 20px 22px;
+}
+
+.camera-detail-content {
+  height: 420px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(380px, 1fr);
+  align-items: stretch;
+  border-top: 1px solid var(--border-color);
+}
+
+.camera-detail-information {
+  min-width: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--border-color);
+  background: var(--admin-surface, #ffffff);
+}
+
+.camera-detail-information .info-detail-highlight {
+  border-bottom: 1px solid var(--admin-line, var(--border-color));
+}
+
+.camera-detail-information .info-detail-list > div {
+  min-height: 36px;
+  grid-template-columns: 130px minmax(0, 1fr);
+  padding: 3px 22px;
+  box-sizing: border-box;
+  border-color: var(--admin-line, var(--border-color));
+  background: var(--admin-surface, #ffffff);
+}
+
+.camera-detail-information .info-detail-list > div:nth-child(even) {
+  background: var(--admin-surface-muted, #f3f4f6);
+}
+
+.camera-detail-information .info-detail-list dt {
+  font-size: 11px;
+}
+
+.camera-detail-information .info-detail-list dd {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.registration-period span {
+  display: block;
+}
+
+.camera-note-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.camera-note-field > span {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.camera-note-edit-button,
+.camera-note-edit-actions button {
+  min-width: 60px;
+  white-space: nowrap;
+}
+
+.camera-note-edit-form {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  margin: 4px 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.camera-note-edit-form textarea {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+}
+
+.camera-note-edit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .car-number-edit-row {
@@ -264,12 +413,18 @@ onBeforeUnmount(() => {
 
 .car-number-edit-form {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 7px;
+  margin: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .car-number-edit-form input {
-  width: 210px;
+  width: min(180px, 100%);
   height: 36px;
   padding: 0 10px;
   border: 1px solid #9aa7b3;
@@ -288,8 +443,86 @@ onBeforeUnmount(() => {
   opacity: 0.65;
 }
 
+/* 관제 대시보드의 차량번호 수정 행과 같은 규격 */
+.info-detail-card .car-number-edit-row {
+  min-width: 0;
+  min-height: 36px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.admin-layout .content .info-detail-card form.car-number-edit-form {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 36px;
+  max-height: 36px;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: stretch;
+  gap: 4px;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.admin-layout .content .info-detail-card form.car-number-edit-form input {
+  width: calc(100% - 103px);
+  min-width: 0;
+  max-width: none;
+  min-height: 36px !important;
+  height: 36px !important;
+  box-sizing: border-box;
+  flex: 1 1 calc(100% - 103px);
+  align-self: stretch;
+  margin: 0 !important;
+  padding: 0 8px;
+  border: 1px solid #69727a;
+  color: #f1d77b;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 34px;
+  background: #252b30;
+  box-shadow: none;
+}
+
+.info-detail-card .car-number-edit-actions {
+  height: 36px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  align-self: stretch;
+  margin: 0 !important;
+  gap: 3px;
+}
+
+.admin-layout .content .info-detail-card .car-number-edit-actions button {
+  width: auto;
+  min-width: 48px;
+  min-height: 36px !important;
+  height: 36px !important;
+  box-sizing: border-box;
+  align-self: stretch;
+  margin: 0 !important;
+  padding: 0 8px;
+  border: 1px solid #687178;
+  color: #e6e9eb;
+  font-size: 12px;
+  line-height: 1;
+  background: #454c52;
+}
+
+.admin-layout .content .info-detail-card .car-number-edit-actions button:hover {
+  border-color: #8b949b;
+  color: #ffffff;
+  background: #565e65;
+}
+
 .info-detail-list {
-  padding: 8px 24px 20px;
+  margin: 0;
+  padding: 0;
 }
 
 .info-detail-actions {
@@ -298,21 +531,49 @@ onBeforeUnmount(() => {
   background: #f8fafb;
 }
 
-.camera-image-content {
-  margin-top: 12px;
+.camera-image-preview {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #8a93a5;
+  background: #20252a;
 }
 
 .capture-image {
   display: block;
-  width: min(100%, 760px);
-  max-height: 420px;
-  object-fit: contain;
-  border-radius: 14px;
-  background: #f4f6f9;
-  box-shadow: 0 10px 28px rgba(28, 39, 60, 0.14);
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  transform: scale(1.24);
+  transform-origin: center bottom;
 }
 
 .image-error {
   color: #8a93a5;
+}
+
+@media (max-width: 920px) {
+  .camera-detail-content {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .camera-detail-information {
+    overflow-y: visible;
+    border-top: 1px solid var(--border-color);
+    border-left: 0;
+  }
+
+  .camera-image-preview,
+  .capture-image {
+    min-height: clamp(300px, 62vw, 480px);
+  }
 }
 </style>

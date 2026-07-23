@@ -1,10 +1,10 @@
 <template>
-  <section class="gate-page">
+  <section class="gate-page management-list-page facility-list-page">
     <ManagementFeedbackToast :message="feedbackMessage" :type="feedbackType" />
     <!-- 게이트 목록 제목 -->
-    <div class="page-heading">
+    <div class="page-heading facility-list-heading">
       <div>
-        <h2>게이트</h2>
+        <h2 class="management-list-title">게이트</h2>
         <p>주차장별 입·출차 게이트를 관리합니다.</p>
       </div>
 
@@ -16,7 +16,7 @@
     </div>
 
     <!-- 게이트 목록 -->
-    <div class="table-wrap">
+    <div class="table-wrap management-list-table facility-list-table">
       <table>
         <thead>
           <tr>

@@ -1,5 +1,5 @@
 <template>
-  <main class="notice-page">
+  <main class="notice-page management-list-page">
     <Transition name="notice-toast">
       <div
         v-if="noticeStore.feedbackMessage"
@@ -10,8 +10,8 @@
         {{ noticeStore.feedbackMessage }}
       </div>
     </Transition>
-    <div class="notice-header">
-      <h1>{{ pageTitle }}</h1>
+    <div class="notice-header management-list-header">
+      <h2 class="management-list-title">{{ pageTitle }}</h2>
 
       <div class="notice-actions">
         <div class="status-filters">
@@ -40,19 +40,19 @@
       </div>
     </div>
 
-    <form class="notice-search" @submit.prevent="handleSearch">
+    <form class="notice-search management-list-toolbar" @submit.prevent="handleSearch">
       <input
         v-model="carNoKeyword"
-        class="notice-search-input"
+        class="notice-search-input management-car-search-input"
         type="search"
         placeholder="차량번호 검색"
         aria-label="차량번호 검색"
       >
-      <button class="notice-search-button" type="submit" :disabled="loading">
+      <button class="notice-search-button management-search-button" type="submit" :disabled="loading">
         {{ loading && searchApplied ? '검색 중...' : '검색' }}
       </button>
       <button
-        class="notice-reset-button"
+        class="notice-reset-button management-reset-button"
         type="button"
         :disabled="loading"
         @click="resetSearch"
@@ -63,10 +63,9 @@
 
     <p v-if="loading">불러오는 중...</p>
     <p v-else-if="errorMessage">{{ errorMessage }}</p>
-    <p v-else-if="sortedNotices.length === 0">선택한 처리상태의 알림이 없습니다.</p>
 
     <template v-else>
-    <div class="notice-table-wrap">
+    <div class="notice-table-wrap management-list-table">
       <table class="notice-table" border="1">
         <thead>
           <tr>
@@ -108,6 +107,9 @@
               </template>
             </td>
             <td class="col-action" data-label="관리"><button type="button" @click.stop="removeNotice(notice)">삭제</button></td>
+          </tr>
+          <tr v-if="paginatedItems.length === 0" class="notice-empty-row">
+            <td :colspan="columns.length + 1">선택한 처리상태의 알림이 없습니다.</td>
           </tr>
         </tbody>
       </table>
@@ -443,6 +445,24 @@ watch(
 </script>
 
 <style scoped>
+.notice-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.notice-table {
+  width: 100%;
+  min-width: 760px;
+  table-layout: fixed;
+}
+
+.notice-table .col-xs { width: 7%; }
+.notice-table .col-sm { width: 20%; }
+.notice-table .col-date { width: 25%; }
+.notice-table .col-status { width: 14%; }
+.notice-table .col-action { width: 7%; }
+
 .notice-table th,
 .notice-table td {
   box-sizing: border-box;
@@ -452,9 +472,18 @@ watch(
   line-height: 1.3;
   text-align: center !important;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notice-table .col-action {
+  text-align: center !important;
+}
+
+.notice-table .notice-empty-row td {
+  height: 54px !important;
+  color: #aeb6bd;
   text-align: center !important;
 }
 

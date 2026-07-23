@@ -9,7 +9,6 @@ DROP TABLE IF EXISTS notice;
 DROP TABLE IF EXISTS car_log;
 DROP TABLE IF EXISTS camera_data;
 DROP TABLE IF EXISTS camera;
-DROP TABLE IF EXISTS vehicle_car_alias;
 DROP TABLE IF EXISTS vehicle_car;
 DROP TABLE IF EXISTS gate;
 DROP TABLE IF EXISTS parking;
@@ -83,7 +82,7 @@ CREATE TABLE gate (
     parking_no INT NOT NULL,
     gate_name VARCHAR(100) NOT NULL,
     gate_type VARCHAR(10) NOT NULL,
-        CHECK (gate_type IN ('In', 'Out', 'Both')),
+        CHECK (gate_type IN ('In', 'Out')),
 	gate_status INT NOT NULL DEFAULT 0
 		CHECK (gate_status IN (0, 1)),
 
@@ -135,7 +134,7 @@ CREATE TABLE camera (
     gate_no INT NOT NULL,
     camera_name VARCHAR(100) NOT NULL,
     camera_type VARCHAR(20) NOT NULL
-        CHECK (camera_type IN ('In', 'Out', 'Both')),
+        CHECK (camera_type IN ('In', 'Out')),
     install_date DATE,
 
     CONSTRAINT fk_camera_gate
@@ -159,6 +158,7 @@ CREATE TABLE camera_data (
     crop_image_path TEXT,
     recognition_state BOOLEAN,
     confidence_score NUMERIC(5,2),
+    cam_note VARCHAR(100),
 
     CONSTRAINT fk_cameradata_camera
         FOREIGN KEY (camera_no)

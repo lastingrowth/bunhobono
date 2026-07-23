@@ -253,6 +253,7 @@ public class CameraDataService {
             );
         }
 
+
         Integer vehicleCarNo =
                 cameraDataMapper.findVehicleCarNo(normalizedCarNo);
 
@@ -414,9 +415,25 @@ public class CameraDataService {
         return path;
     }
 
+    @Transactional
+    public CameraDataDTO updateNote(
+            int cameraDataNo,
+            String camNote) {
+        int updated = cameraDataMapper.updateNote(
+                cameraDataNo,
+                camNote
+        );
+        if (updated == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라 데이터가 존재하지 않습니다."
+            );
+        }
+        return cameraDataMapper.detail(cameraDataNo);
+    }
+
     public Path getCameraCropImagePath(int cameraDataNo) {
         CameraDataDTO dto = cameraDataMapper.detail(cameraDataNo);
-
         if (dto == null ||
                 dto.getCropImagePath() == null ||
                 dto.getCropImagePath().isBlank()) {

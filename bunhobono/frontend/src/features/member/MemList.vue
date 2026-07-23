@@ -1,10 +1,11 @@
 <template>
-    <div class="list-header">
-        <h2>회원 관리</h2>
+  <main class="member-list-page management-list-page">
+    <div class="list-header management-list-header">
+        <h2 class="management-list-title">회원 관리</h2>
         <div class="member-header-actions">
             <nav class="member-management-tabs" aria-label="회원관리 메뉴">
                 <button
-                    v-for="section in managementSections"
+                    v-for="section in visibleManagementSections"
                     :key="section.value"
                     type="button"
                     :class="{ active: activeSection === section.value }"
@@ -179,36 +180,40 @@
 
     <template v-if="activeSection === 'approved'">
     <div class="approved-list-header">
-        <h3>승인된 회원 ({{ approvedMembers.length }}명)</h3>
+       
         <div class="member-search">
-            <select v-model="searchType" @change="resetSearchInputs">
-                <option value="all">전체출력</option>
-                <option value="role">가입유형</option>
-                <option value="name">이름</option>
-                <option value="dongHo">동호수</option>
-            </select>
-            <select v-if="searchType === 'role'" v-model="searchKeyword">
-                <option value="" disabled>가입유형 선택</option>
+            <select v-model="roleFilter" @change="handleMemberRoleFilter">
+                <option value="">유형 전체</option>
                 <option value="ADMIN">관리자</option>
                 <option value="RESIDENT">입주민</option>
             </select>
-            <div v-else-if="searchType === 'dongHo'" class="member-search-fields">
-                <select v-model="dong" @change="ho = ''">
-                    <option value="" disabled>동을 선택하세요</option>
-                    <option v-for="dongOption in dongOptions" :key="dongOption" :value="dongOption">{{ dongOption }}동</option>
-                </select>
-                <select v-model="ho" :disabled="dong === ''">
-                    <option value="" disabled>호수를 선택하세요</option>
-                    <option v-for="hoOption in hoOptions" :key="hoOption" :value="hoOption">{{ hoOption }}호</option>
-                </select>
-            </div>
-            <input v-else-if="searchType !== 'all'" type="text" v-model="searchKeyword" placeholder="검색어 입력" />
-            <button @click="searchGo">검색</button>
+            <select v-model="dong" @change="handleMemberDongFilter">
+                <option value="">동 전체</option>
+                <option v-for="dongOption in dongOptions" :key="dongOption" :value="dongOption">{{ dongOption }}동</option>
+            </select>
+            <select v-model="ho" :disabled="dong === ''" @change="handleMemberHoFilter">
+                <option value="">호 전체</option>
+                <option v-for="hoOption in hoOptions" :key="hoOption" :value="hoOption">{{ hoOption }}호</option>
+            </select>
+            <input v-model="searchKeyword" type="search" placeholder="이름 검색" @keyup.enter="searchGo" />
+            <button type="button" @click="searchGo">검색</button>
+            <button type="button" @click="resetMemberSearch">초기화</button>
         </div>
     </div>
 
-    <div class="admin-table-scroll">
+    <div class="admin-table-scroll management-list-table member-table-wrap">
     <table class="member-list-table" border="">
+        <colgroup>
+            <col class="member-number-col">
+            <col class="member-role-col">
+            <col class="member-name-col">
+            <col class="member-dong-col">
+            <col class="member-ho-col">
+            <col class="member-phone-col">
+            <col class="member-id-col">
+            <col class="member-created-col">
+            <col class="member-status-col">
+        </colgroup>
         <thead>
             <tr>
                 <th>번호</th><th>가입유형</th><th>이름</th><th>동</th><th>호수</th><th>연락처</th>
@@ -221,7 +226,7 @@
                 <td>{{ mem.role }}</td>
                 <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
                 <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.memPhone }}</td>
-                <td>{{ mem.loginId }}</td><td>{{ mem.memCreateAt }}</td>
+                <td>{{ mem.loginId }}</td><td>{{ formatMemberDateTime(mem.memCreateAt) }}</td>
                 <td>{{ formatMemberStatus(mem.memStatus, mem.role) }}</td>
             </tr>
         </tbody>
@@ -235,6 +240,7 @@
             @change-page="setPage"/>
     </div>
     </template>
+  </main>
 </template>
 
 <script setup>
@@ -252,10 +258,11 @@ const route = useRoute();
 const router = useRouter();
 const { memberList } = storeToRefs(store);
 const { list: archiveList } = storeToRefs(archiveStore)
-const searchType = ref('all');
 const searchKeyword = ref('');
+const roleFilter = ref('');
 const dong = ref('');
 const ho = ref('');
+const appliedMemberFilters = ref({ name: '', role: '', dong: '', ho: '' });
 const selectedMemberNos = ref([]);
 const selectedWithdrawnMemberNos = ref([]);
 const currentTime = ref(Date.now());
@@ -267,6 +274,9 @@ const managementSections = [
     { value: 'withdrawn', label: '전출 신청 관리' },
     { value: 'archive', label: '전출 이력'}
 ];
+const visibleManagementSections = computed(() => managementSections.filter(
+    (section) => section.value !== 'approved'
+));
 const requestedSection = String(route.query.section || 'approved');
 const activeSection = ref(
     managementSections.some((section) => section.value === requestedSection)
@@ -285,6 +295,27 @@ const toDateTime = (value) => {
     }
 
     return new Date(value).getTime();
+};
+
+const formatMemberDateTime = (value) => {
+    if (!value) return '-';
+
+    const date = Array.isArray(value)
+        ? new Date(
+            value[0],
+            Number(value[1] || 1) - 1,
+            value[2] || 1,
+            value[3] || 0,
+            value[4] || 0,
+            value[5] || 0
+        )
+        : new Date(value);
+
+    if (Number.isNaN(date.getTime())) return '-';
+
+    const pad = (number) => String(number).padStart(2, '0');
+
+    return `${String(date.getFullYear()).slice(2)}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
 // 서버 상태값은 영어로 받고, 화면에는 사용자가 이해하기 쉬운 한글로 표시한다.
@@ -320,6 +351,21 @@ const approvedMembers = computed(() => memberList.value
     }))
 );
 
+const filteredApprovedMembers = computed(() => {
+    const filters = appliedMemberFilters.value;
+    const normalizedName = filters.name.trim().toLowerCase();
+
+    return approvedMembers.value.filter((member) => {
+        const nameMatches = !normalizedName
+            || String(member.memName || '').toLowerCase().includes(normalizedName);
+        const roleMatches = !filters.role || String(member.role || '') === filters.role;
+        const dongMatches = !filters.dong || Number(member.memDong) === Number(filters.dong);
+        const hoMatches = !filters.ho || Number(member.memHo) === Number(filters.ho);
+
+        return nameMatches && roleMatches && dongMatches && hoMatches;
+    });
+});
+
 // 조회된 회원의 실제 동·호수 값으로 검색 선택지를 구성한다.
 const dongOptions = computed(() => [...new Set(
     approvedMembers.value.map((member) => Number(member.memDong))
@@ -349,7 +395,7 @@ const activeMembers = computed(() => {
     if (activeSection.value === 'pending') return pendingMembers.value
     if (activeSection.value === 'withdrawn') return withdrawnMembers.value
     if (activeSection.value === 'archive') return archiveList.value
-    return approvedMembers.value
+    return filteredApprovedMembers.value
 })
 
 const {
@@ -405,15 +451,45 @@ const toggleWithdrawnMember = (memberNo) => {
 
 const resetSearchInputs = () => {
     searchKeyword.value = '';
+    roleFilter.value = '';
     dong.value = '';
     ho.value = '';
+};
+
+const applySelectFilters = () => {
+    currentPage.value = 1;
+    appliedMemberFilters.value = {
+        ...appliedMemberFilters.value,
+        name: searchKeyword.value,
+        role: roleFilter.value,
+        dong: dong.value,
+        ho: ho.value
+    };
+};
+
+const handleMemberRoleFilter = () => {
+    dong.value = '';
+    ho.value = '';
+    searchKeyword.value = '';
+    applySelectFilters();
+};
+
+const handleMemberDongFilter = () => {
+    ho.value = '';
+    searchKeyword.value = '';
+    applySelectFilters();
+};
+
+const handleMemberHoFilter = () => {
+    searchKeyword.value = '';
+    applySelectFilters();
 };
 
 const changeSection = async (section) => {
     activeSection.value = section
     currentPage.value = 1
     resetSearchInputs()
-    searchType.value = 'all'
+    appliedMemberFilters.value = { name: '', role: '', dong: '', ho: '' }
     selectedMemberNos.value = []
     selectedWithdrawnMemberNos.value = []
 
@@ -475,15 +551,20 @@ const approveSelectedMembers = async () => {
 
 const searchGo = async () => {
     currentPage.value = 1;
-    if (searchType.value === 'all') return store.loadmemberList();
-    if (searchType.value === 'dongHo') {
-        if (dong.value === '' || ho.value === '') {
-            alert('동과 호수를 선택해 주세요.');
-            return;
-        }
-        return store.search({ type: 'dongHo', keyword: '', dong: dong.value, ho: ho.value });
-    }
-    return store.search({ type: searchType.value, keyword: searchKeyword.value });
+    await store.loadmemberList();
+    appliedMemberFilters.value = {
+        name: searchKeyword.value,
+        role: roleFilter.value,
+        dong: dong.value,
+        ho: ho.value
+    };
+};
+
+const resetMemberSearch = async () => {
+    resetSearchInputs();
+    appliedMemberFilters.value = { name: '', role: '', dong: '', ho: '' };
+    currentPage.value = 1;
+    await store.loadmemberList();
 };
 
 onMounted(async () => {
@@ -515,6 +596,15 @@ onUnmounted(() => {
 .member-search, .member-search-fields { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .member-search { min-width: 0; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-header); }
 .member-search select, .member-search input, .member-search button { display: inline-block; min-height: 36px; }
+.member-number-col { width: 6%; }
+.member-role-col { width: 13%; }
+.member-name-col { width: 10%; }
+.member-dong-col { width: 7%; }
+.member-ho-col { width: 7%; }
+.member-phone-col { width: 15%; }
+.member-id-col { width: 13%; }
+.member-created-col { width: 19%; }
+.member-status-col { width: 10%; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 8px; text-align: center; }
 
