@@ -96,7 +96,31 @@
 
       <div>
         <dt>비고</dt>
-        <dd>{{ dStore.detail.remark || '-' }}</dd>
+        <dd class="camera-note-field">
+          <template v-if="!isEditingNote">
+            <span>{{ dStore.detail.camNote || '-' }}</span>
+            <button type="button" class="camera-note-edit-button" @click="startNoteEdit">
+              메모 수정
+            </button>
+          </template>
+
+          <form v-else class="camera-note-edit-form" @submit.prevent="saveNote">
+            <textarea
+              v-model="noteDraft"
+              rows="3"
+              placeholder="메모를 입력하세요"
+              aria-label="카메라 데이터 메모"
+            ></textarea>
+            <div class="camera-note-edit-actions">
+              <button type="submit" :disabled="noteSaving">
+                {{ noteSaving ? '저장 중' : '저장' }}
+              </button>
+              <button type="button" class="cancel" :disabled="noteSaving" @click="cancelNoteEdit">
+                취소
+              </button>
+            </div>
+          </form>
+        </dd>
       </div>
         </dl>
       </div>
@@ -116,7 +140,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCameraDataStore } from './cameraDataStore'
-import { editCameraDataCarNo, getCameraDataImage } from './cameraDataApi'
+import { editCameraDataCarNo, editCameraDataNote, getCameraDataImage } from './cameraDataApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -126,6 +150,9 @@ const imageLoading = ref(false)
 const isEditingCarNo = ref(false)
 const carNoDraft = ref('')
 const carNoSaving = ref(false)
+const isEditingNote = ref(false)
+const noteDraft = ref('')
+const noteSaving = ref(false)
 
 const startCarNoEdit = () => {
   carNoDraft.value = dStore.detail?.carNo ?? ''
@@ -158,6 +185,35 @@ const saveCarNo = async () => {
     alert(error.response?.data?.message || '차량번호 수정에 실패했습니다.')
   } finally {
     carNoSaving.value = false
+  }
+}
+
+const startNoteEdit = () => {
+  noteDraft.value = dStore.detail?.camNote ?? ''
+  isEditingNote.value = true
+}
+
+const cancelNoteEdit = () => {
+  noteDraft.value = ''
+  isEditingNote.value = false
+}
+
+const saveNote = async () => {
+  noteSaving.value = true
+
+  try {
+    const cameraDataNo = route.params.cameraDataNo
+    const response = await editCameraDataNote(cameraDataNo, noteDraft.value)
+    dStore.detail = {
+      ...dStore.detail,
+      ...(response.data ?? {}),
+    }
+    cancelNoteEdit()
+  } catch (error) {
+    console.error('카메라 데이터 메모 수정 실패:', error)
+    alert(error.response?.data?.message || '메모 저장에 실패했습니다.')
+  } finally {
+    noteSaving.value = false
   }
 }
 
@@ -279,6 +335,51 @@ onBeforeUnmount(() => {
 
 .registration-period span {
   display: block;
+}
+
+.camera-note-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.camera-note-field > span {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.camera-note-edit-button,
+.camera-note-edit-actions button {
+  min-width: 60px;
+  white-space: nowrap;
+}
+
+.camera-note-edit-form {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  margin: 4px 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.camera-note-edit-form textarea {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+}
+
+.camera-note-edit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .car-number-edit-row {

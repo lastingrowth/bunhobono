@@ -618,3 +618,6 @@ async def ocr(
 
 # cd C:\Users\dkddp\Documents\bunhobono\bunhobono\fast-api
 # C:\ProgramData\anaconda3\envs\bono_gpu\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# C:\Users\503-30\miniconda3\condabin\conda.bat activate bono
+# python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000

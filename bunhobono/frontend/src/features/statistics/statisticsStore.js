@@ -5,6 +5,8 @@ import { useCameraDataStore } from '@/features/camera-data/cameraDataStore'
 import { useParkingsStore } from '@/features/parking/parkingsStore'
 import { useNoticeStore } from '@/features/notice/noticeStore'
 import { useVehicleStore } from '@/features/vehicle/vehicleStore'
+import { getTrashList } from '@/features/trash/trashApi'
+import { parseDataJson } from '@/features/trash/trashFormat'
 
 // 관리자 통계 페이지에서 사용할 store
 // carlog, camera-data, parking, notice, vehicle 데이터를 가져와 화면용 통계 값으로 계산한다.
@@ -20,6 +22,33 @@ export const useStatisticsStore = defineStore('statistics', () => {
 
     // 통계 데이터 조회 실패 시 화면에 보여줄 메시지
     const errorMessage = ref('')
+
+    // 지난 기록 통계 포함: 일반 목록에는 섞지 않고 통계 화면 내부에서만 사용한다.
+    const archivedCarlogs = ref([])
+
+    // 지난 기록 통계 포함: trash_bin의 JSON을 기존 carlog 화면 형식으로 정규화한다.
+    const normalizeArchivedCarlog = (item) => {
+        const data = parseDataJson(item.dataJson ?? item.data_json)
+
+        return {
+            carLogNo: data.car_log_no,
+            carNo: data.snapshot_car_no ?? data.captured_car_no,
+            carKind: data.car_kind ?? 'UNKNOWN',
+            inTime: data.in_time,
+            outTime: data.out_time,
+            statisticsScope: data.statistics_scope ?? 'ENTRY_AVERAGE',
+            statisticsDate: data.statistics_date,
+            archived: true,
+        }
+    }
+
+    // 지난 기록 통계 포함: 입차 비교와 평균시간에는 ENTRY_AVERAGE 자료만 합친다.
+    const entryStatisticsLogs = computed(() => [
+        ...carlogStore.carLogs,
+        ...archivedCarlogs.value.filter((log) => {
+            return log.statisticsScope === 'ENTRY_AVERAGE'
+        }),
+    ])
 
     // 입주민 / 비입주민 입차 비교 그래프의 기간 상태
     // weekly: 주간, monthly: 월간, yearly: 연간
@@ -176,31 +205,45 @@ export const useStatisticsStore = defineStore('statistics', () => {
         return currentParkingLogs.value.length
     })
 
-    // 시간대별 주차 대수
-    // 현재 가진 carlog 데이터만으로 계산하므로, 실제 평균이라기보다 해당 시간대에 주차 상태였던 차량 수에 가깝다.
+    // 지난 기록 통계 포함: 최근 7개 완료일의 시간대별 평균을 계산한다.
+    // HOURLY 자료를 분리해 입차 비교/평균시간과 중복 집계하지 않는다.
     const hourlyParkingStats = computed(() => {
         const hours = Array.from({ length: 9 }, (_, index) => index * 3)
+        const hourlyLogs = archivedCarlogs.value.filter((log) => {
+            return log.statisticsScope === 'HOURLY'
+        })
+        const completedDays = Array.from({ length: 7 }, (_, index) => {
+            const date = new Date(today.value)
+            date.setDate(date.getDate() - (index + 1))
+            date.setHours(0, 0, 0, 0)
+            return date
+        })
 
         return hours.map((hour) => {
-            const target = new Date(today.value)
-
-            if (hour === 24) {
-                target.setDate(target.getDate() + 1)
-                target.setHours(0, 0, 0, 0)
-            } else {
+            const dailyCounts = completedDays.map((day) => {
+                const target = new Date(day)
                 target.setHours(hour, 0, 0, 0)
-            }
+                const statisticsDate = [
+                    day.getFullYear(),
+                    String(day.getMonth() + 1).padStart(2, '0'),
+                    String(day.getDate()).padStart(2, '0'),
+                ].join('-')
 
-            const count = carlogStore.carLogs.filter((log) => {
-                const inTime = toDate(log.inTime)
-                const outTime = toDate(log.outTime)
+                return hourlyLogs.filter((log) => {
+                    const inTime = toDate(log.inTime)
+                    const outTime = toDate(log.outTime)
 
-                if (!inTime) {
-                    return false
-                }
+                    return log.statisticsDate === statisticsDate
+                        && inTime
+                        && inTime <= target
+                        && (!outTime || outTime >= target)
+                }).length
+            })
 
-                return inTime <= target && (!outTime || outTime >= target)
-            }).length
+            const count = Math.round(
+                dailyCounts.reduce((sum, value) => sum + value, 0)
+                / completedDays.length
+            )
 
             return {
                 label: `${String(hour).padStart(2, '0')}시`,
@@ -245,7 +288,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
         })
 
         return dates.map((date) => {
-            const logs = carlogStore.carLogs.filter((log) => {
+            const logs = entryStatisticsLogs.value.filter((log) => {
                 return isSameDate(log.inTime, date)
             })
 
@@ -266,7 +309,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
         return Array.from({ length: 5 }, (_, index) => {
             const weekNo = index + 1
 
-            const logs = carlogStore.carLogs.filter((log) => {
+            const logs = entryStatisticsLogs.value.filter((log) => {
                 const inTime = toDate(log.inTime)
 
                 if (!inTime) {
@@ -293,7 +336,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
         const currentYear = today.value.getFullYear() + entryPeriodOffset.value
 
         return Array.from({ length: 12 }, (_, index) => {
-            const logs = carlogStore.carLogs.filter((log) => {
+            const logs = entryStatisticsLogs.value.filter((log) => {
                 const inTime = toDate(log.inTime)
 
                 if (!inTime) {
@@ -468,7 +511,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
 
     // 특정 차량 종류의 평균 주차 시간을 계산한다.
     const getAverageParkingMinutes = (carKind) => {
-        const logs = carlogStore.carLogs.filter((log) => {
+        const logs = entryStatisticsLogs.value.filter((log) => {
             return log.carKind === carKind && log.inTime
         })
 
@@ -528,6 +571,12 @@ export const useStatisticsStore = defineStore('statistics', () => {
                 parkingStore.loadList(),
                 noticeStore.loadNotices(),
                 vehicleStore.loadVehicleList(),
+                // 지난 기록 통계 포함: CAR_LOG 휴지통 자료를 통계 화면에서만 조회한다.
+                getTrashList('CAR_LOG').then((response) => {
+                    archivedCarlogs.value = Array.isArray(response.data)
+                        ? response.data.map(normalizeArchivedCarlog)
+                        : []
+                }),
             ])
         } catch (error) {
             console.error(error)

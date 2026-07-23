@@ -16,12 +16,21 @@ bunhobono/frontend/.pnpm-store/
 
 # Cache
 bunhobono/frontend/.eslintcache
+bunhobono/frontend/**/*.local
+*.tsbuildinfo
 
 # Logs
 bunhobono/frontend/npm-debug.log*
 bunhobono/frontend/yarn-debug.log*
 bunhobono/frontend/yarn-error.log*
 bunhobono/frontend/pnpm-debug.log*
+bunhobono/frontend/lerna-debug.log*
+
+# Frontend test / build artifacts
+bunhobono/frontend/cypress/videos/
+bunhobono/frontend/cypress/screenshots/
+bunhobono/frontend/**/__screenshots__/
+bunhobono/frontend/*.timestamp-*-*.mjs
 
 # ==========================================================
 # Backend (Spring Boot / Gradle)
@@ -29,6 +38,18 @@ bunhobono/frontend/pnpm-debug.log*
 bunhobono/backend/.gradle/
 bunhobono/backend/build/
 bunhobono/backend/target/
+
+# Backend IDE / generated metadata
+bunhobono/backend/HELP.md
+bunhobono/backend/.apt_generated/
+bunhobono/backend/.factorypath
+bunhobono/backend/.springBeans
+bunhobono/backend/.sts4-cache/
+bunhobono/backend/bin/
+bunhobono/backend/nbbuild/
+bunhobono/backend/dist/
+bunhobono/backend/nbdist/
+bunhobono/backend/.nb-gradle/
 
 # Camera capture images generated at runtime
 bunhobono/backend/runtime/camera-data/
@@ -90,6 +111,12 @@ bunhobono/fast-api/Ultralytics/
 # ==========================================================
 .idea/
 *.iml
+*.iws
+*.ipr
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 out/
 
 # ==========================================================

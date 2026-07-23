@@ -15,11 +15,14 @@
                 <RouterView/>
             </main>
         </div>
+
+        <ResidentFooter v-if="isResidentRoute"/>
     </div>
 </template>
 
 <script setup lang="ts">
 import Header from '@/components/Header.vue';
+import ResidentFooter from '@/components/ResidentFooter.vue';
 import Sidebar from '@/components/Sidebar.vue';
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';

@@ -81,7 +81,6 @@ CCTV_OCR_MAX_CANDIDATES = 3
 MIN_OCR_SCORE = 0.5
 SEND_COOLDOWN_SECONDS = 10
 DETECTION_DISPLAY_SECONDS = 2
-DETECTION_ZONE_TOP_RATIO = 1 / 3
 OCR_DEVICE = "cpu"
 LOW_LIGHT_CAMERA_NOS = {5, 6}
 LOW_LIGHT_BRIGHTNESS = 0.40
@@ -230,24 +229,6 @@ class TestStreamWorker:
                 display_frame = frame[crop_top:frame_height, :].copy()
 
             height, width = display_frame.shape[:2]
-
-            cv2.rectangle(
-                display_frame,
-                (0, int(height * DETECTION_ZONE_TOP_RATIO)),
-                (width - 1, height - 1),
-                (255, 180, 0),
-                2,
-            )
-            cv2.putText(
-                display_frame,
-                "DETECTION ZONE",
-                (12, int(height * DETECTION_ZONE_TOP_RATIO) + 30),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                (255, 180, 0),
-                2,
-                cv2.LINE_AA,
-            )
 
             if (
                 self.latest_detection_box is not None

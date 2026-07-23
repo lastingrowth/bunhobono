@@ -10,7 +10,7 @@ public interface CameraDataMapper {
 
     @Select("SELECT ROW_NUMBER() OVER (ORDER BY cd.camera_data_no DESC) AS display_no, " +
             "cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
-            "cd.recognition_state, cd.confidence_score, " +
+            "cd.recognition_state, cd.confidence_score, cd.cam_note, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "ORDER BY cd.camera_data_no DESC")
@@ -132,7 +132,7 @@ public interface CameraDataMapper {
     int insert(CameraDataDTO dto);
 
     @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
-            "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, " +
+            "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, cd.cam_note, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.camera_data_no = #{cameraDataNo}")
@@ -157,7 +157,7 @@ public interface CameraDataMapper {
     int applyMatchedCarNo(CameraDataDTO dto);
 
     @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
-            "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, " +
+            "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, cd.cam_note, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.car_no LIKE CONCAT('%', #{keyword}, '%') " +
@@ -171,5 +171,15 @@ public interface CameraDataMapper {
 
     @Delete("delete from camera_data where camera_data_no = #{cameraDataNo}")
     int delete(int cameraDataNo);
+
+    @Update("""
+    UPDATE camera_data
+    SET cam_note = #{camNote}
+    WHERE camera_data_no = #{cameraDataNo}
+    """)
+    int updateNote(
+            @Param("cameraDataNo") int cameraDataNo,
+            @Param("camNote") String camNote
+    );
 
 }
