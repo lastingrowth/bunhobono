@@ -112,7 +112,7 @@
                 <section
                     class="recent-log-card"
                 >
-                    <h2>내 차 최근 입출차</h2>
+                    <h2>나의 차량 최근 입출차</h2>
                     <div v-if="residentCarLogs.length" class="recent-log-summary-list">
                         <div
                             v-for="log in residentCarLogs.slice(0, 5)"
@@ -182,6 +182,7 @@
                 <header class="resident-carlog-header detail-header">
                     <div>
                         <h2>입출차내역</h2>
+                        <p class="carlog-retention-guide">(입출차 기록 조회는 3개월 까지만 가능합니다.)</p>
                     </div>
                     <div class="detail-actions">
                         <button type="button" @click="openDashboard">홈으로 돌아가기</button>
@@ -250,7 +251,23 @@ let notificationTimer;
 
 const { loading, errorMessage, dashboard, residenceText, normalVehicles, visitVehicles, parkingStatusList } = storeToRefs(dashboardStore);
 
-const residentCarLogs = computed(() => dashboard.value.recentCarLogs || []);
+const threeMonthsAgo = () => {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - 3);
+    return cutoff;
+};
+
+const residentCarLogs = computed(() => {
+    const cutoff = threeMonthsAgo();
+
+    return (dashboard.value.recentCarLogs || []).filter((log) => {
+        const referenceTime = log.outTime || log.inTime;
+        if (!referenceTime) return false;
+
+        const referenceDate = new Date(referenceTime);
+        return !Number.isNaN(referenceDate.getTime()) && referenceDate >= cutoff;
+    });
+});
 const {
     currentPage,
     totalPages,
@@ -364,9 +381,9 @@ onUnmounted(() => {
 .visit-group .vehicle-group-title span { color: #26844a; }
 .vehicle-slots { display: grid; grid-template-columns: 1fr; align-items: center; gap: 6px; min-width: 0; }
 .vehicle-summary-row { display: grid; grid-template-columns: minmax(120px,.8fr) minmax(0,1.6fr) minmax(90px,.7fr); align-items: center; gap: 12px; min-width: 0; padding: 8px 10px; border: 0; border-radius: 9px; background: #fff; box-shadow: none; }
-.vehicle-info-section { display: grid; gap: 2px; min-width: 0; color: #526b81; font-size: 11px; font-weight: 600; line-height: 1.3; word-break: keep-all; }
+.vehicle-info-section { display: grid; gap: 4px; min-width: 0; color: #405a70; font-size: 13px; font-weight: 650; line-height: 1.4; word-break: keep-all; }
 .vehicle-info-section + .vehicle-info-section { padding-left: 12px; border-left: 0; }
-.vehicle-info-section small { color: #8a9aaa; font-size: 9px; font-weight: 600; }
+.vehicle-info-section small { color: #71879a; font-size: 11px; font-weight: 700; }
 .vehicle-info-section span { min-width: 0; }
 .vehicle-number-section strong { overflow: hidden; color: #243f58; font-size: 16px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
 .vehicle-status-group:not(.visit-group) .vehicle-number-section strong { color: #287fd5 !important; }
@@ -457,6 +474,7 @@ onUnmounted(() => {
 .my-parked-cars b { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; padding: 3px 4px; border-radius: 6px; color: #294761; background: #fff0f0; font-size: 9px; text-align: center; }
 .my-parked-cars i { color: #e33232; font-size: 13px; font-style: normal; font-weight: 900; line-height: 1; }
 .resident-carlog-section { min-height: 520px; }
+.carlog-retention-guide { margin: 7px 0 0; color: #708698; font-size: 12px; font-weight: 600; }
 .resident-carlog-table-wrap { overflow-x: auto; padding-bottom: 8px; }
 .resident-carlog-table { min-width: 720px; }
 .carlog-state { display: inline-flex; padding: 3px 9px; border-radius: 999px; color: #687b8d; background: #edf1f4; font-size: 11px; font-weight: 700; }
@@ -496,7 +514,7 @@ onUnmounted(() => {
 .resident-board:not(.resident-carlog-page) {
     width: min(760px, calc(100% - 200px));
     margin: 30px auto;
-    padding: 26px 38px 34px;
+    padding: 30px 48px 38px;
     border: 1px solid rgba(202, 220, 235, .9);
     border-radius: 0;
     background: rgba(255, 255, 255, .94);
@@ -539,7 +557,7 @@ onUnmounted(() => {
     .resident-board:not(.resident-carlog-page) .parking-card { border-top: 1px solid #dfe9f2; }
 }
 @media (max-width:600px) {
-    .resident-board:not(.resident-carlog-page) { width: calc(100% - 12px); margin: 6px 0; padding: 14px; border-radius: 0; }
+    .resident-board:not(.resident-carlog-page) { width: calc(100% - 24px); margin: 12px 0; padding: 22px; border-radius: 0; }
 }
 
 /* 홈페이지처럼 주요 영역을 위에서 아래로 이어서 보여준다. */
@@ -554,7 +572,7 @@ onUnmounted(() => {
 .resident-board:not(.resident-carlog-page) .recent-log-card,
 .resident-board:not(.resident-carlog-page) .parking-card {
     min-height: 220px;
-    padding: 24px 4px;
+    padding: 24px 26px;
     border: 0;
     border-top: 1px solid #dfe9f2;
     background: transparent;
@@ -564,4 +582,13 @@ onUnmounted(() => {
     border-top: 0;
 }
 .resident-board:not(.resident-carlog-page) .parking-card { padding-bottom: 8px; }
+@media (max-width:600px) {
+    .resident-board:not(.resident-carlog-page) .member-summary-card,
+    .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
+    .resident-board:not(.resident-carlog-page) .recent-log-card,
+    .resident-board:not(.resident-carlog-page) .parking-card {
+        padding-right: 20px;
+        padding-left: 20px;
+    }
+}
 </style>

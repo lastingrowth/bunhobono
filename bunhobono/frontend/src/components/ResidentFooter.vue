@@ -3,8 +3,8 @@
     <div class="resident-footer-inner">
       <div class="resident-footer-brand">
         <strong>아파트 주차관리 시스템</strong>
-      </br>
-        <span>입주민의 편리하고 안전한 주차 생활을 지원합니다. <br/> 입주민 문의 : 051-777-7777</span>
+        <br>
+        <span>입주민의 편리하고 안전한 주차 생활을 지원합니다. <br/> <span id="resident-contact"> 관리실 : 051-777-7777</span></span>
       
 
       </div>
