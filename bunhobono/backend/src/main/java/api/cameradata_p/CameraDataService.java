@@ -4,7 +4,6 @@ import api.carlog_p.CarLogDTO;
 import api.gate_p.GateDTO;
 import api.gate_p.GateService;
 import jakarta.annotation.Resource;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -380,10 +379,8 @@ public class CameraDataService {
         return deleteCount;
     }
     //매분실행 테스트용
-   //@Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
 
     //밤 12시실행요      자동쓰레기통행 삭제
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void autoDelete() {
         System.out.println("스케쥴러 삭제 실행");
 

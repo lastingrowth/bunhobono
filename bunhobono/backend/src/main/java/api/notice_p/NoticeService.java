@@ -2,7 +2,6 @@ package api.notice_p;
 
 import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,10 +31,8 @@ public class NoticeService {
     }
 
     //매분실행 테스트용
-    //@Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
 
     // 매일 자정 : 자동삭제 휴지통으로다가  스케쥴로 삭제 기능
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void moveResolvedNoticesToTrash() {
         List<Integer> noticeNos =
                 noticeMapper.findResolvedNoticeNosForTrash();
@@ -86,7 +83,6 @@ public class NoticeService {
     }
 
     // 24시 통일  장기 주차/미등록 차량 알림 생성
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void createNoticesFromCarLog() {
         noticeMapper.createNoticesFromCarLog();
     }
