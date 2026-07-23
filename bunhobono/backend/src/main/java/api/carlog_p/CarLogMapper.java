@@ -214,7 +214,7 @@ public interface CarLogMapper {
     SELECT car_log_no
     FROM car_log
     WHERE out_time IS NOT NULL
-      AND out_time < NOW() - INTERVAL '15 days'
+      AND out_time < NOW() - INTERVAL '3 months'
     """)
     List<Integer> findOldCarLogNosForTrash();
     //테스트 날짜 알아서
