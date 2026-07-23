@@ -425,7 +425,7 @@ onMounted(async () => {
     await statsStore.loadStatistics()
 
     timer = setInterval(async () => {
-        await statsStore.loadStatistics()
+        await statsStore.loadStatistics({ silent: true })
     }, 10000)
 })
 
