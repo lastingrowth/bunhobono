@@ -43,8 +43,10 @@
 
         <ResVehicleList
           :vehicles="resVehicleStore.normalVehicles"
-          empty-message="등록된 본인 차량이 없습니다."
+          empty-message="관리실에서 등록이 가능합니다."
+          empty-action-label="문의"
           :show-manage="false"
+          @empty-action="scrollToResidentContact"
         />
       </section>
 
@@ -55,12 +57,15 @@
         <div class="vehicle-management-section-header">
           <h3>방문 차량</h3>
 
-          <button
-            :disabled="resVehicleStore.hasActiveVisitVehicle"
-            @click="openInsert"
-          >
-            방문차량 신청
-          </button>
+          <div class="visit-application-actions">
+            <small>(방문차량 조회는 3개월까지만 가능합니다.)</small>
+            <button
+              :disabled="resVehicleStore.hasActiveVisitVehicle"
+              @click="openInsert"
+            >
+              방문차량 신청
+            </button>
+          </div>
         </div>
 
         <div v-if="resVehicleStore.hasActiveVisitVehicle">
@@ -69,7 +74,7 @@
         </div>
 
         <ResVehicleList
-          :vehicles="resVehicleStore.visitVehicles"
+          :vehicles="visibleVisitVehicles"
           empty-message="신청한 방문차량이 없습니다."
           :show-manage="false"
         />
@@ -125,6 +130,26 @@ const mode = computed(() => {
   return "list";
 });
 
+const visibleVisitVehicles = computed(() => {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 3);
+
+  return resVehicleStore.visitVehicles.filter((vehicle) => {
+    const referenceTime = vehicle.outTime
+      || vehicle.realEndDate
+      || vehicle.endDate
+      || vehicle.startDate
+      || vehicle.approvedAt;
+
+    if (!referenceTime) {
+      return true;
+    }
+
+    const referenceDate = new Date(referenceTime);
+    return !Number.isNaN(referenceDate.getTime()) && referenceDate >= cutoff;
+  });
+});
+
 onMounted(async () => {
   await resVehicleStore.loadMyInfo();
   await refreshData();
@@ -152,6 +177,11 @@ async function refreshData() {
     resVehicleStore.loadNotifications()
   ]);
 
+  if (mode.value === "form" && resVehicleStore.hasActiveVisitVehicle) {
+    openList();
+    return;
+  }
+
   if (mode.value === "notification") {
     await resVehicleStore.markAllNotificationsRead();
   }
@@ -177,6 +207,13 @@ function openNotifications() {
 
 function goDashboard() {
   router.push("/resident/dashboard");
+}
+
+function scrollToResidentContact() {
+  document.getElementById("resident-contact")?.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
 }
 
 async function submitVisitVehicle(data) {
@@ -249,6 +286,20 @@ async function submitVisitVehicle(data) {
   margin-bottom: 0;
 }
 
+.visit-application-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.visit-application-actions small {
+  color: #708698;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .vehicle-management-section-header button {
   border-color: #42d77d;
   color: #ffffff;
@@ -279,6 +330,8 @@ async function submitVisitVehicle(data) {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .visit-application-actions { align-items: flex-end; flex-direction: column-reverse; }
 }
 
 .resident-vehicle-header-actions { display: flex; align-items: center; gap: 8px; }

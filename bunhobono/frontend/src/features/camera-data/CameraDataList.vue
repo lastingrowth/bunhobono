@@ -119,6 +119,7 @@ const router = useRouter();
 const keyword = ref("");
 const isSearching = ref(false);
 const searchError = ref("");
+const visibleCameraDataList = ref([]);
 const pendingDeleteData = ref(null);
 const deleting = ref(false);
 const parkingButtons = [
@@ -135,9 +136,9 @@ const selectedParkingNo = computed(() => {
 });
 
 const filteredCameraDataList = computed(() => {
-  if (!selectedParkingNo.value) return dStore.displayList;
+  if (!selectedParkingNo.value) return visibleCameraDataList.value;
 
-  return dStore.displayList.filter((data) => {
+  return visibleCameraDataList.value.filter((data) => {
     return Number(data.parkingNo) === selectedParkingNo.value;
   });
 });
@@ -176,6 +177,7 @@ const searchGo = async () => {
     // 백엔드 차량번호 검색 결과가 주차장 필터에 가려지지 않도록 전체로 전환
     await router.replace({ name: 'CameraDataList' });
     await dStore.searchByCarNo(carNo);
+    visibleCameraDataList.value = [...dStore.displayList];
   } catch (error) {
     console.error('카메라 데이터 검색 실패', error);
     searchError.value = '검색 결과를 불러오지 못했습니다.';
@@ -196,6 +198,7 @@ const resetList = async () => {
   searchError.value = "";
   await router.replace({ name: 'CameraDataList' });
   await dStore.loadList();
+  visibleCameraDataList.value = [...dStore.displayList];
 };
 
 const formatDate = (value) => {
@@ -228,13 +231,21 @@ const confirmDelete = async () => {
   }
 
   deleting.value = true;
-  await dStore.remove(pendingDeleteData.value.cameraDataNo);
+  const removed = await dStore.remove(pendingDeleteData.value.cameraDataNo);
+
+  if (removed) {
+    visibleCameraDataList.value = visibleCameraDataList.value.filter((item) => {
+      return Number(item.cameraDataNo ?? item.camera_data_no)
+        !== Number(pendingDeleteData.value.cameraDataNo);
+    });
+  }
   deleting.value = false;
   pendingDeleteData.value = null;
 };
 
 onMounted(async () => {
   await dStore.loadList();
+  visibleCameraDataList.value = [...dStore.displayList];
 });
 </script>
 
@@ -333,6 +344,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.camera-data-search .management-search-button {
+  min-width: 88px;
+  flex: 0 0 88px;
+  white-space: nowrap;
 }
 
 .camera-data-search input {
