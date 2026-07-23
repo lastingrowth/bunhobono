@@ -159,8 +159,8 @@ public interface CarLogMapper {
             (#{data.vehicleCarNo}, #{data.cameraDataNo}, #{gateNo},
              #{data.captureTime}, #{data.carNo},
              CASE
-                 WHEN #{data.vehicleCarNo} IS NULL THEN 'UNKNOWN'
-                 WHEN #{data.vehicleType} = 'visit' THEN 'VISIT'
+                 WHEN #{data.vehicleCarNo, jdbcType=INTEGER} IS NULL THEN 'UNKNOWN'
+                 WHEN #{data.vehicleType, jdbcType=VARCHAR} = 'visit' THEN 'VISIT'
                  ELSE 'REGISTERED'
              END)
         """)
