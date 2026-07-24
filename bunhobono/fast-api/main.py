@@ -327,7 +327,18 @@ def restart_stream(camera_no: int):
         "paused": False,
         "videoFinished": False,
     }
+# 리셋버튼 
+@app.post("/demo/reset")
+def reset_demo():
+    workers = set(app.state.stream_workers.values())
 
+    for worker in workers:
+        worker.reset_demo()
+
+    return {
+        "success": True,
+        "message": "시연 상태가 초기화되었습니다."
+    }
 
 @app.post("/detect-test")
 async def detect_test(file: UploadFile = File(...)):

@@ -53,6 +53,14 @@
             <span>▣&nbsp; {{ formattedDate }}</span>
             <i></i>
             <span>◷&nbsp; {{ formattedTime }}</span>
+            <button
+                v-if="isAdminDashboard"
+                type="button"
+                class="header-demo-reset-button"
+                :disabled="demoResetting"
+                @click="requestDemoReset">
+                {{ demoResetting ? '초기화 중...' : '시연 초기화' }}
+            </button>
         </div>
 
         <div class="user-info">
@@ -63,11 +71,23 @@
             <button class="logout-btn" @click="logout">로그아웃</button>
         </div>
 
+        <DemoResetConfirm
+            :open="resetConfirmOpen"
+            :resetting="demoResetting"
+            @cancel="closeResetConfirm"
+            @confirm="confirmDemoReset" />
+        <ManagementFeedbackToast
+            :message="resetFeedbackMessage"
+            :type="resetFeedbackType" />
+
     </header>
 </template>
 
 <script setup>
 import { useJwtStore } from '@/features/login/jwtStore';
+import { resetDemo } from '@/features/reset/resetApi';
+import DemoResetConfirm from '@/features/reset/DemoResetConfirm.vue';
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -75,7 +95,13 @@ const jwtStore = useJwtStore()
 const route = useRoute()
 const now = ref(new Date())
 const residentMenuOpen = ref(false)
+const demoResetting = ref(false)
+const resetConfirmOpen = ref(false)
+const resetFeedbackMessage = ref('')
+const resetFeedbackType = ref('success')
 let clockTimer
+let resetFeedbackTimer
+let resetReloadTimer
 
 defineProps({
     showSidebarToggle: {
@@ -98,6 +124,7 @@ const homePath = computed(() => {
 
 const isResidentDashboard = computed(() => route.path.startsWith('/resident'))
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const isAdminDashboard = computed(() => route.path === '/admin/dashboard')
 const roleLabel = computed(() => {
     if (jwtStore.role === 'RESIDENT') return '입주민'
     if (jwtStore.role === 'ADMIN') return '관리자'
@@ -118,11 +145,59 @@ function logout() {
     jwtStore.logout()
 }
 
+function requestDemoReset() {
+    if (!demoResetting.value) {
+        resetConfirmOpen.value = true
+    }
+}
+
+function closeResetConfirm() {
+    if (!demoResetting.value) {
+        resetConfirmOpen.value = false
+    }
+}
+
+function showResetFeedback(message, type = 'success') {
+    resetFeedbackMessage.value = message
+    resetFeedbackType.value = type
+    window.clearTimeout(resetFeedbackTimer)
+    resetFeedbackTimer = window.setTimeout(() => {
+        resetFeedbackMessage.value = ''
+    }, 3000)
+}
+
+async function confirmDemoReset() {
+    if (demoResetting.value) return
+    demoResetting.value = true
+
+    try {
+        await resetDemo()
+        resetConfirmOpen.value = false
+        showResetFeedback('시연 데이터와 영상 상태를 초기화했습니다.')
+        resetReloadTimer = window.setTimeout(() => {
+            window.location.reload()
+        }, 1200)
+    } catch (error) {
+        console.error('시연 초기화 실패', error)
+        const message = error?.response?.data?.message
+            || error?.response?.data?.error
+            || '시연 초기화에 실패했습니다. Spring과 FastAPI 실행 상태를 확인해주세요.'
+        resetConfirmOpen.value = false
+        showResetFeedback(message, 'error')
+    } finally {
+        demoResetting.value = false
+    }
+}
+
 onMounted(() => {
     clockTimer = window.setInterval(() => { now.value = new Date() }, 1000)
 })
 
-onUnmounted(() => window.clearInterval(clockTimer))
+onUnmounted(() => {
+    window.clearInterval(clockTimer)
+    window.clearTimeout(resetFeedbackTimer)
+    window.clearTimeout(resetReloadTimer)
+})
 
 const emit = defineEmits([
     'toggle-sidebar'
@@ -269,6 +344,30 @@ const emit = defineEmits([
   width: 1px;
   height: 14px;
   background: #69737b;
+}
+
+.header-demo-reset-button {
+  height: 25px;
+  margin-left: 3px;
+  padding: 0 9px;
+  border: 1px solid #7a858e;
+  border-radius: 2px;
+  cursor: pointer;
+  color: #ffffff;
+  background: #414950;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.header-demo-reset-button:hover {
+  border-color: #ffffff;
+  background: #505a63;
+}
+
+.header-demo-reset-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .resident-header-actions .resident-menu-button {
