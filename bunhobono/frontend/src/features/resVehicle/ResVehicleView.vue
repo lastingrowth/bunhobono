@@ -87,6 +87,7 @@
     >
       <ResVehicleNt
         :notifications="resVehicleStore.notifications"
+        @delete="deleteNotification"
       />
     </section>
 
@@ -96,6 +97,8 @@
       @cancel="openList"
     />
   </div>
+
+
 </template>
 
 <script setup>
@@ -219,6 +222,10 @@ function scrollToResidentContact() {
 async function submitVisitVehicle(data) {
   await resVehicleStore.addVisitVehicle(data);
   openList();
+}
+
+async function deleteNotification(vehicleNtNo) {
+  await resVehicleStore.removeNotification(vehicleNtNo)
 }
 </script>
 
