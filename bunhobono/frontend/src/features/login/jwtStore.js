@@ -92,9 +92,9 @@ export const useJwtStore = defineStore('jwtStore', {
 
         // 로그인 성공 후 권한에 따라 화면을 이동한다.
         if (this.role === 'ADMIN') {
-          router.push('/admin')
+          router.replace('/admin')
         } else {
-          router.push('/resident')
+          router.replace('/resident')
         }
 
         // vue에서 성공 판단용
