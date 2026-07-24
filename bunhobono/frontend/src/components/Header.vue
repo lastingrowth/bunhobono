@@ -9,6 +9,7 @@
             <h1 class="logo"><RouterLink :to="homePath">아파트 주차관리 시스템</RouterLink></h1>
         </div>
 
+        <!-- 입주민 헤더 -->
         <div v-if="isResidentDashboard" class="resident-header-actions">
             <div class="resident-menu-wrap">
                 <button
@@ -49,10 +50,16 @@
             </div>
         </div>
 
+        <!-- 관리자 헤더 -->
         <div v-if="isAdminRoute" class="admin-header-clock">
             <span>▣&nbsp; {{ formattedDate }}</span>
             <i></i>
             <span>◷&nbsp; {{ formattedTime }}</span>
+        </div>
+
+        <div v-if="isAdminRoute" class="history-nav">
+            <button @click="goBack" :disabled="!historyStore.canBack">←</button>
+            <button @click="goForward" :disabled="!historyStore.canForward">→</button>
         </div>
 
         <div class="user-info">
@@ -68,11 +75,13 @@
 
 <script setup>
 import { useJwtStore } from '@/features/login/jwtStore';
+import { useHistoryStore } from '@/stores/historyStore';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 const jwtStore = useJwtStore()
 const route = useRoute()
+const historyStore = useHistoryStore()
 const now = ref(new Date())
 const residentMenuOpen = ref(false)
 let clockTimer
@@ -115,7 +124,16 @@ function closeResidentMenu() {
 }
 
 function logout() {
+    historyStore.clear()
     jwtStore.logout()
+}
+
+function goBack() {
+    historyStore.back()
+}
+
+function goForward() {
+    historyStore.forward()
 }
 
 onMounted(() => {
@@ -286,5 +304,17 @@ const emit = defineEmits([
   background: transparent;
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.history-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 16px;
+}
+
+.history-nav button {
+    width: 34px;
+    height: 34px;
 }
 </style>

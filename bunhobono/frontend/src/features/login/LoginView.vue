@@ -5,7 +5,7 @@
         P
       </div>
 
-      <h1>아파트 주차관리 시스템</h1>
+      <h1>아파트 <br/> 주차관리 시스템</h1>
       <p>SMART PARKING SYSTEM</p>
     </div>
 
