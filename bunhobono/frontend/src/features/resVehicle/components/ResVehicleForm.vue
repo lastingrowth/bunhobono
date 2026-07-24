@@ -113,8 +113,11 @@ import {
   reactive,
   ref
 } from 'vue'
+import { useDialog } from '@/shared/alert/useDialog'
 
 const emit = defineEmits(['submit', 'cancel'])
+// 입주민 차량 등록 폼의 기본 alert를 공통 Dialog로 대체합니다.
+const { alertDialog } = useDialog()
 
 const carNoPattern = /^([가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
 
@@ -187,15 +190,18 @@ onBeforeUnmount(() => {
   window.clearInterval(currentTimeTimer)
 })
 
-function submit() {
+async function submit() {
   const normalizedCarNo = form.carNo
     .trim()
     .replace(/\s/g, '')
 
   if (!carNoPattern.test(normalizedCarNo)) {
-    alert(
-      '차량번호 형식이 올바르지 않습니다. 예: 12가3456, 서울12가3456'
-    )
+    await alertDialog({
+      theme: 'resident',
+      type: 'warning',
+      title: '차량번호 확인',
+      message: '차량번호 형식이 올바르지 않습니다. 예: 12가3456, 서울12가3456'
+    })
     return
   }
 
@@ -204,14 +210,22 @@ function submit() {
   const startDate = selectedStartDate.value
 
   if (!startDate) {
-    alert('방문 날짜와 시간을 선택하세요.')
+    await alertDialog({
+      theme: 'resident',
+      type: 'warning',
+      title: '방문 시간 확인',
+      message: '방문 날짜와 시간을 선택하세요.'
+    })
     return
   }
 
   if (startDate < minimumStartDate.value) {
-    alert(
-      '방문 시작은 현재시간으로부터 1시간 이후로 선택해야 합니다.'
-    )
+    await alertDialog({
+      theme: 'resident',
+      type: 'warning',
+      title: '방문 시간 확인',
+      message: '방문 시작은 현재 시간으로부터 1시간 이후로 선택해야 합니다.'
+    })
     clearInvalidTime()
     return
   }

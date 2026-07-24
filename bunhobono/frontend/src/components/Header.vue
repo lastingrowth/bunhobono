@@ -197,6 +197,8 @@ async function confirmDemoReset() {
     } finally {
         demoResetting.value = false
     }
+}
+
 function goBack() {
     historyStore.back()
 }

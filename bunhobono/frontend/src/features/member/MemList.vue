@@ -241,6 +241,36 @@
     </div>
     </template>
   </main>
+
+  <!-- 삭제가 아닌 회원 복원 확인에는 범용 admin Dialog를 사용합니다. -->
+  <ManagementConfirm
+    :open="showRestoreConfirm"
+    icon="↺"
+    title="회원 복원"
+    :item-name="`${selectedWithdrawnMemberNos.length}명 선택`"
+    message="선택한 회원을 거주 상태로 복원하시겠습니까?"
+    caution="복원된 회원은 다시 거주 상태로 변경됩니다."
+    confirm-text="복원"
+    processing-text="복원 중"
+    :processing="restoreProcessing"
+    @cancel="cancelRestoreConfirm"
+    @confirm="confirmRestore"
+  />
+
+  <!-- 기존 admin 디자인의 전출 확정 Dialog -->
+  <ManagementDeleteConfirm
+        :open="showWithdrawConfirm"
+        title="회원 전출 확정"
+        :item-name="`${selectedWithdrawnMemberNos.length}명 선택`"
+        message="선택한 회원을 전출 확정 처리하시겠습니까?"
+        caution="전출 확정된 회원 정보는 복원할 수 없습니다."
+        confirm-text="전출 확정"
+        processing-text="처리 중"
+        :deleting="withdrawProcessing"
+        @cancel="cancelWithdrawConfirm"
+        @confirm="confirmWithdraw"
+    />
+    
 </template>
 
 <script setup>
@@ -252,10 +282,16 @@ import { usePagination } from '@/shared/pagination/usePagination';
 import Pagination from '@/shared/pagination/Pagination.vue';
 import { useMemberArchiveStore } from '../member-archive/memberArchiveStore';
 
+// 기존 admin 삭제 Dialog와 admin 테마 알림창을 사용합니다.
+import ManagementDeleteConfirm from '@/shared/components/ManagementDeleteConfirm.vue';
+import ManagementConfirm from '@/shared/components/ManagementConfirm.vue';
+import { useDialog } from '@/shared/alert/useDialog';
+
 const store = useMemStore();
 const archiveStore = useMemberArchiveStore()
 const route = useRoute();
 const router = useRouter();
+const { alertDialog } = useDialog();
 const { memberList } = storeToRefs(store);
 const { list: archiveList } = storeToRefs(archiveStore)
 const searchKeyword = ref('');
@@ -266,6 +302,15 @@ const appliedMemberFilters = ref({ name: '', role: '', dong: '', ho: '' });
 const selectedMemberNos = ref([]);
 const selectedWithdrawnMemberNos = ref([]);
 const currentTime = ref(Date.now());
+
+// 전출 확정 Dialog의 표시 및 처리 상태입니다.
+const showWithdrawConfirm = ref(false);
+const withdrawProcessing = ref(false);
+
+// 회원 복원 Dialog의 표시 및 처리 상태입니다.
+const showRestoreConfirm = ref(false);
+const restoreProcessing = ref(false);
+
 const pageSize = 10;
 let elapsedCheckTimer;
 const managementSections = [
@@ -480,39 +525,108 @@ const changeSection = async (section) => {
 
 const restoreSelectedWithdrawnMembers = async () => {
     if (selectedWithdrawnMemberNos.value.length === 0) {
-        alert('복원할 회원을 선택해 주세요.');
+        await alertDialog({
+            theme: 'admin',
+            type: 'warning',
+            title: '복원 대상 확인',
+            message: '복원할 회원을 선택해 주세요.'
+        });
         return;
     }
 
-    if (!confirm('선택한 회원을 거주 상태로 복원하시겠습니까?')) {
-        return;
-    }
-
-    const restoredCount = await store.restoreMembers(selectedWithdrawnMemberNos.value);
-    currentPage.value = 1;
-    selectedWithdrawnMemberNos.value = [];
-    alert(`${restoredCount}명의 회원이 복원되었습니다.`);
+    showRestoreConfirm.value = true;
 };
 
+// 복원 처리 중이 아닐 때만 확인창을 닫습니다.
+const cancelRestoreConfirm = () => {
+    if (!restoreProcessing.value) {
+        showRestoreConfirm.value = false;
+    }
+};
+
+// 기존 회원 복원 기능은 그대로 두고 확인 버튼에서 실행합니다.
+const confirmRestore = async () => {
+    if (restoreProcessing.value) return;
+
+    restoreProcessing.value = true;
+
+    try {
+        const restoredCount = await store.restoreMembers(
+            selectedWithdrawnMemberNos.value
+        );
+
+        currentPage.value = 1;
+        selectedWithdrawnMemberNos.value = [];
+        showRestoreConfirm.value = false;
+
+        await alertDialog({
+            theme: 'admin',
+            type: 'success',
+            title: '회원 복원 완료',
+            message: `${restoredCount}명의 회원이 복원되었습니다.`
+        });
+    } finally {
+        restoreProcessing.value = false;
+    }
+};
+
+// 전출 확정 버튼을 누르면 기존 처리 대신 먼저 Dialog를 표시합니다.
 const permanentlyDeleteSelectedWithdrawnMembers = async () => {
     if (selectedWithdrawnMemberNos.value.length === 0) {
-        alert('전출 확정할 회원을 선택해 주세요.');
+        await alertDialog({
+            theme: 'admin',
+            type: 'warning',
+            title: '전출 대상 확인',
+            message: '전출 확정할 회원을 선택해 주세요.'
+        });
         return;
     }
 
-    if (!confirm('선택한 회원을 전출 확정 처리하시겠습니까?')) {
-        return;
-    }
+    showWithdrawConfirm.value = true;
+};
 
-    const deletedCount = await store.removeWithdrawnMembers(selectedWithdrawnMemberNos.value);
-    currentPage.value = 1;
-    selectedWithdrawnMemberNos.value = [];
-    alert(`${deletedCount}명의 회원이 전출 확정 처리되었습니다.`);
+// Dialog의 취소 버튼을 누르면 아무 작업 없이 창만 닫습니다.
+const cancelWithdrawConfirm = () => {
+    if (!withdrawProcessing.value) {
+        showWithdrawConfirm.value = false;
+    }
+};
+
+// Dialog의 확인 버튼을 누르면 기존 전출 확정 로직을 그대로 실행합니다.
+const confirmWithdraw = async () => {
+    if (withdrawProcessing.value) return;
+
+    withdrawProcessing.value = true;
+
+    try {
+        // 아래 처리 내용은 기존 함수와 동일합니다.
+        const deletedCount = await store.removeWithdrawnMembers(
+            selectedWithdrawnMemberNos.value
+        );
+
+        currentPage.value = 1;
+        selectedWithdrawnMemberNos.value = [];
+        showWithdrawConfirm.value = false;
+
+        await alertDialog({
+            theme: 'admin',
+            type: 'success',
+            title: '전출 확정 완료',
+            message: `${deletedCount}명의 회원이 전출 확정 처리되었습니다.`
+        });
+    } finally {
+        withdrawProcessing.value = false;
+    }
 };
 
 const approveSelectedMembers = async () => {
     if (selectedMemberNos.value.length === 0) {
-        alert('승인할 회원을 선택해 주세요.');
+        await alertDialog({
+            theme: 'admin',
+            type: 'warning',
+            title: '승인 대상 확인',
+            message: '승인할 회원을 선택해 주세요.'
+        });
         return;
     }
     const approvedMemberNames = pendingMembers.value
@@ -522,7 +636,12 @@ const approveSelectedMembers = async () => {
     await store.approveMembers(selectedMemberNos.value);
     currentPage.value = 1;
     selectedMemberNos.value = [];
-    alert(`${approvedMemberNames.join(', ')}님이 승인되셨습니다.`);
+    await alertDialog({
+        theme: 'admin',
+        type: 'success',
+        title: '회원 승인 완료',
+        message: `${approvedMemberNames.join(', ')}님이 승인되었습니다.`
+    });
     await changeSection('approved');
 };
 

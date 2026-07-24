@@ -92,11 +92,15 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
 import { useJwtStore } from "@/features/login/jwtStore";
-
+// 브라우저 기본 alert 대신 공통 Dialog를 사용합니다.
+import { useDialog } from "@/shared/alert/useDialog";
 
 const router = useRouter();
 const store = useMemStore();
 const jwtStore = useJwtStore();
+
+// 공통 Dialog의 alert 대체 함수를 가져옵니다.
+const { alertDialog } = useDialog();
 
 const loginId = jwtStore.userId;
 const showPasswordField = ref(false);
@@ -193,7 +197,14 @@ const loadChallenge = async () => {
         challengeAnswer.value = "";
         startChallengeTimer(challenge.expiresIn);
     } catch (error) {
-        alert(error.response?.data?.detail || error.response?.data?.message || "보안문자를 불러오지 못했습니다.");
+        await alertDialog({
+            theme: "resident",
+            type: "error",
+            title: "보안문자 오류",
+            message: error.response?.data?.detail
+                || error.response?.data?.message
+                || "보안문자를 불러오지 못했습니다."
+        });
     }
 };
 
@@ -213,38 +224,80 @@ const togglePasswordChange = async () => {
 
 const update = async () => {
     if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
-        alert("연락처를 정확히 입력하세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "연락처 확인",
+            message: "연락처를 정확히 입력하세요."
+        });
         return;
     }
     member.memPhone = `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`;
 
     // 비밀번호 변경 시 회원가입과 동일한 새 비밀번호 형식인지 확인한다.
     if (showPasswordField.value && !passwordPattern.test(member.loginPwd)) {
-        alert("비밀번호는 영문+숫자+특수문자 조합으로 8~20자로 입력하세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "비밀번호 형식 확인",
+            message: "비밀번호는 영문+숫자+특수문자 조합으로 8~20자로 입력하세요."
+        });
         return;
     }
 
     if (!showPasswordField.value) {
-        await store.editResident({ memPhone: member.memPhone, loginPwd: null });
-        alert("수정되었습니다.");
+        await store.editResident({
+            memPhone: member.memPhone,
+            loginPwd: null
+        });
+
+        // 수정 성공 안내를 resident 밝은 테마 Dialog로 표시합니다.
+        // 사용자가 확인 버튼을 누른 후 마이페이지로 이동합니다.
+        await alertDialog({
+            theme: "resident",
+            type: "success",
+            title: "정보 수정 완료",
+            message: "회원 정보가 수정되었습니다."
+        });
+
         router.push("/resident/mypage");
         return;
     }
 
     if (!currentPassword.value) {
-        alert("현재 비밀번호를 입력하세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "현재 비밀번호 확인",
+            message: "현재 비밀번호를 입력하세요."
+        });
         return;
     }
     if (member.loginPwd !== newPasswordConfirm.value) {
-        alert("새 비밀번호가 일치하지 않습니다.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "비밀번호 불일치",
+            message: "새 비밀번호가 일치하지 않습니다."
+        });
         return;
     }
     if (challengeRemainingSeconds.value === 0) {
-        alert("보안문자가 만료되었습니다. 새로고침해 주세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "보안문자 만료",
+            message: "보안문자가 만료되었습니다. 새로고침해 주세요."
+        });
         return;
     }
     if (!challengeAnswer.value) {
-        alert("보안문자를 입력하세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "보안문자 확인",
+            message: "보안문자를 입력하세요."
+        });
         return;
     }
 
@@ -256,10 +309,23 @@ const update = async () => {
             challengeId: challengeId.value,
             challengeAnswer: challengeAnswer.value
         });
-        alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "success",
+            title: "비밀번호 변경 완료",
+            message: "비밀번호가 변경되었습니다. 다시 로그인해 주세요."
+        });
         jwtStore.logout();
     } catch (error) {
-        alert(error.response?.data?.detail || error.response?.data?.message || error.response?.data?.error || "비밀번호 변경에 실패했습니다.");
+        await alertDialog({
+            theme: "resident",
+            type: "error",
+            title: "비밀번호 변경 실패",
+            message: error.response?.data?.detail
+                || error.response?.data?.message
+                || error.response?.data?.error
+                || "비밀번호 변경에 실패했습니다."
+        });
         await loadChallenge();
     }
 };

@@ -6,6 +6,7 @@
             <button type="button" @click="loadDashboard">다시 불러오기</button>
         </div>
 
+
         <article v-else class="resident-board" :class="{ 'resident-carlog-page': mode === 'carlogs' }">
             <template v-if="mode === 'dashboard'">
             <header class="board-header">
@@ -20,7 +21,11 @@
                         title="차량 알림"
                         @click="openVehicleNotifications"
                       >
-                        <span class="notification-envelope">✉</span>
+                        <img 
+                            src="@/assets/images/mail.png"
+                            alt="알림"
+                            class="notification-envelope"
+                        />
 
                         <span
                           v-if="resVehicleStore.unreadNotificationCount > 0"
@@ -505,9 +510,29 @@ onUnmounted(() => {
 @media (max-width:900px){.resident-board.resident-carlog-page{width:calc(100% - 36px)}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
 @media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{width:calc(100% - 12px);margin:6px auto;padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
 .welcome-title-row { display: flex; align-items: center; gap: 10px; }
-.notification-button { position: relative; display: grid; width: 38px; height: 38px; place-items: center; padding: 0; border: 1px solid #c9dcef; border-radius: 9px; color: #315c86; background: #f5faff; cursor: pointer; }
-.notification-button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
-.notification-envelope { font-size: 22px; line-height: 1; }
+.notification-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    padding: 0;
+    border: 1px solid #c9dcef;
+    border-radius: 9px;
+    background: #f5faff;
+    cursor: pointer;
+}.notification-button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
+.notification-envelope {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+
+    display: block;
+    margin: auto;
+}
 .notification-badge { position: absolute; top: -7px; right: -7px; display: grid; min-width: 20px; height: 20px; place-items: center; padding: 0 5px; border: 2px solid #fff; border-radius: 10px; color: #fff; background: #e5484d; font-size: 11px; font-weight: 800; }
 
 /* 대시보드의 각 영역을 하나의 큰 카드 안에서 구분한다. */

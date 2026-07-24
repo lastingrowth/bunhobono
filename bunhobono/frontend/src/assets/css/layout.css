@@ -25,6 +25,8 @@ textarea {
 
 /* 메인 레이아웃 */
 .layout {
+  position: relative;
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;

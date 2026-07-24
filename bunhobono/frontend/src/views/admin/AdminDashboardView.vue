@@ -314,10 +314,6 @@
                                     </form>
                                 </dd>
                             </div>
-                            <div v-if="selectedCameraData.ocrCarNo && selectedCameraData.ocrCarNo !== selectedCameraData.carNo">
-                                <dt>원본 OCR 번호</dt>
-                                <dd>{{ selectedCameraData.ocrCarNo }}</dd>
-                            </div>
                             <div>
                                 <dt>등록 상태</dt>
                                 <dd>{{ selectedCameraData.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</dd>

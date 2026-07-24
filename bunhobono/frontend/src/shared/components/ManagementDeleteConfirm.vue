@@ -9,7 +9,15 @@
           <small>{{ caution }}</small>
           <div class="delete-modal-actions">
             <button type="button" class="cancel" :disabled="deleting" @click="$emit('cancel')">취소</button>
-            <button type="button" class="confirm" :disabled="deleting" @click="$emit('confirm')">{{ deleting ? '삭제 중' : '삭제' }}</button>
+            <!-- 화면 용도에 따라 확인 버튼 문구만 변경할 수 있습니다. -->
+            <button
+              type="button"
+              class="confirm"
+              :disabled="deleting"
+              @click="$emit('confirm')"
+            >
+              {{ deleting ? processingText : confirmText }}
+            </button>
           </div>
         </section>
       </div>
@@ -25,6 +33,10 @@ defineProps({
   message: { type: String, default: "삭제하시겠습니까?" },
   caution: { type: String, default: "삭제된 항목은 복원할 수 없습니다." },
   deleting: { type: Boolean, default: false },
+
+  // 지정하지 않은 기존 화면은 계속 '삭제', '삭제 중'으로 표시됩니다.
+  confirmText: { type: String, default: "삭제" },
+  processingText: { type: String, default: "삭제 중" },
 });
 defineEmits(["cancel", "confirm"]);
 </script>
