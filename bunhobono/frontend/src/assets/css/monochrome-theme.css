@@ -660,7 +660,14 @@ textarea:focus {
 }
 
 .admin-layout .carlog-table-wrap {
-  overflow-x: auto;
+  overflow-x: hidden;
+}
+
+/* 입출차 기록은 값 길이와 관계없이 입·출차 시간 열을 같은 위치에 고정한다. */
+.admin-layout .content .carlog-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
 }
 
 /* 밝게 남아 있던 보조 카드와 다이얼로그를 관리자 모노톤에 맞춘다. */
@@ -713,14 +720,14 @@ textarea:focus {
   background: #30363b !important;
 }
 
-.admin-layout .statistics-page :is(.current-parking-donut, .parking-circle) {
+.admin-layout .statistics-page .current-parking-donut {
   box-shadow:
-    0 0 8px rgba(57, 255, 136, 0.7),
-    0 0 20px rgba(32, 232, 123, 0.34) !important;
+    0 0 5px rgba(57, 255, 136, 0.28),
+    0 0 11px rgba(57, 255, 136, 0.12) !important;
 }
 
-.admin-layout .statistics-page :is(.current-parking-donut-inner, .parking-circle-inner) {
-  box-shadow: inset 0 0 12px rgba(57, 255, 136, 0.16) !important;
+.admin-layout .statistics-page .current-parking-donut-inner {
+  box-shadow: none !important;
 }
 
 /* 주차장별 작은 도넛에는 아주 약한 초록빛 외곽광만 적용한다. */
@@ -785,7 +792,7 @@ textarea:focus {
 }
 
 .admin-layout .statistics-page .parking-type-row:nth-child(3) strong {
-  color: #efff5a !important;
+  color: #ff5d63 !important;
 }
 
 .admin-layout .statistics-page .legend-color.resident {
@@ -801,7 +808,7 @@ textarea:focus {
 }
 
 .admin-layout .statistics-page .legend-color.unknown {
-  background: #efff5a !important;
+  background: #ff5d63 !important;
 }
 
 .admin-layout .statistics-page :is(.hourly-polyline, .hourly-point) {
@@ -882,11 +889,11 @@ textarea:focus {
 }
 
 .admin-layout .statistics-page .average-time-row.unknown :is(strong, span) {
-  color: #efff5a !important;
+  color: #ff5d63 !important;
 }
 
 .admin-layout .statistics-page .average-time-row.unknown .average-time-bar {
-  background: #efff5a !important;
+  background: #ff5d63 !important;
 }
 
 .admin-layout .statistics-page .period-buttons button.active {
@@ -1095,6 +1102,7 @@ textarea:focus {
   .camera-data-search input,
   .member-search input,
   .trash-search input,
+  .parking-page .inline-edit-input,
   input[type="search"]
 ) {
   border-color: #69737b !important;
@@ -1111,6 +1119,7 @@ textarea:focus {
   .camera-data-search input,
   .member-search input,
   .trash-search input,
+  .parking-page .inline-edit-input,
   input[type="search"]
 )::placeholder {
   color: #c2c8cd !important;
@@ -1124,6 +1133,7 @@ textarea:focus {
   .camera-data-search input,
   .member-search input,
   .trash-search input,
+  .parking-page .inline-edit-input,
   input[type="search"]
 ):focus {
   border-color: #9aa3aa !important;

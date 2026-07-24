@@ -180,6 +180,20 @@ textarea {
   flex: 1;
 }
 
+/*
+ * 관리자 화면은 헤더를 문서 흐름 안에 유지해 사이드바와 본문이
+ * 헤더 바로 아래에서 시작하도록 한다. 고정 헤더용 빈 여백이 회색 띠로
+ * 드러나는 현상을 방지하면서 스크롤 중에는 상단에 고정된다.
+ */
+.admin-layout .header {
+  position: sticky;
+  flex-shrink: 0;
+}
+
+.admin-layout .container {
+  padding-top: 0;
+}
+
 /* 사이드바 */
 .sidebar {
   width: var(--sidebar-width);

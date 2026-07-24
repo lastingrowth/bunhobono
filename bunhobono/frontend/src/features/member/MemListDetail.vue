@@ -24,8 +24,11 @@
             <tr><th>호수</th><td>{{ store.member.memHo }}</td></tr>
             <tr><th>연락처</th><td>{{ store.member.memPhone }}</td></tr>
             <tr><th>아이디</th><td>{{ store.member.loginId }}</td></tr>
-            <tr><th>가입일</th><td>{{ store.member.memCreateAt }}</td></tr>
-            <tr><th>탈퇴일</th><td>{{ store.member.memDeleteAt }}</td></tr>
+            <tr><th>가입일</th><td>{{ store.formatMemberDateTime(store.member.memCreateAt) }}</td></tr>
+            <tr v-if="store.member.memDeleteAt">
+                <th>{{ memberEndDateLabel }}</th>
+                <td>{{ store.formatMemberDateTime(store.member.memDeleteAt) }}</td>
+            </tr>
             <tr><th>상태</th><td>{{ formatMemberStatus(store.member.memStatus, store.member.role) }}</td></tr>
         </tbody>
     </table>
@@ -48,7 +51,21 @@ const canEditMember = computed(() =>
     && !store.member.memDeleteAt
 );
 
-const isWithdrawnMember = computed(() => Boolean(store.member.memDeleteAt));
+const isWithdrawnMember = computed(() =>
+    store.member.memStatus === 'WITHDRAW_PENDING'
+);
+
+const memberEndDateLabel = computed(() => {
+    if (store.member.memStatus === 'WITHDRAW_PENDING') {
+        return '전출 신청일'
+    }
+
+    if (store.member.role === 'ADMIN') {
+        return '퇴사일'
+    }
+
+    return '탈퇴일'
+});
 
 const formatMemberStatus = (status, role) => {
     if (status === 'ACTIVE') {

@@ -338,10 +338,18 @@ onMounted(() => {
 }
 
 .table-wrap .inline-edit-input {
+  display: block;
+  width: 100%;
+  min-width: 100%;
   height: 22px;
   min-height: 0;
   padding: 2px 6px;
   font-size: 12px;
+  box-sizing: border-box;
+}
+
+.table-wrap td:has(.inline-edit-input) {
+  padding: 0 !important;
 }
 
 @media (max-width: 1000px) {

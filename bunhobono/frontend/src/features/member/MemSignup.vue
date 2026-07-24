@@ -294,7 +294,41 @@ const signupGo = async () => {
 }
 
 .admin-signup-card {
+    max-width: 900px;
+    padding: 28px;
     margin: 20px auto 40px;
+}
+
+.admin-signup-card .signup-header {
+    margin-bottom: 18px;
+}
+
+.admin-signup-card .signup-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 18px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.admin-signup-card .signup-form > .form-row {
+    display: contents;
+}
+
+.admin-signup-card .form-field {
+    min-width: 0;
+    gap: 6px;
+}
+
+.admin-signup-card .form-field input,
+.admin-signup-card .form-field select,
+.admin-signup-card .phone-fields input {
+    height: 42px;
+}
+
+.admin-signup-card .login-submit {
+    grid-column: 1 / -1;
+    height: 44px;
 }
 
 :global(.admin-layout .signup-card.admin-signup-card) {
@@ -423,6 +457,10 @@ const signupGo = async () => {
 @media (max-width: 700px) {
     .signup-card {
         padding: 28px 24px;
+    }
+
+    .admin-signup-card .signup-form {
+        grid-template-columns: 1fr;
     }
 
     .form-row {

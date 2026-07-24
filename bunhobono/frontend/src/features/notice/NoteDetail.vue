@@ -1,15 +1,9 @@
 <template>
   <main class="notice-detail-page">
-    <Transition name="notice-toast">
-      <div
-        v-if="noticeStore.feedbackMessage"
-        class="notice-feedback-toast"
-        :class="noticeStore.feedbackType"
-        role="status"
-      >
-        {{ noticeStore.feedbackMessage }}
-      </div>
-    </Transition>
+    <ManagementFeedbackToast
+      :message="feedbackMessage || noticeStore.feedbackMessage"
+      :type="feedbackMessage ? feedbackType : noticeStore.feedbackType"
+    />
     <section class="notice-detail-dialog">
     <div class="detail-header">
       <h1>알림 상세</h1>
@@ -50,10 +44,6 @@
     </p>
 
     <template v-else-if="notice">
-      <p v-if="feedbackMessage" class="notice-feedback-message">
-        {{ feedbackMessage }}
-      </p>
-
       <table class="detail-table" border="1">
         <tbody>
           <tr v-for="row in detailRows" :key="row.label">
@@ -89,10 +79,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { getNoteList } from "@/features/notice/noticeApi";
+import ManagementFeedbackToast from "@/shared/components/ManagementFeedbackToast.vue";
 import { useNoticeStore } from "./noticeStore";
 import NoticeDeleteConfirm from "./NoticeDeleteConfirm.vue";
 
@@ -106,8 +97,19 @@ const loading = ref(false);
 const saving = ref(false);
 const errorMessage = ref("");
 const feedbackMessage = ref("");
+const feedbackType = ref("success");
 const deleteConfirmOpen = ref(false);
 const deleting = ref(false);
+let feedbackTimer;
+
+const showFeedback = (message, type = "success") => {
+  feedbackMessage.value = message;
+  feedbackType.value = type;
+  window.clearTimeout(feedbackTimer);
+  feedbackTimer = window.setTimeout(() => {
+    feedbackMessage.value = "";
+  }, 2500);
+};
 
 const currentCarNo = computed(() => {
   return notice.value?.registeredCarNo
@@ -297,7 +299,7 @@ const completeNotice = async () => {
   }
 
   if (!notice.value.outTime) {
-    feedbackMessage.value = "해당 차량이 여전히 주차 중이어서 처리 완료할 수 없습니다.";
+    showFeedback("해당 차량은 출차 후 처리 완료할 수 있습니다.", "error");
     return;
   }
 
@@ -307,10 +309,10 @@ const completeNotice = async () => {
 
   try {
     await noticeStore.changeNoticeStatus(notice.value.noticeNo, "Resolved");
-    feedbackMessage.value = "처리 완료되었습니다.";
+    showFeedback("처리 완료되었습니다.");
   } catch (error) {
     console.error(error);
-    errorMessage.value = "처리 완료 변경에 실패했습니다.";
+    showFeedback("처리 완료 변경에 실패했습니다.", "error");
   } finally {
     saving.value = false;
   }
@@ -356,38 +358,16 @@ onMounted(async () => {
   await loadDetail();
 });
 
+onUnmounted(() => {
+  window.clearTimeout(feedbackTimer);
+});
+
 watch(noticeNo, async () => {
   await loadDetail();
 });
 </script>
 
 <style scoped>
-.notice-feedback-toast {
-  position: fixed;
-  z-index: 1200;
-  top: 24px;
-  right: 24px;
-  padding: 11px 16px;
-  border: 1px solid #9fcfb0;
-  border-radius: 8px;
-  color: #1f6840;
-  background: #ecf8f0;
-  box-shadow: 0 8px 24px rgba(23, 45, 34, 0.18);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.notice-feedback-toast.error {
-  border-color: #e3adad;
-  color: #9f2f2f;
-  background: #fff0f0;
-}
-
-.notice-toast-enter-active,
-.notice-toast-leave-active { transition: opacity .18s ease, transform .18s ease; }
-.notice-toast-enter-from,
-.notice-toast-leave-to { opacity: 0; transform: translateY(-8px); }
-
 .notice-detail-page {
   width: 100%;
   max-width: none;
@@ -445,15 +425,6 @@ watch(noticeNo, async () => {
   margin: 0;
   padding: 32px 24px;
   text-align: center;
-}
-
-.notice-detail-dialog > .notice-feedback-message {
-  padding: 10px 18px;
-  color: #315c45;
-  font-size: 13px;
-  font-weight: 800;
-  background: #eaf6ef;
-  border-bottom: 1px solid #cde6d7;
 }
 
 @media (max-width: 760px) {

@@ -30,7 +30,7 @@
         <th>차량번호</th>
         <th>상태</th>
         <th>차량구분</th>
-        <th>입차시간</th>
+        <th class="in-time-column">입차시간</th>
         <th class="out-time-column">출차시간</th>
         <th>주차시간</th>
         <th>입차게이트</th>
@@ -46,7 +46,10 @@
         <td :class="{ 'short-text': isShortText(log.carNo || '미인식') }">{{ log.carNo || '미인식' }}</td>
         <td :class="{ 'short-text': isShortText(log.parkingStateText) }">{{ log.parkingStateText }}</td>
         <td :class="{ 'short-text': isShortText(log.carKindText) }">{{ log.carKindText }}</td>
-        <td :class="{ 'short-text': isShortText(log.inTimeText) }">{{ log.inTimeText }}</td>
+        <td
+          class="in-time-column"
+          :class="{ 'short-text': isShortText(log.inTimeText) }"
+        >{{ log.inTimeText }}</td>
         <td
           class="out-time-column"
           :class="{ 'short-text': isShortText(log.outTimeText) }"
@@ -162,13 +165,13 @@ const {
 .carlog-table-wrap {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .carlog-table {
   width: 100%;
-  min-width: 1080px;
-  table-layout: fixed;
+  min-width: 0;
+  table-layout: fixed !important;
 }
 
 .carlog-table .number-col { width: 5%; }
@@ -206,7 +209,9 @@ const {
   white-space: nowrap;
 }
 
+.in-time-column,
 .out-time-column {
+  width: 14% !important;
   font-size: 12px;
 }
 
@@ -242,10 +247,6 @@ const {
 }
 
 @media (max-width: 1000px) {
-  .carlog-table {
-    min-width: 1080px;
-  }
-
   .carlog-table th,
   .carlog-table td {
     padding: 4px 7px !important;
@@ -261,10 +262,6 @@ const {
 }
 
 @media (max-width: 700px) {
-  .carlog-table {
-    min-width: 1080px;
-  }
-
   .carlog-table th,
   .carlog-table td {
     padding: 4px 7px !important;

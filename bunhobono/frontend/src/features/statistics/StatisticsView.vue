@@ -363,7 +363,7 @@ const currentParkingDonutStyle = computed(() => {
         background: `conic-gradient(
             #39ff88 0% ${residentEnd}%,
             #55c7ff ${residentEnd}% ${visitEnd}%,
-            #efff5a ${visitEnd}% 100%
+            #ff5d63 ${visitEnd}% 100%
         )`,
     }
 })
@@ -618,7 +618,7 @@ onUnmounted(() => {
 }
 
 .legend-color.unknown {
-    background: #ff8a00;
+    background: #ff5d63;
 }
 
 .hourly-chart-wrap {
@@ -962,11 +962,11 @@ onUnmounted(() => {
 }
 
 .average-time-row.unknown .average-time-bar {
-    background: linear-gradient(90deg, #ffb000, #ff7a00);
+    background: linear-gradient(90deg, #ff7479, #ff5d63);
 }
 
 .average-time-row.unknown strong {
-    color: #ff7a00;
+    color: #ff5d63;
 }
 
 @media (max-width: 900px) {

@@ -25,6 +25,32 @@ export const useMemStore =  defineStore("member", () => {
   const member = ref({});
   const availableSignupUnits = ref([]);
 
+  // 서버의 날짜 문자열 또는 LocalDateTime 배열을 회원 관리 공통 형식으로 변환
+  const formatMemberDateTime = (value) => {
+    if (!value) {
+      return "-";
+    }
+
+    const date = Array.isArray(value)
+      ? new Date(
+          value[0],
+          Number(value[1] || 1) - 1,
+          value[2] || 1,
+          value[3] || 0,
+          value[4] || 0,
+          value[5] || 0
+        )
+      : new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "-";
+    }
+
+    const pad = (number) => String(number).padStart(2, "0");
+
+    return `${String(date.getFullYear()).slice(2)}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  };
+
   // 전체 조회
   const loadmemberList = async () => {
     const res = await getMemberList();
@@ -122,6 +148,7 @@ export const useMemStore =  defineStore("member", () => {
     memberList,
     member,
     availableSignupUnits,
+    formatMemberDateTime,
 
     loadmemberList,
     restoreMembers,

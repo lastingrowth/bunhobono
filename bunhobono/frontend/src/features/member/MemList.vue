@@ -105,7 +105,7 @@
                         <td>{{ mem.memHo }}</td>
                         <td>{{ mem.loginId }}</td>
                         <td>{{ formatMemberStatus(mem.memStatus, mem.role) }}</td>
-                        <td>{{ mem.memDeleteAt }}</td>
+                        <td>{{ store.formatMemberDateTime(mem.memDeleteAt) }}</td>
                         <td>{{ getElapsedDays(mem.memDeleteAt) }}일</td>
                     </tr>
 
@@ -157,8 +157,8 @@
                             <td>{{ member.memHo || '-' }}</td>
                             <td>{{ member.memPhone || '-' }}</td>
                             <td>{{ member.role || '-' }}</td>
-                            <td>{{ member.deleteAt || '-' }}</td>
-                            <td>{{ member.archivedAt || '-' }}</td>
+                            <td>{{ store.formatMemberDateTime(member.deleteAt) }}</td>
+                            <td>{{ store.formatMemberDateTime(member.archivedAt) }}</td>
                         </tr>
 
                         <tr v-if="archiveList.length === 0">
@@ -226,7 +226,7 @@
                 <td>{{ mem.role }}</td>
                 <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
                 <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.memPhone }}</td>
-                <td>{{ mem.loginId }}</td><td>{{ formatMemberDateTime(mem.memCreateAt) }}</td>
+                <td>{{ mem.loginId }}</td><td>{{ store.formatMemberDateTime(mem.memCreateAt) }}</td>
                 <td>{{ formatMemberStatus(mem.memStatus, mem.role) }}</td>
             </tr>
         </tbody>
@@ -295,27 +295,6 @@ const toDateTime = (value) => {
     }
 
     return new Date(value).getTime();
-};
-
-const formatMemberDateTime = (value) => {
-    if (!value) return '-';
-
-    const date = Array.isArray(value)
-        ? new Date(
-            value[0],
-            Number(value[1] || 1) - 1,
-            value[2] || 1,
-            value[3] || 0,
-            value[4] || 0,
-            value[5] || 0
-        )
-        : new Date(value);
-
-    if (Number.isNaN(date.getTime())) return '-';
-
-    const pad = (number) => String(number).padStart(2, '0');
-
-    return `${String(date.getFullYear()).slice(2)}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
 // 서버 상태값은 영어로 받고, 화면에는 사용자가 이해하기 쉬운 한글로 표시한다.
