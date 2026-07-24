@@ -564,11 +564,12 @@ SELECT cam_note, camera_data_no FROM inserted;
 
 INSERT INTO car_log
     (vehicle_car_no, camera_data_no, out_camera_data_no,
-     in_gate_no, in_time, out_gate_no, out_time,
-     snapshot_car_no, snapshot_car_kind)
+     in_gate_no, in_time, out_gate_no, out_time, snapshot_car_no, snapshot_car_kind)
+
 SELECT vc.vehicle_car_no, cin.camera_data_no, cout.camera_data_no,
        e.in_gate_no, e.in_time, e.out_gate_no, e.out_time,
        e.car_no, e.car_kind
+
 FROM demo_event e
 LEFT JOIN vehicle_car vc ON vc.car_no = e.car_no
 JOIN demo_capture_link cin ON cin.capture_key = e.event_key || '-IN'
@@ -775,3 +776,27 @@ SELECT setval(pg_get_serial_sequence('notice','notice_no'), MAX(notice_no), TRUE
 SELECT setval(pg_get_serial_sequence('trash_bin','trash_no'), MAX(trash_no), TRUE) FROM trash_bin;
 
 COMMIT;
+
+
+-- 카메라 데이터 생성 여부
+SELECT COUNT(*) FROM camera_data;
+
+-- 입출차 로그 생성 여부
+SELECT COUNT(*) FROM car_log;
+
+-- 차량 종류별 로그
+SELECT snapshot_car_kind, COUNT(*)
+FROM car_log
+GROUP BY snapshot_car_kind
+ORDER BY snapshot_car_kind;
+
+-- 최근 로그 확인
+SELECT
+    car_log_no,
+    snapshot_car_no,
+    snapshot_car_kind,
+    in_time,
+    out_time
+FROM car_log
+ORDER BY car_log_no DESC
+LIMIT 20;
