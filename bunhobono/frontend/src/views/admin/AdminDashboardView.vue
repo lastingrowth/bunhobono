@@ -255,6 +255,7 @@
                                 <img
                                     v-if="selectedCameraData.cameraDataNo && !hasCaptureImageError(selectedCameraData.cameraDataNo)"
                                     class="selected-capture-image"
+                                    :class="{ 'standard-camera-image': [1, 2, 3, 4].includes(Number(selectedCameraData.cameraNo)) }"
                                     :src="getCameraImageUrl(selectedCameraData.cameraDataNo)"
                                     title="클릭해서 크게 보기"
                                     @click="openImagePreview(selectedCameraData.cameraDataNo, selectedCameraData.carNo)"
@@ -371,6 +372,7 @@
                                 <img
                                     v-if="selectedCarlog.cameraDataNo && !hasCaptureImageError(selectedCarlog.cameraDataNo)"
                                     class="selected-capture-image"
+                                    :class="{ 'standard-camera-image': [1, 2, 3, 4].includes(Number(selectedCarlog.inGateNo)) }"
                                     :src="getCameraImageUrl(selectedCarlog.cameraDataNo)"
                                     title="클릭해서 크게 보기"
                                     @click="openImagePreview(selectedCarlog.cameraDataNo, selectedCarlog.carNo)"

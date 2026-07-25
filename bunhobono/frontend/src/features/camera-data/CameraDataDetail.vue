@@ -13,6 +13,7 @@
           v-if="imageUrl"
           :src="imageUrl"
           class="capture-image"
+          :class="{ 'standard-camera-image': [1, 2, 3, 4].includes(Number(dStore.detail.cameraNo)) }"
           alt="차량 촬영 이미지"
         />
 
@@ -295,7 +296,7 @@ onBeforeUnmount(() => {
 .camera-detail-content {
   height: 420px;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(380px, 1fr);
+  grid-template-columns: minmax(0, 0.72fr) minmax(380px, 1.28fr);
   align-items: stretch;
   border-top: 1px solid var(--border-color);
 }
@@ -544,15 +545,17 @@ onBeforeUnmount(() => {
   background: #20252a;
 }
 
-.capture-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  object-fit: cover;
-  object-position: center bottom;
-  transform: scale(1.24);
-  transform-origin: center bottom;
+.capture-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.capture-image.standard-camera-image {
+  transform: scale(1.03);
+  transform-origin: center;
 }
 
 .image-error {

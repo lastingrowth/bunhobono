@@ -702,7 +702,15 @@ class TestStreamWorker:
             f"camera{self.camera_no}_{self.camera_name}_"
             f"{car_no}_frame{frame_no}_{int(time.time())}.jpg"
         )
-        success, encoded = cv2.imencode(".jpg", frame)
+
+        frame_to_save = frame
+        if self.camera_no in TOP_PADDED_CAMERA_NOS:
+            frame_height = frame.shape[0]
+            crop_top = int(frame_height * DISPLAY_TOP_CROP_RATIO)
+            if 0 < crop_top < frame_height:
+                frame_to_save = frame[crop_top:, :]
+
+        success, encoded = cv2.imencode(".jpg", frame_to_save)
         if not success:
             raise ValueError("원본 프레임 저장 실패")
         encoded.tofile(str(path))
