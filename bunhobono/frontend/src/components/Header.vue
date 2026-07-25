@@ -58,7 +58,14 @@
         <div class="user-info">
             <span class="user-role">{{ roleLabel }}</span>
             <span class="divider">|</span>
-            <span class="user-name">{{ jwtStore.userId }}</span>
+            <RouterLink
+                v-if="jwtStore.role === 'RESIDENT'"
+                class="user-name user-name-link"
+                to="/resident/mypage"
+            >
+                {{ jwtStore.userId }}
+            </RouterLink>
+            <span v-else class="user-name">{{ jwtStore.userId }}</span>
 
             <button class="logout-btn" @click="logout">로그아웃</button>
         </div>
@@ -139,6 +146,18 @@ const emit = defineEmits([
 .logo a:hover {
   color: var(--primary);
   text-decoration: none;
+}
+
+.user-name-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.user-name-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .resident-header-actions {
