@@ -129,6 +129,7 @@ class TestStreamWorker:
         self.ocr_event_id = 0
         self.last_ocr_car_no = None
         self.pending_camera_data_no = None
+        self.demo_reset_paused = False
 
     def pause(self):
         self.pause_event.set()
@@ -136,6 +137,7 @@ class TestStreamWorker:
         print(f"[{self.camera_name}] 영상 일시정지")
 
     def resume(self):
+        self.demo_reset_paused = False
         self.pause_event.clear()
         self.auto_paused = False
         self.pause_reason = None
@@ -164,6 +166,46 @@ class TestStreamWorker:
         self.pending_camera_data_no = None
         return self.start()
 
+    # 시연 초기화
+    def reset_demo(self):
+        self.stop()
+
+        previous_thread = self.thread
+
+        if previous_thread is not None and previous_thread.is_alive():
+            previous_thread.join(timeout=12)
+
+        if previous_thread is not None and previous_thread.is_alive():
+            raise RuntimeError(
+                f"{self.camera_name} 영상 작업을 종료하지 못했습니다."
+            )
+
+        self.video_finished = False
+        self.vehicle_active = False
+        self.no_detection_count = 0
+        self.candidates = []
+        self.last_send_time = {}
+
+        self.auto_paused = False
+        self.pause_reason = None
+        self.ocr_event_id = 0
+        self.last_ocr_car_no = None
+        self.pending_camera_data_no = None
+
+        self.latest_detection_box = None
+        self.latest_detection_until = 0.0
+        self.latest_frame = None
+
+        # 새 영상 작업은 첫 프레임을 준비한 뒤 일시정지 상태로 대기한다.
+        self.demo_reset_paused = True
+        self.pause_event.set()
+        self.thread = None
+
+        thread = self.start()
+        self.pause_event.set()
+        self.pause_reason = "DEMO_RESET"
+        return thread
+
     def stop(self):
         self.running = False
         self.pause_event.clear()
@@ -190,7 +232,10 @@ class TestStreamWorker:
         with self.viewer_lock:
             self.viewer_count += 1
             should_restart = self.video_finished
-            if self.viewer_count == 1:
+            if (
+                self.viewer_count == 1
+                and not self.demo_reset_paused
+            ):
                 self.pause_event.clear()
                 self.auto_paused = False
                 self.pause_reason = None

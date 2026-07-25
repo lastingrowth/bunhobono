@@ -418,19 +418,6 @@ public interface VehicleMapper {
     int update(VehicleDTO dto);
 
 
-    // WAITING 방문 신청 승인
-    @Update("""
-        UPDATE vehicle_car
-
-        SET vehicle_status = 'APPROVED',
-            approved_at = CURRENT_TIMESTAMP
-
-        WHERE vehicle_car_no = #{vehicleCarNo}
-          AND vehicle_status = 'WAITING'
-    """)
-    int updateStatus(VehicleDTO dto);
-
-
     // 차량 삭제
     @Delete("""
         DELETE FROM vehicle_car

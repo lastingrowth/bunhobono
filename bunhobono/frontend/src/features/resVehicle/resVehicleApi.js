@@ -24,3 +24,7 @@ export const getResVehicleNotifications = () => {
 export const markResVehicleNotificationsRead = () => {
     return api.patch("/vehicle-nt/resident/read");
 };
+
+export const deleteResVehicleNotification = (vehicleNtNo) => {
+    return api.delete(`/vehicle-nt/resident/${vehicleNtNo}`);
+};

@@ -60,9 +60,73 @@ public interface VehicleNtMapper {
     int markAllRead(@Param("loginId") String loginId);
 
 
+    // WAITING 방문차량 승인과 승인 알림 저장을 한 번에 처리한다.
+    @Insert("""
+    WITH sender AS (
+        SELECT member_no
+        FROM member
+        WHERE login_id = #{adminLoginId}
+    ),
+
+    approved AS (
+        UPDATE vehicle_car vc
+        SET vehicle_status = 'APPROVED',
+            approved_at = CURRENT_TIMESTAMP
+        FROM sender
+        WHERE vc.vehicle_car_no = #{vehicleCarNo}
+          AND vc.vehicle_type = 'visit'
+          AND vc.vehicle_status = 'WAITING'
+          AND vc.member_no IS NOT NULL
+
+        RETURNING
+            vc.vehicle_car_no,
+            vc.member_no,
+            vc.car_no,
+            sender.member_no AS sender_member_no
+    )
+
+    INSERT INTO vehicle_nt (
+        recipient_member_no,
+        sender_member_no,
+        vehicle_car_no,
+        snapshot_car_no,
+        notification_type,
+        message
+    )
+    SELECT
+        approved.member_no,
+        approved.sender_member_no,
+        approved.vehicle_car_no,
+        approved.car_no,
+        'ADMIN_APPROVED',
+        '방문차량 신청이 승인되었습니다.'
+    FROM approved
+    """)
+    int approveRequest(
+            @Param("vehicleCarNo") int vehicleCarNo,
+            @Param("adminLoginId") String adminLoginId
+    );
+
+
+    // 로그인한 입주민 본인의 일반 알림만 직접 삭제한다.
+    // 초과 후 출차 알림은 직접 삭제할 수 없다.
+    @Delete("""
+    DELETE FROM vehicle_nt nt
+    USING member recipient
+    WHERE nt.recipient_member_no = recipient.member_no
+      AND recipient.login_id = #{loginId}
+      AND nt.vehicle_nt_no = #{vehicleNtNo}
+      AND nt.notification_type <> 'VISIT_OVERDUE_EXIT'
+    """)
+    int deleteNotification(
+            @Param("loginId") String loginId,
+            @Param("vehicleNtNo") int vehicleNtNo
+    );
+
+
     // 관리자가 직접 방문차량 신청 반려
-// 신청을 삭제하면서 차량번호와 신청 회원을 확보한 뒤 알림을 저장한다.
-// 삭제되는 차량의 외래키 대신 snapshot_car_no를 알림에 보관한다.
+    // 신청을 삭제하면서 차량번호와 신청 회원을 확보한 뒤 알림을 저장한다.
+    // 삭제되는 차량의 외래키 대신 snapshot_car_no를 알림에 보관한다.
     @Insert("""
     WITH sender AS (
         SELECT member_no
@@ -96,10 +160,7 @@ public interface VehicleNtMapper {
         rejected.sender_member_no,
         rejected.car_no,
         'ADMIN_REJECTED',
-        CONCAT(
-            '방문차량 신청이 반려되었습니다. 사유: ',
-            #{rejectReason}
-        )
+        #{rejectReason}
     FROM rejected
     """)
     int rejectRequest(
@@ -351,8 +412,9 @@ public interface VehicleNtMapper {
     // 초과 후 출차 알림은 자동 삭제하지 않는다.
     @Delete("""
     DELETE FROM vehicle_nt
-    WHERE notification_type = 'VISIT_OVERDUE_EXIT'
-      AND created_at < CURRENT_TIMESTAMP - INTERVAL '3 months'
+    WHERE read_at IS NOT NULL
+      AND read_at < CURRENT_TIMESTAMP - INTERVAL '7 days'
+      AND notification_type <> 'VISIT_OVERDUE_EXIT'
     """)
     int deleteOldCompletedNotifications();
 }

@@ -4,6 +4,7 @@ import { adminRoutes } from './admin'
 import { residentRoutes } from './resident'
 import { useJwtStore } from '@/features/login/jwtStore'
 import { ocrRoutes } from './ocr'
+import { useHistoryStore } from '@/stores/historyStore'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -52,5 +53,15 @@ router.beforeEach((to, from, next) => {
   }
 
   next()
+})
+
+router.afterEach((to) => {
+  if(!to.path.startsWith('/admin')) {
+    return
+  }
+
+  const historyStore = useHistoryStore()
+
+  historyStore.push(to.fullPath)
 })
 export default router

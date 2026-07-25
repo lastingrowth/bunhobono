@@ -5,7 +5,8 @@ import {
     getResVehicleList,
     getResVehicleMemberInfo,
     getResVehicleNotifications,
-    markResVehicleNotificationsRead
+    markResVehicleNotificationsRead,
+    deleteResVehicleNotification
 } from "./resVehicleApi";
 import { toVehicleView } from "../vehicle/vehicleFormat";
 
@@ -95,6 +96,14 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         await loadVehicleList();
     };
 
+    const removeNotification = async (vehicleNtNo) => {
+    await deleteResVehicleNotification(vehicleNtNo);
+
+    notifications.value = notifications.value.filter((item) => {
+        return Number(item.vehicleNtNo) !== Number(vehicleNtNo);
+    });
+};
+
     return {
         member,
         vehicleList,
@@ -104,6 +113,7 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         visitVehicles,
         hasActiveVisitVehicle,
         unreadNotificationCount,
+        removeNotification,
         loadMyInfo,
         loadVehicleList,
         loadNotifications,

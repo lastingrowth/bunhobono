@@ -75,12 +75,15 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
 import { useJwtStore } from "@/features/login/jwtStore";
+import { useDialog } from "@/shared/alert/useDialog";
 
 
 
 const router = useRouter();
 const store = useMemStore();
 const jwtStore = useJwtStore();
+// 입주민 화면의 기본 alert/confirm을 공통 Dialog로 대체합니다.
+const { alertDialog, confirmDialog } = useDialog();
 
 // 로그인한 사용자 아이디
 const showDeleteConfirm = ref(false);
@@ -142,7 +145,14 @@ const loadChallenge = async () => {
         challengeAnswer.value = "";
         startChallengeTimer(challenge.expiresIn);
     } catch (error) {
-        alert(error.response?.data?.detail || error.response?.data?.message || "보안문자를 불러오지 못했습니다.");
+        await alertDialog({
+            theme: "resident",
+            type: "error",
+            title: "보안문자 오류",
+            message: error.response?.data?.detail
+                || error.response?.data?.message
+                || "보안문자를 불러오지 못했습니다."
+        });
     }
 };
 
@@ -162,15 +172,30 @@ const closeDeleteConfirm = () => {
 
 const goDelete = async () => {
     if (!currentPassword.value) {
-        alert("현재 비밀번호를 입력해주세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "비밀번호 확인",
+            message: "현재 비밀번호를 입력해 주세요."
+        });
         return;
     }
     if (challengeRemainingSeconds.value === 0) {
-        alert("보안문자가 만료되었습니다. 새로고침해 주세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "보안문자 만료",
+            message: "보안문자가 만료되었습니다. 새로고침해 주세요."
+        });
         return;
     }
     if (!challengeAnswer.value) {
-        alert("보안문자를 입력해주세요.");
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "보안문자 확인",
+            message: "보안문자를 입력해 주세요."
+        });
         return;
     }
     deleteLoading.value = true;
@@ -183,16 +208,35 @@ const goDelete = async () => {
 
         // 비밀번호와 보안문자를 먼저 확인한 뒤 마지막에 탈퇴 여부를 묻는다.
         await store.verifyWithdrawal(securityData);
-        if (!confirm("정말로 탈퇴하시겠습니까?")) return;
+        const confirmed = await confirmDialog({
+            theme: "resident",
+            type: "danger",
+            title: "회원 탈퇴",
+            message: "정말로 탈퇴하시겠습니까?",
+            caution: "탈퇴 후에는 회원 정보를 복원할 수 없습니다.",
+            confirmText: "탈퇴",
+            cancelText: "취소"
+        });
+        if (!confirmed) return;
 
         await store.removeResident(securityData);
-        alert("탈퇴되었습니다.");
+        await alertDialog({
+            theme: "resident",
+            type: "success",
+            title: "회원 탈퇴 완료",
+            message: "회원 탈퇴가 완료되었습니다."
+        });
         jwtStore.logout();
     } catch (error) {
         const message = error.response?.data?.message
             || error.response?.data?.detail
             || error.response?.data?.error;
-        alert(message || "회원탈퇴 요청을 처리하지 못했습니다.");
+        await alertDialog({
+            theme: "resident",
+            type: "error",
+            title: "회원 탈퇴 실패",
+            message: message || "회원탈퇴 요청을 처리하지 못했습니다."
+        });
         await loadChallenge();
     } finally {
         deleteLoading.value = false;

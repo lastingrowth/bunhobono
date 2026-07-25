@@ -162,9 +162,12 @@ public class VehicleService {
     ) {
         String status = dto.getVehicleStatus();
 
-        // 승인대기 차량 승인
+        // 승인 상태 변경과 승인 알림 저장을 한 번에 처리
         if ("APPROVED".equalsIgnoreCase(status)) {
-            return vehicleMapper.updateStatus(dto);
+            return vehicleNtService.approveRequest(
+                    dto.getVehicleCarNo(),
+                    adminLoginId
+            );
         }
 
         // 관리자 직접 반려

@@ -2,11 +2,7 @@ package api.vehicle_nt_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -29,14 +25,26 @@ public class VehicleNtController {
         );
     }
 
-    // 로그인한 입주민의 읽지 않은 차량 알림을 모두 읽음 처리
-    // 요청 본문 없이 JWT의 loginId만 사용한다.
+    // 로그인한 입주민의 읽지 않은 알림 전체 읽음 처리
     @PatchMapping("/resident/read")
     public int markAllRead(
             Authentication authentication
     ) {
         return vehicleNtService.markAllRead(
                 authentication.getName()
+        );
+    }
+
+    // 로그인한 입주민 본인의 일반 알림 직접 삭제
+    // VISIT_OVERDUE_EXIT 알림은 Mapper에서 삭제를 차단한다.
+    @DeleteMapping("/resident/{vehicleNtNo}")
+    public int deleteNotification(
+            Authentication authentication,
+            @PathVariable int vehicleNtNo
+    ) {
+        return vehicleNtService.deleteNotification(
+                authentication.getName(),
+                vehicleNtNo
         );
     }
 }
