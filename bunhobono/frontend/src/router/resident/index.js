@@ -5,6 +5,7 @@ import vehicles from "./vehicles";
 import parkings from "./parkings";
 import mypage from "./mypage";
 import carlogs from "./carlogs";
+import boards from "./boards";
 
 export const residentRoutes = [
     {
@@ -21,6 +22,7 @@ export const residentRoutes = [
             ...parkings,
             ...mypage,
             ...carlogs,
+            ...boards,
         ]
     }
 ]

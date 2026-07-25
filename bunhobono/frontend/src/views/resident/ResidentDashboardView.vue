@@ -56,6 +56,29 @@
                     </dl>
                 </section>
 
+                <section class="board-summary-card">
+                    <header class="summary-card-header">
+                        <h2>공지사항</h2>
+                        <button type="button" @click="openBoards">전체보기</button>
+                    </header>
+
+                    <ul v-if="dashboardBoards.length" class="dashboard-board-list">
+                        <li v-for="board in dashboardBoards" :key="board.boardNo">
+                            <button
+                                type="button"
+                                @click="openBoardDetail(board.boardNo)"
+                            >
+                                <span class="dashboard-board-copy">
+                                    <strong>{{ board.title }}</strong>
+                                    <small>{{ boardPeriodText(board) }}</small>
+                                </span>
+                                <span class="dashboard-board-status">{{ board.periodStatus }}</span>
+                            </button>
+                        </li>
+                    </ul>
+                    <p v-else class="latest-board-empty">게시 중인 공지사항이 없습니다.</p>
+                </section>
+
                 <section
                     class="vehicle-summary-card"
                 >
@@ -279,17 +302,21 @@ import { useResidentDashboardStore } from "@/stores/residentDashboard";
 import { usePagination } from "@/shared/pagination/usePagination";
 import Pagination from "@/shared/pagination/Pagination.vue";
 import { useResVehicleStore } from "@/features/resVehicle/resVehicleStore";
+import { useBoardStore } from "@/features/board/boardStore";
 
 const router = useRouter();
 const route = useRoute();
 const dashboardStore = useResidentDashboardStore();
 const resVehicleStore = useResVehicleStore();
+const boardStore = useBoardStore();
 const mode = computed(() => route.name === "ResidentCarlogList" ? "carlogs" : "dashboard");
 let notificationTimer;
 let unreadAlertShown = false;
 const unreadDialog = ref(null);
 
 const { loading, errorMessage, dashboard, residenceText, normalVehicles, visitVehicles, parkingStatusList } = storeToRefs(dashboardStore);
+// 대시보드에서는 게시 중인 공지사항을 최대 3건만 표시한다.
+const dashboardBoards = computed(() => boardStore.list.slice(0, 3));
 
 const threeMonthsAgo = () => {
     const cutoff = new Date();
@@ -321,6 +348,12 @@ const dateTimeText = (value) => value ? new Intl.DateTimeFormat("ko-KR", {
     hour: "2-digit", minute: "2-digit", hour12: false,
 }).format(new Date(value)) : "-";
 
+const boardPeriodText = (board) => {
+    const start = board.startAt ? approvalDateText(board.startAt) : "-";
+    const end = board.endAt ? approvalDateText(board.endAt) : "계속 게시";
+    return `${start} ~ ${end}`;
+};
+
 const approvalDateText = (value) => value ? new Intl.DateTimeFormat("ko-KR", {
     year: "2-digit", month: "2-digit", day: "2-digit",
 }).format(new Date(value)) : "";
@@ -349,6 +382,12 @@ const openVehicleManagement = () => router.push("/resident/vehicles");
 const openDashboard = () => router.push("/resident/dashboard");
 const goMypage = () => router.push("/resident/mypage");
 const goWelcome = () => router.push("/resident");
+const openBoards = () => router.push("/resident/boards");
+const openBoardDetail = (boardNo) => router.push(`/resident/boards/${boardNo}/detail`);
+
+const loadBoards = async () => {
+    await boardStore.loadList();
+};
 
 const openVehicleNotifications = () => {
     
@@ -373,7 +412,8 @@ function confirmUnreadNotifications() {
 onMounted(async () => {
     await Promise.all([
         loadDashboard(),
-        resVehicleStore.loadNotifications()
+        resVehicleStore.loadNotifications(),
+        loadBoards().catch(() => [])
     ]);
 
    if (
@@ -418,7 +458,7 @@ onUnmounted(() => {
 .board-date-time i { width: 1px; height: 16px; background: #d7e1eb; }
 .board-info-grid { display: grid; grid-template-columns: 32% 1fr; gap: 18px; }
 .board-info-grid > * { min-width: 0; }
-.member-summary-card,.vehicle-summary-card { box-sizing: border-box; min-height: 174px; padding: 13px 15px; border: 1px solid #dfe9f2; border-radius: 15px; background: #fff; }
+.member-summary-card,.board-summary-card,.vehicle-summary-card { box-sizing: border-box; min-height: 174px; padding: 13px 15px; border: 1px solid #dfe9f2; border-radius: 15px; background: #fff; }
 .member-summary-card { display: flex; flex-direction: column; border-color: #d8e6f2; background: #fff; }
 .summary-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .summary-card-header h2 { margin: 0; color: #263f59; font-size: 18px; }
@@ -426,6 +466,15 @@ onUnmounted(() => {
 .summary-card-header button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
 .summary-card-header h2,.recent-log-card h2,.parking-card h2 { display: flex; align-items: center; gap: 7px; }
 .summary-card-header h2::before,.recent-log-card h2::before,.parking-card h2::before { width: 4px; height: 15px; border-radius: 999px; background: #4b91d6; content: ""; }
+.dashboard-board-list { display: grid; overflow: hidden; margin: 0; padding: 0; border: 0; border-radius: 0; list-style: none; background: #fff; }
+.dashboard-board-list li + li { border-top: 1px solid #e1eaf1; }
+.dashboard-board-list button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 8px 4px; border: 0; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+.dashboard-board-list button:hover { background: #eef6fc; }
+.dashboard-board-copy { display: grid; min-width: 0; gap: 3px; }
+.dashboard-board-copy strong { overflow: hidden; color: #29465f; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-board-copy small { color: #8294a4; font-size: 10px; }
+.dashboard-board-status { flex-shrink: 0; padding: 4px 8px; border-radius: 999px; color: #14783d; background: #e4f7eb; font-size: 10px; font-weight: 800; }
+.latest-board-empty { display: grid; place-items: center; min-height: 120px; margin: 0; border: 1px dashed #d5e1eb; border-radius: 11px; color: #8395a5; background: #f8fbfd; }
 .member-summary-list { display: grid; flex: 1; grid-template-columns: 1fr; overflow: hidden; margin: 0; border: 0; border-radius: 11px; background: rgba(255,255,255,.9); }
 .member-summary-list div { display: grid; grid-template-columns: 72px minmax(0,1fr); align-items: center; column-gap: 12px; min-width: 0; padding: 6px 11px; }
 .member-summary-list div + div { border-top: 0; }
@@ -553,7 +602,7 @@ onUnmounted(() => {
     .board-welcome h1{font-size:22px}
     .welcome-actions{gap:5px;margin-left:6px}.welcome-actions button{padding:6px 9px;font-size:10px}
     .board-date-time{padding:7px 12px;font-size:14px}
-    .board-info-grid{gap:9px}.member-summary-card,.vehicle-summary-card{min-height:148px;padding:9px 11px}.summary-card-header{margin-bottom:7px}.member-summary-list{gap:0}.member-summary-list div{padding:5px 9px}.vehicle-status-group{min-height:43px;padding:5px 8px}
+    .board-info-grid{gap:9px}.member-summary-card,.board-summary-card,.vehicle-summary-card{min-height:148px;padding:9px 11px}.summary-card-header{margin-bottom:7px}.member-summary-list{gap:0}.member-summary-list div{padding:5px 9px}.vehicle-status-group{min-height:43px;padding:5px 8px}
     .board-top-grid{height:205px;gap:9px}
     .quick-menu{gap:8px}.quick-card{padding:8px 11px;border-radius:12px}
     .quick-icon{flex-basis:42px;height:42px;font-size:21px}
@@ -613,6 +662,7 @@ onUnmounted(() => {
 }
 .resident-board:not(.resident-carlog-page) .board-bottom-grid { margin-top: 0; }
 .resident-board:not(.resident-carlog-page) .member-summary-card,
+.resident-board:not(.resident-carlog-page) .board-summary-card,
 .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
 .resident-board:not(.resident-carlog-page) .recent-log-card,
 .resident-board:not(.resident-carlog-page) .parking-card {
@@ -622,6 +672,11 @@ onUnmounted(() => {
 }
 .resident-board:not(.resident-carlog-page) .member-summary-card,
 .resident-board:not(.resident-carlog-page) .recent-log-card { padding-left: 0; padding-right: 22px; }
+.resident-board:not(.resident-carlog-page) .board-summary-card {
+    padding-right: 22px;
+    padding-left: 22px;
+    border-left: 1px solid #dfe9f2;
+}
 .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
 .resident-board:not(.resident-carlog-page) .parking-card {
     padding-right: 0;
@@ -634,10 +689,12 @@ onUnmounted(() => {
     .resident-board:not(.resident-carlog-page) { width: calc(100% - 36px); padding-right: 22px; padding-left: 22px; }
     .resident-board:not(.resident-carlog-page) .board-info-grid { padding-bottom: 0; }
     .resident-board:not(.resident-carlog-page) .member-summary-card,
+    .resident-board:not(.resident-carlog-page) .board-summary-card,
     .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
     .resident-board:not(.resident-carlog-page) .recent-log-card,
     .resident-board:not(.resident-carlog-page) .parking-card { padding: 16px 0; border-left: 0; }
     .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
+    .resident-board:not(.resident-carlog-page) .board-summary-card,
     .resident-board:not(.resident-carlog-page) .parking-card { border-top: 1px solid #dfe9f2; }
 }
 @media (max-width:600px) {
@@ -648,10 +705,14 @@ onUnmounted(() => {
 .resident-board:not(.resident-carlog-page) .board-info-grid,
 .resident-board:not(.resident-carlog-page) .board-bottom-grid {
     display: grid;
-    grid-template-columns: 1fr;
 }
-.resident-board:not(.resident-carlog-page) .board-info-grid { padding-bottom: 0; }
+.resident-board:not(.resident-carlog-page) .board-info-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding-bottom: 0;
+}
+.resident-board:not(.resident-carlog-page) .board-bottom-grid { grid-template-columns: 1fr; }
 .resident-board:not(.resident-carlog-page) .member-summary-card,
+.resident-board:not(.resident-carlog-page) .board-summary-card,
 .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
 .resident-board:not(.resident-carlog-page) .recent-log-card,
 .resident-board:not(.resident-carlog-page) .parking-card {
@@ -665,14 +726,29 @@ onUnmounted(() => {
     padding-top: 12px;
     border-top: 0;
 }
+.resident-board:not(.resident-carlog-page) .board-summary-card {
+    padding-top: 12px;
+    border-top: 0;
+    background: #fff;
+}
+.resident-board:not(.resident-carlog-page) .vehicle-summary-card {
+    grid-column: 1 / -1;
+}
 .resident-board:not(.resident-carlog-page) .parking-card { padding-bottom: 8px; }
 @media (max-width:600px) {
     .resident-board:not(.resident-carlog-page) .member-summary-card,
+    .resident-board:not(.resident-carlog-page) .board-summary-card,
     .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
     .resident-board:not(.resident-carlog-page) .recent-log-card,
     .resident-board:not(.resident-carlog-page) .parking-card {
         padding-right: 20px;
         padding-left: 20px;
+    }
+    .resident-board:not(.resident-carlog-page) .board-info-grid {
+        grid-template-columns: 1fr;
+    }
+    .resident-board:not(.resident-carlog-page) .board-summary-card {
+        border-left: 0;
     }
 }
 

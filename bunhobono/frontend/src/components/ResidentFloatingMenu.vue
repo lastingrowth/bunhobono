@@ -28,6 +28,13 @@
             입출차기록
         </RouterLink>
 
+        <RouterLink to="/resident/boards"
+            :class="{
+                active: route.path.startsWith('/resident/boards')
+            }">
+            공지사항
+        </RouterLink>
+
         <RouterLink to="/resident/vehicles?mode=notification"
             :class="{
                 active: route.path === '/resident/vehicles'
