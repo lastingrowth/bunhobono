@@ -29,6 +29,10 @@ export const adminMenu = [
     path: '/admin/members'
   },
   {
+    title: '공지사항',
+    path: '/admin/boards'
+  },
+  {
     title: '지난기록',
     path: '/admin/trash'
   },
@@ -59,6 +63,10 @@ export const residentMenu = [
   {
     title: '입출차내역',
     path: '/resident/carlogs'
+  },
+  {
+    title: '공지사항',
+    path: '/resident/boards'
   },
   {
     title: '마이페이지',

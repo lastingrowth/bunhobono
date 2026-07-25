@@ -57,6 +57,10 @@ const showResidentFloatingMenu = computed(() => {
         return true;
     }
 
+    if (path.startsWith("/resident/boards")) {
+        return true;
+    }
+
     return false;
 
 });

@@ -37,6 +37,11 @@
                         @click="closeResidentMenu"
                     >입출차 내역</RouterLink>
                     <RouterLink
+                        to="/resident/boards"
+                        :class="{ 'menu-active': route.path.startsWith('/resident/boards') }"
+                        @click="closeResidentMenu"
+                    >공지사항</RouterLink>
+                    <RouterLink
                         :to="{ path: '/resident/vehicles', query: { mode: 'notification' } }"
                         :class="{ 'menu-active': route.path === '/resident/vehicles' && route.query.mode === 'notification' }"
                         @click="closeResidentMenu"
