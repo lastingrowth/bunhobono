@@ -146,6 +146,8 @@ class TestStreamWorker:
     def pause_for_backend(self):
         self.auto_paused = True
         self.pause_reason = "WAITING_FOR_BACKEND"
+        self.last_ocr_car_no = None
+        self.pending_camera_data_no = None
         self.pause_event.set()
         print(f"[{self.camera_name}] paused: waiting for backend")
 
@@ -598,10 +600,11 @@ class TestStreamWorker:
             )
             return selected
 
-        output_dir = PREPROCESS_DIR / f"camera{self.camera_no}"
-
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
+        output_dir = (
+            PREPROCESS_DIR
+            / f"camera{self.camera_no}"
+            / f"frame{frame_no}_{time.time_ns()}"
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
 
         preprocess_candidates = make_candidates(
