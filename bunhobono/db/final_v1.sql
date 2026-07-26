@@ -383,29 +383,16 @@ INSERT INTO demo_plate(plate_no, car_no, image_file, crop_file) VALUES
 INSERT INTO vehicle_car
     (vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
 VALUES
-    -- 필수 9대
+    -- 필수 9대: 입주민 7대, 방문 2대. 7절에서 모두 출차 완료된다.
     ('normal', '222하5233', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP + INTERVAL '335 days', 5,  CURRENT_TIMESTAMP - INTERVAL '30 days'),
-    ('normal', '26무3111',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '27 days', CURRENT_TIMESTAMP + INTERVAL '338 days', 9,  CURRENT_TIMESTAMP - INTERVAL '27 days'),
-    ('normal', '41소2593',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '24 days', CURRENT_TIMESTAMP + INTERVAL '341 days', 10, CURRENT_TIMESTAMP - INTERVAL '24 days'),
-    ('normal', '47조2603',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '21 days', CURRENT_TIMESTAMP + INTERVAL '344 days', 11, CURRENT_TIMESTAMP - INTERVAL '21 days'),
-    ('normal', '81라7385',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '18 days', CURRENT_TIMESTAMP + INTERVAL '347 days', 12, CURRENT_TIMESTAMP - INTERVAL '18 days'),
-    ('normal', '95마7152',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '15 days', CURRENT_TIMESTAMP + INTERVAL '350 days', 13, CURRENT_TIMESTAMP - INTERVAL '15 days'),
-    ('normal', '67모4231',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '12 days', CURRENT_TIMESTAMP + INTERVAL '353 days', 14, CURRENT_TIMESTAMP - INTERVAL '12 days'),
-
-    -- 시연용 더미
-    ('normal', '40두9797',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '11 days', CURRENT_TIMESTAMP + INTERVAL '354 days', 82, CURRENT_TIMESTAMP - INTERVAL '11 days'),
-    ('normal', '26무3111',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP + INTERVAL '355 days', 71, CURRENT_TIMESTAMP - INTERVAL '10 days'),
-    ('normal', '826수4755', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '9 days',  CURRENT_TIMESTAMP + INTERVAL '356 days', 10, CURRENT_TIMESTAMP - INTERVAL '9 days'),
-    ('normal',  '93로6277',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '8 days',  CURRENT_TIMESTAMP + INTERVAL '357 days', 11, CURRENT_TIMESTAMP - INTERVAL '8 days'),
-    ('normal', '18나8473',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '7 days',  CURRENT_TIMESTAMP + INTERVAL '358 days', 62, CURRENT_TIMESTAMP - INTERVAL '7 days'),
-    ('normal', '101하2613', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '6 days',  CURRENT_TIMESTAMP + INTERVAL '359 days', 13, CURRENT_TIMESTAMP - INTERVAL '6 days'),
-    ('normal', '18보6535',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '5 days',  CURRENT_TIMESTAMP + INTERVAL '360 days', 14, CURRENT_TIMESTAMP - INTERVAL '5 days'),
-    ('normal', '22어5609',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '4 days',  CURRENT_TIMESTAMP + INTERVAL '361 days', 74, CURRENT_TIMESTAMP - INTERVAL '4 days'),
-
-    -- 방문 차량(가장 최근)
-    ('normal',  '31조2923',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '4 hours', CURRENT_TIMESTAMP + INTERVAL '20 hours', 15, CURRENT_TIMESTAMP - INTERVAL '6 hours'),
-    ('normal',  '55오0359',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '3 hours', CURRENT_TIMESTAMP + INTERVAL '21 hours', 95, CURRENT_TIMESTAMP - INTERVAL '4 hours'),
-    ('normal',  '222마2574', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '2 hours', CURRENT_TIMESTAMP + INTERVAL '22 hours', 16, CURRENT_TIMESTAMP - INTERVAL '3 hours');
+    ('normal', '26무3111',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '25 days', CURRENT_TIMESTAMP + INTERVAL '340 days', 9,  CURRENT_TIMESTAMP - INTERVAL '25 days'),
+    ('normal', '41소2593',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '20 days', CURRENT_TIMESTAMP + INTERVAL '345 days', 10, CURRENT_TIMESTAMP - INTERVAL '20 days'),
+    ('normal', '47조2603',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '18 days', CURRENT_TIMESTAMP + INTERVAL '347 days', 11, CURRENT_TIMESTAMP - INTERVAL '18 days'),
+    ('normal', '81라7385',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '15 days', CURRENT_TIMESTAMP + INTERVAL '350 days', 12, CURRENT_TIMESTAMP - INTERVAL '15 days'),
+    ('normal', '95마7152',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '12 days', CURRENT_TIMESTAMP + INTERVAL '353 days', 13, CURRENT_TIMESTAMP - INTERVAL '12 days'),
+    ('normal', '67모4231',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP + INTERVAL '355 days', 14, CURRENT_TIMESTAMP - INTERVAL '10 days'),
+    ('visit',  '222마2574', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '4 hours', CURRENT_TIMESTAMP, 15, CURRENT_TIMESTAMP - INTERVAL '1 day'),
+    ('visit',  '55오0359',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '5 hours', CURRENT_TIMESTAMP - INTERVAL '1 hour', 16, CURRENT_TIMESTAMP - INTERVAL '1 day');
 
 -- 현재 주차 및 통계용 입주민 차량 48대. 과거 만료 행은 두지 않고 새 1년 등록만 둔다.
 INSERT INTO vehicle_car
@@ -456,72 +443,65 @@ CREATE TEMP TABLE demo_event (
     out_time TIMESTAMP
 ) ON COMMIT DROP;
 
--- 전날 완료 기록도 게이트별 등록 차량 비율이 낮아지지 않도록 48건을 고르게 배치한다.
--- 시간대별 평균 그래프의 정확한 곡선은 아래 HOURLY 통계 스냅샷에서 별도로 제공한다.
+-- 자정과 24시가 같은 수준이 되도록 전날 밤 50대가 주차 중이다.
+-- 06~09시 출근 출차 후 6대만 남고, 09시 이후 현재 시각까지 다시 50대가 된다.
 INSERT INTO demo_event
--- [DEMO RATIO] Completed records: each gate gets 10 resident records.
 SELECT 'BASE-R-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = g), 'REGISTERED',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
        CURRENT_DATE - INTERVAL '1 day' + TIME '20:00:00' + (g * INTERVAL '4 minutes'),
-       (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-       CURRENT_DATE + TIME '06:00:00' + (g * INTERVAL '3 minutes')
-FROM generate_series(1, 40) AS g;
+       CASE WHEN g > 6 THEN (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)] END,
+       CASE WHEN g > 6 THEN CURRENT_DATE + TIME '06:00:00' + ((g - 6) * INTERVAL '7 minutes') END
+FROM generate_series(1, 30) AS g;
 
 INSERT INTO demo_event
--- [DEMO RATIO] Completed records: each gate gets 1 visitor record.
 SELECT 'BASE-V-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 48 + g), 'VISIT',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
        CURRENT_DATE - INTERVAL '1 day' + TIME '21:00:00' + (g * INTERVAL '4 minutes'),
        (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
        CURRENT_DATE + TIME '06:10:00' + (g * INTERVAL '9 minutes')
-FROM generate_series(1, 4) AS g;
+FROM generate_series(1, 9) AS g;
 
 INSERT INTO demo_event
--- [DEMO RATIO] Completed records: each gate gets 1 unknown record.
 SELECT 'BASE-U-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 57 + g), 'UNKNOWN',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
        CURRENT_DATE - INTERVAL '1 day' + TIME '22:00:00' + (g * INTERVAL '4 minutes'),
        (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
        CURRENT_DATE + TIME '06:20:00' + (g * INTERVAL '9 minutes')
-FROM generate_series(1, 4) AS g;
+FROM generate_series(1, 11) AS g;
 
--- 09시 이후 현재 시각 사이에 입주민 48대가 입차한다.
--- [DEMO RATIO] Each gate receives 12 currently parked resident vehicles.
+-- 09시 이후 현재 시각 사이에 입주민 24대가 입차한다.
 INSERT INTO demo_event
 SELECT 'NOW-R-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = g), 'REGISTERED',
-       (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
+       (ARRAY[1,3,5,7])[1 + ((g - 25) % 4)],
        CURRENT_DATE + TIME '09:00:00'
-         + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * (g::NUMERIC / 49)),
+         + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * ((g - 24)::NUMERIC / 25)),
        NULL, NULL
-FROM generate_series(1, 48) AS g;
+FROM generate_series(25, 48) AS g;
 
--- 방문 8대 중 1대는 06:30 입차 후 만료, 나머지는 09시 이후 입차한다.
--- [DEMO RATIO] Each gate receives 2 currently parked visitor vehicles.
+-- 방문 9대 중 1대는 06:30 입차 후 만료, 나머지는 09시 이후 입차한다.
 INSERT INTO demo_event
 SELECT 'NOW-V-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 48 + g), 'VISIT',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
        CASE WHEN g = 1 THEN CURRENT_DATE + TIME '06:30:00'
             ELSE CURRENT_DATE + TIME '09:00:00'
-              + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * (g::NUMERIC / 9)) END,
+              + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * (g::NUMERIC / 10)) END,
        NULL, NULL
-FROM generate_series(1, 8) AS g;
+FROM generate_series(1, 9) AS g;
 
--- 미등록 4대도 09시 이후 현재 시각 사이에 입차한다.
--- [DEMO RATIO] Each gate receives 1 currently parked unknown vehicle.
--- Resident : non-resident is 12 : 3 (4:1) at every gate.
+-- 미등록 11대도 09시 이후 현재 시각 사이에 입차한다.
 INSERT INTO demo_event
 SELECT 'NOW-U-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 57 + g), 'UNKNOWN',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
        CURRENT_DATE + TIME '09:00:00'
-         + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * (g::NUMERIC / 5)),
+         + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * (g::NUMERIC / 12)),
        NULL, NULL
-FROM generate_series(1, 4) AS g;
+FROM generate_series(1, 11) AS g;
 
 -- =====================================================
 -- 7. 카메라 데이터와 카로그 연결
@@ -562,7 +542,7 @@ WITH ordered AS (
     SELECT o.camera_no, vc.vehicle_car_no, o.car_no,
            COALESCE(dp.ocr_car_no, o.car_no), o.capture_time,
            'camera-data/' || dp.image_file,
-           'camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+           'camera-data/' || dp.crop_file,
            CASE WHEN (o.image_no % 13) = 0 THEN FALSE ELSE TRUE END,
            CASE WHEN (o.image_no % 13) = 0 THEN 91.40 ELSE 98.20 END,
            o.capture_key
@@ -577,11 +557,9 @@ SELECT cam_note, camera_data_no FROM inserted;
 
 INSERT INTO car_log
     (vehicle_car_no, camera_data_no, out_camera_data_no,
-     in_gate_no, in_time, out_gate_no, out_time,
-     snapshot_car_no, snapshot_car_kind)
+     in_gate_no, in_time, out_gate_no, out_time, snapshot_car_no)
 SELECT vc.vehicle_car_no, cin.camera_data_no, cout.camera_data_no,
-       e.in_gate_no, e.in_time, e.out_gate_no, e.out_time,
-       e.car_no, e.car_kind
+       e.in_gate_no, e.in_time, e.out_gate_no, e.out_time, e.car_no
 FROM demo_event e
 LEFT JOIN vehicle_car vc ON vc.car_no = e.car_no
 JOIN demo_capture_link cin ON cin.capture_key = e.event_key || '-IN'

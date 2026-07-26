@@ -47,7 +47,7 @@ public class Scheduler {
         carLogService.moveOldCarLogsToTrash();
     }
 
-    // 매일 자정: 처리 완료 후 1개월이 지난 장기주차 알림을 휴지통으로 이동한다.
+    // 매일 자정: 처리 완료 후 3개월이 지난 장기주차 알림을 휴지통으로 이동한다.
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void moveResolvedParkingNoticesToTrash() {
         noticeService.moveResolvedNoticesToTrash();

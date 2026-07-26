@@ -146,6 +146,8 @@ class TestStreamWorker:
     def pause_for_backend(self):
         self.auto_paused = True
         self.pause_reason = "WAITING_FOR_BACKEND"
+        self.last_ocr_car_no = None
+        self.pending_camera_data_no = None
         self.pause_event.set()
         print(f"[{self.camera_name}] paused: waiting for backend")
 
@@ -598,10 +600,11 @@ class TestStreamWorker:
             )
             return selected
 
-        output_dir = PREPROCESS_DIR / f"camera{self.camera_no}"
-
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
+        output_dir = (
+            PREPROCESS_DIR
+            / f"camera{self.camera_no}"
+            / f"frame{frame_no}_{time.time_ns()}"
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
 
         preprocess_candidates = make_candidates(
@@ -699,7 +702,15 @@ class TestStreamWorker:
             f"camera{self.camera_no}_{self.camera_name}_"
             f"{car_no}_frame{frame_no}_{int(time.time())}.jpg"
         )
-        success, encoded = cv2.imencode(".jpg", frame)
+
+        frame_to_save = frame
+        if self.camera_no in TOP_PADDED_CAMERA_NOS:
+            frame_height = frame.shape[0]
+            crop_top = int(frame_height * DISPLAY_TOP_CROP_RATIO)
+            if 0 < crop_top < frame_height:
+                frame_to_save = frame[crop_top:, :]
+
+        success, encoded = cv2.imencode(".jpg", frame_to_save)
         if not success:
             raise ValueError("원본 프레임 저장 실패")
         encoded.tofile(str(path))

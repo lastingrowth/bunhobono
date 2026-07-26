@@ -225,8 +225,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         carlogLogs.value = Array.isArray(carlogResponse.data)
             ? carlogResponse.data.map(toCarLogView)
             : [];
-        cameraDataLogs.value = Array.isArray(cameraDataResponse.data)
-            ? cameraDataResponse.data
+        cameraDataLogs.value = Array.isArray(cameraDataResponse.data?.items)
+            ? cameraDataResponse.data.items
             : [];
 
         selectedCarlog.value = carlogLogs.value.find((log) => {

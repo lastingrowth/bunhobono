@@ -314,12 +314,14 @@ const restoreProcessing = ref(false);
 const pageSize = 10;
 let elapsedCheckTimer;
 const managementSections = [
-    { value: 'approved', label: '승인된 회원' },
+    { value: 'approved', label: '입주민 목록' },
     { value: 'pending', label: '가입 승인 대기' },
     { value: 'withdrawn', label: '전출 신청 관리' },
     { value: 'archive', label: '전출 이력'}
 ];
-const visibleManagementSections = computed(() => managementSections);
+const visibleManagementSections = computed(() => managementSections.filter(
+    (section) => section.value !== 'approved'
+));
 const requestedSection = String(route.query.section || 'approved');
 const activeSection = ref(
     managementSections.some((section) => section.value === requestedSection)

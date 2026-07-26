@@ -69,7 +69,7 @@
       </thead>
 
       <tbody>
-        <tr v-for="(d, index) in paginatedItems" :key="d.cameraDataNo">
+        <tr v-for="(d, index) in visibleCameraDataList" :key="d.cameraDataNo">
           <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
           <td>{{ formatParkingName(d.parkingName) }}</td>
           <td>{{ d.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</td>
@@ -77,11 +77,11 @@
           <td>{{ formatDate(d.captureTime) }}</td>
           <td>{{ d.movementTypeText }}</td>
           <td>{{ formatConfidence(d.confidenceScore) }}</td>
-          <td class="camera-data-action"><router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo: d.cameraDataNo } }"><button>이미지보기</button></router-link></td>
+          <td class="camera-data-action"><router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo: d.cameraDataNo }, query: { ...route.query, page: currentPage } }"><button>이미지보기</button></router-link></td>
           <td class="camera-data-action"><button type="button" @click="requestDelete(d)">삭제</button></td>
         </tr>
 
-        <tr v-if="filteredCameraDataList.length === 0">
+        <tr v-if="visibleCameraDataList.length === 0">
           <td colspan="9">조회된 카메라 데이터가 없습니다.</td>
         </tr>
       </tbody>
@@ -108,7 +108,6 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useCameraDataStore } from './cameraDataStore';
-import { usePagination } from '@/shared/pagination/usePagination';
 import Pagination from '@/shared/pagination/Pagination.vue';
 import CameraDataDeleteConfirm from './CameraDataDeleteConfirm.vue';
 
@@ -119,7 +118,6 @@ const router = useRouter();
 const keyword = ref("");
 const isSearching = ref(false);
 const searchError = ref("");
-const visibleCameraDataList = ref([]);
 const pendingDeleteData = ref(null);
 const deleting = ref(false);
 const parkingButtons = [
@@ -131,41 +129,43 @@ const parkingButtons = [
 
 const selectedParkingNo = computed(() => {
   const parkingNo = Number(route.query.parkingNo);
-
   return Number.isInteger(parkingNo) && parkingNo > 0 ? parkingNo : null;
 });
 
-const filteredCameraDataList = computed(() => {
-  if (!selectedParkingNo.value) return visibleCameraDataList.value;
-
-  return visibleCameraDataList.value.filter((data) => {
-    return Number(data.parkingNo) === selectedParkingNo.value;
-  });
+const visibleCameraDataList = computed(() => dStore.displayList);
+const currentPage = computed(() => dStore.currentPage);
+const totalPages = computed(() => dStore.totalPages);
+const pageSize = computed(() => dStore.pageSize);
+const pageNumbers = computed(() => {
+  const start = Math.floor((currentPage.value - 1) / 5) * 5 + 1;
+  const end = Math.min(start + 4, totalPages.value);
+  return Array.from({ length: Math.max(0, end - start + 1) }, (_, index) => start + index);
 });
 
-const pageSize = 10;
+const loadPage = async (page = 1) => {
+  const carNo = keyword.value.trim();
 
-// usePagination(리스트, 한 화면에 보여줄 목록 수)
-const {
-  currentPage,
-  totalPages,
-  pageNumbers,
-  paginatedItems,
-  setPage
-} = usePagination(filteredCameraDataList, pageSize);
+  if (carNo) {
+    await dStore.searchByCarNo(carNo, page, selectedParkingNo.value);
+  } else {
+    await dStore.loadList(page, selectedParkingNo.value);
+  }
+};
+
+const setPage = async (page) => {
+  if (page < 1 || page > totalPages.value || page === currentPage.value) return;
+  await router.replace({ query: { ...route.query, page } });
+  await loadPage(page);
+};
 
 const formatParkingName = (value) => {
   if (!value) return '-';
-
   const match = String(value).match(/[A-Za-z]+/);
-
   return match ? match[0].toUpperCase() : value;
 };
 
 const searchGo = async () => {
-  const carNo = keyword.value.trim();
-
-  if (!carNo) {
+  if (!keyword.value.trim()) {
     await resetList();
     return;
   }
@@ -174,10 +174,10 @@ const searchGo = async () => {
   searchError.value = "";
 
   try {
-    // 백엔드 차량번호 검색 결과가 주차장 필터에 가려지지 않도록 전체로 전환
-    await router.replace({ name: 'CameraDataList' });
-    await dStore.searchByCarNo(carNo);
-    visibleCameraDataList.value = [...dStore.displayList];
+    await router.replace({
+      query: { ...route.query, keyword: keyword.value.trim(), page: 1 }
+    });
+    await loadPage(1);
   } catch (error) {
     console.error('카메라 데이터 검색 실패', error);
     searchError.value = '검색 결과를 불러오지 못했습니다.';
@@ -189,29 +189,30 @@ const searchGo = async () => {
 const selectParking = async (parkingNo) => {
   await router.replace({
     name: 'CameraDataList',
-    query: parkingNo ? { parkingNo } : {}
+    query: {
+      ...(keyword.value.trim() ? { keyword: keyword.value.trim() } : {}),
+      ...(parkingNo ? { parkingNo } : {}),
+      page: 1,
+    }
   });
+  await loadPage(1);
 };
 
 const resetList = async () => {
   keyword.value = "";
   searchError.value = "";
   await router.replace({ name: 'CameraDataList' });
-  await dStore.loadList();
-  visibleCameraDataList.value = [...dStore.displayList];
+  await loadPage(1);
 };
 
 const formatDate = (value) => {
   if (!value) return '-';
-
   const date = new Date(value);
-
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ko-KR');
 };
 
 const formatConfidence = (value) => {
   if (value === null || value === undefined) return '-';
-
   return `${Number(value).toFixed(1)}%`;
 };
 
@@ -220,32 +221,30 @@ const requestDelete = (cameraData) => {
 };
 
 const cancelDelete = () => {
-  if (!deleting.value) {
-    pendingDeleteData.value = null;
-  }
+  if (!deleting.value) pendingDeleteData.value = null;
 };
 
 const confirmDelete = async () => {
-  if (!pendingDeleteData.value || deleting.value) {
-    return;
-  }
+  if (!pendingDeleteData.value || deleting.value) return;
 
   deleting.value = true;
   const removed = await dStore.remove(pendingDeleteData.value.cameraDataNo);
 
   if (removed) {
-    visibleCameraDataList.value = visibleCameraDataList.value.filter((item) => {
-      return Number(item.cameraDataNo ?? item.camera_data_no)
-        !== Number(pendingDeleteData.value.cameraDataNo);
-    });
+    const targetPage = visibleCameraDataList.value.length <= 1 && currentPage.value > 1
+      ? currentPage.value - 1
+      : currentPage.value;
+    await loadPage(targetPage);
   }
+
   deleting.value = false;
   pendingDeleteData.value = null;
 };
 
 onMounted(async () => {
-  await dStore.loadList();
-  visibleCameraDataList.value = [...dStore.displayList];
+  keyword.value = String(route.query.keyword ?? '');
+  const routePage = Math.max(1, Number(route.query.page) || 1);
+  await loadPage(routePage);
 });
 </script>
 

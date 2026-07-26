@@ -91,7 +91,7 @@
                                     <p>{{ approvalWaitMessage(panel) }}</p>
                                     <button
                                         type="button"
-                                        :disabled="!panel.gate"
+                                        :disabled="!panel.gate || !getPendingCameraDataNo(panel.cameraNo)"
                                         @click.stop="openGateAndResume(panel)">
                                         {{ approvalWaitButtonText(panel) }}
                                     </button>
@@ -255,6 +255,7 @@
                                 <img
                                     v-if="selectedCameraData.cameraDataNo && !hasCaptureImageError(selectedCameraData.cameraDataNo)"
                                     class="selected-capture-image"
+                                    :class="{ 'standard-camera-image': [1, 2, 3, 4].includes(Number(selectedCameraData.cameraNo)) }"
                                     :src="getCameraImageUrl(selectedCameraData.cameraDataNo)"
                                     title="클릭해서 크게 보기"
                                     @click="openImagePreview(selectedCameraData.cameraDataNo, selectedCameraData.carNo)"
@@ -371,6 +372,7 @@
                                 <img
                                     v-if="selectedCarlog.cameraDataNo && !hasCaptureImageError(selectedCarlog.cameraDataNo)"
                                     class="selected-capture-image"
+                                    :class="{ 'standard-camera-image': [1, 2, 3, 4].includes(Number(selectedCarlog.inGateNo)) }"
                                     :src="getCameraImageUrl(selectedCarlog.cameraDataNo)"
                                     title="클릭해서 크게 보기"
                                     @click="openImagePreview(selectedCarlog.cameraDataNo, selectedCarlog.carNo)"
@@ -616,7 +618,7 @@
                             <p>{{ approvalWaitMessage(selectedParkingPanel) }}</p>
                             <button
                                 type="button"
-                                :disabled="!selectedParkingPanel.gate"
+                                :disabled="!selectedParkingPanel.gate || !getPendingCameraDataNo(selectedParkingPanel.cameraNo)"
                                 @click="openGateAndResume(selectedParkingPanel)">
                                 {{ approvalWaitButtonText(selectedParkingPanel) }}
                             </button>
@@ -1033,7 +1035,6 @@ const getCameraStatus = (cameraNo) => {
 const isApprovalWaiting = (cameraNo) => {
     const status = getCameraStatus(cameraNo)
     return status?.pauseReason === 'WAITING_FOR_BACKEND'
-        && Boolean(status?.pendingCameraDataNo)
 }
 
 const getPendingCameraData = (cameraNo) => {

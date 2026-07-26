@@ -3,7 +3,6 @@ import { computed, ref } from "vue";
 import { deleteCameraData, getCameraDataDetail, getCameraDataList, searchCameraDataByCarNo } from "./cameraDataApi";
 import { useCameraStore } from "../camera/cameraStore";
 import { useGateStore } from "../gates/gateStore";
-import { getCarLogs } from "../carlog/carlogApi";
 
 export const useCameraDataStore =  defineStore("camera-data", () => {
 
@@ -17,6 +16,11 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
   const detailMap = ref({});
   const carLogs = ref([]);
   const searchMode = ref(false);
+  const currentPage = ref(1);
+  const pageSize = ref(10);
+  const totalPages = ref(1);
+  const totalCount = ref(0);
+  let relationsLoaded = false;
   const feedbackMessage = ref("");
   const feedbackType = ref("success");
   let feedbackTimer;
@@ -87,18 +91,13 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
   };
 
   const ensureRelationLists = async () => {
-    const [, , carLogResult] = await Promise.allSettled([
+    if (relationsLoaded) return;
+
+    await Promise.all([
       cameraStore.loadList(),
       gateStore.loadList(),
-      getCarLogs({ sort: "latest" })
     ]);
-
-    if (carLogResult.status === "fulfilled") {
-      carLogs.value = carLogResult.value.data ?? [];
-    } else {
-      console.error("입출차 기록 조회 실패", carLogResult.reason);
-      carLogs.value = [];
-    }
+    relationsLoaded = true;
   };
 
   const toTime = (value) => {
@@ -317,28 +316,28 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
     });
   });
 
-  // 카메라 데이터 전체 조회
-  const loadList = async () => {
-    // cameraData를 주차장별로 정확히 분류하기 위해 연결 정보를 먼저 조회
+  const applyPageResponse = (data, target) => {
+    target.value = data?.items ?? [];
+    currentPage.value = Number(data?.page ?? 1);
+    pageSize.value = Number(data?.size ?? 10);
+    totalPages.value = Math.max(1, Number(data?.totalPages ?? 1));
+    totalCount.value = Number(data?.totalCount ?? 0);
+  };
+
+  // 카메라 데이터 서버 페이징 조회
+  const loadList = async (page = 1, parkingNo = null) => {
     await ensureRelationLists();
-
-    const res = await getCameraDataList();
-    list.value = res.data;
-    await loadDetailMap(list.value);
-
-    // 전체 목록을 표시하도록 검색 상태 초기화
+    const res = await getCameraDataList({ page, size: pageSize.value, parkingNo });
+    applyPageResponse(res.data, list);
     searchResults.value = [];
     searchMode.value = false;
   };
 
-  // 차량번호 검색
-  const searchByCarNo = async (carNo) => {
+  // 차량번호 검색도 서버에서 페이지 단위로 조회
+  const searchByCarNo = async (carNo, page = 1, parkingNo = null) => {
     await ensureRelationLists();
-
-    const res = await searchCameraDataByCarNo(carNo);
-
-    searchResults.value = res.data;
-    await loadDetailMap(searchResults.value);
+    const res = await searchCameraDataByCarNo(carNo, page, pageSize.value, parkingNo);
+    applyPageResponse(res.data, searchResults);
     searchMode.value = true;
   };
 
@@ -383,6 +382,10 @@ export const useCameraDataStore =  defineStore("camera-data", () => {
     detailMap,
     feedbackMessage,
     feedbackType,
+    currentPage,
+    pageSize,
+    totalPages,
+    totalCount,
     displayList,
     loadList,
     searchByCarNo,

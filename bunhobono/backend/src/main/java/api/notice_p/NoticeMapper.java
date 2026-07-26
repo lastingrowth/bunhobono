@@ -68,7 +68,7 @@ public interface NoticeMapper {
     FROM notice
     WHERE alert_stat = 'Resolved'
       AND handled_at IS NOT NULL
-      AND handled_at < NOW() - INTERVAL '1 month'
+      AND handled_at < NOW() - INTERVAL '3 months'
 """)
     List<Integer> findResolvedNoticeNosForTrash();
     //삭제기능 1 minute 테스트용
