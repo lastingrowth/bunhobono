@@ -29,7 +29,7 @@ public class JwtUtil {
                 .claim("role", role)
                 .claim("memStatus", memStatus)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 3600000))
+                .expiration(new Date(System.currentTimeMillis() + 36000000))
                 .signWith(key)
                 .compact();
     }
