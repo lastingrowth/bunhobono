@@ -1,11 +1,7 @@
 <template>
     <nav
-        ref="floatingMenu"
         class="resident-floating-menu"
-        :style="{
-            left: `${menuLeft}px`,
-            top: `${menuTop}px`
-        }"
+        :style="{ top: `${menuTop}px` }"
     >
         <RouterLink to="/resident/mypage"
             :class="{
@@ -50,75 +46,67 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute()
-
-const menuLeft = ref(0)
 const menuTop = ref(0)
-const floatingMenu = ref(null)
-let contentResizeObserver = null
 
-function getContentAnchor() {
-    const selectors = [
-        '.resident-layout .resident-board',
-        '.resident-layout .mypage-card',
-        '.resident-layout .resident-board-list-page',
-        '.resident-layout .resident-vehicle-management',
-        '.resident-layout .content > *',
-    ]
+let currentTop = 0
+let animationFrame = 0
 
-    return selectors
-        .map((selector) => document.querySelector(selector))
-        .find(Boolean)
-}
-
-// 화면 왼쪽 끝과 콘텐츠 카드 왼쪽 끝 사이의 중앙에 메뉴를 배치합니다.
-function updateMenuPosition() {
-    const content = getContentAnchor()
+function getTargetTop() {
     const header = document.querySelector('.resident-layout .header')
-    const menu = floatingMenu.value
-
-    if (!content || !menu) return
-
-    const contentRect = content.getBoundingClientRect()
     const headerBottom = header?.getBoundingClientRect().bottom ?? 60
-    const availableWidth = Math.max(0, contentRect.left)
-    const desiredLeft = (availableWidth - menu.offsetWidth) / 2
-    const maximumLeft = window.innerWidth - menu.offsetWidth - 12
 
-    menuLeft.value = Math.max(12, Math.min(desiredLeft, maximumLeft))
-    menuTop.value = Math.round(headerBottom + 20)
+    return window.scrollY + headerBottom + 36
 }
 
-function observeCurrentContent() {
-    contentResizeObserver?.disconnect()
+function followScroll() {
+    const targetTop = getTargetTop()
+    const distance = targetTop - currentTop
 
-    const content = getContentAnchor()
+    currentTop += distance * 0.16
+    // 빠르게 아래로 스크롤해도 메뉴가 헤더 영역으로 올라가지 않도록
+    // 현재 화면에서 허용되는 최소 위치보다 항상 아래에 표시합니다.
+    menuTop.value = Math.max(currentTop, targetTop)
 
-    if (!content) return
+    if (Math.abs(distance) < 0.5) {
+        currentTop = targetTop
+        menuTop.value = targetTop
+        animationFrame = 0
+        return
+    }
 
-    contentResizeObserver = new ResizeObserver(updateMenuPosition)
-    contentResizeObserver.observe(content)
+    animationFrame = window.requestAnimationFrame(followScroll)
+}
+
+function startFollowing() {
+    if (animationFrame) return
+    animationFrame = window.requestAnimationFrame(followScroll)
+}
+
+function resetMenuPosition() {
+    window.cancelAnimationFrame(animationFrame)
+    animationFrame = 0
+    currentTop = getTargetTop()
+    menuTop.value = currentTop
 }
 
 watch(
     () => route.fullPath,
     async () => {
         await nextTick()
-        observeCurrentContent()
-        window.requestAnimationFrame(updateMenuPosition)
+        window.requestAnimationFrame(resetMenuPosition)
     }
 )
 
-onMounted(async () => {
-    window.addEventListener('resize', updateMenuPosition)
-
-    await nextTick()
-    observeCurrentContent()
-    window.requestAnimationFrame(updateMenuPosition)
+onMounted(() => {
+    resetMenuPosition()
+    window.addEventListener('scroll', startFollowing, { passive: true })
+    window.addEventListener('resize', resetMenuPosition)
 })
 
 onUnmounted(() => {
-    window.removeEventListener('resize', updateMenuPosition)
-    contentResizeObserver?.disconnect()
+    window.cancelAnimationFrame(animationFrame)
+    window.removeEventListener('scroll', startFollowing)
+    window.removeEventListener('resize', resetMenuPosition)
 })
 
 </script>
@@ -127,10 +115,13 @@ onUnmounted(() => {
 
 /* 메뉴 위치 */
 .resident-floating-menu {
-    /* 헤더 아래 20px 위치에서 스크롤과 무관하게 고정합니다. */
-    position: fixed;
-    right: auto;
-    transition: left 0.2s ease;
+    /*
+     * 페이지별 콘텐츠 크기나 렌더링 시점과 무관하게 같은 좌측 좌표를 사용합니다.
+     * top은 현재 스크롤 위치를 부드럽게 따라가도록 스크립트에서 갱신합니다.
+     */
+    position: absolute;
+    left: clamp(12px, 4vw, 60px);
+    will-change: top;
 
     display: flex;
     flex-direction: column;
@@ -184,7 +175,7 @@ onUnmounted(() => {
 @media(max-width:900px) {
 
     .resident-floating-menu {
-        right: auto;
+        left: 12px;
     }
 
     .resident-floating-menu a {

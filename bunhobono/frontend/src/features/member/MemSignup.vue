@@ -113,10 +113,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useDialog } from "@/shared/alert/useDialog";
 import { useMemStore } from "./memStore";
 
 const router = useRouter();
 const store = useMemStore();
+const { alertDialog } = useDialog();
 const props = defineProps({
     adminMode: {
         type: Boolean,
@@ -143,6 +145,7 @@ const checkedLoginId = ref("");
 const phoneParts = reactive({ first: "", middle: "", last: "" });
 
 const needsAvailableUnit = computed(() => !props.adminMode || member.value.role === "RESIDENT");
+const dialogTheme = computed(() => props.adminMode ? "admin" : "resident");
 
 const statusOptions = computed(() => {
     if (member.value.role === 'ADMIN') {
@@ -234,7 +237,12 @@ const handlePasswordInput = (event) => {
 // 아이디 중복확인
 const idCheck = async () => {
     if (!loginIdPattern.test(member.value.loginId)) {
-        alert("아이디는 영문과 숫자를 조합해 4~20자로 입력하세요.");
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "warning",
+            title: "아이디 형식 확인",
+            message: "아이디는 영문과 숫자를 조합해 4~20자로 입력하세요."
+        });
         return;
     }
 
@@ -244,12 +252,22 @@ const idCheck = async () => {
         // true = 이미 존재
         idChecked.value = false;
         checkedLoginId.value = "";
-        alert("이미 사용중인 아이디입니다.");
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "warning",
+            title: "아이디 중복 확인",
+            message: "이미 사용 중인 아이디입니다."
+        });
     } else {
         // false = 사용 가능
         idChecked.value = true;
         checkedLoginId.value = member.value.loginId;
-        alert("사용 가능한 아이디입니다.");
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "success",
+            title: "아이디 사용 가능",
+            message: "사용 가능한 아이디입니다."
+        });
     }
     
 }

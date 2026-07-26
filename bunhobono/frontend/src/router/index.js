@@ -8,6 +8,16 @@ import { useHistoryStore } from '@/stores/historyStore'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to, _from, savedPosition) {
+    if (to.path.startsWith('/resident')) {
+      return {
+        left: 0,
+        top: 0,
+      }
+    }
+
+    return savedPosition
+  },
   routes: [    
     {
       path : '/',

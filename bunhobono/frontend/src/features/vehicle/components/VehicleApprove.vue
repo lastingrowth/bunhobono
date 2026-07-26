@@ -4,10 +4,11 @@
       <h3>승인 대기 차량</h3>
     </div>
 
-    <div class="admin-table-scroll">
+    <div class="admin-table-scroll management-list-table">
     <table border="">
       <thead>
         <tr>
+          <th>번호</th>
           <th>차량번호</th>
           <th>차량종류</th>
           <th>승인상태</th>
@@ -18,35 +19,39 @@
       </thead>
 
       <tbody>
-        <tr v-for="vehicle in paginatedItems" :key="vehicle.vehicleCarNo">
+        <tr v-for="(vehicle, index) in paginatedItems" :key="vehicle.vehicleCarNo">
+          <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
           <td>{{ vehicle.carNo }}</td>
           <td>{{ vehicle.vehicleTypeText || vehicle.vehicleType }}</td>
           <td>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus }}</td>
           <td>{{ vehicle.startDateText || '-' }}</td>
           <td>{{ vehicle.periodText || '-' }}</td>
           <td class="action-cell">
-            <button
-              type="button"
-              :disabled="processingNo === vehicle.vehicleCarNo"
-              @click="approve(vehicle)"
-            >
-              승인
-            </button>
+            <div class="action-buttons">
+              <button
+                type="button"
+                class="approve-btn"
+                :disabled="processingNo === vehicle.vehicleCarNo"
+                @click="approve(vehicle)"
+              >
+                승인
+              </button>
 
-            <button
-              type="button"
-              class="reject-btn"
-              :disabled="processingNo === vehicle.vehicleCarNo"
-              @click="openRejectDialog(vehicle)"
-            >
-              반려
-            </button>
+              <button
+                type="button"
+                class="reject-btn"
+                :disabled="processingNo === vehicle.vehicleCarNo"
+                @click="openRejectDialog(vehicle)"
+              >
+                반려
+              </button>
+            </div>
           </td>
 
         </tr>
 
         <tr v-if="paginatedItems.length === 0">
-          <td colspan="6" align="center">
+          <td colspan="7" align="center">
             승인 대기 차량이 없습니다.
           </td>
         </tr>
@@ -109,7 +114,22 @@ const rejectDialog = ref(null)
 const rejectTarget = ref(null)
 const rejectReason = ref('')
 
-const approveVehicles = computed(() => props.vehicles)
+const approveVehicles = computed(() => {
+  const list = [...props.vehicles]
+
+  return list.sort((a, b) => {
+    const left = Number(
+      a.displayNo ?? a.vehicleCarNo
+    )
+
+    const right = Number(
+      b.displayNo ?? b.vehicleCarNo
+    )
+
+    return right - left
+  })
+})
+
 const pageSize = 10
 
 const {
@@ -189,12 +209,37 @@ async function submitReject() {
 </script>
 
 <style scoped>
+
+table th,
+table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.action-cell {
+  justify-content: center;
+}
+
 .approve-header,
-.action-cell,
 .dialog-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.action-buttons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.action-buttons button {
+  min-width: 46px;
+  height: 24px;
+  padding: 2px 8px;
+  line-height: 18px;
+  white-space: nowrap;
 }
 
 .approve-header {

@@ -539,7 +539,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
             },
             {
                 key: 'unknownLongStay',
-                label: '비등록 장기주차 알림',
+                label: '미등록 장기주차 알림',
                 count: unknownLongStayCount,
             },
             {

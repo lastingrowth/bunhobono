@@ -230,6 +230,11 @@ async function deleteNotification(vehicleNtNo) {
 </script>
 
 <style scoped>
+:global(.resident-layout .content > .resident-vehicle-management) {
+  width: min(1120px, calc(100% - 200px));
+  max-width: 1120px;
+}
+
 .resident-vehicle-management {
   display: flex;
   flex-direction: column;
@@ -329,6 +334,10 @@ async function deleteNotification(vehicleNtNo) {
 }
 
 @media (max-width: 600px) {
+  :global(.resident-layout .content > .resident-vehicle-management) {
+    width: calc(100% - 12px);
+  }
+
   .vehicle-management-section {
     padding: 18px;
   }
@@ -342,4 +351,10 @@ async function deleteNotification(vehicleNtNo) {
 }
 
 .resident-vehicle-header-actions { display: flex; align-items: center; gap: 8px; }
+
+@media (min-width: 601px) and (max-width: 900px) {
+  :global(.resident-layout .content > .resident-vehicle-management) {
+    width: calc(100% - 36px);
+  }
+}
 </style>

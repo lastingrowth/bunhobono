@@ -13,7 +13,10 @@
       <p v-if="store.loading" class="board-state">공지사항을 불러오는 중입니다.</p>
       <p v-else-if="store.errorMessage" class="board-state error">{{ store.errorMessage }}</p>
 
-      <div v-else class="board-table-wrap">
+      <div
+        v-else
+        class="board-table-wrap admin-table-scroll management-list-table"
+      >
         <table class="board-table">
           <thead>
             <tr>
@@ -498,17 +501,8 @@ onBeforeUnmount(() => {
 button:disabled { cursor: not-allowed; opacity: .6; }
 .board-state { padding: 30px; text-align: center; border: 1px solid #dce5ec; background: #fff; }
 .board-state.error { color: #c73d3d; }
-.board-table-wrap { overflow-x: auto; border: 1px solid #d8e2ea; border-radius: 10px; background: #fff; }
-.board-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.board-table th,.board-table td { padding: 13px 11px; border-bottom: 1px solid #e1e8ee; text-align: center; vertical-align: middle; }
-.board-table th { color: #29465f; background: #eef4f8; font-size: 13px; }
-.board-table th:nth-child(1) { width: 6%; }
-.board-table th:nth-child(2) { width: 24%; }
-.board-table th:nth-child(3) { width: 26%; }
-.board-table th:nth-child(4) { width: 8%; }
-.board-table th:nth-child(5) { width: 9%; }
-.board-table th:nth-child(6) { width: 13%; }
-.board-table th:nth-child(7) { width: 14%; }
+.board-table-wrap { width: 100%; max-width: 100%; }
+.board-table th,.board-table td { text-align: center; vertical-align: middle; }
 .title-button {
   cursor: pointer;
   color: #176fba;

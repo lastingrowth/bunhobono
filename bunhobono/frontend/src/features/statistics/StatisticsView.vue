@@ -158,27 +158,27 @@
                         </span>
                     </div>
 
-                    <!-- 주간 / 월간 / 연간 버튼 -->
+                    <!-- 일간 / 주간 / 월간 버튼 -->
                     <div class="period-buttons">
                         <button
                             type="button"
                             :class="{ active: statsStore.entryPeriod === 'weekly' }"
                             @click="statsStore.changeEntryPeriod('weekly')">
-                            주간
+                            일간
                         </button>
 
                         <button
                             type="button"
                             :class="{ active: statsStore.entryPeriod === 'monthly' }"
                             @click="statsStore.changeEntryPeriod('monthly')">
-                            월간
+                            주간
                         </button>
 
                         <button
                             type="button"
                             :class="{ active: statsStore.entryPeriod === 'yearly' }"
                             @click="statsStore.changeEntryPeriod('yearly')">
-                            연간
+                            월간
                         </button>
                     </div>
 
