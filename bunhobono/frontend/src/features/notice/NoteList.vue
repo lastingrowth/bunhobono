@@ -235,7 +235,7 @@ const columns = [
   { key: "registeredCarNo", fallbackKey: "registered_car_no", label: "등록 차량번호", className: "col-sm" },
   { key: "capturedCarNo", fallbackKey: "captured_car_no", label: "촬영 차량번호", className: "col-sm" },
   { key: "detectAt", fallbackKey: "detect_at", label: "감지 일시", className: "col-date", type: "date" },
-  { key: "stayDays", fallbackKey: "stay_days", label: "주차 일수", className: "col-xs" },
+  { key: "stayDays", fallbackKey: "stay_days", label: "감지 후 경과 일수", className: "col-xs" },
   { key: "alertStat", fallbackKey: "alert_stat", label: "처리 상태", className: "col-status" },
 ];
 

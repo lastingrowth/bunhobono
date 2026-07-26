@@ -1,5 +1,19 @@
 BEGIN;
 
+-- 승인 알림 유형이 누락된 기존 DB에서도 방문차량 승인이 롤백되지 않도록 제약조건을 동기화한다.
+ALTER TABLE vehicle_nt
+    DROP CONSTRAINT IF EXISTS vehicle_nt_notification_type_check;
+ALTER TABLE vehicle_nt
+    ADD CONSTRAINT vehicle_nt_notification_type_check
+    CHECK (notification_type IN (
+        'ADMIN_APPROVED',
+        'ADMIN_REJECTED',
+        'APPROVAL_TIMEOUT',
+        'NO_ENTRY_EXPIRED',
+        'VISIT_OVERDUE',
+        'VISIT_OVERDUE_EXIT'
+    ));
+
 -- 기존 데이터를 모두 비우고 PK 번호를 1부터 다시 시작합니다.
 TRUNCATE TABLE
     trash_bin,
@@ -85,7 +99,7 @@ VALUES
     ('res37',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 702,  '에릭렌셔',   '010-3000-0036', 'RESIDENT', TIMESTAMP '2025-08-25 10:00:00', NULL,                              'ACTIVE'),
     ('res38',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 802,  '브루스웨인', '010-3000-0037', 'RESIDENT', TIMESTAMP '2025-09-08 10:00:00', NULL,                              'ACTIVE'),
     ('res39',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 902,  '클라크켄트', '010-3000-0038', 'RESIDENT', TIMESTAMP '2025-09-22 10:00:00', NULL,                              'ACTIVE'),
-    ('res40',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 1002, '미등록',     '미등록',        'RESIDENT', TIMESTAMP '2025-10-06 10:00:00', NULL,                              'ACTIVE'),
+    ('res40',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 1002, '로건로건',     '010-4100-1274',        'RESIDENT', TIMESTAMP '2025-10-06 10:00:00', NULL,                              'ACTIVE'),
 
     -- [201동]
     -- 거주 15세대 / 가입 승인 대기 5세대
@@ -504,8 +518,12 @@ INSERT INTO demo_event
 SELECT 'NOW-V-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 48 + g), 'VISIT',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       CASE WHEN g = 1 THEN CURRENT_TIMESTAMP - INTERVAL '26 hours'
-            ELSE CURRENT_TIMESTAMP - ((9 - g) * INTERVAL '7 minutes') END,
+       CASE
+            WHEN g = 1 THEN CURRENT_TIMESTAMP - INTERVAL '30 hours'
+            WHEN g = 2 THEN CURRENT_TIMESTAMP - INTERVAL '55 hours'
+            WHEN g = 3 THEN CURRENT_TIMESTAMP - INTERVAL '80 hours'
+            ELSE CURRENT_TIMESTAMP - ((9 - g) * INTERVAL '7 minutes')
+       END,
        NULL, NULL
 FROM generate_series(1, 8) AS g;
 
@@ -516,7 +534,12 @@ INSERT INTO demo_event
 SELECT 'NOW-U-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 57 + g), 'UNKNOWN',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       CURRENT_TIMESTAMP - ((5 - g) * INTERVAL '20 minutes'),
+       CASE
+            WHEN g = 1 THEN CURRENT_TIMESTAMP - INTERVAL '50 hours'
+            WHEN g = 2 THEN CURRENT_TIMESTAMP - INTERVAL '75 hours'
+            WHEN g = 3 THEN CURRENT_TIMESTAMP - INTERVAL '100 hours'
+            ELSE CURRENT_TIMESTAMP - ((5 - g) * INTERVAL '20 minutes')
+       END,
        NULL, NULL
 FROM generate_series(1, 4) AS g;
 
@@ -593,29 +616,87 @@ INSERT INTO notice
  snapshot_registered_car_no, snapshot_captured_car_no,
  snapshot_car_kind, snapshot_parking_name, snapshot_in_time)
 SELECT cl.car_log_no,
-       CURRENT_TIMESTAMP - (x.age_hours * INTERVAL '1 hour'),
-       x.stay_days, x.alert_stat,
+       schedule.detect_at,
+       GREATEST(1, FLOOR(EXTRACT(EPOCH FROM (schedule.detect_at - cl.in_time)) / 86400)::INT),
+       x.alert_stat,
        CASE WHEN x.alert_stat = 'Unresolved' THEN NULL ELSE 1 END,
        CASE WHEN x.alert_stat = 'Unresolved' THEN NULL
-            ELSE CURRENT_TIMESTAMP - ((x.age_hours - 1) * INTERVAL '1 hour') END,
-    cl.car_log_no, vc.car_no, cl.snapshot_car_no, x.car_kind,
-    p.parking_name, cl.in_time
+            ELSE schedule.detect_at + INTERVAL '1 hour' END,
+       cl.car_log_no, vc.car_no, cl.snapshot_car_no, x.car_kind,
+       p.parking_name, cl.in_time
 FROM (VALUES
-    ('225하2171','VISIT',  'Unresolved',1,2),
-    ('103호3307','UNKNOWN','Unresolved',2,3),
-    ('143모8849','VISIT',  'Checked',   2,8),
-    ('40거2054', 'UNKNOWN','Resolved',  3,9),
-    ('91어6511', 'VISIT',  'Resolved',  3,16),
-    ('48나8278', 'UNKNOWN','Resolved',  4,20)
-    ) AS x(car_no, car_kind, alert_stat, stay_days, age_hours)
+    ('225하2171','VISIT',  'Unresolved'),
+    ('103호3307','UNKNOWN','Unresolved'),
+    ('143모8849','VISIT',  'Checked'),
+    ('40거2054', 'UNKNOWN','Resolved'),
+    ('91어6511', 'VISIT',  'Resolved'),
+    ('48나8278', 'UNKNOWN','Resolved')
+    ) AS x(car_no, car_kind, alert_stat)
     JOIN LATERAL (
     SELECT * FROM car_log cl0
     WHERE cl0.snapshot_car_no = x.car_no
+      AND cl0.out_time IS NULL
     ORDER BY cl0.in_time DESC LIMIT 1
     ) cl ON TRUE
     LEFT JOIN vehicle_car vc ON vc.vehicle_car_no = cl.vehicle_car_no
+    CROSS JOIN LATERAL (
+        SELECT CASE
+            WHEN x.car_kind = 'VISIT' THEN
+                cl.in_time + (vc.end_date - vc.start_date)
+                + INTERVAL '1 day'
+            ELSE
+                cl.in_time + INTERVAL '2 days'
+        END AS detect_at
+    ) schedule
     JOIN gate g ON g.gate_no = cl.in_gate_no
     JOIN parking p ON p.parking_no = g.parking_no;
+
+-- 처리완료 알림과 미확인 알림 1건은 감지 후 실제 출차한 상황으로 만든다.
+-- 미확인 출차 사례는 차량은 나갔지만 관리자가 아직 알림을 열어보지 않은 경우다.
+-- 출차 시각뿐 아니라 출차 카메라 데이터도 함께 생성해 카로그 연결을 유지한다.
+WITH resolved_exit AS (
+    SELECT n.notice_no,
+           cl.car_log_no,
+           cl.vehicle_car_no,
+           cl.snapshot_car_no AS car_no,
+           cl.in_gate_no + 1 AS out_gate_no,
+           n.detect_at + INTERVAL '2 hours' AS out_time
+    FROM notice n
+    JOIN car_log cl ON cl.car_log_no = n.car_log_no
+    WHERE (
+            n.alert_stat = 'Resolved'
+            OR (
+                n.alert_stat = 'Unresolved'
+                AND n.snapshot_captured_car_no = '103호3307'
+            )
+          )
+      AND cl.out_time IS NULL
+), inserted_exit_camera AS (
+    INSERT INTO camera_data
+    (camera_no, vehicle_car_no, car_no, ocr_car_no, capture_time,
+     image_path, crop_image_path, recognition_state, confidence_score, cam_note)
+    SELECT re.out_gate_no,
+           re.vehicle_car_no,
+           re.car_no,
+           COALESCE(dp.ocr_car_no, re.car_no),
+           re.out_time,
+           'camera-data/' || dp.image_file,
+           'camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+           TRUE,
+           98.20,
+           'NOTICE-OUT-' || re.notice_no
+    FROM resolved_exit re
+    JOIN demo_plate dp ON dp.car_no = re.car_no
+    RETURNING camera_data_no, cam_note
+)
+UPDATE car_log cl
+SET out_gate_no = re.out_gate_no,
+    out_time = re.out_time,
+    out_camera_data_no = iec.camera_data_no
+FROM resolved_exit re
+JOIN inserted_exit_camera iec
+  ON iec.cam_note = 'NOTICE-OUT-' || re.notice_no
+WHERE cl.car_log_no = re.car_log_no;
 
 -- =====================================================
 -- 9. 통계용 완료 입출차 기록
@@ -705,7 +786,7 @@ SELECT 'CAMERA_DATA', 100000 + (e.stat_no * 2) + cap.offset_no,
            'crop_image_path','camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
            'recognition_state',TRUE,
            'confidence_score',96.10 + ((e.stat_no + cap.offset_no) % 8) * 0.35,
-           'cam_note','STAT-' || e.stat_no || '-' || cap.capture_side
+           'cam_note',NULL
        ),
        'SCHEDULED', e.out_time + INTERVAL '3 months', CURRENT_TIMESTAMP + INTERVAL '1 year'
 FROM demo_stats_event e
@@ -776,4 +857,7 @@ SELECT setval(pg_get_serial_sequence('car_log','car_log_no'), MAX(car_log_no), T
 SELECT setval(pg_get_serial_sequence('notice','notice_no'), MAX(notice_no), TRUE) FROM notice;
 SELECT setval(pg_get_serial_sequence('trash_bin','trash_no'), MAX(trash_no), TRUE) FROM trash_bin;
 
+-- cam_note는 연결용 임시 키로만 사용한다. 최초 더미 비고는 모두 비워 둔다.
+UPDATE camera_data
+SET cam_note = NULL;
 COMMIT;

@@ -82,7 +82,9 @@
           maxlength="300"
           placeholder="입주민에게 전달할 반려 사유"
           required
+          @input="rejectError = ''"
         />
+        <p v-if="rejectError" class="reject-error">{{ rejectError }}</p>
 
         <div class="dialog-actions">
           <button type="button" @click="closeRejectDialog">취소</button>
@@ -90,13 +92,24 @@
         </div>
       </form>
     </dialog>
-  </div>
+    <ManagementConfirm
+      :open="approveConfirmOpen"
+      title="방문차량 승인"
+      :item-name="approveTarget?.carNo || ''"
+      message="차량의 방문 신청을 승인하시겠습니까?"
+      :processing="processingNo !== null"
+      confirm-text="승인"
+      processing-text="승인 중"
+      @cancel="cancelApprove"
+      @confirm="confirmApprove"
+    />  </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { usePagination } from '@/shared/pagination/usePagination'
 import Pagination from '@/shared/pagination/Pagination.vue'
+import ManagementConfirm from '@/shared/components/ManagementConfirm.vue'
 import { useVehicleStore } from '../vehicleStore'
 
 const props = defineProps({
@@ -106,13 +119,16 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['back'])
+const emit = defineEmits(['back', 'feedback'])
 const vehicleStore = useVehicleStore()
 
 const processingNo = ref(null)
+const approveTarget = ref(null)
+const approveConfirmOpen = ref(false)
 const rejectDialog = ref(null)
 const rejectTarget = ref(null)
 const rejectReason = ref('')
+const rejectError = ref('')
 
 const approveVehicles = computed(() => {
   const list = [...props.vehicles]
@@ -154,17 +170,36 @@ onBeforeUnmount(() => {
   window.clearInterval(refreshTimer)
 })
 
-async function approve(vehicle) {
-  if (!confirm(`${vehicle.carNo} 차량을 승인할까요?`)) {
+function approve(vehicle) {
+  approveTarget.value = vehicle
+  approveConfirmOpen.value = true
+}
+
+function cancelApprove() {
+  if (processingNo.value === null) {
+    approveConfirmOpen.value = false
+    approveTarget.value = null
+  }
+}
+
+async function confirmApprove() {
+  if (!approveTarget.value || processingNo.value !== null) {
     return
   }
 
+  const vehicle = approveTarget.value
   processingNo.value = vehicle.vehicleCarNo
+  approveConfirmOpen.value = false
+  approveTarget.value = null
 
   try {
     await vehicleStore.changeVehicleApproveStatus(vehicle.vehicleCarNo, {
       vehicleStatus: 'APPROVED'
     })
+    emit('feedback', `${vehicle.carNo} 차량이 승인되었습니다.`)
+  } catch (error) {
+    console.error('차량 승인 실패', error)
+    emit('feedback', error.response?.data?.message || '차량 승인에 실패했습니다.', 'error')
   } finally {
     processingNo.value = null
   }
@@ -173,6 +208,7 @@ async function approve(vehicle) {
 function openRejectDialog(vehicle) {
   rejectTarget.value = vehicle
   rejectReason.value = ''
+  rejectError.value = ''
   rejectDialog.value.showModal()
 }
 
@@ -180,28 +216,35 @@ function closeRejectDialog() {
   rejectDialog.value.close()
   rejectTarget.value = null
   rejectReason.value = ''
+  rejectError.value = ''
 }
 
 async function submitReject() {
   const reason = rejectReason.value.trim()
 
   if (!reason || !rejectTarget.value) {
-    alert('반려 사유를 입력하세요.')
+    rejectError.value = '반려 사유를 입력하세요.'
+    emit('feedback', rejectError.value, 'error')
     return
   }
 
-  processingNo.value = rejectTarget.value.vehicleCarNo
+  const vehicle = rejectTarget.value
+  processingNo.value = vehicle.vehicleCarNo
+  closeRejectDialog()
 
   try {
     await vehicleStore.changeVehicleApproveStatus(
-      rejectTarget.value.vehicleCarNo,
+      vehicle.vehicleCarNo,
       {
         vehicleStatus: 'REJECTED',
         rejectReason: reason
       }
     )
 
-    closeRejectDialog()
+    emit('feedback', `${vehicle.carNo} 차량이 반려되었습니다.`)
+  } catch (error) {
+    console.error('차량 반려 실패', error)
+    emit('feedback', error.response?.data?.message || '차량 반려에 실패했습니다.', 'error')
   } finally {
     processingNo.value = null
   }
@@ -279,6 +322,12 @@ table td {
   resize: vertical;
 }
 
+.reject-error {
+  margin: 8px 0 0;
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 700;
+}
 .dialog-actions {
   justify-content: flex-end;
   margin-top: 16px;

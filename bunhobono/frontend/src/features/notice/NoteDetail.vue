@@ -225,10 +225,10 @@ const detailRows = computed(() => {
     { label: "촬영 차량번호", value: notice.value.capturedCarNo },
     { label: "차량 구분", value: formatCarKind(notice.value.carKind) },
     { label: "주차장", value: notice.value.parkingName },
-    { label: "입차 일시", value: formatDate(notice.value.inTime) },
-    { label: "출차 일시", value: formatDate(notice.value.outTime) },
+    { label: "출차 예정 일시", value: formatDate(notice.value.expectedOutTime) },
+    { label: "실제 출차 일시", value: formatDate(notice.value.outTime) },
     { label: "감지 일시", value: formatDate(notice.value.detectAt) },
-    { label: "주차 일수", value: notice.value.stayDays },
+    { label: "감지 후 경과 일수", value: notice.value.stayDays },
     { label: "처리 상태", value: statusOptions[notice.value.alertStat] ?? notice.value.alertStat },
     { label: "처리 관리자", value: notice.value.alertStat === "Resolved" ? notice.value.handledByMemberName : "-", },
   ];

@@ -28,12 +28,28 @@ public interface NoticeMapper {
                 n.snapshot_car_kind
             ) AS car_kind,
             n.detect_at,
-            n.stay_days,
+            GREATEST(
+                0,
+                FLOOR(EXTRACT(EPOCH FROM (
+                    COALESCE(cl.out_time, CURRENT_TIMESTAMP) - n.detect_at
+                )) / 86400)::INT
+            ) AS stay_days,
             n.alert_stat,
             n.handled_by_member_no,
             m.mem_name AS handled_by_member_name,
             n.handled_at,
             COALESCE(cl.in_time, n.snapshot_in_time) AS in_time,
+            CASE
+                WHEN cl.car_log_no IS NULL THEN NULL
+                WHEN cl.vehicle_car_no IS NULL
+                    THEN cl.in_time + INTERVAL '1 day'
+                WHEN vc.vehicle_type = 'visit'
+                     AND vc.start_date IS NOT NULL
+                     AND vc.end_date IS NOT NULL
+                    THEN cl.in_time + (vc.end_date - vc.start_date)
+                WHEN vc.vehicle_type = 'normal' THEN vc.end_date
+                ELSE NULL
+            END AS expected_out_time,
             cl.out_time AS out_time,
             COALESCE(p.parking_name, n.snapshot_parking_name) AS parking_name
         FROM notice n
@@ -114,9 +130,9 @@ public interface NoticeMapper {
 //            ") " +
             "AND (" +
 
-                // 미등록차량이 하루 이상 주차 중
+                // 미등록차량: 입차 + 1일을 출차 예정으로 보고, 예정 후 1일 초과 시 알림
                 "(cl.vehicle_car_no IS NULL " +
-                "AND cl.in_time <= NOW() - INTERVAL '1 day') " +
+                "AND cl.in_time <= NOW() - INTERVAL '2 days') " +
 
                 "OR " +
 
@@ -130,13 +146,13 @@ public interface NoticeMapper {
 
                 "OR " +
 
-                // 방문차량: 입차시간 + 신청시간 + 30분 기준
+                // 방문차량: 실제 입차시간 + 신청 이용시간을 출차 예정으로 계산
                 "(vc.vehicle_type = 'visit' " +
                 "AND vc.start_date IS NOT NULL " +
                 "AND vc.end_date IS NOT NULL " +
                 "AND cl.in_time IS NOT NULL " +
                 "AND cl.in_time + (vc.end_date - vc.start_date) " +
-                "+ INTERVAL '30 minutes' <= NOW() - INTERVAL '1 day')" +
+                "<= NOW() - INTERVAL '1 day')" +
 
                 "))" +
 

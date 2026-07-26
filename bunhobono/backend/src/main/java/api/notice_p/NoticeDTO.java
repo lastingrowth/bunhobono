@@ -21,6 +21,7 @@ public class NoticeDTO {
     private LocalDateTime handledAt;
 
     private LocalDateTime inTime;
+    private LocalDateTime expectedOutTime;
     private LocalDateTime outTime;
     private String parkingName;
 

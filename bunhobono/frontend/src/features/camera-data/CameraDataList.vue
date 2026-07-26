@@ -69,7 +69,11 @@
       </thead>
 
       <tbody>
-        <tr v-for="(d, index) in visibleCameraDataList" :key="d.cameraDataNo">
+        <tr
+          v-for="(d, index) in visibleCameraDataList"
+          :key="d.cameraDataNo"
+          :class="{ 'has-camera-note': hasCameraNote(d) }"
+        >
           <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
           <td>{{ formatParkingName(d.parkingName) }}</td>
           <td>{{ d.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</td>
@@ -77,6 +81,7 @@
           <td>{{ formatDate(d.captureTime) }}</td>
           <td>{{ d.movementTypeText }}</td>
           <td>{{ formatConfidence(d.confidenceScore) }}</td>
+
           <td class="camera-data-action"><router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo: d.cameraDataNo }, query: { ...route.query, page: currentPage } }"><button>이미지보기</button></router-link></td>
           <td class="camera-data-action"><button type="button" @click="requestDelete(d)">삭제</button></td>
         </tr>
@@ -211,6 +216,10 @@ const formatDate = (value) => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ko-KR');
 };
 
+const hasCameraNote = (cameraData) => {
+  return Boolean(String(cameraData?.camNote ?? "").trim());
+};
+
 const formatConfidence = (value) => {
   if (value === null || value === undefined) return '-';
   return `${Number(value).toFixed(1)}%`;
@@ -264,6 +273,18 @@ onMounted(async () => {
   height: 30px !important;
 }
 
+.camera-data-table tbody tr.has-camera-note td {
+  border-color: #a8c8e8;
+  background: #eaf4ff;
+}
+
+.camera-data-table tbody tr.has-camera-note:hover td {
+  background: #dceeff;
+}
+
+.camera-data-table tbody tr.has-camera-note td:first-child {
+  box-shadow: inset 3px 0 0 #2f80c9;
+}
 .camera-data-action {
   height: 30px !important;
   line-height: 1;
