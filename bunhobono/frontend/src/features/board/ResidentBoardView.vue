@@ -4,7 +4,6 @@
       <header class="page-header">
         <div>
           <h2>공지사항</h2>
-          <p>관리사무소에서 등록한 공지사항을 확인할 수 있습니다.</p>
         </div>
         <button type="button" @click="goDashboard">대시보드로 돌아가기</button>
       </header>
@@ -59,7 +58,6 @@
       <header class="page-header">
         <div>
           <h2>공지사항 상세</h2>
-          <p>공지 내용을 확인합니다.</p>
         </div>
         <div class="detail-navigation">
           <button type="button" class="home-button" @click="goDashboard">홈으로 돌아가기</button>

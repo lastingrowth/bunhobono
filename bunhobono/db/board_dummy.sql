@@ -32,7 +32,7 @@ INSERT INTO board (
 점검 시간에는 엘리베이터 이용이 제한될 수 있으니 입주민 여러분의 양해를 부탁드립니다.
 BunhoBono APT
 $content$,
-    'C:/project/bunhobono/bunhobono/backend/runtime/board/elevator-inspection-poster.png',
+    'classpath:board-seed/elevator-inspection-poster.png',
     '엘레베이터점검포스터.png',
     'image/png',
     CURRENT_TIMESTAMP,
@@ -72,7 +72,7 @@ INSERT INTO board (
 작업 진행 상황에 따라 단수 시간이 변경될 수 있으니 필요한 물을 미리 받아두시기 바랍니다.
 BunhoBono APT
 $content$,
-    'C:/project/bunhobono/bunhobono/backend/runtime/board/water-outage-poster.png',
+    'classpath:board-seed/water-outage-poster.png',
     '단수안내포스터.png',
     'image/png',
     CURRENT_TIMESTAMP,
@@ -109,7 +109,7 @@ INSERT INTO board (
 입주민 여러분의 많은 참여를 부탁드립니다.
 BunhoBono APT
 $content$,
-    'C:/project/bunhobono/bunhobono/backend/runtime/board/sharing-market-poster.png',
+    'classpath:board-seed/sharing-market-poster.png',
     '알뜰장터포스터.png',
     'image/png',
     CURRENT_TIMESTAMP,

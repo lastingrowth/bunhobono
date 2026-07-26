@@ -76,7 +76,6 @@
       <header class="board-page-header">
         <div>
           <h2>공지사항 상세</h2>
-          <p>등록된 공지 내용과 게시 상태를 확인합니다.</p>
         </div>
         <div class="detail-header-actions">
           <button class="secondary-button" type="button" @click="goList">목록</button>
@@ -133,7 +132,6 @@
       <header class="board-page-header">
         <div>
           <h2>{{ mode === "create" ? "공지사항 등록" : "공지사항 수정" }}</h2>
-          <p>공지 내용, 게시기간과 이미지를 입력합니다.</p>
         </div>
         <button class="secondary-button" type="button" @click="cancelForm">뒤로</button>
       </header>
