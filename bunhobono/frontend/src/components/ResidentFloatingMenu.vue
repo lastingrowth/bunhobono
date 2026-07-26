@@ -4,7 +4,7 @@
         class="resident-floating-menu"
         :style="{
             left: `${menuLeft}px`,
-            transform: 'translateY(-50%)'
+            top: `${menuTop}px`
         }"
     >
         <RouterLink to="/resident/mypage"
@@ -52,27 +52,58 @@ import { useRoute } from 'vue-router';
 const route = useRoute()
 
 const menuLeft = ref(0)
+const menuTop = ref(0)
 const floatingMenu = ref(null)
+let contentResizeObserver = null
 
-// resident 화면마다 콘텐츠 폭이 다르므로 현재 콘텐츠의 오른쪽 끝을 기준으로 배치합니다.
+function getContentAnchor() {
+    const selectors = [
+        '.resident-layout .resident-board',
+        '.resident-layout .mypage-card',
+        '.resident-layout .resident-board-list-page',
+        '.resident-layout .resident-vehicle-management',
+        '.resident-layout .content > *',
+    ]
+
+    return selectors
+        .map((selector) => document.querySelector(selector))
+        .find(Boolean)
+}
+
+// 화면 왼쪽 끝과 콘텐츠 카드 왼쪽 끝 사이의 중앙에 메뉴를 배치합니다.
 function updateMenuPosition() {
-    const content = document.querySelector('.resident-layout .content > *')
+    const content = getContentAnchor()
+    const header = document.querySelector('.resident-layout .header')
     const menu = floatingMenu.value
 
     if (!content || !menu) return
 
     const contentRect = content.getBoundingClientRect()
-    // 본문 카드와 메뉴 사이에 24px 간격을 둡니다.
-    const desiredLeft = contentRect.right + window.scrollX + 24
+    const headerBottom = header?.getBoundingClientRect().bottom ?? 60
+    const availableWidth = Math.max(0, contentRect.left)
+    const desiredLeft = (availableWidth - menu.offsetWidth) / 2
     const maximumLeft = window.innerWidth - menu.offsetWidth - 12
 
     menuLeft.value = Math.max(12, Math.min(desiredLeft, maximumLeft))
+    menuTop.value = Math.round(headerBottom + 20)
+}
+
+function observeCurrentContent() {
+    contentResizeObserver?.disconnect()
+
+    const content = getContentAnchor()
+
+    if (!content) return
+
+    contentResizeObserver = new ResizeObserver(updateMenuPosition)
+    contentResizeObserver.observe(content)
 }
 
 watch(
     () => route.fullPath,
     async () => {
         await nextTick()
+        observeCurrentContent()
         window.requestAnimationFrame(updateMenuPosition)
     }
 )
@@ -81,11 +112,13 @@ onMounted(async () => {
     window.addEventListener('resize', updateMenuPosition)
 
     await nextTick()
+    observeCurrentContent()
     window.requestAnimationFrame(updateMenuPosition)
 })
 
 onUnmounted(() => {
     window.removeEventListener('resize', updateMenuPosition)
+    contentResizeObserver?.disconnect()
 })
 
 </script>
@@ -94,13 +127,10 @@ onUnmounted(() => {
 
 /* 메뉴 위치 */
 .resident-floating-menu {
-    /* 화면에 고정하지 않고 resident 본문 영역 옆에 배치합니다. */
-    position: absolute;
-    /* 실제 left 값은 현재 resident 콘텐츠의 오른쪽 끝을 기준으로 계산합니다. */
+    /* 헤더 아래 20px 위치에서 스크롤과 무관하게 고정합니다. */
+    position: fixed;
     right: auto;
-    top: 50%;
-
-    transition: transform 0.35s ease;
+    transition: left 0.2s ease;
 
     display: flex;
     flex-direction: column;
