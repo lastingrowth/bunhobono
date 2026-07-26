@@ -361,7 +361,10 @@ const detailRows = computed(() => {
 });
 
 const goList = () => {
-  router.push("/admin/trash");
+  router.push({
+    path: "/admin/trash",
+    query: route.query,
+  });
 };
 
 const requestRestore = () => {
@@ -385,7 +388,10 @@ const confirmRestore = async () => {
 
   if (restored) {
     restoreConfirmOpen.value = false;
-    await router.push("/admin/trash");
+    await router.push({
+    path: "/admin/trash",
+    query: route.query,
+  });
   }
 };
 

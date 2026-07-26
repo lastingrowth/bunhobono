@@ -25,8 +25,12 @@ public class CameraDataController {
     private TrashService trashService;
 
     @GetMapping
-    public List<CameraDataDTO> list(CameraDataDTO dto){
-        return cameraDataService.listservice(dto);
+    public CameraDataDTO.PageResponse list(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer parkingNo) {
+        return cameraDataService.page(page, size, keyword, parkingNo);
     }
 
     // 카메라 장치가 호출하는 API  이거 하드웨어도 post로 api처리한다고 함

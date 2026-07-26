@@ -8,13 +8,62 @@ import java.util.List;
 @Mapper
 public interface CameraDataMapper {
 
-    @Select("SELECT ROW_NUMBER() OVER (ORDER BY cd.camera_data_no DESC) AS display_no, " +
-            "cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
-            "cd.recognition_state, cd.confidence_score, cd.cam_note, " +
-            "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
-            "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
-            "ORDER BY cd.camera_data_no DESC")
-    List<CameraDataDTO> list(CameraDataDTO dto);
+    @Select("""
+        <script>
+        SELECT (#{offset} + ROW_NUMBER() OVER (
+                    ORDER BY cd.capture_time DESC, cd.camera_data_no DESC
+               )) AS display_no,
+               cd.camera_data_no, cd.camera_no, cd.vehicle_car_no,
+               cd.car_no, cd.ocr_car_no, cd.capture_time,
+               cd.recognition_state, cd.confidence_score, cd.cam_note,
+               vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date
+        FROM camera_data cd
+        LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no
+        LEFT JOIN camera c ON cd.camera_no = c.camera_no
+        LEFT JOIN gate g ON c.gate_no = g.gate_no
+        WHERE 1 = 1
+        <if test='keyword != null and keyword != ""'>
+          AND (
+            cd.car_no ILIKE CONCAT('%', #{keyword}, '%')
+            OR cd.ocr_car_no ILIKE CONCAT('%', #{keyword}, '%')
+          )
+        </if>
+        <if test='parkingNo != null'>
+          AND g.parking_no = #{parkingNo}
+        </if>
+        ORDER BY cd.capture_time DESC, cd.camera_data_no DESC
+        LIMIT #{size} OFFSET #{offset}
+        </script>
+        """)
+    List<CameraDataDTO> page(
+            @Param("keyword") String keyword,
+            @Param("parkingNo") Integer parkingNo,
+            @Param("size") int size,
+            @Param("offset") int offset
+    );
+
+    @Select("""
+        <script>
+        SELECT COUNT(*)
+        FROM camera_data cd
+        LEFT JOIN camera c ON cd.camera_no = c.camera_no
+        LEFT JOIN gate g ON c.gate_no = g.gate_no
+        WHERE 1 = 1
+        <if test='keyword != null and keyword != ""'>
+          AND (
+            cd.car_no ILIKE CONCAT('%', #{keyword}, '%')
+            OR cd.ocr_car_no ILIKE CONCAT('%', #{keyword}, '%')
+          )
+        </if>
+        <if test='parkingNo != null'>
+          AND g.parking_no = #{parkingNo}
+        </if>
+        </script>
+        """)
+    long countPage(
+            @Param("keyword") String keyword,
+            @Param("parkingNo") Integer parkingNo
+    );
 
     // OCR 차량번호로 현재 입출차 가능한 승인 차량 조회
     @Select("""
@@ -162,7 +211,7 @@ public interface CameraDataMapper {
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.car_no LIKE CONCAT('%', #{keyword}, '%') " +
             "OR cd.ocr_car_no LIKE CONCAT('%', #{keyword}, '%') " +
-            "ORDER BY cd.camera_data_no DESC")
+            "ORDER BY cd.capture_time DESC, cd.camera_data_no DESC")
     List<CameraDataDTO> searchByCarNo(String keyword);
 
     @Select("select * from camera_data where capture_time < NOW() - INTERVAL '3 months'")

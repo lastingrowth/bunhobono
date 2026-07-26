@@ -128,7 +128,7 @@
     </div>
 
     <div class="info-detail-actions">
-      <button @click="router.back()">뒤로가기</button>
+      <button @click="goList">뒤로가기</button>
     </div>
   </section>
 
@@ -146,6 +146,12 @@ import { editCameraDataCarNo, editCameraDataNote, getCameraDataImage } from './c
 const route = useRoute()
 const router = useRouter()
 const dStore = useCameraDataStore()
+const goList = () => {
+  router.push({
+    name: 'CameraDataList',
+    query: route.query,
+  })
+}
 const imageUrl = ref(null)
 const imageLoading = ref(false)
 const isEditingCarNo = ref(false)

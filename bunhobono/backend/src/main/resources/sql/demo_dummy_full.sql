@@ -618,127 +618,158 @@ FROM (VALUES
     JOIN parking p ON p.parking_no = g.parking_no;
 
 -- =====================================================
--- 9. 통계 전용 지난 입출차 기록
--- statistics_scope 주석 필드는 통계 화면에서 용도별 중복 집계를 막는다.
+-- 9. 통계용 완료 입출차 기록
+-- 1~7월 월별 건수는 비슷하지만 서로 다르게 만들고, 입주민 약 85%·비입주민 약 15%로 맞춘다.
+-- 모든 기록에 입차·출차 camera_data와 원본/크롭 이미지 경로를 연결한다.
 -- =====================================================
+CREATE TEMP TABLE demo_stats_event (
+    stat_no BIGSERIAL PRIMARY KEY,
+    car_no VARCHAR(50) NOT NULL,
+    car_kind VARCHAR(20) NOT NULL,
+    in_gate_no INT NOT NULL,
+    in_time TIMESTAMP NOT NULL,
+    out_gate_no INT NOT NULL,
+    out_time TIMESTAMP NOT NULL
+) ON COMMIT DROP;
 
--- 최근 22일 통계용 완료 기록은 아직 3개월이 지나지 않았으므로 car_log에 둔다.
--- 한 날짜에 등록 24대, 방문 9대, 미등록 11대를 배치해 주간/월간 비교와 평균 주차시간에 사용한다.
-INSERT INTO car_log
-(vehicle_car_no, camera_data_no, out_camera_data_no,
- in_gate_no, in_time, out_gate_no, out_time, free_time,
- snapshot_car_no, snapshot_car_kind)
-SELECT NULL, NULL, NULL,
-       (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       (CURRENT_DATE - d) + TIME '00:05:00' + (g * INTERVAL '21 minutes'),
-       (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-       (CURRENT_DATE - d) + TIME '00:05:00' + (g * INTERVAL '21 minutes') + stay_interval,
-       NULL, dp.car_no, car_kind
-FROM generate_series(1,22) AS d
-    CROSS JOIN LATERAL (VALUES
-    (1,'REGISTERED',24,INTERVAL '3 hours',1),
-    (2,'VISIT',       9,INTERVAL '4 hours 30 minutes',49),
-    (3,'UNKNOWN',    11,INTERVAL '1 hour 30 minutes',58)
-    ) kind(kind_order,car_kind,amount,stay_interval,first_plate)
-    CROSS JOIN LATERAL generate_series(1,kind.amount) AS g
-    JOIN demo_plate dp
-ON dp.plate_no = kind.first_plate + ((g - 1) % kind.amount);
-
--- 2026년 1~4월 완료 기록은 3개월이 지나 스케줄러가 이동한 지난 기록이다.
-INSERT INTO trash_bin
-(data_type, original_no, data_json, delete_type, deleted_at, purge_at)
-SELECT 'CAR_LOG', 50000 + ROW_NUMBER() OVER (ORDER BY m, kind_order, g),
-    jsonb_build_object(
-            'car_log_no', 50000 + ROW_NUMBER() OVER (ORDER BY m, kind_order, g),
-            'vehicle_car_no', NULL,
-            'camera_data_no', NULL,
-            'in_gate_no', (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-            'in_time', event_time,
-            'out_gate_no', (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-            'out_time', event_time + stay_interval,
-            'snapshot_car_no', dp.car_no,
-            'captured_car_no', dp.car_no,
-            'snapshot_car_kind', car_kind,
-            'statistics_scope', 'ENTRY_AVERAGE'
-    ),
-       'SCHEDULED',
-       event_time + stay_interval + INTERVAL '3 months 1 minute',
-    event_time + stay_interval + INTERVAL '4 months 1 minute'
-FROM generate_series(1,4) AS m
-    CROSS JOIN LATERAL (VALUES
-    (1,'REGISTERED',18 + (m * 2),INTERVAL '3 hours',1),
-    (2,'VISIT',       7 + m,      INTERVAL '4 hours 30 minutes',49),
-    (3,'UNKNOWN',     9 + m,      INTERVAL '1 hour 30 minutes',58)
-    ) kind(kind_order,car_kind,amount,stay_interval,first_plate)
-    CROSS JOIN LATERAL generate_series(1,kind.amount) AS g
-    CROSS JOIN LATERAL (
-    SELECT MAKE_TIMESTAMP(2026,m,1 + ((g * 3) % 25),8 + (g % 8),10,0)
-    ) event(event_time)
-    JOIN demo_plate dp
-ON dp.plate_no = kind.first_plate + ((g - 1) %
-    CASE WHEN kind.car_kind='REGISTERED' THEN 48
-    WHEN kind.car_kind='VISIT' THEN 9 ELSE 11 END);
-
--- 2026년 5~6월 완료 기록은 아직 3개월 이내이므로 car_log에 둔다.
-INSERT INTO car_log
-(vehicle_car_no, camera_data_no, out_camera_data_no,
- in_gate_no, in_time, out_gate_no, out_time, free_time,
- snapshot_car_no, snapshot_car_kind)
-SELECT NULL, NULL, NULL,
+-- 올해 1월부터 지난달까지 월별 18~22일, 날짜별 약 33~39건을 생성한다.
+INSERT INTO demo_stats_event
+(car_no, car_kind, in_gate_no, in_time, out_gate_no, out_time)
+SELECT dp.car_no, kind.car_kind,
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)], event_time,
-       (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)], event_time + stay_interval,
-       NULL, dp.car_no, car_kind
-FROM generate_series(5,6) AS m
-    CROSS JOIN LATERAL (VALUES
-    (1,'REGISTERED',18 + (m * 2),INTERVAL '3 hours',1),
-    (2,'VISIT',       7 + m,      INTERVAL '4 hours 30 minutes',49),
-    (3,'UNKNOWN',     9 + m,      INTERVAL '1 hour 30 minutes',58)
-    ) kind(kind_order,car_kind,amount,stay_interval,first_plate)
-    CROSS JOIN LATERAL generate_series(1,kind.amount) AS g
-    CROSS JOIN LATERAL (
-    SELECT MAKE_TIMESTAMP(2026,m,1 + ((g * 3) % 25),8 + (g % 8),10,0)
-    ) event(event_time)
-    JOIN demo_plate dp
-ON dp.plate_no = kind.first_plate + ((g - 1) %
-    CASE WHEN kind.car_kind='REGISTERED' THEN 48
-    WHEN kind.car_kind='VISIT' THEN 9 ELSE 11 END);
+       (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)], event_time + kind.stay_interval
+FROM generate_series(
+         DATE_TRUNC('year', CURRENT_DATE)::date,
+         (DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month')::date,
+         INTERVAL '1 month'
+     ) AS months(month_start)
+CROSS JOIN LATERAL generate_series(1,18 + (EXTRACT(MONTH FROM month_start)::int % 5)) AS days(day_no)
+CROSS JOIN LATERAL (VALUES
+    ('REGISTERED',28 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 5),INTERVAL '3 hours',1,48),
+    ('VISIT',      3 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 3),INTERVAL '4 hours 30 minutes',49,9),
+    ('UNKNOWN',    1 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 2),INTERVAL '1 hour 30 minutes',58,11)
+) kind(car_kind,amount,stay_interval,first_plate,plate_count)
+CROSS JOIN LATERAL generate_series(1,kind.amount) AS series(g)
+CROSS JOIN LATERAL (
+    SELECT month_start::date + ((day_no - 1) * INTERVAL '1 day')
+           + TIME '00:05:00' + (g * INTERVAL '21 minutes') AS event_time
+) event
+JOIN demo_plate dp ON dp.plate_no = kind.first_plate + ((g - 1) % kind.plate_count)
+WHERE event_time < CURRENT_DATE - INTERVAL '22 days';
+
+-- 7월을 포함한 최근 22일 데이터도 같은 비율로 생성한다.
+INSERT INTO demo_stats_event
+(car_no, car_kind, in_gate_no, in_time, out_gate_no, out_time)
+SELECT dp.car_no, kind.car_kind,
+       (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)], event_time,
+       (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)], event_time + kind.stay_interval
+FROM generate_series(1,22) AS days(day_no)
+CROSS JOIN LATERAL (VALUES
+    ('REGISTERED',28 + (day_no % 5),INTERVAL '3 hours',1,48),
+    ('VISIT',      3 + (day_no % 3),INTERVAL '4 hours 30 minutes',49,9),
+    ('UNKNOWN',    1 + ((day_no + 1) % 2),INTERVAL '1 hour 30 minutes',58,11)
+) kind(car_kind,amount,stay_interval,first_plate,plate_count)
+CROSS JOIN LATERAL generate_series(1,kind.amount) AS series(g)
+CROSS JOIN LATERAL (
+    SELECT (CURRENT_DATE - day_no) + TIME '00:05:00' + (g * INTERVAL '21 minutes') AS event_time
+) event
+JOIN demo_plate dp ON dp.plate_no = kind.first_plate + ((g - 1) % kind.plate_count);
+
+-- 출차 후 3개월 이내인 기록의 입차·출차 카메라 데이터는 현재 테이블에 둔다.
+INSERT INTO camera_data
+(camera_data_no, camera_no, vehicle_car_no, car_no, ocr_car_no, capture_time,
+ image_path, crop_image_path, recognition_state, confidence_score, cam_note)
+SELECT 100000 + (e.stat_no * 2) + cap.offset_no,
+       cap.camera_no, NULL, e.car_no, e.car_no, cap.capture_time,
+       'camera-data/' || dp.image_file,
+       'camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+       TRUE, 96.10 + ((e.stat_no + cap.offset_no) % 8) * 0.35,
+       'STAT-' || e.stat_no || '-' || cap.capture_side
+FROM demo_stats_event e
+JOIN demo_plate dp ON dp.car_no = e.car_no
+CROSS JOIN LATERAL (VALUES
+    (0,e.in_gate_no,e.in_time,'IN'),
+    (1,e.out_gate_no,e.out_time,'OUT')
+) cap(offset_no,camera_no,capture_time,capture_side)
+WHERE cap.capture_time >= CURRENT_TIMESTAMP - INTERVAL '3 months';
+
+-- 출차 후 3개월이 지난 기록의 카메라 데이터는 스케줄러 이동 형태로 지난 기록에 둔다.
+INSERT INTO trash_bin
+(data_type, original_no, data_json, delete_type, deleted_at, purge_at)
+SELECT 'CAMERA_DATA', 100000 + (e.stat_no * 2) + cap.offset_no,
+       jsonb_build_object(
+           'camera_data_no',100000 + (e.stat_no * 2) + cap.offset_no,
+           'camera_no',cap.camera_no,'vehicle_car_no',NULL,
+           'car_no',e.car_no,'ocr_car_no',e.car_no,'capture_time',cap.capture_time,
+           'image_path','camera-data/' || dp.image_file,
+           'crop_image_path','camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+           'recognition_state',TRUE,
+           'confidence_score',96.10 + ((e.stat_no + cap.offset_no) % 8) * 0.35,
+           'cam_note','STAT-' || e.stat_no || '-' || cap.capture_side
+       ),
+       'SCHEDULED', e.out_time + INTERVAL '3 months', CURRENT_TIMESTAMP + INTERVAL '1 year'
+FROM demo_stats_event e
+JOIN demo_plate dp ON dp.car_no = e.car_no
+CROSS JOIN LATERAL (VALUES
+    (0,e.in_gate_no,e.in_time,'IN'),
+    (1,e.out_gate_no,e.out_time,'OUT')
+) cap(offset_no,camera_no,capture_time,capture_side)
+WHERE cap.capture_time < CURRENT_TIMESTAMP - INTERVAL '3 months';
+
+-- 아직 3개월이 지나지 않은 완료 기록은 현재 car_log에 둔다.
+INSERT INTO car_log
+(vehicle_car_no, camera_data_no, out_camera_data_no,
+ in_gate_no, in_time, out_gate_no, out_time, free_time,
+ snapshot_car_no, snapshot_car_kind)
+SELECT NULL, 100000 + (e.stat_no * 2), 100000 + (e.stat_no * 2) + 1,
+       e.in_gate_no, e.in_time, e.out_gate_no, e.out_time,
+       NULL, e.car_no, e.car_kind
+FROM demo_stats_event e
+WHERE e.out_time >= CURRENT_TIMESTAMP - INTERVAL '3 months';
+
+-- 출차 후 3개월이 지난 완료 기록은 지난 기록에 둔다.
+INSERT INTO trash_bin
+(data_type, original_no, data_json, delete_type, deleted_at, purge_at)
+SELECT 'CAR_LOG', 50000 + e.stat_no,
+       jsonb_build_object(
+           'car_log_no',50000 + e.stat_no,'vehicle_car_no',NULL,
+           'camera_data_no',100000 + (e.stat_no * 2),
+           'out_camera_data_no',100000 + (e.stat_no * 2) + 1,
+           'in_gate_no',e.in_gate_no,'in_time',e.in_time,
+           'out_gate_no',e.out_gate_no,'out_time',e.out_time,'free_time',NULL,
+           'snapshot_car_no',e.car_no,'captured_car_no',e.car_no,
+           'snapshot_car_kind',e.car_kind,'statistics_scope','ENTRY_AVERAGE'
+       ),
+       'SCHEDULED', e.out_time + INTERVAL '3 months', CURRENT_TIMESTAMP + INTERVAL '1 year'
+FROM demo_stats_event e
+WHERE e.out_time < CURRENT_TIMESTAMP - INTERVAL '3 months';
 -- =====================================================
--- 10. 일반 지난 기록: 페이지 크기 10 기준 추가 4페이지(36건)
--- 복원 화면에서도 필드 형식이 맞도록 유형별 JSON 구조를 사용한다.
+-- 10. 일반 지난 기록: 카메라 데이터 12건 + 처리 완료 알림 12건
+-- 통계용 CAR_LOG는 9번 구간에서만 생성한다.
 -- =====================================================
 INSERT INTO trash_bin
 (data_type, original_no, data_json, delete_type, deleted_at, purge_at)
-SELECT
-    CASE WHEN g <= 12 THEN 'CAMERA_DATA'
-         WHEN g <= 24 THEN 'CAR_LOG'
-         ELSE 'NOTICE' END,
-    10000 + g,
-    CASE WHEN g <= 12 THEN jsonb_build_object(
-            'camera_data_no',10000+g,'camera_no',1,'vehicle_car_no',NULL,
-            'car_no','88아'||LPAD(g::TEXT,4,'0'),'ocr_car_no','88아'||LPAD(g::TEXT,4,'0'),
-            'capture_time',(CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day')),
-        'image_path',NULL,'crop_image_path',NULL,'recognition_state',TRUE,'confidence_score',97.5)
-         WHEN g <= 24 THEN jsonb_build_object(
-                 'car_log_no',10000+g,'vehicle_car_no',NULL,'camera_data_no',NULL,
-                 'in_gate_no',1,'in_time',(CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day') - INTERVAL '90 minutes'),
-        'out_gate_no',2,'out_time',(CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day')),
-        'free_time',NULL,'snapshot_car_no','88아'||LPAD(g::TEXT,4,'0'),
-        'captured_car_no','88아'||LPAD(g::TEXT,4,'0'))
-         ELSE jsonb_build_object(
-                 'notice_no',10000+g,'car_log_no',NULL,
-                 'detect_at',(CURRENT_TIMESTAMP - ((40+g) * INTERVAL '1 day')),
-        'stay_days',2,'alert_stat','Resolved','handled_by_member_no',1,
-        'handled_at',(CURRENT_TIMESTAMP - ((39+g) * INTERVAL '1 day')),
-        'snapshot_car_log_no',NULL,'snapshot_registered_car_no',NULL,
-        'snapshot_captured_car_no','88아'||LPAD(g::TEXT,4,'0'),
-        'snapshot_car_kind','UNKNOWN','snapshot_parking_name','A 주차장',
-        'snapshot_in_time',(CURRENT_TIMESTAMP - ((42+g) * INTERVAL '1 day')))
-        END,
-    CASE WHEN (g % 3) = 0 THEN 'MANUAL' ELSE 'SCHEDULED' END,
-    CURRENT_TIMESTAMP - (g * INTERVAL '2 hours'),
-    CURRENT_TIMESTAMP + INTERVAL '30 days' - (g * INTERVAL '2 hours')
-FROM generate_series(1, 36) AS g;
-
+SELECT CASE WHEN g <= 12 THEN 'CAMERA_DATA' ELSE 'NOTICE' END,
+       10000 + g,
+       CASE WHEN g <= 12 THEN jsonb_build_object(
+           'camera_data_no',10000+g,'camera_no',1,'vehicle_car_no',NULL,
+           'car_no','88아'||LPAD(g::TEXT,4,'0'),'ocr_car_no','88아'||LPAD(g::TEXT,4,'0'),
+           'capture_time',CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day'),
+           'image_path',NULL,'crop_image_path',NULL,'recognition_state',TRUE,'confidence_score',97.5)
+       ELSE jsonb_build_object(
+           'notice_no',10000+g,'car_log_no',NULL,
+           'detect_at',CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day'),
+           'stay_days',2,'alert_stat','Resolved','handled_by_member_no',1,
+           'handled_at',CURRENT_TIMESTAMP - ((99+g) * INTERVAL '1 day'),
+           'snapshot_car_log_no',NULL,'snapshot_registered_car_no',NULL,
+           'snapshot_captured_car_no','88아'||LPAD(g::TEXT,4,'0'),
+           'snapshot_car_kind','UNKNOWN','snapshot_parking_name','A 주차장',
+           'snapshot_in_time',CURRENT_TIMESTAMP - ((102+g) * INTERVAL '1 day'))
+       END,
+       'SCHEDULED',
+       CURRENT_TIMESTAMP - (g * INTERVAL '2 hours'),
+       CURRENT_TIMESTAMP + INTERVAL '30 days' - (g * INTERVAL '2 hours')
+FROM generate_series(1,24) AS g;
 SELECT setval(pg_get_serial_sequence('vehicle_car','vehicle_car_no'), MAX(vehicle_car_no), TRUE) FROM vehicle_car;
 SELECT setval(pg_get_serial_sequence('camera_data','camera_data_no'), MAX(camera_data_no), TRUE) FROM camera_data;
 SELECT setval(pg_get_serial_sequence('car_log','car_log_no'), MAX(car_log_no), TRUE) FROM car_log;

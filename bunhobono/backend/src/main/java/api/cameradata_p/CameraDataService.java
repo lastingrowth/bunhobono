@@ -39,9 +39,18 @@ public class CameraDataService {
     @Value("${file.camera-data}")
     private String uploadDir;
 
-    //list
-    public List<CameraDataDTO> listservice(CameraDataDTO dto) {
-        return cameraDataMapper.list(dto);
+    // 카메라 기록 서버 페이징 조회
+    public CameraDataDTO.PageResponse page(int page, int size, String keyword, Integer parkingNo) {
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        int offset = (safePage - 1) * safeSize;
+        String safeKeyword = keyword == null ? null : keyword.trim();
+
+        List<CameraDataDTO> items = cameraDataMapper.page(safeKeyword, parkingNo, safeSize, offset);
+        long totalCount = cameraDataMapper.countPage(safeKeyword, parkingNo);
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalCount / safeSize));
+
+        return new CameraDataDTO.PageResponse(items, totalCount, safePage, safeSize, totalPages);
     }
 
     //ocr

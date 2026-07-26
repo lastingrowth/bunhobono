@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -41,4 +42,11 @@ CameraDataDTO {
     
     //메모
     private String camNote;
-}
+    public record PageResponse(
+            List<CameraDataDTO> items,
+            long totalCount,
+            int page,
+            int size,
+            int totalPages
+    ) {
+    }}

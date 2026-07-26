@@ -28,13 +28,13 @@
           class="management-car-search-input"
           type="search"
           placeholder="차량번호 검색"
-          @keyup.enter="trashStore.searchByCarNo"
+          @keyup.enter="searchTrash"
         />
 
         <button
           class="management-search-button"
           type="button"
-          @click="trashStore.searchByCarNo"
+          @click="searchTrash"
         >
           검색
         </button>
@@ -42,7 +42,7 @@
         <button
           class="management-reset-button"
           type="button"
-          @click="trashStore.resetTrashList"
+          @click="resetTrash"
         >
           초기화
         </button>
@@ -65,7 +65,7 @@
             <th>데이터 종류</th>
             <th>차량번호</th>
             <th>삭제 방식</th>
-            <th>삭제일시</th>
+            <th>기록일시</th>
             <th>관리</th>
           </tr>
         </thead>
@@ -88,7 +88,7 @@
             </td>
 
             <td>
-              {{ formatDate(item.deletedAt) }}
+              {{ formatDate(getTrashRecordDate(item)) }}
             </td>
 
             <td>
@@ -115,7 +115,7 @@
         :current-page="currentPage"
         :total-pages="totalPages"
         :page-numbers="pageNumbers"
-        @change-page="setPage" />
+        @change-page="changeTrashPage" />
     </div>
     <TrashRestoreConfirm
       :open="Boolean(pendingRestoreItem)"
@@ -128,8 +128,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, nextTick, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import { useTrashStore } from "./trashStore";
 
@@ -143,6 +143,7 @@ import { usePagination } from "@/shared/pagination/usePagination";
 import TrashRestoreConfirm from "./TrashRestoreConfirm.vue";
 import TrashFeedbackToast from "./TrashFeedbackToast.vue";
 
+const route = useRoute();
 const router = useRouter();
 const trashStore = useTrashStore();
 const restoringTrashNo = ref(null);
@@ -150,8 +151,38 @@ const pendingRestoreItem = ref(null);
 
 const pageSize = 10;
 
+const parseTrashData = (item) => {
+  if (!item) return {};
+
+  try {
+    return typeof item.dataJson === "string"
+      ? JSON.parse(item.dataJson)
+      : (item.dataJson ?? {});
+  } catch {
+    return {};
+  }
+};
+
+const getTrashRecordDate = (item) => {
+  const data = parseTrashData(item);
+
+  if (item?.dataType === "CAMERA_DATA") return data.capture_time ?? item.deletedAt;
+  if (item?.dataType === "CAR_LOG") return data.out_time ?? data.in_time ?? item.deletedAt;
+  if (item?.dataType === "NOTICE") {
+    return data.handled_at ?? data.detect_at ?? data.snapshot_in_time ?? item.deletedAt;
+  }
+
+  return item?.deletedAt;
+};
+
 const trashList = computed(() => {
-  return trashStore.trashList;
+  return [...trashStore.trashList].sort((left, right) => {
+    const rightTime = new Date(getTrashRecordDate(right)).getTime();
+    const leftTime = new Date(getTrashRecordDate(left)).getTime();
+
+    return (Number.isNaN(rightTime) ? 0 : rightTime)
+      - (Number.isNaN(leftTime) ? 0 : leftTime);
+  });
 })
 
 const {
@@ -188,10 +219,29 @@ const getTrashCarNo = (item) => {
 
 const changeDataType = async (event) => {
   await trashStore.changeDataType(event.target.value);
+  await changeTrashPage(1);
+};
+
+const searchTrash = async () => {
+  await trashStore.searchByCarNo();
+  await changeTrashPage(1);
+};
+
+const resetTrash = async () => {
+  await trashStore.resetTrashList();
+  await changeTrashPage(1);
+};
+
+const changeTrashPage = async (page) => {
+  setPage(page);
+  await router.replace({ query: { ...route.query, page } });
 };
 
 const goDetail = (trashNo) => {
-  router.push(`/admin/trash/${trashNo}`);
+  router.push({
+    path: `/admin/trash/${trashNo}`,
+    query: { ...route.query, page: currentPage.value },
+  });
 };
 
 const requestRestore = (item) => {
@@ -224,6 +274,8 @@ const confirmRestore = async () => {
 
 onMounted(async () => {
   await trashStore.loadTrashList();
+  await nextTick();
+  setPage(Math.max(1, Number(route.query.page) || 1));
 });
 </script>
 

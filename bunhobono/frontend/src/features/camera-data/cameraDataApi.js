@@ -1,21 +1,26 @@
 import api from "@/shared/api/apiClient";
 
-// 회원 전체 조회
-export const getCameraDataList = () => {
+// 카메라 기록 서버 페이징 조회
+export const getCameraDataList = ({
+  page = 1,
+  size = 10,
+  keyword = "",
+  parkingNo = null,
+} = {}) => {
   return api.get("/camera-data", {
     params: {
-      _t: Date.now()
-    }
+      page,
+      size,
+      keyword: keyword || undefined,
+      parkingNo: parkingNo || undefined,
+      _t: Date.now(),
+    },
   });
 };
 
-// 차량번호 검색
-export const searchCameraDataByCarNo = (carNo) => {
-  return api.get(`/camera-data/search`, {
-    params : {
-      carNo: carNo
-    }
-  });
+// 기존 호출부 호환용 차량번호 검색
+export const searchCameraDataByCarNo = (carNo, page = 1, size = 10, parkingNo = null) => {
+  return getCameraDataList({ page, size, keyword: carNo, parkingNo });
 };
 
 // 디테일 조회
