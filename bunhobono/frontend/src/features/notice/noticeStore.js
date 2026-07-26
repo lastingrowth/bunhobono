@@ -47,7 +47,8 @@ export const useNoticeStore = defineStore("notice", () => {
 
     // 알림 상태 변경
     const changeNoticeStatus = async (noticeNo, alertStat) => {
-        const handledByMemberName = alertStat === "Unresolved" ? null : jwtStore.userId;
+        const handledByMemberName =
+            alertStat === "Resolved" ? jwtStore.userId : null;
 
         await updateNoticeStatus(noticeNo, alertStat, handledByMemberName);
 

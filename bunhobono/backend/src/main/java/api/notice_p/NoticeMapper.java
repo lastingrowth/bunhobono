@@ -51,12 +51,18 @@ public interface NoticeMapper {
         UPDATE notice
         SET alert_stat = #{alertStat},
             handled_by_member_no = CASE
-                WHEN #{alertStat} = 'Unresolved' THEN NULL
-                ELSE ( SELECT member_no FROM member WHERE login_id = #{handledByMemberName} )
+                WHEN #{alertStat} = 'Resolved'
+                    THEN (
+                        SELECT member_no
+                        FROM member
+                        WHERE login_id = #{handledByMemberName}
+                    )
+                ELSE NULL
             END,
             handled_at = CASE
-                WHEN #{alertStat} = 'Unresolved' THEN NULL
-                ELSE CURRENT_TIMESTAMP
+                WHEN #{alertStat} = 'Resolved'
+                    THEN CURRENT_TIMESTAMP
+                ELSE NULL
             END
         WHERE notice_no = #{noticeNo}
     """)

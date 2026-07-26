@@ -202,19 +202,16 @@ const formatValue = (value) => {
 };
 
 const formatCarKind = (value) => {
-  if (value === "NORMAL") {
-    return "입주민 차량";
-  }
+  const carKind = String(value ?? "").trim().toUpperCase();
 
-  if (value === "VISIT") {
-    return "방문 차량";
-  }
+  const carKindLabels = {
+    NORMAL: "입주민 차량",
+    VISIT: "방문 차량",
+    UNREGISTERED: "미등록 차량",
+    UNKNOWN: "미등록 차량",
+  };
 
-  if (value === "UNREGISTERED") {
-    return "미등록 차량";
-  }
-
-  return value;
+  return carKindLabels[carKind] ?? value ?? "-";
 };
 
 const detailRows = computed(() => {
@@ -233,7 +230,7 @@ const detailRows = computed(() => {
     { label: "감지 일시", value: formatDate(notice.value.detectAt) },
     { label: "주차 일수", value: notice.value.stayDays },
     { label: "처리 상태", value: statusOptions[notice.value.alertStat] ?? notice.value.alertStat },
-    { label: "처리 관리자", value: notice.value.handledByMemberName },
+    { label: "처리 관리자", value: notice.value.alertStat === "Resolved" ? notice.value.handledByMemberName : "-", },
   ];
 });
 

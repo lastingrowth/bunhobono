@@ -14,7 +14,9 @@
                     {{ section.label }}
                 </button>
             </nav>
-            <button type="button" @click="router.push('/admin/signup')">회원 추가</button>
+            <button type="button" @click="handleHeaderAction">
+                {{ activeSection === 'approved' ? '회원 추가' : '목록으로' }}
+            </button>
         </div>
     </div>
 
@@ -523,6 +525,16 @@ const changeSection = async (section) => {
     }
 
     await store.loadmemberList()
+}
+
+const handleHeaderAction = async () => {
+    if (activeSection.value === 'approved') {
+        await router.push('/admin/signup')
+        return
+    }
+
+    await changeSection('approved')
+    await router.replace('/admin/members')
 }
 
 const restoreSelectedWithdrawnMembers = async () => {
