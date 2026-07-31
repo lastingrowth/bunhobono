@@ -1,5 +1,6 @@
 package api.member_p;
 
+import api.unit_p.UnitDTO;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,16 +51,18 @@ public class MemberService {
         if (dto.getRole() != null) {
             dto.setRole(dto.getRole().toUpperCase());
         }
-        if (!Set.of("PENDING", "RESIDENT", "ADMIN").contains(dto.getRole())) {
+        if (!Set.of("RESIDENT", "ADMIN").contains(dto.getRole())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 회원 역할입니다.");
         }
-        // 공개 가입은 EMPTY 상태이고 다른 승인 대기·현재 회원이 없는 세대만 허용한다.
-        if ("PENDING".equals(dto.getRole())) {
+
+        // 입주민은 현재 비어 있고 다른 가입 신청이 없는 세대에만 등록할 수 있다.
+        if ("RESIDENT".equals(dto.getRole())) {
             validateAvailableSignupUnit(dto.getMemDong(), dto.getMemHo());
         }
+
         // 비밀번호 암호화
         dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
-        // ADMIN은 새 행으로 등록하고 RESIDENT·PENDING은 기존 EMPTY 세대 행을 갱신한다.
+        // ADMIN은 주소 없이 등록하고 RESIDENT는 빈 세대와 연결해 새 회원으로 등록한다.
         int savedCount = "ADMIN".equals(dto.getRole())
                 ? mapper.signupAdmin(dto)
                 : mapper.signup(dto);
@@ -73,7 +76,7 @@ public class MemberService {
     }
 
     // 공개 회원가입에서 선택할 수 있는 빈 세대 목록을 반환한다.
-    public List<MemberDTO> availableSignupUnits() {
+    public List<UnitDTO> availableSignupUnits() {
         return mapper.availableSignupUnits();
     }
 
@@ -83,7 +86,11 @@ public class MemberService {
     }
 
     // 동·호수 형식과 동일 세대의 활성 회원 존재 여부를 확인한다.
-    private void validateAvailableSignupUnit(int dong, int ho) {
+    private void validateAvailableSignupUnit(Integer dong, Integer ho) {
+        if (dong == null || ho == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "동·호수를 선택해주세요.");
+        }
+
         if (!Set.of(101, 102, 201, 202, 301, 302, 401, 402).contains(dong)
                 || ho / 100 < 1 || ho / 100 > 10
                 || ho % 100 < 1 || ho % 100 > 2) {
@@ -91,8 +98,8 @@ public class MemberService {
         }
 
         // 같은 EMPTY 세대의 동시 가입 요청을 순서대로 처리한다.
-        Long withdrawnMemberNo = mapper.lockWithdrawnUnit(dong, ho);
-        if (withdrawnMemberNo == null || mapper.countActiveMembersAtUnit(dong, ho) > 0) {
+        Long unitNo = mapper.lockWithdrawnUnit(dong, ho);
+        if (unitNo == null || mapper.countActiveMembersAtUnit(dong, ho) > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 거주 중이거나 가입 신청이 접수된 세대입니다.");
         }
     }
@@ -107,7 +114,7 @@ public class MemberService {
     }
 
     // 회원 번호에 해당하는 상세 정보를 조회한다.
-    public MemberDTO detail(int memberNo){
+    public MemberDTO detail(long memberNo){
         return mapper.detail(memberNo);
     }
 
@@ -123,7 +130,7 @@ public class MemberService {
     @Transactional
     public void update(MemberDTO dto, String currentLoginId) {
         MemberDTO savedMember =
-                mapper.detail((int) dto.getMemberNo());
+                mapper.detail(dto.getMemberNo());
 
         if (savedMember == null) {
             throw new ResponseStatusException(
@@ -146,8 +153,8 @@ public class MemberService {
         if ("RESIDENT".equalsIgnoreCase(savedMember.getRole())
                 && "WITHDRAW_PENDING".equals(dto.getMemStatus())) {
 
-            mapper.requestWithdrawnMember((int) dto.getMemberNo());
-            confirmWithdrawnMember((int) dto.getMemberNo());
+            mapper.requestWithdrawnMember(dto.getMemberNo());
+            confirmWithdrawnMember(dto.getMemberNo());
             return;
         }
 
@@ -166,7 +173,7 @@ public class MemberService {
         mapper.update(dto);
     }
 
-    // 선택한 승인 대기 회원의 역할을 입주민으로 변경한다.
+    // 선택한 승인 대기 입주민의 상태를 정상 거주 상태로 변경한다.
     public void approvePendingMembers(List<Long> memberNos) {
         if (memberNos == null || memberNos.isEmpty()) {
             throw new IllegalArgumentException("승인할 회원을 선택해 주세요.");
@@ -180,7 +187,7 @@ public class MemberService {
 
     // 이력 보관·차량 삭제·회원 초기화 전 단계로 상태와 탈퇴일만 변경한다.
     @Transactional
-    public void delete(int memberNo, String currentLoginId) {
+    public void delete(long memberNo, String currentLoginId) {
         MemberDTO savedMember = mapper.detail(memberNo);
 
         if (savedMember == null) {
@@ -214,7 +221,7 @@ public class MemberService {
 
     // 아직 이력 보관 전인 전출 신청 회원을 다시 ACTIVE 상태로 복원한다.
     @Transactional
-    public void restoreWithdrawnMember(int memberNo) {
+    public void restoreWithdrawnMember(long memberNo) {
         MemberDTO savedMember = mapper.detail(memberNo);
 
         if (savedMember == null) {
@@ -236,7 +243,7 @@ public class MemberService {
 
     // 회원 이력과 동·호수 자리는 유지하면서 전출을 확정하고 연결 차량을 삭제한다.
     @Transactional
-    public void confirmWithdrawnMember(int memberNo) {
+    public void confirmWithdrawnMember(long memberNo) {
         MemberDTO savedMember = mapper.detail(memberNo);
 
         if (savedMember == null) {
@@ -267,7 +274,7 @@ public class MemberService {
         }
 
         for (Long memberNo : memberNos) {
-            restoreWithdrawnMember(memberNo.intValue());
+            restoreWithdrawnMember(memberNo);
         }
 
         return memberNos.size();
@@ -281,7 +288,7 @@ public class MemberService {
         }
 
         for (Long memberNo : memberNos) {
-            confirmWithdrawnMember(memberNo.intValue());
+            confirmWithdrawnMember(memberNo);
         }
 
         return memberNos.size();

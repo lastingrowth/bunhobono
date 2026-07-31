@@ -6,7 +6,7 @@
         <div class="member-detail-header-actions">
         <button @click="goList">목록</button>
         <button v-if="canEditMember" @click="goEdit">수정</button>
-        <button v-if="store.member.role === 'PENDING'" type="button" @click="approveMember">승인</button>
+        <button v-if="store.member.memStatus === 'PENDING'" type="button" @click="approveMember">승인</button>
         <button
             v-if="isWithdrawnMember"
             type="button"
@@ -20,8 +20,8 @@
         <tbody>
             <tr><th>가입유형</th><td>{{ store.member.role }}</td></tr>
             <tr><th>이름</th><td>{{ store.member.memName }}</td></tr>
-            <tr><th>동</th><td>{{ store.member.memDong }}</td></tr>
-            <tr><th>호수</th><td>{{ store.member.memHo }}</td></tr>
+            <tr><th>동</th><td>{{ store.member.role === 'ADMIN' ? '관리실' : store.member.memDong }}</td></tr>
+            <tr><th>호수</th><td>{{ store.member.role === 'ADMIN' ? '-' : store.member.memHo }}</td></tr>
             <tr><th>연락처</th><td>{{ store.member.memPhone }}</td></tr>
             <tr><th>아이디</th><td>{{ store.member.loginId }}</td></tr>
             <tr><th>가입일</th><td>{{ store.formatMemberDateTime(store.member.memCreateAt) }}</td></tr>
@@ -47,7 +47,7 @@ const store = useMemStore();
 const memberNo = route.params.memberNo;
 
 const canEditMember = computed(() =>
-    String(store.member.role || '').toUpperCase() !== 'PENDING'
+    String(store.member.memStatus || '').toUpperCase() !== 'PENDING'
     && !store.member.memDeleteAt
 );
 
@@ -74,7 +74,6 @@ const formatMemberStatus = (status, role) => {
 
     const statusMap = {
         WITHDRAW_PENDING: '전출 신청',
-        EMPTY: '빈 세대',
         INACTIVE: '퇴사',
         ON_LEAVE: '휴직',
     }

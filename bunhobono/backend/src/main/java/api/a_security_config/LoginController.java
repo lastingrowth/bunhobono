@@ -34,7 +34,7 @@ public class LoginController {
         // DB에서 유저 정보 조회
         LoginDTO userInfo = authService.getUserInfo(dto.getLoginId());
 
-
+        // 회원 존재 여부
         if (userInfo == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "아이디 또는 비밀번호가 올바르지 않습니다."));
@@ -47,6 +47,13 @@ public class LoginController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "아이디 또는 비밀번호가 올바르지 않습니다."));
         }
+
+        // 계정 상태 확인
+        if (!"ACTIVE".equalsIgnoreCase(userInfo.getMemStatus())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "현재 로그인할 수 없는 계정입니다."));
+        }
+
         // DB에서 가져온 role, grade를 토큰에 넣음
         String token = jwtUtil.createToken(
                 userInfo.getLoginId(),

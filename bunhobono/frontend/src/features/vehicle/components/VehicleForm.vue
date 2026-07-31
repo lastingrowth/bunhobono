@@ -274,6 +274,10 @@ async function clearCarNo() {
 }
 
 function memberLabel(member) {
+  if (member.role === 'ADMIN') {
+    return `${member.memName} / 관리실`
+  }
+
   const dong = dongText(member.memDong)
   const ho = hoText(member.memHo)
 
@@ -281,18 +285,10 @@ function memberLabel(member) {
 }
 
 function dongText(dong) {
-  if (String(dong) === '0') {
-    return '관리동'
-  }
-
   return `${dong}동`
 }
 
 function hoText(ho) {
-  if (String(ho) === '0') {
-    return '관리실'
-  }
-
   return `${ho}호`
 }
 

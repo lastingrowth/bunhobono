@@ -14,7 +14,8 @@ public class VehicleDTO {
     private String rejectReason;
 
     private LocalDateTime startDate, endDate, approvedAt, inTime, outTime, realEndDate;
-    private Integer memberNo, memDong, memHo;
+    private Integer memberNo;
+    private Integer memDong, memHo;
 
     private String expiryType;
     private Long remainingMinutes;
