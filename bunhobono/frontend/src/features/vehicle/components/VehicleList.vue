@@ -179,15 +179,15 @@ function isParkedExpiredVehicle(vehicle) {
 }
 
 function memberDongText(vehicle) {
+  if (vehicle.role === 'ADMIN') {
+    return '관리실'
+  }
+
   if (
     vehicle.memDong === null
     || vehicle.memDong === undefined
   ) {
     return '-'
-  }
-
-  if (Number(vehicle.memDong) === 0) {
-    return '관리동'
   }
 
   return vehicle.memDong
@@ -199,10 +199,6 @@ function memberHoText(vehicle) {
     || vehicle.memHo === undefined
   ) {
     return '-'
-  }
-
-  if (Number(vehicle.memHo) === 0) {
-    return '관리실'
   }
 
   return vehicle.memHo

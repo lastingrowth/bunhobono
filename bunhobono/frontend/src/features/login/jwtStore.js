@@ -59,18 +59,13 @@ export const useJwtStore = defineStore('jwtStore', {
         }
 
         // 가입 승인 대기 회원은 관리자 승인 전까지 로그인할 수 없다.
-        if (this.role === 'PENDING') {
+        if (this.role === 'RESIDENT' && this.memStatus === 'PENDING') {
           return blockLogin('회원가입 승인 대기 중입니다. 관리자 승인 후 로그인할 수 있습니다.')
         }
 
         // 전출 신청 중인 입주민은 관리자 처리 전까지 로그인할 수 없다.
         if (this.memStatus === 'WITHDRAW_PENDING') {
           return blockLogin('전출 신청이 접수된 계정입니다. 관리자 처리 후 이용 상태가 변경됩니다.')
-        }
-
-        // 전출 완료 후 빈 세대로 남은 계정은 로그인할 수 없다.
-        if (this.memStatus === 'EMPTY') {
-          return blockLogin('회원가입 후 이용해주세요.')
         }
 
         // 퇴사 처리된 관리자 계정은 로그인할 수 없다.

@@ -90,7 +90,7 @@ export const useMemStore =  defineStore("member", () => {
     return res.data;
   };
 
-  // 선택된 승인 대기 회원을 입주민 역할로 변경한 뒤 목록을 갱신한다.
+  // 선택된 승인 대기 입주민을 ACTIVE 상태로 변경한 뒤 목록을 갱신한다.
   const approveMembers = async (memberNos) => {
     await approvePendingMembers(memberNos);
     await loadmemberList();

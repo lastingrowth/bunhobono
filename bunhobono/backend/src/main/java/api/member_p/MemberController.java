@@ -1,5 +1,6 @@
 package api.member_p;
 
+import api.unit_p.UnitDTO;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +40,7 @@ public class MemberController {
     // 1. 외부 회원가입과 관리자 회원 추가 요청을 구분한다.
     // =====================================================
 
-    // 외부 가입은 PENDING·ACTIVE로 고정하고 관리자 요청은 입력한 역할과 상태를 사용한다.
+    // 외부 가입은 RESIDENT·PENDING으로 고정하고 관리자 요청은 입력한 역할과 상태를 사용한다.
     @PostMapping("/members")
     public void signup(@RequestBody MemberDTO dto, Authentication authentication) {
         // ADMIN 권한 여부에 따라 '외부 가입'과 '관리자의 회원추가'를 구분한다.
@@ -47,10 +48,9 @@ public class MemberController {
                 && authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ADMIN".equalsIgnoreCase(authority.getAuthority()));
         if (!adminRequest) {
-            // 외부 회원은 관리자 승인 전까지 로그인할 수 없는 대기 역할로 저장한다.
-            // PENDING도 해당 동·호수를 점유하므로 상태는 ACTIVE로 둔다.
-            dto.setRole("PENDING");
-            dto.setMemStatus("ACTIVE");
+            // 외부 회원은 입주민으로 등록하되 관리자 승인 전까지 대기 상태로 저장한다.
+            dto.setRole("RESIDENT");
+            dto.setMemStatus("PENDING");
         }
         service.signup(dto);
     }
@@ -61,9 +61,9 @@ public class MemberController {
         return service.checkLoginId(loginId);
     }
 
-    // 전출 이력이 있고 현재 활성 회원이 없는 동·호수만 반환한다.
+    // 회원가입 화면에서 선택할 수 있는 빈 세대 목록을 반환한다.
     @GetMapping("/signup/available-units")
-    public List<MemberDTO> availableSignupUnits() {
+    public List<UnitDTO> availableSignupUnits() {
         return service.availableSignupUnits();
     }
 
@@ -73,7 +73,7 @@ public class MemberController {
 
     // 관리자가 회원의 연락처, 비밀번호와 상태를 수정한다.
     @PutMapping("/members/{memberNo}/edit")
-    public void update(@PathVariable int memberNo,
+    public void update(@PathVariable long memberNo,
                        @RequestBody MemberDTO dto,
                        Authentication authentication) {
         dto.setMemberNo(memberNo);
@@ -81,7 +81,7 @@ public class MemberController {
         service.update(dto, authentication.getName());
     }
 
-    // 선택한 PENDING 회원의 역할을 RESIDENT로 변경한다.
+    // 선택한 승인 대기 입주민의 상태를 ACTIVE로 변경한다.
     @PutMapping("/members/approve")
     public void approvePendingMembers(@RequestBody List<Long> memberNos) {
         service.approvePendingMembers(memberNos);
@@ -95,7 +95,7 @@ public class MemberController {
 
     // 회원 번호에 해당하는 상세 정보를 조회한다.
     @GetMapping("/members/{memberNo}/detail")
-    public MemberDTO detail(@PathVariable int memberNo){
+    public MemberDTO detail(@PathVariable long memberNo){
         return service.detail(memberNo);
     }
 
@@ -128,19 +128,19 @@ public class MemberController {
 
     // 관리자가 회원을 전출 신청 상태로 변경하고 탈퇴일을 기록한다.
     @DeleteMapping("/members/{memberNo}/delete")
-    public void delete(@PathVariable int memberNo, Authentication authentication) {
+    public void delete(@PathVariable long memberNo, Authentication authentication) {
         service.delete(memberNo, authentication.getName());
     }
 
     // 전출 신청된 회원 한 명을 다시 거주 상태로 복원한다.
     @PutMapping("/members/{memberNo}/restore")
-    public void restoreWithdrawnMember(@PathVariable int memberNo) {
+    public void restoreWithdrawnMember(@PathVariable long memberNo) {
         service.restoreWithdrawnMember(memberNo);
     }
 
     // 전출 신청된 회원 한 명의 이력을 보관하고 원본 회원 행을 초기화한다.
     @PutMapping("/members/{memberNo}/confirm-withdrawn")
-    public void confirmWithdrawnMember(@PathVariable int memberNo) {
+    public void confirmWithdrawnMember(@PathVariable long memberNo) {
         service.confirmWithdrawnMember(memberNo);
     }
 

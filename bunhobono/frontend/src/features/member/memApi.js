@@ -31,7 +31,7 @@ export const updateMember = (memberNo, data) => {
     return api.put(`/members/${memberNo}/edit`, data);
 };
 
-// 선택한 승인 대기 회원의 역할을 입주민으로 변경한다.
+// 선택한 승인 대기 입주민의 상태를 ACTIVE로 변경한다.
 export const approvePendingMembers = (memberNos) => {
     return api.put('/members/approve', memberNos);
 };

@@ -16,12 +16,13 @@ public class MemberDTO {
     private long displayNo;     // 회원 목록에 표시할 조회 순번이다.
     private String loginId;
     private String loginPwd;
+    private Long unitNo;        // 아파트 동/호수. 관리자는 null
     private String memName;
     private String memPhone;
     private String role;
     private String memStatus;
-    private int memDong;
-    private int memHo;
+    private Integer memDong;
+    private Integer memHo;
     private LocalDateTime memCreateAt;
     private LocalDateTime memDeleteAt;
 

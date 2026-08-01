@@ -10,8 +10,11 @@
         {{ noticeStore.feedbackMessage }}
       </div>
     </Transition>
+
     <div class="notice-header management-list-header">
-      <h2 class="management-list-title">{{ pageTitle }}</h2>
+      <h2 class="management-list-title">
+        {{ pageTitle }}
+      </h2>
 
       <div class="notice-actions">
         <div class="status-filters">
@@ -36,11 +39,19 @@
           <option value="asc">오래된순</option>
         </select>
 
-        <button type="button" @click="handleLoadNotices">새로고침</button>
+        <button
+          type="button"
+          @click="handleLoadNotices"
+        >
+          새로고침
+        </button>
       </div>
     </div>
 
-    <form class="notice-search management-list-toolbar" @submit.prevent="handleSearch">
+    <form
+      class="notice-search management-list-toolbar"
+      @submit.prevent="handleSearch"
+    >
       <input
         v-model="carNoKeyword"
         class="notice-search-input management-car-search-input"
@@ -48,9 +59,15 @@
         placeholder="차량번호 검색"
         aria-label="차량번호 검색"
       >
-      <button class="notice-search-button management-search-button" type="submit" :disabled="loading">
-        {{ loading && searchApplied ? '검색 중...' : '검색' }}
+
+      <button
+        class="notice-search-button management-search-button"
+        type="submit"
+        :disabled="loading"
+      >
+        {{ loading && searchApplied ? "검색 중..." : "검색" }}
       </button>
+
       <button
         class="notice-reset-button management-reset-button"
         type="button"
@@ -61,75 +78,107 @@
       </button>
     </form>
 
-    <p v-if="loading">불러오는 중...</p>
-    <p v-else-if="errorMessage">{{ errorMessage }}</p>
+    <p v-if="loading">
+      불러오는 중...
+    </p>
+
+    <p v-else-if="errorMessage">
+      {{ errorMessage }}
+    </p>
 
     <template v-else>
-    <div class="notice-table-wrap management-list-table">
-      <table class="notice-table" border="1">
-        <thead>
-          <tr>
-            <th
-              v-for="column in columns"
-              :key="column.key"
-              :class="column.className"
+      <div class="notice-table-wrap management-list-table">
+        <table class="notice-table" border="1">
+          <thead>
+            <tr>
+              <th
+                v-for="column in columns"
+                :key="column.key"
+                :class="column.className"
+              >
+                {{ column.label }}
+              </th>
+
+              <th class="col-action">
+                관리
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              v-for="(notice, index) in paginatedItems"
+              :key="getNoticeNo(notice)"
+              class="notice-row"
+              @click="goDetail(notice)"
             >
-              {{ column.label }}
-            </th>
-            <th class="col-action">관리</th>
-          </tr>
-        </thead>
+              <td
+                v-for="column in columns"
+                :key="column.key"
+                :class="column.className"
+                :data-label="column.label"
+              >
+                <span v-if="column.key === 'noticeNo'">
+                  {{ (currentPage - 1) * pageSize + index + 1 }}
+                </span>
 
-        <tbody>
-          <tr
-            v-for="(notice, index) in paginatedItems"
-            :key="notice.noticeNo ?? notice.notice_no"
-            class="notice-row"
-            @click="goDetail(notice)"
-          >
-            <td
-              v-for="column in columns"
-              :key="column.key"
-              :class="column.className"
-              :data-label="column.label"
-              :title="formatValue(getValue(notice, column), column)"
+                <template v-else-if="column.key === 'noticeType'">
+                  {{ getNoticeTypeLabel(getNoticeType(notice)) }}
+                </template>
+
+                <template v-else-if="column.key === 'alertStat'">
+                  {{ getStatusLabel(getAlertStat(notice)) }}
+                </template>
+
+                <template v-else>
+                  {{ formatValue(getValue(notice, column), column) }}
+                </template>
+              </td>
+
+              <td
+                class="col-action"
+                data-label="관리"
+              >
+                <button
+                  type="button"
+                  @click.stop="removeNotice(notice)"
+                >
+                  삭제
+                </button>
+              </td>
+            </tr>
+
+            <tr
+              v-if="paginatedItems.length === 0"
+              class="notice-empty-row"
             >
-              <span v-if="column.key === 'noticeNo'">
-                {{ (currentPage - 1) * pageSize + index + 1 }}
-              </span>
+              <td :colspan="columns.length + 1">
+                선택한 처리상태의 알림이 없습니다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-              <template v-else-if="column.key === 'alertStat'">
-                {{ getStatusLabel(getAlertStat(notice)) }}
-              </template>
-
-              <template v-else>
-                {{ formatValue(getValue(notice, column), column) }}
-              </template>
-            </td>
-            <td class="col-action" data-label="관리"><button type="button" @click.stop="removeNotice(notice)">삭제</button></td>
-          </tr>
-          <tr v-if="paginatedItems.length === 0" class="notice-empty-row">
-            <td :colspan="columns.length + 1">선택한 처리상태의 알림이 없습니다.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="pagination-action-row admin-pagination-area">
+      <div class="pagination-action-row admin-pagination-area">
         <Pagination
           :current-page="currentPage"
           :total-pages="totalPages"
           :page-numbers="pageNumbers"
-          @change-page="setPage"/>
+          @change-page="setPage"
+        />
+
         <button
           v-if="fromStatistics"
           type="button"
           class="back-button statistics-back-button"
           @click="backToStatistics"
         >
-          ← 통계로 돌아가기
+          통계로 돌아가기
         </button>
-    </div>
+      </div>
     </template>
+
     <NoticeDeleteConfirm
       :open="Boolean(pendingDeleteNotice)"
       :car-no="getDeleteCarNo(pendingDeleteNotice)"
@@ -142,13 +191,15 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { useNoticeStore } from "./noticeStore";
 import { storeToRefs } from "pinia";
-import { usePagination } from "@/shared/pagination/usePagination";
+import { useRoute, useRouter } from "vue-router";
+
 import Pagination from "@/shared/pagination/Pagination.vue";
+import { usePagination } from "@/shared/pagination/usePagination";
+
 import { searchNoticesByCarNo } from "./noticeApi";
 import NoticeDeleteConfirm from "./NoticeDeleteConfirm.vue";
+import { useNoticeStore } from "./noticeStore";
 
 const route = useRoute();
 const router = useRouter();
@@ -165,118 +216,186 @@ const pendingDeleteNotice = ref(null);
 const deleting = ref(false);
 
 const statusOptions = [
-  { value: "Unresolved", label: "미확인" },
-  { value: "Checked", label: "확인" },
-  { value: "Resolved", label: "처리완료" },
+  {
+    value: "Unresolved",
+    label: "미처리"
+  },
+  {
+    value: "Resolved",
+    label: "처리완료"
+  }
 ];
 
-const validStatuses = statusOptions.map((option) => option.value);
+const validStatuses = statusOptions.map((option) => {
+  return option.value;
+});
 
-// 통계 페이지에서 들어온 장기주차 알림 화면은
-// 미확인(Unresolved)과 확인(Checked)을 함께 보여준다.
-// 처리완료(Resolved)만 제외해야 대시보드 숫자와 목록 숫자가 맞는다.
 const getRouteStatus = () => {
-  const status = route.query.status
+  const status = route.query.status;
 
   if (validStatuses.includes(status)) {
-    return status
+    return status;
   }
 
-  if (
-    route.name === 'NoticeVisitLongStay'
-    || route.name === 'NoticeUnknownLongStay'
-  ) {
-    return ''
-  }
-
-  return 'Unresolved'
-}
+  return "Unresolved";
+};
 
 const selectedStatus = ref(getRouteStatus());
 
-// 통계 페이지에서 들어온 전용 주소에 따라 알림 종류를 나눈다.
-// 기존 NoteList 화면은 그대로 쓰고, route name만 보고 필터링한다.
-const getRouteCarKind = () => {
-  if (route.name === 'NoticeVisitLongStay') {
-    return 'VISIT'
+const getRouteNoticeType = () => {
+  if (route.name === "NoticeVisitLongStay") {
+    return "VISIT_OVERDUE";
   }
 
-  if (route.name === 'NoticeUnknownLongStay') {
-    return 'UNKNOWN'
+  if (route.name === "NoticeUnknownLongStay") {
+    return "UNKNOWN_OVERSTAY";
   }
 
-  return ''
-}
+  return "";
+};
 
-const selectedCarKind = ref(getRouteCarKind())
+const selectedNoticeType = ref(getRouteNoticeType());
 
-// 통계 화면에서 들어온 전용 화면인지 확인한다.
 const fromStatistics = computed(() => {
   return (
-    route.name === 'NoticeVisitLongStay'
-    || route.name === 'NoticeUnknownLongStay'
-  )
-})
+    route.name === "NoticeVisitLongStay"
+    || route.name === "NoticeUnknownLongStay"
+  );
+});
 
 const pageTitle = computed(() => {
-  if (selectedCarKind.value === 'VISIT') {
-    return '방문 장기주차 알림'
+  if (selectedNoticeType.value === "VISIT_OVERDUE") {
+    return "방문차량 장기주차 알림";
   }
 
-  if (selectedCarKind.value === 'UNKNOWN') {
-    return '비등록 장기주차 알림'
+  if (selectedNoticeType.value === "UNKNOWN_OVERSTAY") {
+    return "미등록차량 장기주차 알림";
   }
 
-  return '알림 관리'
-})
+  return "알림 관리";
+});
 
 const columns = [
-  { key: "noticeNo", fallbackKey: "notice_no", label: "번호", className: "col-xs" },
-  { key: "registeredCarNo", fallbackKey: "registered_car_no", label: "등록 차량번호", className: "col-sm" },
-  { key: "capturedCarNo", fallbackKey: "captured_car_no", label: "촬영 차량번호", className: "col-sm" },
-  { key: "detectAt", fallbackKey: "detect_at", label: "감지 일시", className: "col-date", type: "date" },
-  { key: "stayDays", fallbackKey: "stay_days", label: "감지 후 경과 일수", className: "col-xs" },
-  { key: "alertStat", fallbackKey: "alert_stat", label: "처리 상태", className: "col-status" },
+  {
+    key: "noticeNo",
+    fallbackKey: "notice_no",
+    label: "번호",
+    className: "col-xs"
+  },
+  {
+    key: "noticeType",
+    fallbackKey: "notice_type",
+    label: "알림 종류",
+    className: "col-type"
+  },
+  {
+    key: "registeredCarNo",
+    fallbackKey: "registered_car_no",
+    label: "등록 차량번호",
+    className: "col-sm"
+  },
+  {
+    key: "capturedCarNo",
+    fallbackKey: "captured_car_no",
+    label: "촬영 차량번호",
+    className: "col-sm"
+  },
+  {
+    key: "detectAt",
+    fallbackKey: "detect_at",
+    label: "감지 일시",
+    className: "col-date",
+    type: "date"
+  },
+  {
+    key: "stayDays",
+    fallbackKey: "stay_days",
+    label: "경과 일수",
+    className: "col-days"
+  },
+  {
+    key: "alertStat",
+    fallbackKey: "alert_stat",
+    label: "처리 상태",
+    className: "col-status"
+  }
 ];
 
 const getValue = (notice, column) => {
   return notice[column.key] ?? notice[column.fallbackKey];
 };
 
-const getAlertStat = (notice) => {
-  return notice.alertStat ?? notice.alert_stat ?? "Unresolved";
+const getNoticeNo = (notice) => {
+  return notice.noticeNo ?? notice.notice_no;
 };
 
-const getCarKind = (notice) => {
-  return notice.carKind ?? notice.car_kind ?? "";
+const getNoticeType = (notice) => {
+  return notice.noticeType ?? notice.notice_type ?? "";
+};
+
+const getAlertStat = (notice) => {
+  return notice.alertStat
+    ?? notice.alert_stat
+    ?? "Unresolved";
+};
+
+const getNoticeTypeLabel = (value) => {
+  const labels = {
+    EXIT_WITHOUT_ENTRY: "입차기록 없는 출차",
+    VISIT_OVERDUE: "방문차량 시간 초과",
+    UNKNOWN_OVERSTAY: "미등록차량 장기주차",
+    OCR_REVIEW: "OCR 확인 필요"
+  };
+
+  return labels[value] ?? value ?? "-";
+};
+
+const getStatusLabel = (value) => {
+  return statusOptions.find((option) => {
+    return option.value === value;
+  })?.label ?? value ?? "-";
 };
 
 const filteredNotices = computed(() => {
   return notices.value.filter((notice) => {
-    // selectedStatus가 비어 있으면 처리완료를 제외한 알림을 보여준다.
-    // 통계 카드의 장기주차 알림 수와 목록 수를 맞추기 위한 조건이다.
-    const statusMatched = selectedStatus.value
-      ? getAlertStat(notice) === selectedStatus.value
-      : getAlertStat(notice) !== 'Resolved'
+    const statusMatched =
+      getAlertStat(notice) === selectedStatus.value;
 
-    if (!selectedCarKind.value) {
-      return statusMatched
+    if (!statusMatched) {
+      return false;
     }
 
-    return statusMatched && getCarKind(notice) === selectedCarKind.value
-  })
-})
+    if (!selectedNoticeType.value) {
+      return true;
+    }
 
-const sortedNotices = computed(() => {
-  return [...filteredNotices.value].sort((a, b) => {
-    const aNo = Number(a.noticeNo ?? a.notice_no ?? 0);
-    const bNo = Number(b.noticeNo ?? b.notice_no ?? 0);
-
-    return sortOrder.value === "desc" ? bNo - aNo : aNo - bNo;
+    return (
+      getNoticeType(notice)
+      === selectedNoticeType.value
+    );
   });
 });
 
-// 한 페이지에 10개씩
+const sortedNotices = computed(() => {
+  return [...filteredNotices.value].sort((a, b) => {
+    const aNo = Number(
+      a.noticeNo
+      ?? a.notice_no
+      ?? 0
+    );
+
+    const bNo = Number(
+      b.noticeNo
+      ?? b.notice_no
+      ?? 0
+    );
+
+    return sortOrder.value === "desc"
+      ? bNo - aNo
+      : aNo - bNo;
+  });
+});
+
 const pageSize = 10;
 
 const {
@@ -287,7 +406,6 @@ const {
   setPage
 } = usePagination(sortedNotices, pageSize);
 
-
 const formatDate = (value) => {
   const date = new Date(value);
 
@@ -295,16 +413,31 @@ const formatDate = (value) => {
     return value;
   }
 
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(date.getHours()).padStart(2, "0");
-  const minute = String(date.getMinutes()).padStart(2, "0");
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
+
+  const hour = String(
+    date.getHours()
+  ).padStart(2, "0");
+
+  const minute = String(
+    date.getMinutes()
+  ).padStart(2, "0");
 
   return `${month}-${day} ${hour}:${minute}`;
 };
 
 const formatValue = (value, column) => {
-  if (value === null || value === undefined || value === "") {
+  if (
+    value === null
+    || value === undefined
+    || value === ""
+  ) {
     return "-";
   }
 
@@ -312,19 +445,7 @@ const formatValue = (value, column) => {
     return formatDate(value);
   }
 
-  if (column?.type === "money") {
-    return Number(value).toLocaleString();
-  }
-
   return value;
-};
-
-const getNoticeNo = (notice) => {
-  return notice.noticeNo ?? notice.notice_no;
-};
-
-const getStatusLabel = (value) => {
-  return statusOptions.find((option) => option.value === value)?.label ?? value ?? "-";
 };
 
 const handleLoadNotices = async () => {
@@ -335,24 +456,21 @@ const handleLoadNotices = async () => {
     await noticeStore.loadNotices();
   } catch (error) {
     console.error(error);
-    errorMessage.value = "알림 목록을 불러오지 못했습니다.";
+
+    errorMessage.value =
+      "알림 목록을 불러오지 못했습니다.";
   } finally {
     loading.value = false;
   }
 };
 
-// 통계 화면으로 돌아간다.
 const backToStatistics = () => {
-  router.push('/admin/statistics')
-}
+  router.push("/admin/statistics");
+};
 
 const handleStatusChange = () => {
-  // 상태를 직접 선택하면 방문/미등록 필터를 해제
-  selectedCarKind.value = ""
-
-  // 첫 페이지부터 다시 보여준다
-  currentPage.value = 1
-}
+  currentPage.value = 1;
+};
 
 const goDetail = (notice) => {
   const noticeNo = getNoticeNo(notice);
@@ -365,7 +483,8 @@ const goDetail = (notice) => {
 };
 
 const handleSearch = async () => {
-  const carNo = carNoKeyword.value.replace(/\s+/g, "");
+  const carNo =
+    carNoKeyword.value.replace(/\s+/g, "");
 
   if (!carNo) {
     await resetSearch();
@@ -377,12 +496,19 @@ const handleSearch = async () => {
   searchApplied.value = true;
 
   try {
-    const response = await searchNoticesByCarNo(carNo);
-    notices.value = Array.isArray(response.data) ? response.data : [];
+    const response =
+      await searchNoticesByCarNo(carNo);
+
+    notices.value = Array.isArray(response.data)
+      ? response.data
+      : [];
+
     currentPage.value = 1;
   } catch (error) {
     console.error(error);
-    errorMessage.value = "차량번호 검색 결과를 불러오지 못했습니다.";
+
+    errorMessage.value =
+      "차량번호 검색 결과를 불러오지 못했습니다.";
   } finally {
     loading.value = false;
   }
@@ -392,6 +518,7 @@ const resetSearch = async () => {
   carNoKeyword.value = "";
   searchApplied.value = false;
   currentPage.value = 1;
+
   await handleLoadNotices();
 };
 
@@ -414,12 +541,19 @@ const cancelDelete = () => {
 };
 
 const confirmDelete = async () => {
-  if (!pendingDeleteNotice.value || deleting.value) {
+  if (
+    !pendingDeleteNotice.value
+    || deleting.value
+  ) {
     return;
   }
 
   deleting.value = true;
-  await noticeStore.remove(getNoticeNo(pendingDeleteNotice.value));
+
+  await noticeStore.remove(
+    getNoticeNo(pendingDeleteNotice.value)
+  );
+
   deleting.value = false;
   pendingDeleteNotice.value = null;
 };
@@ -430,18 +564,19 @@ watch(
   () => route.query.status,
   () => {
     selectedStatus.value = getRouteStatus();
+    currentPage.value = 1;
   }
 );
 
-// 같은 NoteList를 쓰더라도 주소가 바뀌면 알림 필터를 다시 적용한다.
 watch(
   () => route.name,
   () => {
-    selectedCarKind.value = getRouteCarKind()
-    currentPage.value = 1
-  }
-)
+    selectedNoticeType.value =
+      getRouteNoticeType();
 
+    currentPage.value = 1;
+  }
+);
 </script>
 
 <style scoped>
@@ -453,15 +588,17 @@ watch(
 
 .notice-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 900px;
   table-layout: fixed;
 }
 
-.notice-table .col-xs { width: 7%; }
-.notice-table .col-sm { width: 20%; }
-.notice-table .col-date { width: 25%; }
-.notice-table .col-status { width: 14%; }
-.notice-table .col-action { width: 7%; }
+.notice-table .col-xs { width: 6%; }
+.notice-table .col-type { width: 17%; }
+.notice-table .col-sm { width: 15%; }
+.notice-table .col-date { width: 18%; }
+.notice-table .col-days { width: 10%; }
+.notice-table .col-status { width: 11%; }
+.notice-table .col-action { width: 8%; }
 
 .notice-table th,
 .notice-table td {
@@ -521,20 +658,14 @@ watch(
 }
 
 .notice-toast-enter-active,
-.notice-toast-leave-active { transition: opacity .18s ease, transform .18s ease; }
-.notice-toast-enter-from,
-.notice-toast-leave-to { opacity: 0; transform: translateY(-8px); }
-
-@media (max-width: 1000px) {
-  .notice-table th,
-  .notice-table td,
-  .notice-table .col-action button { font-size: 12px; }
+.notice-toast-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-@media (max-width: 700px) {
-  .notice-table th,
-  .notice-table td,
-  .notice-table .col-action button { font-size: 11px; }
+.notice-toast-enter-from,
+.notice-toast-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .notice-page form.notice-search {
@@ -554,11 +685,11 @@ watch(
 }
 
 .notice-page form.notice-search .notice-search-input {
+  box-sizing: border-box;
   width: 170px;
   height: 36px !important;
   min-height: 36px !important;
   max-height: 36px;
-  box-sizing: border-box;
   padding: 0 10px !important;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -583,6 +714,28 @@ watch(
   white-space: nowrap;
 }
 
+.back-button {
+  height: 36px;
+  padding: 0 12px;
+  margin-top: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background: #f3f4f6;
+}
+
+@media (max-width: 1000px) {
+  .notice-table th,
+  .notice-table td,
+  .notice-table .col-action button {
+    font-size: 12px;
+  }
+}
+
 @media (max-width: 760px) {
   .notice-page form.notice-search {
     width: 100%;
@@ -595,19 +748,11 @@ watch(
   }
 }
 
-.back-button {
-  height: 36px;
-  padding: 0 12px;
-  margin-top: 8px;
-
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-
-  background: #fff;
-  cursor: pointer;
-}
-
-.back-button:hover {
-  background: #f3f4f6;
+@media (max-width: 700px) {
+  .notice-table th,
+  .notice-table td,
+  .notice-table .col-action button {
+    font-size: 11px;
+  }
 }
 </style>

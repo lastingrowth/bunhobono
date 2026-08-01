@@ -19,20 +19,20 @@ RESTART IDENTITY CASCADE;
 -- 현재 백엔드 정책과 CHECK 제약조건을 동기화한다.
 -- =====================================================
 ALTER TABLE vehicle_nt
-DROP CONSTRAINT IF EXISTS vehicle_nt_notification_type_check;
+    DROP CONSTRAINT IF EXISTS vehicle_nt_notification_type_check;
 ALTER TABLE vehicle_nt
     ADD CONSTRAINT vehicle_nt_notification_type_check
-        CHECK (notification_type IN (
-                                     'ADMIN_APPROVED',
-                                     'ADMIN_REJECTED',
-                                     'APPROVAL_TIMEOUT',
-                                     'NO_ENTRY_EXPIRED',
-                                     'VISIT_OVERDUE',
-                                     'VISIT_OVERDUE_EXIT'
-            ));
+    CHECK (notification_type IN (
+        'ADMIN_APPROVED',
+        'ADMIN_REJECTED',
+        'APPROVAL_TIMEOUT',
+        'NO_ENTRY_EXPIRED',
+        'VISIT_OVERDUE',
+        'VISIT_OVERDUE_EXIT'
+    ));
 
 ALTER TABLE notice
-DROP CONSTRAINT IF EXISTS chk_notice_type,
+    DROP CONSTRAINT IF EXISTS chk_notice_type,
     DROP CONSTRAINT IF EXISTS chk_notice_status,
     DROP CONSTRAINT IF EXISTS chk_notice_car_kind,
     DROP CONSTRAINT IF EXISTS chk_notice_handled,
@@ -41,11 +41,11 @@ DROP CONSTRAINT IF EXISTS chk_notice_type,
 ALTER TABLE notice
     ADD CONSTRAINT chk_notice_type
         CHECK (notice_type IN (
-                               'EXIT_WITHOUT_ENTRY',
-                               'VISIT_OVERDUE',
-                               'UNKNOWN_OVERSTAY',
-                               'OCR_REVIEW'
-            )),
+            'EXIT_WITHOUT_ENTRY',
+            'VISIT_OVERDUE',
+            'UNKNOWN_OVERSTAY',
+            'OCR_REVIEW'
+        )),
     ADD CONSTRAINT chk_notice_status
         CHECK (alert_stat IN ('Unresolved', 'Resolved')),
     ADD CONSTRAINT chk_notice_car_kind
@@ -510,17 +510,17 @@ SELECT 'visit', dp.car_no, 'APPROVED',
        CASE
            WHEN dp.plate_no = 49
                THEN CURRENT_TIMESTAMP - INTERVAL '2 hours'
-    WHEN dp.plate_no = 57
-    THEN CURRENT_TIMESTAMP - INTERVAL '3 hours'
-    ELSE CURRENT_TIMESTAMP - INTERVAL '30 minutes'
-END,
+           WHEN dp.plate_no = 57
+               THEN CURRENT_TIMESTAMP - INTERVAL '3 hours'
+           ELSE CURRENT_TIMESTAMP - INTERVAL '30 minutes'
+       END,
        CASE
            WHEN dp.plate_no = 49
                THEN CURRENT_TIMESTAMP - INTERVAL '1 hour'
            WHEN dp.plate_no = 57
                THEN CURRENT_TIMESTAMP + INTERVAL '2 hours'
            ELSE CURRENT_TIMESTAMP + INTERVAL '4 hours 30 minutes'
-END,
+       END,
        30 + (dp.plate_no - 48),
        CASE
            WHEN dp.plate_no = 49
@@ -528,7 +528,7 @@ END,
            WHEN dp.plate_no = 57
                THEN CURRENT_TIMESTAMP - INTERVAL '4 hours'
            ELSE CURRENT_TIMESTAMP - INTERVAL '1 hour'
-END
+       END
 FROM demo_plate dp
 WHERE dp.plate_no BETWEEN 49 AND 57;
 
@@ -610,7 +610,7 @@ SELECT 'NOW-V-' || g,
             WHEN g = 2 THEN CURRENT_TIMESTAMP - INTERVAL '55 hours'
             WHEN g = 3 THEN CURRENT_TIMESTAMP - INTERVAL '80 hours'
             ELSE CURRENT_TIMESTAMP - ((9 - g) * INTERVAL '7 minutes')
-END,
+       END,
        NULL, NULL
 FROM generate_series(1, 8) AS g;
 
@@ -626,7 +626,7 @@ SELECT 'NOW-U-' || g,
             WHEN g = 2 THEN CURRENT_TIMESTAMP - INTERVAL '75 hours'
             WHEN g = 3 THEN CURRENT_TIMESTAMP - INTERVAL '100 hours'
             ELSE CURRENT_TIMESTAMP - ((5 - g) * INTERVAL '20 minutes')
-END,
+       END,
        NULL, NULL
 FROM generate_series(1, 4) AS g;
 
@@ -710,35 +710,35 @@ SELECT
     n.camera_data_no,
 
     COALESCE(
-            log_vc.car_no,
-            event_vc.car_no,
-            n.snapshot_registered_car_no
+        log_vc.car_no,
+        event_vc.car_no,
+        n.snapshot_registered_car_no
     ) AS registered_car_no,
 
     COALESCE(
-            event_cd.ocr_car_no,
-            event_cd.car_no,
-            entry_cd.ocr_car_no,
-            entry_cd.car_no,
-            cl.snapshot_car_no,
-            n.snapshot_captured_car_no
+        event_cd.ocr_car_no,
+        event_cd.car_no,
+        entry_cd.ocr_car_no,
+        entry_cd.car_no,
+        cl.snapshot_car_no,
+        n.snapshot_captured_car_no
     ) AS captured_car_no,
 
     COALESCE(
-            cl.snapshot_car_kind,
-            CASE
-                WHEN cl.car_log_no IS NULL THEN NULL
-                WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
-                WHEN log_vc.vehicle_type = 'visit' THEN 'VISIT'
-                ELSE 'REGISTERED'
-                END,
-            CASE
-                WHEN event_cd.camera_data_no IS NULL THEN NULL
-                WHEN event_cd.vehicle_car_no IS NULL THEN 'UNKNOWN'
-                WHEN event_vc.vehicle_type = 'visit' THEN 'VISIT'
-                ELSE 'REGISTERED'
-                END,
-            n.snapshot_car_kind
+        cl.snapshot_car_kind,
+        CASE
+            WHEN cl.car_log_no IS NULL THEN NULL
+            WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
+            WHEN log_vc.vehicle_type = 'visit' THEN 'VISIT'
+            ELSE 'REGISTERED'
+        END,
+        CASE
+            WHEN event_cd.camera_data_no IS NULL THEN NULL
+            WHEN event_cd.vehicle_car_no IS NULL THEN 'UNKNOWN'
+            WHEN event_vc.vehicle_type = 'visit' THEN 'VISIT'
+            ELSE 'REGISTERED'
+        END,
+        n.snapshot_car_kind
     ) AS car_kind,
 
     n.detect_at,
@@ -747,31 +747,31 @@ SELECT
     CASE
         WHEN n.due_at IS NULL THEN NULL
         ELSE GREATEST(
-                0,
-                FLOOR(
-                        EXTRACT(
-                                EPOCH FROM (
-                            COALESCE(cl.out_time, CURRENT_TIMESTAMP)
-                                - n.due_at
-                            )
-                        ) / 60
-                )::BIGINT
-             )
-        END AS overdue_minutes,
-
-    GREATEST(
             0,
             FLOOR(
-                    EXTRACT(
-                            EPOCH FROM (
-                        COALESCE(
-                                cl.out_time,
-                                n.handled_at,
-                                CURRENT_TIMESTAMP
-                        ) - n.detect_at
-                        )
-                    ) / 86400
-            )::INTEGER
+                EXTRACT(
+                    EPOCH FROM (
+                        COALESCE(cl.out_time, CURRENT_TIMESTAMP)
+                        - n.due_at
+                    )
+                ) / 60
+            )::BIGINT
+        )
+    END AS overdue_minutes,
+
+    GREATEST(
+        0,
+        FLOOR(
+            EXTRACT(
+                EPOCH FROM (
+                    COALESCE(
+                        cl.out_time,
+                        n.handled_at,
+                        CURRENT_TIMESTAMP
+                    ) - n.detect_at
+                )
+            ) / 86400
+        )::INTEGER
     ) AS stay_days,
 
     n.alert_stat,
@@ -783,21 +783,21 @@ SELECT
     cl.out_time,
 
     COALESCE(
-            log_parking.parking_name,
-            event_parking.parking_name,
-            n.snapshot_parking_name
+        log_parking.parking_name,
+        event_parking.parking_name,
+        n.snapshot_parking_name
     ) AS parking_name,
 
     COALESCE(
-            event_cd.image_path,
-            entry_cd.image_path,
-            n.snapshot_image_path
+        event_cd.image_path,
+        entry_cd.image_path,
+        n.snapshot_image_path
     ) AS image_path,
 
     COALESCE(
-            event_cd.confidence_score,
-            entry_cd.confidence_score,
-            n.snapshot_confidence_score
+        event_cd.confidence_score,
+        entry_cd.confidence_score,
+        n.snapshot_confidence_score
     ) AS confidence_score,
 
     n.snapshot_car_log_no,
@@ -811,28 +811,28 @@ SELECT
     n.snapshot_confidence_score
 
 FROM notice n
-         LEFT JOIN car_log cl
-                   ON n.car_log_no = cl.car_log_no
-         LEFT JOIN vehicle_car log_vc
-                   ON cl.vehicle_car_no = log_vc.vehicle_car_no
-         LEFT JOIN camera_data entry_cd
-                   ON cl.camera_data_no = entry_cd.camera_data_no
-         LEFT JOIN gate log_gate
-                   ON cl.in_gate_no = log_gate.gate_no
-         LEFT JOIN parking log_parking
-                   ON log_gate.parking_no = log_parking.parking_no
-         LEFT JOIN camera_data event_cd
-                   ON n.camera_data_no = event_cd.camera_data_no
-         LEFT JOIN vehicle_car event_vc
-                   ON event_cd.vehicle_car_no = event_vc.vehicle_car_no
-         LEFT JOIN camera event_camera
-                   ON event_cd.camera_no = event_camera.camera_no
-         LEFT JOIN gate event_gate
-                   ON event_camera.gate_no = event_gate.gate_no
-         LEFT JOIN parking event_parking
-                   ON event_gate.parking_no = event_parking.parking_no
-         LEFT JOIN member handler
-                   ON n.handled_by_member_no = handler.member_no;
+LEFT JOIN car_log cl
+    ON n.car_log_no = cl.car_log_no
+LEFT JOIN vehicle_car log_vc
+    ON cl.vehicle_car_no = log_vc.vehicle_car_no
+LEFT JOIN camera_data entry_cd
+    ON cl.camera_data_no = entry_cd.camera_data_no
+LEFT JOIN gate log_gate
+    ON cl.in_gate_no = log_gate.gate_no
+LEFT JOIN parking log_parking
+    ON log_gate.parking_no = log_parking.parking_no
+LEFT JOIN camera_data event_cd
+    ON n.camera_data_no = event_cd.camera_data_no
+LEFT JOIN vehicle_car event_vc
+    ON event_cd.vehicle_car_no = event_vc.vehicle_car_no
+LEFT JOIN camera event_camera
+    ON event_cd.camera_no = event_camera.camera_no
+LEFT JOIN gate event_gate
+    ON event_camera.gate_no = event_gate.gate_no
+LEFT JOIN parking event_parking
+    ON event_gate.parking_no = event_parking.parking_no
+LEFT JOIN member handler
+    ON n.handled_by_member_no = handler.member_no;
 
 CREATE VIEW notice_overstay AS
 SELECT
@@ -840,20 +840,20 @@ SELECT
         WHEN vc.vehicle_type = 'visit'
             THEN 'VISIT_OVERDUE'
         ELSE 'UNKNOWN_OVERSTAY'
-        END AS notice_type,
+    END AS notice_type,
     cl.car_log_no,
     cl.camera_data_no AS snapshot_camera_data_no,
     vc.car_no AS snapshot_registered_car_no,
     COALESCE(
-            cd.ocr_car_no,
-            cd.car_no,
-            cl.snapshot_car_no
+        cd.ocr_car_no,
+        cd.car_no,
+        cl.snapshot_car_no
     ) AS snapshot_captured_car_no,
     CASE
         WHEN vc.vehicle_type = 'visit'
             THEN 'VISIT'
         ELSE 'UNKNOWN'
-        END AS snapshot_car_kind,
+    END AS snapshot_car_kind,
     p.parking_name AS snapshot_parking_name,
     cl.in_time AS snapshot_in_time,
     cd.image_path AS snapshot_image_path,
@@ -861,10 +861,10 @@ SELECT
     CASE
         WHEN vc.vehicle_type = 'visit'
             THEN cl.in_time
-            + (vc.end_date - vc.start_date)
-            + INTERVAL '30 minutes'
+                 + (vc.end_date - vc.start_date)
+                 + INTERVAL '30 minutes'
         ELSE cl.in_time + INTERVAL '24 hours'
-END AS due_at
+    END AS due_at
 FROM car_log cl
 LEFT JOIN vehicle_car vc
     ON cl.vehicle_car_no = vc.vehicle_car_no
@@ -936,13 +936,13 @@ SELECT
 FROM notice_overstay o
 WHERE CURRENT_TIMESTAMP >= o.due_at
   AND o.snapshot_captured_car_no IN (
-    '225하2171',
-    '143모8849',
-    '91어6511',
-    '103호3307',
-    '40거2054',
-    '48나8278'
-    )
+      '225하2171',
+      '143모8849',
+      '91어6511',
+      '103호3307',
+      '40거2054',
+      '48나8278'
+  )
 ON CONFLICT DO NOTHING;
 
 -- 네 차량은 초과 알림이 발생한 뒤 출차한 상태로 만든다.
@@ -955,53 +955,53 @@ WITH exit_targets AS (
         cl.snapshot_car_no AS car_no,
         cl.in_gate_no + 1 AS out_gate_no,
         n.due_at + INTERVAL '2 hours' AS out_time
-FROM notice n
+    FROM notice n
     JOIN car_log cl
-ON n.car_log_no = cl.car_log_no
-WHERE n.snapshot_captured_car_no IN (
-    '143모8849',
-    '91어6511',
-    '40거2054',
-    '48나8278'
+        ON n.car_log_no = cl.car_log_no
+    WHERE n.snapshot_captured_car_no IN (
+        '143모8849',
+        '91어6511',
+        '40거2054',
+        '48나8278'
     )
-  AND cl.out_time IS NULL
-    ), inserted_exit_camera AS (
-INSERT INTO camera_data (
-    camera_no,
-    vehicle_car_no,
-    car_no,
-    ocr_car_no,
-    capture_time,
-    image_path,
-    crop_image_path,
-    recognition_state,
-    confidence_score,
-    cam_note
-)
-SELECT
-    et.out_gate_no,
-    et.vehicle_car_no,
-    et.car_no,
-    COALESCE(dp.ocr_car_no, et.car_no),
-    et.out_time,
-    'camera-data/' || dp.image_file,
-    'camera-data/crop/'
-    || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
-    TRUE,
-    98.20,
-    'NOTICE-OUT-' || et.notice_no
-FROM exit_targets et
+      AND cl.out_time IS NULL
+), inserted_exit_camera AS (
+    INSERT INTO camera_data (
+        camera_no,
+        vehicle_car_no,
+        car_no,
+        ocr_car_no,
+        capture_time,
+        image_path,
+        crop_image_path,
+        recognition_state,
+        confidence_score,
+        cam_note
+    )
+    SELECT
+        et.out_gate_no,
+        et.vehicle_car_no,
+        et.car_no,
+        COALESCE(dp.ocr_car_no, et.car_no),
+        et.out_time,
+        'camera-data/' || dp.image_file,
+        'camera-data/crop/'
+            || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+        TRUE,
+        98.20,
+        'NOTICE-OUT-' || et.notice_no
+    FROM exit_targets et
     JOIN demo_plate dp
-ON dp.car_no = et.car_no
+        ON dp.car_no = et.car_no
     RETURNING camera_data_no, cam_note
-    )
+)
 UPDATE car_log cl
 SET out_gate_no = et.out_gate_no,
     out_time = et.out_time,
     out_camera_data_no = iec.camera_data_no
-    FROM exit_targets et
+FROM exit_targets et
 JOIN inserted_exit_camera iec
-ON iec.cam_note = 'NOTICE-OUT-' || et.notice_no
+    ON iec.cam_note = 'NOTICE-OUT-' || et.notice_no
 WHERE cl.car_log_no = et.car_log_no;
 
 UPDATE notice n
@@ -1010,15 +1010,15 @@ SET alert_stat = 'Resolved',
         SELECT member_no
         FROM member
         WHERE login_id = 'admin1'
-    LIMIT 1
+        LIMIT 1
     ),
     handled_at = cl.out_time + INTERVAL '10 minutes'
 FROM car_log cl
 WHERE n.car_log_no = cl.car_log_no
   AND n.snapshot_captured_car_no IN (
-    '143모8849',
-    '40거2054'
-    );
+      '143모8849',
+      '40거2054'
+  );
 
 -- =====================================================
 -- 8-2. OCR 확인 및 입차기록 없는 출차 시도 알림
@@ -1042,8 +1042,8 @@ SELECT
     CASE
         WHEN x.notice_type = 'OCR_REVIEW'
             THEN LEFT(dp.car_no, LENGTH(dp.car_no) - 1) || '8'
-    ELSE dp.car_no
-END,
+        ELSE dp.car_no
+    END,
     CURRENT_TIMESTAMP - (x.age_minutes * INTERVAL '1 minute'),
     'camera-data/' || dp.image_file,
     'camera-data/crop/'
@@ -1052,7 +1052,7 @@ END,
     CASE
         WHEN x.notice_type = 'OCR_REVIEW' THEN 62.40
         ELSE 98.10
-END,
+    END,
     x.event_key
 FROM (VALUES
     ('NOTICE-OCR-OPEN',  'OCR_REVIEW',        62, 1, 45),
@@ -1101,14 +1101,14 @@ SELECT
             FROM member
             WHERE login_id = 'admin1'
             LIMIT 1
-    )
+        )
         ELSE NULL
-END,
+    END,
     CASE
         WHEN x.alert_stat = 'Resolved'
             THEN cd.capture_time + INTERVAL '10 minutes'
         ELSE NULL
-END,
+    END,
     NULL,
     cd.camera_data_no,
     NULL,
@@ -1154,20 +1154,20 @@ SELECT
     vc.member_no,
     admin_member.member_no,
     vc.vehicle_car_no,
-    NULL::INTEGER,
+    NULL,
     vc.car_no,
     'ADMIN_APPROVED',
     '방문차량 신청이 승인되었습니다.',
-    NULL::INTEGER,
+    NULL,
     CURRENT_TIMESTAMP - INTERVAL '2 hours',
     CURRENT_TIMESTAMP - INTERVAL '1 hour'
 FROM vehicle_car vc
-    CROSS JOIN LATERAL (
+CROSS JOIN LATERAL (
     SELECT member_no
     FROM member
     WHERE login_id = 'admin1'
     LIMIT 1
-    ) admin_member
+) admin_member
 WHERE vc.car_no = '41서5534'
 
 UNION ALL
@@ -1188,13 +1188,13 @@ FROM LATERAL (
     FROM member
     WHERE login_id = 'res35'
     LIMIT 1
-    ) recipient
-    CROSS JOIN LATERAL (
+) recipient
+CROSS JOIN LATERAL (
     SELECT member_no
     FROM member
     WHERE login_id = 'admin1'
     LIMIT 1
-    ) admin_member
+) admin_member
 
 UNION ALL
 
@@ -1214,7 +1214,7 @@ FROM LATERAL (
     FROM member
     WHERE login_id = 'res36'
     LIMIT 1
-    ) recipient
+) recipient
 
 UNION ALL
 
@@ -1227,12 +1227,12 @@ SELECT
     'NO_ENTRY_EXPIRED',
     '입차 가능시간 내 방문하지 않아 방문차량 등록이 만기되었습니다.',
     FLOOR(
-            EXTRACT(
-                    EPOCH FROM (
-                        CURRENT_TIMESTAMP
-                    - (vc.start_date + INTERVAL '1 hour')
-                )
-            ) / 60
+        EXTRACT(
+            EPOCH FROM (
+                CURRENT_TIMESTAMP
+                - (vc.start_date + INTERVAL '1 hour')
+            )
+        ) / 60
     )::INTEGER,
     vc.start_date + INTERVAL '1 hour',
     NULL
@@ -1250,19 +1250,19 @@ SELECT
     'VISIT_OVERDUE',
     '방문차량 등록시간이 초과되었으나 아직 출차하지 않았습니다.',
     FLOOR(
-            EXTRACT(
-                    EPOCH FROM (
-                        CURRENT_TIMESTAMP - n.due_at
-                )
-            ) / 60
+        EXTRACT(
+            EPOCH FROM (
+                CURRENT_TIMESTAMP - n.due_at
+            )
+        ) / 60
     )::INTEGER,
     n.detect_at,
     NULL
 FROM notice n
-         JOIN car_log cl
-              ON n.car_log_no = cl.car_log_no
-         JOIN vehicle_car vc
-              ON cl.vehicle_car_no = vc.vehicle_car_no
+JOIN car_log cl
+    ON n.car_log_no = cl.car_log_no
+JOIN vehicle_car vc
+    ON cl.vehicle_car_no = vc.vehicle_car_no
 WHERE n.notice_type = 'VISIT_OVERDUE'
   AND n.snapshot_captured_car_no = '225하2171'
 
@@ -1276,30 +1276,30 @@ SELECT
     vc.car_no,
     'VISIT_OVERDUE_EXIT',
     CONCAT(
-            '방문차량이 등록시간을 ',
-            FLOOR(
-                    EXTRACT(
-                            EPOCH FROM (
-                        cl.out_time - n.due_at
-                        )
-                    ) / 60
-            )::INTEGER,
-            '분 초과한 후 출차했습니다.'
-    ),
-    FLOOR(
+        '방문차량이 등록시간을 ',
+        FLOOR(
             EXTRACT(
-                    EPOCH FROM (
-                cl.out_time - n.due_at
+                EPOCH FROM (
+                    cl.out_time - n.due_at
                 )
             ) / 60
+        )::INTEGER,
+        '분 초과한 후 출차했습니다.'
+    ),
+    FLOOR(
+        EXTRACT(
+            EPOCH FROM (
+                cl.out_time - n.due_at
+            )
+        ) / 60
     )::INTEGER,
     cl.out_time,
     NULL
 FROM notice n
-         JOIN car_log cl
-              ON n.car_log_no = cl.car_log_no
-         JOIN vehicle_car vc
-              ON cl.vehicle_car_no = vc.vehicle_car_no
+JOIN car_log cl
+    ON n.car_log_no = cl.car_log_no
+JOIN vehicle_car vc
+    ON cl.vehicle_car_no = vc.vehicle_car_no
 WHERE n.notice_type = 'VISIT_OVERDUE'
   AND n.snapshot_captured_car_no = '143모8849'
   AND cl.out_time IS NOT NULL;
@@ -1326,22 +1326,22 @@ SELECT dp.car_no, kind.car_kind,
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)], event_time,
        (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)], event_time + kind.stay_interval
 FROM generate_series(
-    DATE_TRUNC('year', CURRENT_DATE)::date,
-    (DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month')::date,
-    INTERVAL '1 month'
-    ) AS months(month_start)
-    CROSS JOIN LATERAL generate_series(1,18 + (EXTRACT(MONTH FROM month_start)::int % 5)) AS days(day_no)
-    CROSS JOIN LATERAL (VALUES
+         DATE_TRUNC('year', CURRENT_DATE)::date,
+         (DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month')::date,
+         INTERVAL '1 month'
+     ) AS months(month_start)
+CROSS JOIN LATERAL generate_series(1,18 + (EXTRACT(MONTH FROM month_start)::int % 5)) AS days(day_no)
+CROSS JOIN LATERAL (VALUES
     ('REGISTERED',28 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 5),INTERVAL '3 hours',1,48),
     ('VISIT',      3 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 3),INTERVAL '4 hours 30 minutes',49,9),
     ('UNKNOWN',    1 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 2),INTERVAL '1 hour 30 minutes',58,11)
-    ) kind(car_kind,amount,stay_interval,first_plate,plate_count)
-    CROSS JOIN LATERAL generate_series(1,kind.amount) AS series(g)
-    CROSS JOIN LATERAL (
+) kind(car_kind,amount,stay_interval,first_plate,plate_count)
+CROSS JOIN LATERAL generate_series(1,kind.amount) AS series(g)
+CROSS JOIN LATERAL (
     SELECT month_start::date + ((day_no - 1) * INTERVAL '1 day')
-    + TIME '00:05:00' + (g * INTERVAL '21 minutes') AS event_time
-    ) event
-    JOIN demo_plate dp ON dp.plate_no = kind.first_plate + ((g - 1) % kind.plate_count)
+           + TIME '00:05:00' + (g * INTERVAL '21 minutes') AS event_time
+) event
+JOIN demo_plate dp ON dp.plate_no = kind.first_plate + ((g - 1) % kind.plate_count)
 WHERE event_time < CURRENT_DATE - INTERVAL '22 days';
 
 -- 7월을 포함한 최근 22일 데이터도 같은 비율로 생성한다.
@@ -1351,16 +1351,16 @@ SELECT dp.car_no, kind.car_kind,
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)], event_time,
        (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)], event_time + kind.stay_interval
 FROM generate_series(1,22) AS days(day_no)
-    CROSS JOIN LATERAL (VALUES
+CROSS JOIN LATERAL (VALUES
     ('REGISTERED',28 + (day_no % 5),INTERVAL '3 hours',1,48),
     ('VISIT',      3 + (day_no % 3),INTERVAL '4 hours 30 minutes',49,9),
     ('UNKNOWN',    1 + ((day_no + 1) % 2),INTERVAL '1 hour 30 minutes',58,11)
-    ) kind(car_kind,amount,stay_interval,first_plate,plate_count)
-    CROSS JOIN LATERAL generate_series(1,kind.amount) AS series(g)
-    CROSS JOIN LATERAL (
+) kind(car_kind,amount,stay_interval,first_plate,plate_count)
+CROSS JOIN LATERAL generate_series(1,kind.amount) AS series(g)
+CROSS JOIN LATERAL (
     SELECT (CURRENT_DATE - day_no) + TIME '00:05:00' + (g * INTERVAL '21 minutes') AS event_time
-    ) event
-    JOIN demo_plate dp ON dp.plate_no = kind.first_plate + ((g - 1) % kind.plate_count);
+) event
+JOIN demo_plate dp ON dp.plate_no = kind.first_plate + ((g - 1) % kind.plate_count);
 
 -- 출차 후 3개월 이내인 기록의 입차·출차 카메라 데이터는 현재 테이블에 둔다.
 INSERT INTO camera_data
@@ -1371,13 +1371,13 @@ SELECT 100000 + (e.stat_no * 2) + cap.offset_no,
        'camera-data/' || dp.image_file,
        'camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
        TRUE, 96.10 + ((e.stat_no + cap.offset_no) % 8) * 0.35,
-    'STAT-' || e.stat_no || '-' || cap.capture_side
+       'STAT-' || e.stat_no || '-' || cap.capture_side
 FROM demo_stats_event e
-    JOIN demo_plate dp ON dp.car_no = e.car_no
-    CROSS JOIN LATERAL (VALUES
+JOIN demo_plate dp ON dp.car_no = e.car_no
+CROSS JOIN LATERAL (VALUES
     (0,e.in_gate_no,e.in_time,'IN'),
     (1,e.out_gate_no,e.out_time,'OUT')
-    ) cap(offset_no,camera_no,capture_time,capture_side)
+) cap(offset_no,camera_no,capture_time,capture_side)
 WHERE cap.capture_time >= CURRENT_TIMESTAMP - INTERVAL '3 months';
 
 -- 출차 후 3개월이 지난 기록의 카메라 데이터는 스케줄러 이동 형태로 지난 기록에 둔다.
@@ -1385,22 +1385,22 @@ INSERT INTO trash_bin
 (data_type, original_no, data_json, delete_type, deleted_at, purge_at)
 SELECT 'CAMERA_DATA', 100000 + (e.stat_no * 2) + cap.offset_no,
        jsonb_build_object(
-               'camera_data_no',100000 + (e.stat_no * 2) + cap.offset_no,
-               'camera_no',cap.camera_no,'vehicle_car_no',NULL,
-               'car_no',e.car_no,'ocr_car_no',e.car_no,'capture_time',cap.capture_time,
-               'image_path','camera-data/' || dp.image_file,
-               'crop_image_path','camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
-               'recognition_state',TRUE,
-               'confidence_score',96.10 + ((e.stat_no + cap.offset_no) % 8) * 0.35,
+           'camera_data_no',100000 + (e.stat_no * 2) + cap.offset_no,
+           'camera_no',cap.camera_no,'vehicle_car_no',NULL,
+           'car_no',e.car_no,'ocr_car_no',e.car_no,'capture_time',cap.capture_time,
+           'image_path','camera-data/' || dp.image_file,
+           'crop_image_path','camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+           'recognition_state',TRUE,
+           'confidence_score',96.10 + ((e.stat_no + cap.offset_no) % 8) * 0.35,
            'cam_note',NULL
        ),
        'SCHEDULED', e.out_time + INTERVAL '3 months', CURRENT_TIMESTAMP + INTERVAL '1 year'
 FROM demo_stats_event e
-    JOIN demo_plate dp ON dp.car_no = e.car_no
-    CROSS JOIN LATERAL (VALUES
+JOIN demo_plate dp ON dp.car_no = e.car_no
+CROSS JOIN LATERAL (VALUES
     (0,e.in_gate_no,e.in_time,'IN'),
     (1,e.out_gate_no,e.out_time,'OUT')
-    ) cap(offset_no,camera_no,capture_time,capture_side)
+) cap(offset_no,camera_no,capture_time,capture_side)
 WHERE cap.capture_time < CURRENT_TIMESTAMP - INTERVAL '3 months';
 
 -- 아직 3개월이 지나지 않은 완료 기록은 현재 car_log에 둔다.
@@ -1419,13 +1419,13 @@ INSERT INTO trash_bin
 (data_type, original_no, data_json, delete_type, deleted_at, purge_at)
 SELECT 'CAR_LOG', 50000 + e.stat_no,
        jsonb_build_object(
-               'car_log_no',50000 + e.stat_no,'vehicle_car_no',NULL,
-               'camera_data_no',100000 + (e.stat_no * 2),
-               'out_camera_data_no',100000 + (e.stat_no * 2) + 1,
-               'in_gate_no',e.in_gate_no,'in_time',e.in_time,
-               'out_gate_no',e.out_gate_no,'out_time',e.out_time,'free_time',NULL,
-               'snapshot_car_no',e.car_no,'captured_car_no',e.car_no,
-               'snapshot_car_kind',e.car_kind,'statistics_scope','ENTRY_AVERAGE'
+           'car_log_no',50000 + e.stat_no,'vehicle_car_no',NULL,
+           'camera_data_no',100000 + (e.stat_no * 2),
+           'out_camera_data_no',100000 + (e.stat_no * 2) + 1,
+           'in_gate_no',e.in_gate_no,'in_time',e.in_time,
+           'out_gate_no',e.out_gate_no,'out_time',e.out_time,'free_time',NULL,
+           'snapshot_car_no',e.car_no,'captured_car_no',e.car_no,
+           'snapshot_car_kind',e.car_kind,'statistics_scope','ENTRY_AVERAGE'
        ),
        'SCHEDULED', e.out_time + INTERVAL '3 months', CURRENT_TIMESTAMP + INTERVAL '1 year'
 FROM demo_stats_event e
@@ -1439,18 +1439,18 @@ INSERT INTO trash_bin
 SELECT CASE WHEN g <= 12 THEN 'CAMERA_DATA' ELSE 'NOTICE' END,
        10000 + g,
        CASE WHEN g <= 12 THEN jsonb_build_object(
-               'camera_data_no',10000+g,'camera_no',1,'vehicle_car_no',NULL,
-               'car_no','88아'||LPAD(g::TEXT,4,'0'),'ocr_car_no','88아'||LPAD(g::TEXT,4,'0'),
-               'capture_time',CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day'),
+           'camera_data_no',10000+g,'camera_no',1,'vehicle_car_no',NULL,
+           'car_no','88아'||LPAD(g::TEXT,4,'0'),'ocr_car_no','88아'||LPAD(g::TEXT,4,'0'),
+           'capture_time',CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day'),
            'image_path',NULL,'crop_image_path',NULL,'recognition_state',TRUE,'confidence_score',97.5)
-            ELSE jsonb_build_object(
-                    'notice_no',10000+g,
-                    'notice_type',CASE WHEN g % 2 = 0
+       ELSE jsonb_build_object(
+           'notice_no',10000+g,
+           'notice_type',CASE WHEN g % 2 = 0
                               THEN 'OCR_REVIEW'
-                                       ELSE 'EXIT_WITHOUT_ENTRY' END,
-                    'car_log_no',NULL,
-                    'camera_data_no',NULL,
-                    'detect_at',CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day'),
+                              ELSE 'EXIT_WITHOUT_ENTRY' END,
+           'car_log_no',NULL,
+           'camera_data_no',NULL,
+           'detect_at',CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day'),
            'due_at',NULL,
            'alert_stat','Resolved',
            'handled_by_member_no',1,
@@ -1463,7 +1463,7 @@ SELECT CASE WHEN g <= 12 THEN 'CAMERA_DATA' ELSE 'NOTICE' END,
            'snapshot_in_time',NULL,
            'snapshot_image_path',NULL,
            'snapshot_confidence_score',97.5)
-           END,
+       END,
        'SCHEDULED',
        CURRENT_TIMESTAMP - (g * INTERVAL '2 hours'),
        CURRENT_TIMESTAMP + INTERVAL '30 days' - (g * INTERVAL '2 hours')
