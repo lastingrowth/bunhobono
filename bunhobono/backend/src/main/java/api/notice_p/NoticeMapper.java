@@ -3,6 +3,7 @@ package api.notice_p;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -11,164 +12,329 @@ import java.util.List;
 @Mapper
 public interface NoticeMapper {
 
+    // 관리자 알림 전체 조회
     @Select("""
         SELECT
-            ROW_NUMBER() OVER (ORDER BY n.detect_at DESC) AS display_no,
-            n.notice_no,
-            COALESCE(n.car_log_no, n.snapshot_car_log_no) AS car_log_no,
-            COALESCE(vc.car_no, n.snapshot_registered_car_no) AS registered_car_no,
-            COALESCE(cd.car_no, cl.snapshot_car_no, n.snapshot_captured_car_no) AS captured_car_no,
-            COALESCE(
-                CASE
-                    WHEN cl.car_log_no IS NULL THEN NULL
-                    WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
-                    WHEN vc.vehicle_type = 'visit' THEN 'VISIT'
-                    ELSE 'REGISTERED'
-                END,
-                n.snapshot_car_kind
-            ) AS car_kind,
-            n.detect_at,
-            GREATEST(
-                0,
-                FLOOR(EXTRACT(EPOCH FROM (
-                    COALESCE(cl.out_time, CURRENT_TIMESTAMP) - n.detect_at
-                )) / 86400)::INT
-            ) AS stay_days,
-            n.alert_stat,
-            n.handled_by_member_no,
-            m.mem_name AS handled_by_member_name,
-            n.handled_at,
-            COALESCE(cl.in_time, n.snapshot_in_time) AS in_time,
-            CASE
-                WHEN cl.car_log_no IS NULL THEN NULL
-                WHEN cl.vehicle_car_no IS NULL
-                    THEN cl.in_time + INTERVAL '1 day'
-                WHEN vc.vehicle_type = 'visit'
-                     AND vc.start_date IS NOT NULL
-                     AND vc.end_date IS NOT NULL
-                    THEN cl.in_time + (vc.end_date - vc.start_date)
-                WHEN vc.vehicle_type = 'normal' THEN vc.end_date
-                ELSE NULL
-            END AS expected_out_time,
-            cl.out_time AS out_time,
-            COALESCE(p.parking_name, n.snapshot_parking_name) AS parking_name
-        FROM notice n
-        LEFT JOIN car_log cl ON n.car_log_no = cl.car_log_no
-        LEFT JOIN vehicle_car vc ON cl.vehicle_car_no = vc.vehicle_car_no
-        LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no
-        LEFT JOIN gate g ON cl.in_gate_no = g.gate_no
-        LEFT JOIN parking p ON g.parking_no = p.parking_no
-        LEFT JOIN member m ON n.handled_by_member_no = m.member_no
-        ORDER BY n.detect_at DESC
+            ROW_NUMBER() OVER (
+                ORDER BY detect_at DESC, notice_no DESC
+            ) AS display_no,
+            v.*
+        FROM notice_detail v
+        ORDER BY detect_at DESC, notice_no DESC
     """)
     List<NoticeDTO> list();
 
-    @Update("""
-        UPDATE notice
-        SET alert_stat = #{alertStat},
-            handled_by_member_no = CASE
-                WHEN #{alertStat} = 'Resolved'
-                    THEN (
-                        SELECT member_no
-                        FROM member
-                        WHERE login_id = #{handledByMemberName}
-                    )
-                ELSE NULL
-            END,
-            handled_at = CASE
-                WHEN #{alertStat} = 'Resolved'
-                    THEN CURRENT_TIMESTAMP
-                ELSE NULL
-            END
+    // 관리자 알림 상세 조회
+    @Select("""
+        SELECT
+            ROW_NUMBER() OVER (
+                ORDER BY detect_at DESC, notice_no DESC
+            ) AS display_no,
+            v.*
+        FROM notice_detail v
         WHERE notice_no = #{noticeNo}
     """)
-    int status(NoticeDTO dto);
+    NoticeDTO detail(@Param("noticeNo") int noticeNo);
 
-    //자동삭제
+    // 차량번호 검색
     @Select("""
-    SELECT notice_no
-    FROM notice
-    WHERE alert_stat = 'Resolved'
-      AND handled_at IS NOT NULL
-      AND handled_at < NOW() - INTERVAL '3 months'
+        SELECT
+            ROW_NUMBER() OVER (
+                ORDER BY detect_at DESC, notice_no DESC
+            ) AS display_no,
+            v.*
+        FROM notice_detail v
+        WHERE REPLACE(
+            COALESCE(registered_car_no, ''),
+            ' ',
+            ''
+        ) ILIKE CONCAT(
+            '%',
+            REPLACE(#{carNo}, ' ', ''),
+            '%'
+        )
+        OR REPLACE(
+            COALESCE(captured_car_no, ''),
+            ' ',
+            ''
+        ) ILIKE CONCAT(
+            '%',
+            REPLACE(#{carNo}, ' ', ''),
+            '%'
+        )
+        ORDER BY detect_at DESC, notice_no DESC
+    """)
+    List<NoticeDTO> search(@Param("carNo") String carNo);
+
+    // 로그인 아이디로 관리자 회원번호 조회
+    @Select("""
+        SELECT member_no
+        FROM member
+        WHERE login_id = #{loginId}
+          AND UPPER(TRIM(role)) = 'ADMIN'
+        ORDER BY member_no DESC
+        LIMIT 1
+    """)
+    Integer findAdminMemberNoByLoginId(
+            @Param("loginId") String loginId
+    );
+
+    // 방문차량 또는 미등록차량은 출차 후 처리완료 가능
+    @Update("""
+        UPDATE notice n
+        SET alert_stat = 'Resolved',
+            handled_by_member_no = #{adminMemberNo},
+            handled_at = CURRENT_TIMESTAMP
+        WHERE n.notice_no = #{noticeNo}
+          AND n.alert_stat = 'Unresolved'
+          AND n.notice_type IN (
+              'VISIT_OVERDUE',
+              'UNKNOWN_OVERSTAY'
+          )
+          AND EXISTS (
+              SELECT 1
+              FROM car_log cl
+              WHERE cl.car_log_no = n.car_log_no
+                AND cl.out_time IS NOT NULL
+          )
+    """)
+    int resolveAfterExit(
+            @Param("noticeNo") int noticeNo,
+            @Param("adminMemberNo") int adminMemberNo
+    );
+
+    // OCR 알림은 관리자가 확인 후 처리완료
+    @Update("""
+        UPDATE notice
+        SET alert_stat = 'Resolved',
+            handled_by_member_no = #{adminMemberNo},
+            handled_at = CURRENT_TIMESTAMP
+        WHERE notice_no = #{noticeNo}
+          AND alert_stat = 'Unresolved'
+          AND notice_type = 'OCR_REVIEW'
+    """)
+    int resolveOcrReview(
+            @Param("noticeNo") int noticeNo,
+            @Param("adminMemberNo") int adminMemberNo
+    );
+
+    // 입차기록 없는 출차 알림 처리완료
+    @Update("""
+        UPDATE notice
+        SET alert_stat = 'Resolved',
+            handled_by_member_no = #{adminMemberNo},
+            handled_at = CURRENT_TIMESTAMP
+        WHERE notice_type = 'EXIT_WITHOUT_ENTRY'
+          AND alert_stat = 'Unresolved'
+          AND (
+              camera_data_no = #{cameraDataNo}
+              OR snapshot_camera_data_no = #{cameraDataNo}
+          )
+    """)
+    int resolveExitWithoutEntry(
+            @Param("cameraDataNo") int cameraDataNo,
+            @Param("adminMemberNo") int adminMemberNo
+    );
+
+
+
+    // 방문차량 초과 및 미등록차량 24시간 초과 알림 생성
+    // 방문차량 초과 및 미등록차량 24시간 초과 알림 생성
+    @Insert("""
+    INSERT INTO notice (
+        notice_type,
+        car_log_no,
+        camera_data_no,
+        detect_at,
+        due_at,
+        alert_stat,
+        snapshot_car_log_no,
+        snapshot_camera_data_no,
+        snapshot_registered_car_no,
+        snapshot_captured_car_no,
+        snapshot_car_kind,
+        snapshot_parking_name,
+        snapshot_in_time,
+        snapshot_image_path,
+        snapshot_confidence_score
+    )
+    SELECT
+        notice_type,
+        car_log_no,
+        NULL,
+        CURRENT_TIMESTAMP,
+        due_at,
+        'Unresolved',
+        car_log_no,
+        snapshot_camera_data_no,
+        snapshot_registered_car_no,
+        snapshot_captured_car_no,
+        snapshot_car_kind,
+        snapshot_parking_name,
+        snapshot_in_time,
+        snapshot_image_path,
+        snapshot_confidence_score
+    FROM notice_overstay
+    WHERE CURRENT_TIMESTAMP >= due_at
+    ON CONFLICT DO NOTHING
 """)
-    List<Integer> findResolvedNoticeNosForTrash();
-    //삭제기능 1 minute 테스트용
-
-    //carlog에서 notice쪽으로 변경시
-    @Insert("INSERT INTO notice " +
-            "(car_log_no, detect_at, stay_days, alert_stat, snapshot_car_log_no, " +
-            "snapshot_registered_car_no, snapshot_captured_car_no, snapshot_car_kind, " +
-            "snapshot_parking_name, snapshot_in_time) " +
-
-            "SELECT cl.car_log_no, NOW(), " +
-            "GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - cl.in_time)) / 86400)::INT), " +
-            "'Unresolved', cl.car_log_no, vc.car_no, " +
-            "COALESCE(cd.car_no, cl.snapshot_car_no), " +
-            "CASE WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN' " +
-            "WHEN vc.vehicle_type = 'visit' THEN 'VISIT' " +
-            "ELSE 'REGISTERED' END, " +
-            "p.parking_name, cl.in_time " +
-
-            "FROM car_log cl " +
-            "LEFT JOIN vehicle_car vc ON cl.vehicle_car_no = vc.vehicle_car_no " +
-            "LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no " +
-            "LEFT JOIN gate g ON cl.in_gate_no = g.gate_no " +
-            "LEFT JOIN parking p ON g.parking_no = p.parking_no " +
-
-            "WHERE cl.out_time IS NULL " +
-            "AND COALESCE(vc.car_no, cd.car_no, cl.snapshot_car_no) IS NOT NULL " +
-            "AND COALESCE(vc.car_no, cd.car_no, cl.snapshot_car_no) != '' " +
-
-//            "AND (" +
-//            "(cl.vehicle_car_no IS NULL " +
-//            "AND cl.in_time <= NOW() - INTERVAL '1 day') " +
-//            "OR " +
-//            "(vc.vehicle_status = 'EXPIRED' " +
-//            "AND vc.end_date IS NOT NULL " +
-//            "AND vc.end_date <= NOW() - INTERVAL '1 day')" +
-//            ") " +
-            "AND (" +
-
-                // 미등록차량: 입차 + 1일을 출차 예정으로 보고, 예정 후 1일 초과 시 알림
-                "(cl.vehicle_car_no IS NULL " +
-                "AND cl.in_time <= NOW() - INTERVAL '2 days') " +
-
-                "OR " +
-
-                // 승인된 등록차량 또는 방문차량이 만기 후 하루 이상 미출차
-                "(vc.vehicle_status = 'APPROVED' AND (" +
-
-                // 일반 등록차량: 차량 등록 만기일 기준
-                "(vc.vehicle_type = 'normal' " +
-                "AND vc.end_date IS NOT NULL " +
-                "AND vc.end_date <= NOW() - INTERVAL '1 day') " +
-
-                "OR " +
-
-                // 방문차량: 실제 입차시간 + 신청 이용시간을 출차 예정으로 계산
-                "(vc.vehicle_type = 'visit' " +
-                "AND vc.start_date IS NOT NULL " +
-                "AND vc.end_date IS NOT NULL " +
-                "AND cl.in_time IS NOT NULL " +
-                "AND cl.in_time + (vc.end_date - vc.start_date) " +
-                "<= NOW() - INTERVAL '1 day')" +
-
-                "))" +
-
-            ") " +
-
-
-            "AND NOT EXISTS (" +
-            "SELECT 1 FROM notice n " +
-            "WHERE COALESCE(n.car_log_no, n.snapshot_car_log_no) = cl.car_log_no" +
-            ")")
     int createNoticesFromCarLog();
-    // notice 테스트용 '1minute'
 
+    // OCR 인식 실패 또는 신뢰도 미달 알림 생성
+    @Insert("""
+        INSERT INTO notice (
+            notice_type,
+            car_log_no,
+            camera_data_no,
+            detect_at,
+            due_at,
+            alert_stat,
+            snapshot_car_log_no,
+            snapshot_camera_data_no,
+            snapshot_registered_car_no,
+            snapshot_captured_car_no,
+            snapshot_car_kind,
+            snapshot_parking_name,
+            snapshot_in_time,
+            snapshot_image_path,
+            snapshot_confidence_score
+        )
+        SELECT
+            'OCR_REVIEW',
+            NULL,
+            cd.camera_data_no,
+            CURRENT_TIMESTAMP,
+            NULL,
+            'Unresolved',
+            NULL,
+            cd.camera_data_no,
+            vc.car_no,
+            COALESCE(cd.ocr_car_no, cd.car_no),
+            CASE
+                WHEN cd.vehicle_car_no IS NULL THEN 'UNKNOWN'
+                WHEN vc.vehicle_type = 'visit' THEN 'VISIT'
+                ELSE 'REGISTERED'
+            END,
+            p.parking_name,
+            NULL,
+            cd.image_path,
+            cd.confidence_score
+        FROM camera_data cd
+        LEFT JOIN vehicle_car vc
+            ON cd.vehicle_car_no = vc.vehicle_car_no
+        LEFT JOIN camera c
+            ON cd.camera_no = c.camera_no
+        LEFT JOIN gate g
+            ON c.gate_no = g.gate_no
+        LEFT JOIN parking p
+            ON g.parking_no = p.parking_no
+        WHERE cd.camera_data_no = #{cameraDataNo}
+          AND cd.recognition_state IS NOT TRUE
+        ON CONFLICT DO NOTHING
+    """)
+    int createOcrReviewNotice(
+            @Param("cameraDataNo") int cameraDataNo
+    );
 
-    //직접삭제 부분
-    @Delete("DELETE FROM notice WHERE notice_no = #{noticeNo}")
-    int delete(int noticeNo);
+    // 출차 게이트에 왔지만 열린 입차기록이 없는 차량 알림
+    @Insert("""
+        INSERT INTO notice (
+            notice_type,
+            car_log_no,
+            camera_data_no,
+            detect_at,
+            due_at,
+            alert_stat,
+            snapshot_car_log_no,
+            snapshot_camera_data_no,
+            snapshot_registered_car_no,
+            snapshot_captured_car_no,
+            snapshot_car_kind,
+            snapshot_parking_name,
+            snapshot_in_time,
+            snapshot_image_path,
+            snapshot_confidence_score
+        )
+        SELECT
+            'EXIT_WITHOUT_ENTRY',
+            NULL,
+            cd.camera_data_no,
+            CURRENT_TIMESTAMP,
+            NULL,
+            'Unresolved',
+            NULL,
+            cd.camera_data_no,
+            vc.car_no,
+            COALESCE(cd.ocr_car_no, cd.car_no),
+            CASE
+                WHEN cd.vehicle_car_no IS NULL THEN 'UNKNOWN'
+                WHEN vc.vehicle_type = 'visit' THEN 'VISIT'
+                ELSE 'REGISTERED'
+            END,
+            p.parking_name,
+            NULL,
+            cd.image_path,
+            cd.confidence_score
+        FROM camera_data cd
+        JOIN camera c
+            ON cd.camera_no = c.camera_no
+        JOIN gate g
+            ON c.gate_no = g.gate_no
+        JOIN parking p
+            ON g.parking_no = p.parking_no
+        LEFT JOIN vehicle_car vc
+            ON cd.vehicle_car_no = vc.vehicle_car_no
+        WHERE cd.camera_data_no = #{cameraDataNo}
+          AND cd.recognition_state IS TRUE
+          AND UPPER(TRIM(g.gate_type)) = 'OUT'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM car_log cl
+              LEFT JOIN camera_data entry_cd
+                  ON cl.camera_data_no = entry_cd.camera_data_no
+              WHERE cl.out_time IS NULL
+                AND (
+                    (
+                        cd.vehicle_car_no IS NOT NULL
+                        AND cl.vehicle_car_no = cd.vehicle_car_no
+                    )
+                    OR
+                    (
+                        cd.vehicle_car_no IS NULL
+                        AND cl.vehicle_car_no IS NULL
+                        AND (
+                            entry_cd.car_no = cd.car_no
+                            OR entry_cd.ocr_car_no = cd.car_no
+                            OR entry_cd.car_no = cd.ocr_car_no
+                            OR entry_cd.ocr_car_no = cd.ocr_car_no
+                            OR cl.snapshot_car_no = cd.car_no
+                            OR cl.snapshot_car_no = cd.ocr_car_no
+                        )
+                    )
+                )
+          )
+        ON CONFLICT DO NOTHING
+    """)
+    int createExitWithoutEntryNotice(
+            @Param("cameraDataNo") int cameraDataNo
+    );
 
+    // 처리완료 후 3개월이 지난 알림번호 조회
+    @Select("""
+        SELECT notice_no
+        FROM notice
+        WHERE alert_stat = 'Resolved'
+          AND handled_at IS NOT NULL
+          AND handled_at <
+              CURRENT_TIMESTAMP - INTERVAL '3 months'
+        ORDER BY notice_no
+    """)
+    List<Integer> findResolvedNoticeNosForTrash();
+
+    // 알림 삭제
+    @Delete("""
+        DELETE FROM notice
+        WHERE notice_no = #{noticeNo}
+    """)
+    int delete(@Param("noticeNo") int noticeNo);
 }

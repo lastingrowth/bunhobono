@@ -53,8 +53,9 @@ public class Scheduler {
         noticeService.moveResolvedNoticesToTrash();
     }
 
-    // 매일 자정: 하루 이상 주차 중인 미등록·만기 차량의 관리자 알림을 생성한다.
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    // 매일 자정: 하루 이상 주차 중인 미등록·만기 차량의 관리자 알림을 생성한다 에서
+    // 10분마다 방문차량 초과 및 미등록차량 24시간 초과 알림을 생성한다.
+    @Scheduled(cron = "0 */10 * * * *", zone = "Asia/Seoul")
     public void createParkingNotices() {
         noticeService.createNoticesFromCarLog();
     }

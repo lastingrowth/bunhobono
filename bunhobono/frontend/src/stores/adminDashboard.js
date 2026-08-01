@@ -116,7 +116,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         return [
             {
                 key: "long-parking",
-                title: "장기주차",
+                title: "알림",
                 count: longParkingNoticeCount.value,
                 path: "/admin/notice",
             },

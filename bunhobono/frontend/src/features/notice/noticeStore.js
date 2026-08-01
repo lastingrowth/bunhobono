@@ -1,38 +1,46 @@
 import { defineStore } from "pinia";
-
 import { ref } from "vue";
-import { deleteNotice, getNoteList, updateNoticeStatus } from "./noticeApi";
-import { useJwtStore } from "../login/jwtStore";
+
+import {
+    deleteNotice,
+    getNoteList,
+    updateNoticeStatus
+} from "./noticeApi";
 
 export const useNoticeStore = defineStore("notice", () => {
-    const jwtStore = useJwtStore();
-    
-    // 공지사항 목록
+
+    // 관리자 알림 목록
     const notices = ref([]);
 
-    // 현재 조회중인 공지사항
+    // 현재 조회 중인 관리자 알림
     const notice = ref(null);
+
     const feedbackMessage = ref("");
     const feedbackType = ref("success");
+
     let feedbackTimer;
 
     const showFeedback = (message, type = "success") => {
         feedbackMessage.value = message;
         feedbackType.value = type;
+
         window.clearTimeout(feedbackTimer);
+
         feedbackTimer = window.setTimeout(() => {
             feedbackMessage.value = "";
         }, 2500);
     };
 
-    // 목록 조회
+    // 관리자 알림 목록 조회
     const loadNotices = async () => {
         const response = await getNoteList();
 
-        notices.value = Array.isArray(response.data)? response.data : [];
+        notices.value = Array.isArray(response.data)
+            ? response.data
+            : [];
     };
 
-    // 상세 조회
+    // 관리자 알림 상세 조회
     const loadNotice = async (noticeNo) => {
         if (notices.value.length === 0) {
             await loadNotices();
@@ -45,24 +53,26 @@ export const useNoticeStore = defineStore("notice", () => {
         }) ?? null;
     };
 
-    // 알림 상태 변경
+    // 관리자 알림 처리상태 변경
+    // 처리한 관리자는 백엔드에서 로그인 토큰으로 판단한다.
     const changeNoticeStatus = async (noticeNo, alertStat) => {
-        const handledByMemberName =
-            alertStat === "Resolved" ? jwtStore.userId : null;
-
-        await updateNoticeStatus(noticeNo, alertStat, handledByMemberName);
+        await updateNoticeStatus(noticeNo, alertStat);
 
         await loadNotices();
         await loadNotice(noticeNo);
     };
 
-    // 알림 삭제
+    // 관리자 알림 삭제
     const remove = async (noticeNo) => {
         try {
             const response = await deleteNotice(noticeNo);
 
             if (response.data !== 1) {
-                showFeedback("알림 기록 삭제에 실패했습니다.", "error");
+                showFeedback(
+                    "알림 기록 삭제에 실패했습니다.",
+                    "error"
+                );
+
                 return false;
             }
 
@@ -73,7 +83,9 @@ export const useNoticeStore = defineStore("notice", () => {
             });
 
             if (notice.value) {
-                const currentNo = notice.value.noticeNo ?? notice.value.notice_no;
+                const currentNo =
+                    notice.value.noticeNo
+                    ?? notice.value.notice_no;
 
                 if (Number(currentNo) === Number(noticeNo)) {
                     notice.value = null;
@@ -81,10 +93,16 @@ export const useNoticeStore = defineStore("notice", () => {
             }
 
             showFeedback("알림 기록을 삭제했습니다.");
+
             return true;
         } catch (error) {
             console.error("알림 삭제 실패", error);
-            showFeedback("알림 기록 삭제에 실패했습니다.", "error");
+
+            showFeedback(
+                "알림 기록 삭제에 실패했습니다.",
+                "error"
+            );
+
             return false;
         }
     };
@@ -98,6 +116,6 @@ export const useNoticeStore = defineStore("notice", () => {
         loadNotices,
         loadNotice,
         changeNoticeStatus,
-        remove,
+        remove
     };
 });
