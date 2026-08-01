@@ -2,6 +2,9 @@ package api.notice_p;
 
 import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,10 +31,23 @@ public class NoticeController {
     }
 
     @PutMapping("/{noticeNo}/status")
-    public int status(@PathVariable int noticeNo, @RequestBody NoticeDTO dto) {
+    public int status(
+            Authentication authentication,
+            @PathVariable int noticeNo,
+            @RequestBody NoticeDTO dto
+    ) {
+        if (authentication == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
+
         dto.setNoticeNo(noticeNo);
 
-        return noticeService.status(dto);
+        return noticeService.status(
+                authentication.getName(),
+                dto
+        );
     }
 
     @DeleteMapping("/{noticeNo}/delete")
