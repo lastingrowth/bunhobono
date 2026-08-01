@@ -56,19 +56,6 @@ SELECT
 FROM calculated c
 ORDER BY c.row_no;
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM kiosk
-        WHERE kiosk_type = 'NON_RESIDENT'
-          AND active = TRUE
-    ) THEN
-        RAISE EXCEPTION '활성화된 NON_RESIDENT 키오스크가 필요합니다.';
-    END IF;
-END
-$$;
-
 WITH bill_target AS (
     SELECT
         b.*,
@@ -111,7 +98,7 @@ SELECT
 FROM bill_target b
 CROSS JOIN kiosk_count kc
 JOIN kiosk_target k
-    ON k.row_no = MOD(b.row_no - 1, kc.total_count) + 1
+    ON k.row_no = MOD(b.row_no - 1, NULLIF(kc.total_count, 0)) + 1
 ORDER BY b.bill_no;
 
 COMMIT;
