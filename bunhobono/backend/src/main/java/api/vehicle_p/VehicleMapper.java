@@ -23,8 +23,8 @@ public interface VehicleMapper {
             vc.end_date,
             vc.member_no,
 
-            m.mem_dong,
-            m.mem_ho,
+            au.dong AS mem_dong,
+            au.ho AS mem_ho,
             m.mem_name AS approved_member_name,
 
             vc.approved_at,
@@ -81,6 +81,9 @@ public interface VehicleMapper {
 
         LEFT JOIN member m
             ON vc.member_no = m.member_no
+        
+        LEFT JOIN apartment_unit au
+            ON m.unit_no = au.unit_no
 
         -- 가장 최근 입출차 로그
         LEFT JOIN LATERAL (
@@ -141,15 +144,18 @@ public interface VehicleMapper {
         SELECT
             m.member_no,
             m.mem_name,
-            m.mem_dong,
-            m.mem_ho,
+            au.dong AS mem_dong,
+            au.ho AS mem_ho,
             m.role
-
+    
         FROM member m
-
+    
+        LEFT JOIN apartment_unit au
+            ON m.unit_no = au.unit_no
+    
         WHERE UPPER(TRIM(m.role)) = #{role}
-          AND m.delete_at IS NULL
-
+          AND m.mem_status = 'ACTIVE'
+    
         <choose>
             <!-- 등록차량은 유효한 차량이 2대 미만인 회원 -->
             <when test="vehicleType == 'normal'">
@@ -167,7 +173,7 @@ public interface VehicleMapper {
                       )
                 ) &lt; 2
             </when>
-
+    
             <!-- 입주민 방문차량은 유효한 신청이 없어야 함 -->
             <when test="vehicleType == 'visit'
                         and role == 'RESIDENT'">
@@ -214,10 +220,10 @@ public interface VehicleMapper {
                 )
             </when>
         </choose>
-
+    
         ORDER BY
-            m.mem_dong,
-            m.mem_ho,
+            au.dong,
+            au.ho,
             m.mem_name
         </script>
     """)

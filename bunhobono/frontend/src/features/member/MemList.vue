@@ -21,7 +21,7 @@
     </div>
 
     <template v-if="activeSection === 'pending'">
-    <!-- 승인 대기 회원을 선택해 입주민 역할로 변경한다. -->
+    <!-- 승인 대기 입주민을 선택해 ACTIVE 상태로 변경한다. -->
     <div class="approval-actions">
         <button type="button" @click="toggleSelectAll">{{ allVisibleSelected ? '전체해제' : '전체선택' }}</button>
         <button type="button" @click="approveSelectedMembers">승인</button>
@@ -227,7 +227,9 @@
                 <td>{{ mem.displayNo }}</td>
                 <td>{{ mem.role }}</td>
                 <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
-                <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td><td>{{ mem.memPhone }}</td>
+                <td>{{ mem.role === 'ADMIN' ? '관리실' : mem.memDong }}</td>
+                <td>{{ mem.role === 'ADMIN' ? '-' : mem.memHo }}</td>
+                <td>{{ mem.memPhone }}</td>
                 <td>{{ mem.loginId }}</td><td>{{ store.formatMemberDateTime(mem.memCreateAt) }}</td>
                 <td>{{ formatMemberStatus(mem.memStatus, mem.role) }}</td>
             </tr>
@@ -352,7 +354,6 @@ const formatMemberStatus = (status, role) => {
 
     const statusMap = {
         WITHDRAW_PENDING: '전출 신청',
-        EMPTY: '빈 세대',
         INACTIVE: '퇴사',
         ON_LEAVE: '휴직',
     }
@@ -360,15 +361,17 @@ const formatMemberStatus = (status, role) => {
     return statusMap[status] ?? status ?? '-'
 }
 
-// PENDING 역할 회원만 승인 대기 목록으로 분류한다.
+// PENDING 상태인 입주민만 승인 대기 목록으로 분류한다.
 const pendingMembers = computed(() => memberList.value.filter(
-    (member) => String(member.role || '').toUpperCase() === 'PENDING'
+    (member) => String(member.role || '').toUpperCase() === 'RESIDENT'
+        && String(member.memStatus || '').toUpperCase() === 'PENDING'
 ));
 
-// ADMIN과 RESIDENT 역할 회원만 승인된 회원 목록에 표시한다.
+// 승인 대기 상태가 아닌 ADMIN과 RESIDENT 회원만 일반 회원 목록에 표시한다.
 const approvedMembers = computed(() => memberList.value
     .filter((member) =>
         ['ADMIN', 'RESIDENT'].includes(String(member.role || '').toUpperCase())
+        && String(member.memStatus || '').toUpperCase() !== 'PENDING'
         && !member.memDeleteAt
     )
     .map((member, index) => ({
@@ -394,14 +397,19 @@ const filteredApprovedMembers = computed(() => {
 
 // 조회된 회원의 실제 동·호수 값으로 검색 선택지를 구성한다.
 const dongOptions = computed(() => [...new Set(
-    approvedMembers.value.map((member) => Number(member.memDong))
+    approvedMembers.value
+        .filter((member) => member.role === 'RESIDENT')
+        .map((member) => Number(member.memDong))
 )]
     .filter(Number.isFinite)
     .sort((left, right) => left - right));
 
 const hoOptions = computed(() => [...new Set(
     approvedMembers.value
-        .filter((member) => Number(member.memDong) === Number(dong.value))
+        .filter((member) =>
+            member.role === 'RESIDENT'
+            && Number(member.memDong) === Number(dong.value)
+        )
         .map((member) => Number(member.memHo))
 )]
     .filter(Number.isFinite)

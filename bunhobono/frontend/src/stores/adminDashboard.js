@@ -107,7 +107,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     const waitingMemberCount = computed(() => {
         return memberStore.memberList.filter((member) => {
-            return member.role === "PENDING";
+            return member.role === "RESIDENT"
+                && member.memStatus === "PENDING";
         }).length;
     });
 
@@ -115,7 +116,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         return [
             {
                 key: "long-parking",
-                title: "장기주차",
+                title: "알림",
                 count: longParkingNoticeCount.value,
                 path: "/admin/notice",
             },
@@ -283,22 +284,17 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
     const dongText = (dong) => {
-        if (String(dong) === "0") {
-            return "관리동";
-        }
-
         return `${dong}동`;
     };
 
     const hoText = (ho) => {
-        if (String(ho) === "0") {
-            return "관리실";
-        }
-
         return `${ho}호`;
     };
 
     const memberLabel = (member) => {
+        if (member.role === "ADMIN") {
+            return `관리실 / ${member.memName}`;
+        }
         return `${dongText(member.memDong)} ${hoText(member.memHo)} / ${member.memName}`;
     };
 

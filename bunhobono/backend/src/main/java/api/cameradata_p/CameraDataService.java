@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartFile;
-
+import api.notice_p.NoticeService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +35,9 @@ public class CameraDataService {
 
     @Resource
     TrashService trashService;
+
+    @Resource
+    NoticeService noticeService;
 
     @Value("${file.camera-data}")
     private String uploadDir;
@@ -167,6 +170,13 @@ public class CameraDataService {
             boolean gateOpened = false;
             Integer gateNo = null;
 
+            if (saved && !recognitionConfirmed) {
+                noticeService.createOcrReviewNotice(
+                        dto.getCameraDataNo()
+                );
+            }
+
+
             if (saved) {
                 // 데이터를 촬영한 카메라가 어느 게이트에 연결되어 있는지 확인
                 GateDTO gate = gateService.findByCameraNo(cameraNo);
@@ -193,6 +203,15 @@ public class CameraDataService {
                         ? carLogService.findCurrentlyParked(dto)
                         : null;
                 boolean currentlyParked = parkedLog != null;
+
+                if (isExitGate
+                        && recognitionConfirmed
+                        && !currentlyParked) {
+
+                    noticeService.createExitWithoutEntryNotice(
+                            dto.getCameraDataNo()
+                    );
+                }
 
                 // 출차 OCR 원본은 ocr_car_no에 유지하고, 화면과 카메라
                 // 데이터에는 입차 때 관리자가 확정한 차량번호를 표시한다.

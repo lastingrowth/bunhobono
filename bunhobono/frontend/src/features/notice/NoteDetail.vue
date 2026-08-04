@@ -4,70 +4,50 @@
       :message="feedbackMessage || noticeStore.feedbackMessage"
       :type="feedbackMessage ? feedbackType : noticeStore.feedbackType"
     />
+
     <section class="notice-detail-dialog">
-    <div class="detail-header">
-      <h1>알림 상세</h1>
+      <div class="detail-header">
+        <h1>알림 상세</h1>
 
-      <div class="detail-actions">
-        <button
-          type="button"
-          :disabled="!prevNotice"
-          @click="moveNotice(prevNotice)"
-        >
-          이전
-        </button>
-
-        <button
-          type="button"
-          :disabled="!nextNotice"
-          @click="moveNotice(nextNotice)"
-        >
-          다음
-        </button>
-
-        <button type="button" @click="goNoticeList">
-          목록
-        </button>
-
-        <button type="button" @click="deleteCurrentNotice">
-          삭제
-        </button>
+        <div class="detail-actions">
+          <button type="button" :disabled="!prevNotice" @click="moveNotice(prevNotice)">
+            이전
+          </button>
+          <button type="button" :disabled="!nextNotice" @click="moveNotice(nextNotice)">
+            다음
+          </button>
+          <button type="button" @click="goNoticeList">목록</button>
+          <button type="button" @click="deleteCurrentNotice">삭제</button>
+        </div>
       </div>
-    </div>
 
-    <p v-if="loading">
-      불러오는 중...
-    </p>
+      <p v-if="loading">불러오는 중...</p>
+      <p v-else-if="errorMessage">{{ errorMessage }}</p>
 
-    <p v-else-if="errorMessage">
-      {{ errorMessage }}
-    </p>
+      <template v-else-if="notice">
+        <table class="detail-table" border="1">
+          <tbody>
+            <tr v-for="row in detailRows" :key="row.label">
+              <th>{{ row.label }}</th>
+              <td>{{ formatValue(row.value) }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-    <template v-else-if="notice">
-      <table class="detail-table" border="1">
-        <tbody>
-          <tr v-for="row in detailRows" :key="row.label">
-            <th>{{ row.label }}</th>
-            <td>{{ formatValue(row.value) }}</td>
-          </tr>
-        </tbody>
-      </table>
+        <section class="notice-detail-actions">
+          <button
+            type="button"
+            :disabled="!canCompleteNotice"
+            @click="completeNotice"
+          >
+            {{ saving ? "처리 중" : "처리 완료" }}
+          </button>
+        </section>
+      </template>
 
-      <section class="notice-detail-actions">
-        <button
-          type="button"
-          :disabled="!canCompleteNotice"
-          @click="completeNotice"
-        >
-          {{ saving ? "처리 중" : "처리 완료" }}
-        </button>
-      </section>
-    </template>
-
-    <p v-else>
-      조회할 알림이 없습니다.
-    </p>
+      <p v-else>조회할 알림이 없습니다.</p>
     </section>
+
     <NoticeDeleteConfirm
       :open="deleteConfirmOpen"
       :car-no="currentCarNo"
@@ -80,79 +60,98 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { getNoteList } from "@/features/notice/noticeApi";
-import ManagementFeedbackToast from "@/shared/components/ManagementFeedbackToast.vue";
-import { useNoticeStore } from "./noticeStore";
+import { useRoute, useRouter } from "vue-router";
+
+import ManagementFeedbackToast
+  from "@/shared/components/ManagementFeedbackToast.vue";
+
+import { getNoteList } from "./noticeApi";
 import NoticeDeleteConfirm from "./NoticeDeleteConfirm.vue";
+import { useNoticeStore } from "./noticeStore";
 
 const route = useRoute();
 const router = useRouter();
 const noticeStore = useNoticeStore();
 
-const { notice, notices: noticeList } = storeToRefs(noticeStore);
+const {
+  notice,
+  notices: noticeList
+} = storeToRefs(noticeStore);
 
 const loading = ref(false);
 const saving = ref(false);
+const deleting = ref(false);
+const deleteConfirmOpen = ref(false);
 const errorMessage = ref("");
 const feedbackMessage = ref("");
 const feedbackType = ref("success");
-const deleteConfirmOpen = ref(false);
-const deleting = ref(false);
+
 let feedbackTimer;
 
-const showFeedback = (message, type = "success") => {
-  feedbackMessage.value = message;
-  feedbackType.value = type;
-  window.clearTimeout(feedbackTimer);
-  feedbackTimer = window.setTimeout(() => {
-    feedbackMessage.value = "";
-  }, 2500);
+const statusLabels = {
+  Unresolved: "미처리",
+  Resolved: "처리 완료"
+};
+
+const noticeTypeLabels = {
+  EXIT_WITHOUT_ENTRY: "입차기록 없는 출차 시도",
+  VISIT_OVERDUE: "방문차량 등록시간 초과",
+  UNKNOWN_OVERSTAY: "미등록차량 24시간 초과",
+  OCR_REVIEW: "OCR 확인 필요"
+};
+
+const overstayNoticeTypes = [
+  "VISIT_OVERDUE",
+  "UNKNOWN_OVERSTAY"
+];
+
+const noticeNo = computed(() => route.params.noticeNo);
+const currentNoticeNo = computed(() => Number(noticeNo.value));
+
+const getField = (target, camelName, snakeName) => {
+  return target?.[camelName] ?? target?.[snakeName] ?? null;
+};
+
+const getNoticeNo = (target) => {
+  return getField(target, "noticeNo", "notice_no");
+};
+
+const getNoticeType = (target) => {
+  return getField(target, "noticeType", "notice_type") ?? "";
+};
+
+const getAlertStat = (target) => {
+  return getField(target, "alertStat", "alert_stat") ?? "Unresolved";
+};
+
+const getOutTime = (target) => {
+  return getField(target, "outTime", "out_time");
 };
 
 const currentCarNo = computed(() => {
-  return notice.value?.registeredCarNo
-    ?? notice.value?.registered_car_no
-    ?? notice.value?.capturedCarNo
-    ?? notice.value?.captured_car_no
-    ?? "";
+  return getField(
+    notice.value,
+    "registeredCarNo",
+    "registered_car_no"
+  ) ?? getField(
+    notice.value,
+    "capturedCarNo",
+    "captured_car_no"
+  ) ?? "";
 });
 
-const statusOptions = {
-  Unresolved: "미확인",
-  Checked: "확인",
-  Resolved: "처리 완료",
-};
-
-const noticeNo = computed(() => {
-  return route.params.noticeNo;
-});
-
-const currentNoticeNo = computed(() => {
-  return Number(noticeNo.value);
-});
-
-// 상세 화면에서는 현재 알림과 처리 상태가 같은 항목끼리만 이동한다.
-// 예: 확인 상태에서는 확인 알림만, 처리 완료에서는 처리 완료 알림만 표시한다.
 const sameStatusNoticeList = computed(() => {
-  const currentStatus = notice.value?.alertStat ?? notice.value?.alert_stat;
-
-  if (!currentStatus) {
-    return [];
-  }
+  const currentStatus = getAlertStat(notice.value);
 
   return noticeList.value.filter((item) => {
-    const itemStatus = item.alertStat ?? item.alert_stat;
-    return itemStatus === currentStatus;
+    return getAlertStat(item) === currentStatus;
   });
 });
 
 const currentIndex = computed(() => {
   return sameStatusNoticeList.value.findIndex((item) => {
-    const itemNo = item.noticeNo ?? item.notice_no;
-
-    return Number(itemNo) === currentNoticeNo.value;
+    return Number(getNoticeNo(item)) === currentNoticeNo.value;
   });
 });
 
@@ -176,10 +175,132 @@ const nextNotice = computed(() => {
 });
 
 const canCompleteNotice = computed(() => {
-  return Boolean(notice.value) && notice.value.alertStat !== "Resolved" && !saving.value;
+  return Boolean(notice.value)
+    && getAlertStat(notice.value) === "Unresolved"
+    && !saving.value;
 });
 
-const formatDate = (value) => {
+const detailRows = computed(() => {
+  if (!notice.value) {
+    return [];
+  }
+
+  const target = notice.value;
+  const type = getNoticeType(target);
+  const status = getAlertStat(target);
+  const isOverstay = overstayNoticeTypes.includes(type);
+
+  const rows = [
+    {
+      label: "알림 번호",
+      value: getNoticeNo(target)
+    },
+    {
+      label: "알림 종류",
+      value: noticeTypeLabels[type] ?? type
+    },
+    {
+      label: "등록 차량번호",
+      value: getField(
+        target,
+        "registeredCarNo",
+        "registered_car_no"
+      )
+    },
+    {
+      label: "촬영 차량번호",
+      value: getField(
+        target,
+        "capturedCarNo",
+        "captured_car_no"
+      )
+    },
+    {
+      label: "차량 구분",
+      value: formatCarKind(
+        getField(target, "carKind", "car_kind")
+      )
+    },
+    {
+      label: "주차장",
+      value: getField(
+        target,
+        "parkingName",
+        "parking_name"
+      )
+    }
+  ];
+
+  if (isOverstay) {
+    rows.push(
+      {
+        label: "입차 일시",
+        value: formatDate(
+          getField(target, "inTime", "in_time")
+        )
+      },
+      {
+        label: "초과 기준 일시",
+        value: formatDate(
+          getField(target, "dueAt", "due_at")
+          ?? getField(
+            target,
+            "expectedOutTime",
+            "expected_out_time"
+          )
+        )
+      },
+      {
+        label: "출차 일시",
+        value: formatDate(getOutTime(target))
+      }
+    );
+  }
+
+  rows.push(
+    {
+      label: type === "EXIT_WITHOUT_ENTRY"
+        ? "출차 시도 일시"
+        : type === "OCR_REVIEW"
+          ? "촬영·알림 발생 일시"
+          : "알림 발생 일시",
+      value: formatDate(
+        getField(target, "detectAt", "detect_at")
+      )
+    },
+    {
+      label: "알림 발생 후 경과 일수",
+      value: getField(target, "stayDays", "stay_days")
+    },
+    {
+      label: "처리 상태",
+      value: statusLabels[status] ?? status
+    },
+    {
+      label: "처리 관리자",
+      value: status === "Resolved"
+        ? getField(
+          target,
+          "handledByMemberName",
+          "handled_by_member_name"
+        )
+        : "-"
+    }
+  );
+
+  if (status === "Resolved") {
+    rows.push({
+      label: "처리 완료 일시",
+      value: formatDate(
+        getField(target, "handledAt", "handled_at")
+      )
+    });
+  }
+
+  return rows;
+});
+
+function formatDate(value) {
   if (!value) {
     return "-";
   }
@@ -187,116 +308,113 @@ const formatDate = (value) => {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return String(value).replace("T", " ");
   }
 
   return date.toLocaleString("ko-KR");
-};
+}
 
-const formatValue = (value) => {
-  if (value === null || value === undefined || value === "") {
+function formatValue(value) {
+  if (
+    value === null
+    || value === undefined
+    || value === ""
+  ) {
     return "-";
   }
 
   return value;
-};
+}
 
-const formatCarKind = (value) => {
+function formatCarKind(value) {
   const carKind = String(value ?? "").trim().toUpperCase();
 
-  const carKindLabels = {
+  const labels = {
     NORMAL: "입주민 차량",
+    REGISTERED: "입주민 차량",
     VISIT: "방문 차량",
     UNREGISTERED: "미등록 차량",
-    UNKNOWN: "미등록 차량",
+    UNKNOWN: "미등록 차량"
   };
 
-  return carKindLabels[carKind] ?? value ?? "-";
-};
+  return labels[carKind] ?? value ?? "-";
+}
 
-const detailRows = computed(() => {
-  if (!notice.value) {
-    return [];
-  }
+function showFeedback(message, type = "success") {
+  feedbackMessage.value = message;
+  feedbackType.value = type;
 
-  return [
-    { label: "알림 번호", value: notice.value.noticeNo },
-    { label: "등록 차량번호", value: notice.value.registeredCarNo },
-    { label: "촬영 차량번호", value: notice.value.capturedCarNo },
-    { label: "차량 구분", value: formatCarKind(notice.value.carKind) },
-    { label: "주차장", value: notice.value.parkingName },
-    { label: "출차 예정 일시", value: formatDate(notice.value.expectedOutTime) },
-    { label: "실제 출차 일시", value: formatDate(notice.value.outTime) },
-    { label: "감지 일시", value: formatDate(notice.value.detectAt) },
-    { label: "감지 후 경과 일수", value: notice.value.stayDays },
-    { label: "처리 상태", value: statusOptions[notice.value.alertStat] ?? notice.value.alertStat },
-    { label: "처리 관리자", value: notice.value.alertStat === "Resolved" ? notice.value.handledByMemberName : "-", },
-  ];
-});
+  window.clearTimeout(feedbackTimer);
 
-const loadDetail = async () => {
+  feedbackTimer = window.setTimeout(() => {
+    feedbackMessage.value = "";
+  }, 2500);
+}
+
+async function loadDetail() {
   loading.value = true;
   errorMessage.value = "";
   feedbackMessage.value = "";
 
   try {
     await noticeStore.loadNotice(noticeNo.value);
-
-    if (!notice.value) {
-      return;
-    }
-
-    if (notice.value.alertStat === "Unresolved") {
-      await noticeStore.changeNoticeStatus(notice.value.noticeNo, "Checked");
-    }
   } catch (error) {
     console.error(error);
-    errorMessage.value = "알림 상세 정보를 불러오지 못했습니다.";
+    errorMessage.value =
+      "알림 상세 정보를 불러오지 못했습니다.";
   } finally {
     loading.value = false;
   }
-};
+}
 
-const loadNoticeList = async () => {
+async function loadNoticeList() {
   try {
     const response = await getNoteList();
 
-    noticeList.value = Array.isArray(response.data) ? response.data : [];
+    noticeList.value = Array.isArray(response.data)
+      ? response.data
+      : [];
   } catch (error) {
     console.error(error);
   }
-};
+}
 
-const moveNotice = (targetNotice) => {
-  const targetNoticeNo = targetNotice?.noticeNo ?? targetNotice?.notice_no;
+function moveNotice(targetNotice) {
+  const targetNoticeNo = getNoticeNo(targetNotice);
 
   if (!targetNoticeNo) {
     return;
   }
 
   router.push(`/admin/notice/${targetNoticeNo}`);
-};
+}
 
-const getCurrentNoticeStatus = () => {
-  return notice.value?.alertStat ?? notice.value?.alert_stat ?? "Unresolved";
-};
-
-const goNoticeList = () => {
+function goNoticeList() {
   router.push({
     name: "NoticeList",
     query: {
-      status: getCurrentNoticeStatus(),
-    },
+      status: getAlertStat(notice.value)
+    }
   });
-};
+}
 
-const completeNotice = async () => {
+async function completeNotice() {
   if (!canCompleteNotice.value) {
     return;
   }
 
-  if (!notice.value.outTime) {
-    showFeedback("해당 차량은 출차 후 처리 완료할 수 있습니다.", "error");
+  const type = getNoticeType(notice.value);
+  const outTime = getOutTime(notice.value);
+
+  if (
+    overstayNoticeTypes.includes(type)
+    && !outTime
+  ) {
+    showFeedback(
+      "해당 차량은 출차가 완료된 후 처리할 수 있습니다.",
+      "error"
+    );
+
     return;
   }
 
@@ -305,37 +423,46 @@ const completeNotice = async () => {
   feedbackMessage.value = "";
 
   try {
-    await noticeStore.changeNoticeStatus(notice.value.noticeNo, "Resolved");
+    await noticeStore.changeNoticeStatus(
+      getNoticeNo(notice.value),
+      "Resolved"
+    );
+
     showFeedback("처리 완료되었습니다.");
   } catch (error) {
     console.error(error);
-    showFeedback("처리 완료 변경에 실패했습니다.", "error");
+
+    const message =
+      error.response?.status === 409
+        ? "현재 상태에서는 처리 완료할 수 없습니다."
+        : "처리 완료 변경에 실패했습니다.";
+
+    showFeedback(message, "error");
   } finally {
     saving.value = false;
   }
-};
+}
 
-const deleteCurrentNotice = () => {
-  if (!notice.value) {
-    return;
+function deleteCurrentNotice() {
+  if (notice.value) {
+    deleteConfirmOpen.value = true;
   }
+}
 
-  deleteConfirmOpen.value = true;
-};
-
-const cancelDelete = () => {
+function cancelDelete() {
   if (!deleting.value) {
     deleteConfirmOpen.value = false;
   }
-};
+}
 
-const confirmDelete = async () => {
+async function confirmDelete() {
   if (!notice.value || deleting.value) {
     return;
   }
 
-  const targetNoticeNo = notice.value.noticeNo ?? notice.value.notice_no;
-  const targetStatus = getCurrentNoticeStatus();
+  const targetNoticeNo = getNoticeNo(notice.value);
+  const targetStatus = getAlertStat(notice.value);
+
   deleting.value = true;
 
   try {
@@ -343,12 +470,18 @@ const confirmDelete = async () => {
 
     if (removed) {
       deleteConfirmOpen.value = false;
-      await router.push({ name: "NoticeList", query: { status: targetStatus } });
+
+      await router.push({
+        name: "NoticeList",
+        query: {
+          status: targetStatus
+        }
+      });
     }
   } finally {
     deleting.value = false;
   }
-};
+}
 
 onMounted(async () => {
   await loadNoticeList();
@@ -359,85 +492,25 @@ onUnmounted(() => {
   window.clearTimeout(feedbackTimer);
 });
 
-watch(noticeNo, async () => {
-  await loadDetail();
-});
+watch(noticeNo, loadDetail);
 </script>
 
 <style scoped>
-.notice-detail-page {
-  width: 100%;
-  max-width: none;
-  min-height: calc(100dvh - 120px);
-  margin: 0 auto;
-  padding: 20px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-.notice-detail-dialog {
-  width: min(100%, 760px);
-  overflow: hidden;
-  text-align: center;
-  border-radius: 10px;
-  background: var(--bg-header);
-  box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18);
-}
-
-.detail-header {
-  width: 100%;
-  margin: 0;
-  padding: 22px 24px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.detail-table {
-  width: 100%;
-  max-width: none;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.detail-table th {
-  width: 190px;
-}
-
-.detail-table th,
-.detail-table td {
-  text-align: center;
-}
-
-.notice-detail-actions {
-  padding: 18px 24px;
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid var(--border-color);
-  background: #f8fafb;
-}
-
-.notice-detail-dialog > p {
-  margin: 0;
-  padding: 32px 24px;
-  text-align: center;
-}
+.notice-detail-page { box-sizing: border-box; width: 100%; min-height: calc(100dvh - 120px); margin: 0 auto; padding: 20px 0; display: flex; align-items: center; justify-content: center; }
+.notice-detail-dialog { width: min(100%, 760px); overflow: hidden; text-align: center; border-radius: 10px; background: var(--bg-header); box-shadow: 0 20px 48px rgba(35, 52, 66, 0.18); }
+.detail-header { width: 100%; margin: 0; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border-color); }
+.detail-header h1 { margin: 0; }
+.detail-actions { display: flex; align-items: center; gap: 8px; }
+.detail-table { width: 100%; max-width: none; border: 0; border-radius: 0; border-collapse: collapse; box-shadow: none; }
+.detail-table th { width: 190px; background: var(--bg-soft); }
+.detail-table th, .detail-table td { padding: 10px 14px; text-align: center; }
+.notice-detail-actions { padding: 18px 24px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: #f8fafb; }
+.notice-detail-dialog > p { margin: 0; padding: 32px 24px; text-align: center; }
 
 @media (max-width: 760px) {
-  .notice-detail-page {
-    min-height: 0;
-    padding: 12px 0;
-    align-items: flex-start;
-  }
-
-  .detail-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .detail-table th {
-    width: 140px;
-  }
+  .notice-detail-page { min-height: 0; padding: 12px 0; align-items: flex-start; }
+  .detail-header { align-items: flex-start; flex-direction: column; }
+  .detail-actions { width: 100%; flex-wrap: wrap; }
+  .detail-table th { width: 140px; }
 }
 </style>

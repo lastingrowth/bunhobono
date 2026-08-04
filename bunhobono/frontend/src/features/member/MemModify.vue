@@ -13,11 +13,11 @@
             </tr>
             <tr>
                 <th>동</th>
-                <td>{{ member.memDong || "-" }}</td>
+                <td>{{ member.role === 'ADMIN' ? '관리실' : member.memDong || '-' }}</td>
             </tr>
             <tr>
                 <th>호수</th>
-                <td>{{ member.memHo || "-" }}</td>
+                <td>{{ member.role === 'ADMIN' ? '-' : member.memHo || '-' }}</td>
             </tr>
             <tr>
                 <th>연락처</th>
@@ -80,11 +80,13 @@ import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useMemStore } from "./memStore";
 import { useJwtStore } from "@/features/login/jwtStore";
+import { useDialog } from "@/shared/alert/useDialog";
 
 const route = useRoute();
 const router = useRouter();
 const store = useMemStore();
 const jwtStore = useJwtStore();
+const { alertDialog } = useDialog();
 
 const memberNo = route.params.memberNo;
 const phoneParts = reactive({ first: "", middle: "", last: "" });
@@ -165,9 +167,9 @@ const handlePasswordInput = (event) => {
 };
 
 // 관리자가 초기화하면 정규식 예외인 임시 비밀번호 0000을 지정한다.
-const resetPassword = () => {
+const resetPassword = async () => {
     member.loginPwd = "0000";
-    alert("수정완료를 누르면 비밀번호가 0000으로 초기화됩니다.");
+    await alertDialog({ theme: "admin", type: "warning", title: "비밀번호 초기화", message: "수정완료를 누르면 비밀번호가 0000으로 초기화됩니다." });
 };
 
 const goDetail = () => {
@@ -176,14 +178,14 @@ const goDetail = () => {
 
 const update = async () => {
     if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
-        alert("연락처를 정확히 입력하세요.");
+        await alertDialog({ theme: "admin", type: "warning", title: "연락처 확인", message: "연락처를 정확히 입력하세요." });
         return;
     }
     member.memPhone = `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`;
 
     // 관리자 초기화 값 0000은 예외로 두고 직접 입력한 새 비밀번호만 형식을 확인한다.
     if (member.loginPwd && member.loginPwd !== "0000" && !passwordPattern.test(member.loginPwd)) {
-        alert("비밀번호는 영문+숫자+특수문자 조합으로 8~20자로 입력하세요.");
+        await alertDialog({ theme: "admin", type: "warning", title: "비밀번호 확인", message: "비밀번호는 영문+숫자+특수문자 조합으로 8~20자로 입력하세요." });
         return;
     }
 
@@ -193,7 +195,7 @@ const update = async () => {
         loginPwd: member.loginPwd,
         memStatus: member.memStatus
     });
-    alert("수정되었습니다.");
+    await alertDialog({ theme: "admin", type: "success", title: "회원 수정 완료", message: "수정되었습니다." });
 
     // 입주민 전출 신청 상태로 바뀐 경우 전출 신청 관리 탭으로 이동한다.
     if (member.memStatus === 'WITHDRAW_PENDING') {

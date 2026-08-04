@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class LoginDTO {
-    private int memberNo;
+    private long memberNo;
     private String loginId,loginPwd,role,memStatus;
 }
