@@ -24,11 +24,11 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
     const residenceText = computed(() => {
         const member = dashboard.value.member;
 
-        if (!member.memDong || !member.memHo) {
+        if (!member.dong || !member.ho) {
             return "-";
         }
 
-        return `${member.memDong}동 ${member.memHo}호`;
+        return `${member.dong}동 ${member.ho}호`;
     });
 
     // 로그인한 입주민의 본인 차량

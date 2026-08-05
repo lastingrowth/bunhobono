@@ -37,7 +37,7 @@ public interface TrashMapper {
             "data_json::text AS data_json, delete_type, deleted_at, purge_at " +
             "FROM trash_bin " +
             "WHERE trash_no = #{trashNo}")
-    TrashDTO detail(long trashNo);
+    TrashDTO detail(int trashNo);
 
     // camera_data를 JSON으로 변환해 휴지통에 저장
     @Insert("INSERT INTO trash_bin " +
@@ -79,7 +79,7 @@ public interface TrashMapper {
     // 복원 완료 또는 영구 삭제 시 휴지통 행 제거
     @Delete("DELETE FROM trash_bin " +
             "WHERE trash_no = #{trashNo}")
-    int deleteTrash(long trashNo);
+    int deleteTrash(int trashNo);
 
     @Insert("""
         INSERT INTO camera_data
@@ -110,7 +110,7 @@ public interface TrashMapper {
         WHERE tb.trash_no = #{trashNo}
           AND tb.data_type = 'CAMERA_DATA'
         """)
-    int restoreCameraData(long trashNo);
+    int restoreCameraData(int trashNo);
 
     @Insert("""
         INSERT INTO car_log
@@ -148,7 +148,7 @@ public interface TrashMapper {
         WHERE tb.trash_no = #{trashNo}
           AND tb.data_type = 'CAR_LOG'
         """)
-    int restoreCarLog(long trashNo);
+    int restoreCarLog(int trashNo);
 
     // 휴지통에 보관된 관리자 알림 복원
     @Insert("""
@@ -284,7 +284,7 @@ public interface TrashMapper {
     WHERE tb.trash_no = #{trashNo}
       AND tb.data_type = 'NOTICE'
 """)
-    int restoreNotice(long trashNo);
+    int restoreNotice(int trashNo);
 
     //검색
     @Select("SELECT trash_no, data_type, original_no, " +

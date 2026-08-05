@@ -25,8 +25,8 @@ public class MemberArchiveController {
 
     // 전출 회원 이력 영구 삭제
     // member 원본이 아니라 member_archive 기록만 삭제한다.
-    @DeleteMapping("/{archiveNo}")
-    public void delete(@PathVariable long archiveNo) {
-        service.delete(archiveNo);
+    @DeleteMapping("/{memberArchiveNo}")
+    public void delete(@PathVariable int memberArchiveNo) {
+        service.delete(memberArchiveNo);
     }
 }

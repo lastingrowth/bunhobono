@@ -22,12 +22,12 @@ public class TrashService {
         return trashMapper.list(dataType);
     }
 
-    public TrashDTO detail(long trashNo) {
+    public TrashDTO detail(int trashNo) {
         return trashMapper.detail(trashNo);
     }
 
     @Transactional
-    public TrashDTO restore(long trashNo) {
+    public TrashDTO restore(int trashNo) {
         TrashDTO trash = trashMapper.detail(trashNo);
         if (trash == null) {
             throw new IllegalArgumentException("휴지통 기록을 찾을 수 없습니다.");

@@ -23,13 +23,13 @@ public class TrashController {
 
     // 휴지통 상세
     @GetMapping("/{trashNo}")
-    public TrashDTO detail(@PathVariable long trashNo) {
+    public TrashDTO detail(@PathVariable int trashNo) {
         return trashService.detail(trashNo);
     }
 
     //복원기능
     @PostMapping("/{trashNo}/restore")
-    public TrashDTO restore(@PathVariable long trashNo) {
+    public TrashDTO restore(@PathVariable int trashNo) {
         return trashService.restore(trashNo);
     }
 

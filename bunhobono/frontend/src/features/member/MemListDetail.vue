@@ -20,8 +20,8 @@
         <tbody>
             <tr><th>가입유형</th><td>{{ store.member.role }}</td></tr>
             <tr><th>이름</th><td>{{ store.member.memName }}</td></tr>
-            <tr><th>동</th><td>{{ store.member.role === 'ADMIN' ? '관리실' : store.member.memDong }}</td></tr>
-            <tr><th>호수</th><td>{{ store.member.role === 'ADMIN' ? '-' : store.member.memHo }}</td></tr>
+            <tr><th>동</th><td>{{ store.member.role === 'ADMIN' ? '관리실' : store.member.dong }}</td></tr>
+            <tr><th>호수</th><td>{{ store.member.role === 'ADMIN' ? '-' : store.member.ho }}</td></tr>
             <tr><th>연락처</th><td>{{ store.member.memPhone }}</td></tr>
             <tr><th>아이디</th><td>{{ store.member.loginId }}</td></tr>
             <tr><th>가입일</th><td>{{ store.formatMemberDateTime(store.member.memCreateAt) }}</td></tr>

@@ -20,8 +20,8 @@ public class MemberArchiveService {
 
     // member_archive에 보관된 전출 회원 이력을 영구 삭제한다.
     // member 원본을 삭제하는 것이 아니라 archive 기록만 삭제한다.
-    public void delete(long archiveNo) {
-        int deleted = mapper.delete(archiveNo);
+    public void delete(int memberArchiveNo) {
+        int deleted = mapper.delete(memberArchiveNo);
 
         if (deleted == 0) {
             throw new ResponseStatusException(

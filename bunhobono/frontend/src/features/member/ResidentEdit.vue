@@ -19,11 +19,11 @@
             </tr>
             <tr>
                 <th>동</th>
-                <td>{{ member.memDong || "-" }}</td>
+                <td>{{ member.dong || "-" }}</td>
             </tr>
             <tr>
                 <th>호수</th>
-                <td>{{ member.memHo || "-" }}</td>
+                <td>{{ member.ho || "-" }}</td>
             </tr>
             <tr>
                 <th>연락처</th>
@@ -148,8 +148,8 @@ const member = reactive({
     memberNo:"",
     role: "",
     memName: "",
-    memDong: "",
-    memHo: "",
+    dong: "",
+    ho: "",
     memPhone: "",
     loginId: "",
     loginPwd: "",

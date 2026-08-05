@@ -12,17 +12,17 @@ public class MemberDTO {
     // =====================================================
     // 1. 회원가입·조회·수정에 사용하는 기본 회원 정보를 전달한다.
     // =====================================================
-    private long memberNo;
+    private Integer memberNo;
     private long displayNo;     // 회원 목록에 표시할 조회 순번이다.
     private String loginId;
     private String loginPwd;
-    private Long unitNo;        // 아파트 동/호수. 관리자는 null
+    private Integer unitNo;        // 아파트 동/호수. 관리자는 null
     private String memName;
     private String memPhone;
     private String role;
     private String memStatus;
-    private Integer memDong;
-    private Integer memHo;
+    private Integer dong;
+    private Integer ho;
     private LocalDateTime memCreateAt;
     private LocalDateTime memDeleteAt;
 

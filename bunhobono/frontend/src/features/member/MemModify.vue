@@ -13,11 +13,11 @@
             </tr>
             <tr>
                 <th>동</th>
-                <td>{{ member.role === 'ADMIN' ? '관리실' : member.memDong || '-' }}</td>
+                <td>{{ member.role === 'ADMIN' ? '관리실' : member.dong || '-' }}</td>
             </tr>
             <tr>
                 <th>호수</th>
-                <td>{{ member.role === 'ADMIN' ? '-' : member.memHo || '-' }}</td>
+                <td>{{ member.role === 'ADMIN' ? '-' : member.ho || '-' }}</td>
             </tr>
             <tr>
                 <th>연락처</th>
@@ -97,8 +97,8 @@ const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&
 const member = reactive({
     role: "",
     memName: "",
-    memDong: "",
-    memHo: "",
+    dong: "",
+    ho: "",
     memPhone: "",
     loginId: "",
     loginPwd: "",
