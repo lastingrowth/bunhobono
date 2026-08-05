@@ -44,7 +44,7 @@
                     <td><input v-model="selectedMemberNos" type="checkbox" :value="mem.memberNo"></td>
                     <td>{{ mem.role }}</td>
                     <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
-                    <td>{{ mem.memDong }}</td><td>{{ mem.memHo }}</td>
+                    <td>{{ mem.dong }}</td><td>{{ mem.ho }}</td>
                     <td>{{ mem.memPhone }}</td><td>{{ mem.loginId }}</td>
                 </tr>
                 <tr v-if="pendingMembers.length === 0"><td colspan="7">승인 대기 회원이 없습니다.</td></tr>
@@ -103,8 +103,8 @@
                                 {{ mem.memName }}
                             </router-link>
                         </td>
-                        <td>{{ mem.memDong }}</td>
-                        <td>{{ mem.memHo }}</td>
+                        <td>{{ mem.dong }}</td>
+                        <td>{{ mem.ho }}</td>
                         <td>{{ mem.loginId }}</td>
                         <td>{{ formatMemberStatus(mem.memStatus, mem.role) }}</td>
                         <td>{{ store.formatMemberDateTime(mem.memDeleteAt) }}</td>
@@ -151,7 +151,7 @@
                     <tbody>
                         <tr
                             v-for="(member, index) in paginatedMembers"
-                            :key="member.archiveNo">
+                            :key="member.memberArchiveNo">
                             <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                             <td>{{ member.memName || '-' }}</td>
                             <td>{{ member.loginId || '-' }}</td>
@@ -227,8 +227,8 @@
                 <td>{{ mem.displayNo }}</td>
                 <td>{{ mem.role }}</td>
                 <td><router-link :to="`/admin/members/${mem.memberNo}/detail`">{{ mem.memName }}</router-link></td>
-                <td>{{ mem.role === 'ADMIN' ? '관리실' : mem.memDong }}</td>
-                <td>{{ mem.role === 'ADMIN' ? '-' : mem.memHo }}</td>
+                <td>{{ mem.role === 'ADMIN' ? '관리실' : mem.dong }}</td>
+                <td>{{ mem.role === 'ADMIN' ? '-' : mem.ho }}</td>
                 <td>{{ mem.memPhone }}</td>
                 <td>{{ mem.loginId }}</td><td>{{ store.formatMemberDateTime(mem.memCreateAt) }}</td>
                 <td>{{ formatMemberStatus(mem.memStatus, mem.role) }}</td>
@@ -388,8 +388,8 @@ const filteredApprovedMembers = computed(() => {
         const nameMatches = !normalizedName
             || String(member.memName || '').toLowerCase().includes(normalizedName);
         const roleMatches = !filters.role || String(member.role || '') === filters.role;
-        const dongMatches = !filters.dong || Number(member.memDong) === Number(filters.dong);
-        const hoMatches = !filters.ho || Number(member.memHo) === Number(filters.ho);
+        const dongMatches = !filters.dong || Number(member.dong) === Number(filters.dong);
+        const hoMatches = !filters.ho || Number(member.ho) === Number(filters.ho);
 
         return nameMatches && roleMatches && dongMatches && hoMatches;
     });
@@ -399,7 +399,7 @@ const filteredApprovedMembers = computed(() => {
 const dongOptions = computed(() => [...new Set(
     approvedMembers.value
         .filter((member) => member.role === 'RESIDENT')
-        .map((member) => Number(member.memDong))
+        .map((member) => Number(member.dong))
 )]
     .filter(Number.isFinite)
     .sort((left, right) => left - right));
@@ -408,9 +408,9 @@ const hoOptions = computed(() => [...new Set(
     approvedMembers.value
         .filter((member) =>
             member.role === 'RESIDENT'
-            && Number(member.memDong) === Number(dong.value)
+            && Number(member.dong) === Number(dong.value)
         )
-        .map((member) => Number(member.memHo))
+        .map((member) => Number(member.ho))
 )]
     .filter(Number.isFinite)
     .sort((left, right) => left - right));

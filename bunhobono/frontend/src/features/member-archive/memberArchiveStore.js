@@ -28,11 +28,11 @@ export const useMemberArchiveStore = defineStore('member-archive', () => {
 
     // member_archive 기록만 영구 삭제
     // member 원본 데이터는 건드리지 않음
-    const remove = async (archiveNo) => {
-        await deleteMemberArchive(archiveNo)
+    const remove = async (memberArchiveNo) => {
+        await deleteMemberArchive(memberArchiveNo)
 
         list.value = list.value.filter((item) => {
-            return Number(item.archiveNo) !== Number(archiveNo)
+            return Number(item.memberArchiveNo) !== Number(memberArchiveNo)
         })
     }
 

@@ -1,11 +1,11 @@
-package api.unit_p;
+package api.apartmentunit_p;
 
 import lombok.Data;
 
 @Data
-public class UnitDTO {
+public class ApartmentUnitDTO {
 
-    private long unitNo;
+    private Integer apartmentUnitNo;
     private int dong;
     private int ho;
     private String unitStatus;

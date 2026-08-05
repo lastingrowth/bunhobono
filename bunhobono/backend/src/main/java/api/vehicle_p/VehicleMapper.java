@@ -83,7 +83,7 @@ public interface VehicleMapper {
             ON vc.member_no = m.member_no
         
         LEFT JOIN apartment_unit au
-            ON m.unit_no = au.unit_no
+            ON m.unit_no = au.apartment_unit_no
 
         -- 가장 최근 입출차 로그
         LEFT JOIN LATERAL (
@@ -151,7 +151,7 @@ public interface VehicleMapper {
         FROM member m
     
         LEFT JOIN apartment_unit au
-            ON m.unit_no = au.unit_no
+            ON m.unit_no = au.apartment_unit_no
     
         WHERE UPPER(TRIM(m.role)) = #{role}
           AND m.mem_status = 'ACTIVE'

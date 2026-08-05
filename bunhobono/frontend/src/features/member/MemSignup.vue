@@ -100,7 +100,7 @@
                 <label class="form-field">
                     <span>동</span>
                     <!-- 서버가 확인한 가입 가능 세대의 동만 표시한다. -->
-                    <select v-model.number="member.memDong" :disabled="props.adminMode && member.role === 'ADMIN' || !hasAvailableUnits" required @change="member.memHo = ''">
+                    <select v-model.number="member.dong" :disabled="props.adminMode && member.role === 'ADMIN' || !hasAvailableUnits" required @change="member.ho = ''">
                         <option disabled value="">동을 선택하세요</option>
                         <option v-if="props.adminMode && member.role === 'ADMIN'" :value="null">관리실</option>
                         <option v-for="dong in availableDongs" v-else :key="dong" :value="dong">{{ dong }}동</option>
@@ -109,7 +109,7 @@
 
                 <label class="form-field">
                     <span>호수</span>
-                    <select v-model.number="member.memHo" :disabled="props.adminMode && member.role === 'ADMIN' || !member.memDong" required>
+                    <select v-model.number="member.ho" :disabled="props.adminMode && member.role === 'ADMIN' || !member.dong" required>
                         <option disabled value="">호수를 선택하세요</option>
                         <option v-if="props.adminMode && member.role === 'ADMIN'" :value="null">-</option>
                         <optgroup v-else label="1·2라인">
@@ -185,8 +185,8 @@ const availabilityError = ref("");
 const member = ref({
     role: "RESIDENT",
     memName: "",
-    memDong: "",
-    memHo: "",
+    dong: "",
+    ho: "",
     memPhone: "",
     loginId: "",
     loginPwd: "",
@@ -227,7 +227,7 @@ const availableDongs = computed(() => [
     ...new Set(store.availableSignupUnits.map((unit) => Number(unit.dong)))
 ].sort((left, right) => left - right));
 const selectedDongUnits = computed(() => store.availableSignupUnits.filter(
-    (unit) => Number(unit.dong) === Number(member.value.memDong)
+    (unit) => Number(unit.dong) === Number(member.value.dong)
 ));
 const line12HoOptions = computed(() => selectedDongUnits.value
     .map((unit) => Number(unit.ho))
@@ -252,8 +252,8 @@ onMounted(loadAvailableUnits);
 const syncStatusWithRole = () => {
     // role을 바꾸면 해당 role에서 사용할 수 있는 첫 번째 상태값으로 초기화한다.
     member.value.memStatus = statusOptions.value[0]?.value ?? 'ACTIVE'
-    member.value.memDong = member.value.role === "ADMIN" ? null : "";
-    member.value.memHo = member.value.role === "ADMIN" ? null : "";
+    member.value.dong = member.value.role === "ADMIN" ? null : "";
+    member.value.ho = member.value.role === "ADMIN" ? null : "";
 };
 
 // 외부 회원가입과 관리자 회원 추가에 공통으로 적용하는 정규식.
@@ -271,7 +271,24 @@ const validateSignupFields = async () => {
         });
         return false;
     }
-
+    if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "warning",
+            title: "연락처 형식 확인",
+            message: "연락처를 정확히 입력하세요."
+        });
+        return false;
+    }
+    if (needsAvailableUnit.value && (!member.value.dong || !member.value.ho)) {
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "warning",
+            title: "동·호수 확인",
+            message: "동과 호수를 선택해주세요."
+        });
+        return false;
+    }
     if (!loginIdPattern.test(member.value.loginId)) {
         await alertDialog({
             theme: dialogTheme.value,
@@ -511,8 +528,8 @@ const signupGo = async () => {
             message: e.response?.data?.message || e.response?.data?.error || "회원등록 실패"
         });
         if (needsAvailableUnit.value) {
-            member.value.memDong = "";
-            member.value.memHo = "";
+            member.value.dong = "";
+            member.value.ho = "";
             await loadAvailableUnits();
         }
     }

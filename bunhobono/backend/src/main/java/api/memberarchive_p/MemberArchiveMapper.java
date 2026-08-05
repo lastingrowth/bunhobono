@@ -13,7 +13,7 @@ public interface MemberArchiveMapper {
     // 최근 전출 확정된 기록이 위에 오도록 정렬한다.
     @Select("""
         SELECT
-            archive_no,
+            member_archive_no,
             original_member_no,
             login_id,
             mem_name,
@@ -26,7 +26,7 @@ public interface MemberArchiveMapper {
             delete_at,
             archived_at
         FROM member_archive
-        ORDER BY archived_at DESC, archive_no DESC
+        ORDER BY archived_at DESC, member_archive_no DESC
         """)
     List<MemberArchiveDTO> list();
 
@@ -34,7 +34,7 @@ public interface MemberArchiveMapper {
     // member 원본이 아니라 member_archive 기록만 삭제한다.
     @Delete("""
         DELETE FROM member_archive
-        WHERE archive_no = #{archiveNo}
+        WHERE member_archive_no = #{memberArchiveNo}
         """)
-    int delete(long archiveNo);
+    int delete(int memberArchiveNo);
 }

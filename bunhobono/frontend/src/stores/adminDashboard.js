@@ -295,7 +295,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         if (member.role === "ADMIN") {
             return `관리실 / ${member.memName}`;
         }
-        return `${dongText(member.memDong)} ${hoText(member.memHo)} / ${member.memName}`;
+        return `${dongText(member.dong)} ${hoText(member.ho)} / ${member.memName}`;
     };
 
     const resetQuickVehicle = () => {

@@ -1,6 +1,6 @@
 package api.member_p;
 
-import api.unit_p.UnitDTO;
+import api.apartmentunit_p.ApartmentUnitDTO;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -78,7 +78,7 @@ public class MemberController {
 
     // 회원가입 화면에서 선택할 수 있는 빈 세대 목록을 반환한다.
     @GetMapping("/signup/available-units")
-    public List<UnitDTO> availableSignupUnits() {
+    public List<ApartmentUnitDTO> availableSignupUnits() {
         return service.availableSignupUnits();
     }
 
@@ -88,7 +88,7 @@ public class MemberController {
 
     // 관리자가 회원의 연락처, 비밀번호와 상태를 수정한다.
     @PutMapping("/members/{memberNo}/edit")
-    public void update(@PathVariable long memberNo,
+    public void update(@PathVariable int memberNo,
                        @RequestBody MemberDTO dto,
                        Authentication authentication) {
         dto.setMemberNo(memberNo);
@@ -98,7 +98,7 @@ public class MemberController {
 
     // 선택한 승인 대기 입주민의 상태를 ACTIVE로 변경한다.
     @PutMapping("/members/approve")
-    public void approvePendingMembers(@RequestBody List<Long> memberNos) {
+    public void approvePendingMembers(@RequestBody List<Integer> memberNos) {
         service.approvePendingMembers(memberNos);
     }
 
@@ -110,7 +110,7 @@ public class MemberController {
 
     // 회원 번호에 해당하는 상세 정보를 조회한다.
     @GetMapping("/members/{memberNo}/detail")
-    public MemberDTO detail(@PathVariable long memberNo){
+    public MemberDTO detail(@PathVariable int memberNo){
         return service.detail(memberNo);
     }
 
@@ -131,31 +131,31 @@ public class MemberController {
 
     // 선택한 전출 신청 회원들을 다시 거주 상태로 복원한다.
     @PutMapping("/members/restore")
-    public int restoreWithdrawnMembers(@RequestBody List<Long> memberNos) {
+    public int restoreWithdrawnMembers(@RequestBody List<Integer> memberNos) {
         return service.restoreWithdrawnMembers(memberNos);
     }
 
     // 선택한 전출 신청 회원의 이력을 보관하고 원본 회원 행을 미등록 상태로 초기화한다.
     @DeleteMapping("/members/withdrawn")
-    public int permanentlyDeleteWithdrawnMembers(@RequestBody List<Long> memberNos) {
+    public int permanentlyDeleteWithdrawnMembers(@RequestBody List<Integer> memberNos) {
         return service.permanentlyDeleteWithdrawnMembers(memberNos);
     }
 
     // 관리자가 회원을 전출 신청 상태로 변경하고 탈퇴일을 기록한다.
     @DeleteMapping("/members/{memberNo}/delete")
-    public void delete(@PathVariable long memberNo, Authentication authentication) {
+    public void delete(@PathVariable int memberNo, Authentication authentication) {
         service.delete(memberNo, authentication.getName());
     }
 
     // 전출 신청된 회원 한 명을 다시 거주 상태로 복원한다.
     @PutMapping("/members/{memberNo}/restore")
-    public void restoreWithdrawnMember(@PathVariable long memberNo) {
+    public void restoreWithdrawnMember(@PathVariable int memberNo) {
         service.restoreWithdrawnMember(memberNo);
     }
 
     // 전출 신청된 회원 한 명의 이력을 보관하고 원본 회원 행을 초기화한다.
     @PutMapping("/members/{memberNo}/confirm-withdrawn")
-    public void confirmWithdrawnMember(@PathVariable long memberNo) {
+    public void confirmWithdrawnMember(@PathVariable int memberNo) {
         service.confirmWithdrawnMember(memberNo);
     }
 

@@ -1,6 +1,6 @@
 package api.member_p;
 
-import api.unit_p.UnitDTO;
+import api.apartmentunit_p.ApartmentUnitDTO;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
@@ -19,10 +19,10 @@ public interface MemberMapper {
         WITH selected_unit AS (
             UPDATE apartment_unit
             SET unit_status = 'OCCUPIED'
-            WHERE dong = #{memDong}
-              AND ho = #{memHo}
+            WHERE dong = #{dong}
+              AND ho = #{ho}
               AND unit_status = 'EMPTY'
-            RETURNING unit_no
+            RETURNING apartment_unit_no
         )
         INSERT INTO member (
             login_id,
@@ -38,7 +38,7 @@ public interface MemberMapper {
         SELECT
             #{loginId},
             #{loginPwd},
-            selected_unit.unit_no,
+            selected_unit.apartment_unit_no,
             #{memName},
             #{memPhone},
             #{role},
@@ -84,7 +84,7 @@ public interface MemberMapper {
     // 회원가입 화면에서 선택할 수 있는 빈 세대 정보를 조회한다.
     @Select("""
         SELECT
-            unit_no,
+            apartment_unit_no,
             dong,
             ho,
             unit_status
@@ -95,19 +95,19 @@ public interface MemberMapper {
           AND MOD(ho, 100) BETWEEN 1 AND 2
         ORDER BY dong, ho
     """)
-    List<UnitDTO> availableSignupUnits();
+    List<ApartmentUnitDTO> availableSignupUnits();
 
     // 같은 세대에 여러 가입 요청이 동시에 처리되지 않도록 빈 세대 행을 잠근다.
     // 조회 결과가 없으면 해당 세대가 존재하지 않거나 이미 점유된 상태다.
     @Select("""
-        SELECT unit_no
+        SELECT apartment_unit_no
         FROM apartment_unit
         WHERE dong = #{dong}
           AND ho = #{ho}
           AND unit_status = 'EMPTY'
         FOR UPDATE
     """)
-    Long lockWithdrawnUnit(@Param("dong") int dong, @Param("ho") int ho);
+    Integer lockWithdrawnUnit(@Param("dong") int dong, @Param("ho") int ho);
 
     // 해당 동·호를 현재 점유하고 있는 입주민이 있는지 확인한다.
     // 가입 승인 대기, 거주 중, 전출 승인 대기 회원은 모두 세대를 점유한다.
@@ -115,7 +115,7 @@ public interface MemberMapper {
         SELECT COUNT(*)
         FROM member m
         JOIN apartment_unit au
-          ON au.unit_no = m.unit_no
+          ON au.apartment_unit_no = m.unit_no
         WHERE au.dong = #{dong}
           AND au.ho = #{ho}
           AND m.role = 'RESIDENT'
@@ -136,8 +136,8 @@ public interface MemberMapper {
         SELECT
             ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) display_no,
             m.*,
-            au.dong mem_dong,
-            au.ho mem_ho,
+            au.dong,
+            au.ho,
             m.create_at mem_create_at,
             m.delete_at mem_delete_at,
             EXISTS (
@@ -147,30 +147,30 @@ public interface MemberMapper {
                   AND ma.archived_at > m.create_at
             ) archived
         FROM member m
-        LEFT JOIN apartment_unit au ON au.unit_no = m.unit_no
+        LEFT JOIN apartment_unit au ON au.apartment_unit_no = m.unit_no
         ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC
     """)
     List<MemberDTO> list();
 
     // 회원번호에 해당하는 상세 정보를 조회한다.
     @Select("SELECT m.*, " +
-            "au.dong AS mem_dong, au.ho AS mem_ho, " +
+            "au.dong, au.ho, " +
             "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
             "FROM member m " +
-            "LEFT JOIN apartment_unit au ON au.unit_no = m.unit_no " +
+            "LEFT JOIN apartment_unit au ON au.apartment_unit_no = m.unit_no " +
             "WHERE m.member_no = #{memberNo}")
-    MemberDTO detail(long memberNo);
+    MemberDTO detail(int memberNo);
 
     // 역할, 이름 또는 동·호수 조건에 맞는 회원을 조회한다.
     @Select("""
         SELECT ROW_NUMBER() OVER (ORDER BY m.create_at DESC NULLS LAST, m.member_no DESC) AS display_no,
                m.*,
-               au.dong AS mem_dong,
-               au.ho AS mem_ho,
+               au.dong,
+               au.ho,
                m.create_at AS mem_create_at,
                m.delete_at AS mem_delete_at
         FROM member m
-        LEFT JOIN apartment_unit au ON au.unit_no = m.unit_no
+        LEFT JOIN apartment_unit au ON au.apartment_unit_no = m.unit_no
         WHERE
             (
                 #{type} = 'role'
@@ -226,7 +226,7 @@ public interface MemberMapper {
         </foreach>
         </script>
     """)
-    int approvePendingMembers(@Param("memberNos") List<Long> memberNos);
+    int approvePendingMembers(@Param("memberNos") List<Integer> memberNos);
 
     // 전출 확정 전에 회원 정보와 당시 동·호수를 member_archive에 보관한다.
     @Insert("""
@@ -254,10 +254,10 @@ public interface MemberMapper {
             m.create_at,
             CURRENT_TIMESTAMP
         FROM member m
-        JOIN apartment_unit au ON au.unit_no = m.unit_no
+        JOIN apartment_unit au ON au.apartment_unit_no = m.unit_no
         WHERE m.member_no = #{memberNo}
     """)
-    int saveMemberArchive(@Param("memberNo") long memberNo);
+    int saveMemberArchive(@Param("memberNo") int memberNo);
 
     // 이력 보관 전인 전출 신청 회원을 다시 현재 회원 상태로 복원한다.
     @Update("""
@@ -266,7 +266,7 @@ public interface MemberMapper {
             delete_at = NULL
         WHERE member_no = #{memberNo}
         """)
-    int restoreWithdrawnMember(@Param("memberNo") long memberNo);
+    int restoreWithdrawnMember(@Param("memberNo") int memberNo);
 
     // 회원을 전출 신청 상태로 변경하고 신청 시각을 기록한다.
     @Update("""
@@ -275,14 +275,14 @@ public interface MemberMapper {
             delete_at = CURRENT_TIMESTAMP
         WHERE member_no = #{memberNo}
         """)
-    int requestWithdrawnMember(@Param("memberNo") long memberNo);
+    int requestWithdrawnMember(@Param("memberNo") int memberNo);
 
     // 전출 확정 회원에게 연결된 등록 차량을 삭제한다.
     @Delete("""
         DELETE FROM vehicle_car
         WHERE member_no = #{memberNo}
         """)
-    int deleteVehiclesByMemberNo(@Param("memberNo") long memberNo);
+    int deleteVehiclesByMemberNo(@Param("memberNo") int memberNo);
 
     // 전출 회원은 WITHDRAWN 상태로 보존하고 해당 아파트 세대를 빈 세대로 변경한다.
     @Update("""
@@ -297,12 +297,12 @@ public interface MemberMapper {
         )
         UPDATE apartment_unit
         SET unit_status = 'EMPTY'
-        WHERE unit_no IN (
+        WHERE apartment_unit_no IN (
             SELECT unit_no
             FROM withdrawn_member
         )
     """)
-    int delete(@Param("memberNo") long memberNo);
+    int delete(@Param("memberNo") int memberNo);
 
 
     // =====================================================
@@ -311,10 +311,10 @@ public interface MemberMapper {
 
     // 로그인 아이디에 해당하는 입주민 정보와 현재 동·호수를 조회한다.
     @Select("SELECT m.*, " +
-            "au.dong AS mem_dong, au.ho AS mem_ho, " +
+            "au.dong, au.ho, " +
             "m.create_at AS mem_create_at, m.delete_at AS mem_delete_at " +
             "FROM member m " +
-            "JOIN apartment_unit au ON au.unit_no = m.unit_no " +
+            "JOIN apartment_unit au ON au.apartment_unit_no = m.unit_no " +
             "WHERE m.login_id = #{loginId}")
     MemberDTO residentMypage(String loginId);
 

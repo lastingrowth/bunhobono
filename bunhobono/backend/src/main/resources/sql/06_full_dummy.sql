@@ -1,39 +1,62 @@
 BEGIN;
 
--- 기존 데이터를 모두 비우고 PK 번호를 1부터 다시 시작합니다.
+-- 기존 데이터를 모두 비우고 SERIAL 번호를 1부터 다시 시작한다.
 TRUNCATE TABLE
+    payment,
+    bill,
+    fee_rule,
     trash_bin,
-    notice,
     vehicle_nt,
+    notice,
+    board,
     car_log,
     camera_data,
     camera,
     vehicle_car,
     gate,
+    parking_space,
+    kiosk,
     parking,
     member_archive,
-    member
+    member,
+    apartment_unit
 RESTART IDENTITY CASCADE;
 
--- =====================================================
--- 1. 회원
--- 전체 세대: 8개 동 × 20세대 = 160세대
--- 402동은 전체 빈 세대로 유지
--- =====================================================
+INSERT INTO apartment_unit (dong, ho, unit_status)
+SELECT
+    d.dong,
+    (f.floor_no * 100) + l.line_no,
+    'EMPTY'
+FROM unnest(ARRAY[101, 102, 201, 202, 301, 302, 401, 402]) AS d(dong)
+CROSS JOIN generate_series(1, 10) AS f(floor_no)
+CROSS JOIN generate_series(1, 2) AS l(line_no);
 
+CREATE TEMP TABLE legacy_member_seed (
+    seed_order SERIAL PRIMARY KEY,
+    login_id VARCHAR(30),
+    login_pwd VARCHAR(100),
+    mem_dong INT,
+    mem_ho INT,
+    mem_name VARCHAR(30),
+    mem_phone VARCHAR(30),
+    role VARCHAR(30),
+    create_at TIMESTAMP,
+    delete_at TIMESTAMP,
+    mem_status VARCHAR(30)
+);
 
-INSERT INTO member
+INSERT INTO legacy_member_seed
     (login_id, login_pwd, mem_dong, mem_ho, mem_name, mem_phone,
      role, create_at, delete_at, mem_status)
 VALUES
     -- << 관리자 >> 
     -- ACTIVE: 근무
-    ('admin1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '관리자', '010-1111-1111', 'ADMIN', '2025-01-01 09:00:00', NULL, 'ACTIVE'),
-    ('admin2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '경비원', '010-1111-1111', 'ADMIN', '2025-01-01 09:00:00', NULL, 'ACTIVE'),
+    ('admin1', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', NULL, NULL, '관리자', '010-1111-1111', 'ADMIN', '2025-01-01 09:00:00', NULL, 'ACTIVE'),
+    ('admin2', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', NULL, NULL, '경비원', '010-1111-1111', 'ADMIN', '2025-01-01 09:00:00', NULL, 'ACTIVE'),
     -- ON_LEAVE: 휴직
-    ('admin3', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '휴직자', '010-1111-1111', 'ADMIN', '2025-01-01 09:00:00', NULL, 'ON_LEAVE'),
+    ('admin3', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', NULL, NULL, '휴직자', '010-1111-1111', 'ADMIN', '2025-01-01 09:00:00', NULL, 'ON_LEAVE'),
     -- INACTIVE: 퇴사
-    ('admin4', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 0, 0, '퇴사자', '010-1111-1111', 'ADMIN', '2025-01-01 09:00:00', TIMESTAMP '2025-12-31 18:00:00', 'INACTIVE'),
+    ('admin4', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', NULL, NULL, '퇴사자', '010-1111-1111', 'ADMIN', '2025-01-01 09:00:00', TIMESTAMP '2025-12-31 18:00:00', 'INACTIVE'),
 
 
     -- << 입주민 >> 
@@ -41,12 +64,10 @@ VALUES
     -- 거주
     ('res1',         '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 101,  '마틴',             '010-2222-0101', 'RESIDENT', TIMESTAMP '2025-04-08 10:00:00', NULL,                              'ACTIVE'),
     -- 가입 승인 대기
-    ('res2',         '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 201,  '제임스',           '010-2222-0102', 'PENDING',  TIMESTAMP '2026-07-18 11:20:00', NULL,                              'ACTIVE'),
+    ('res2',         '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 201,  '제임스',           '010-2222-0102', 'RESIDENT', TIMESTAMP '2026-07-18 11:20:00', NULL,                              'PENDING'),
     -- 전출 신청
     ('res3',         '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 301,  '오드리',           '010-2222-0103', 'RESIDENT', TIMESTAMP '2025-06-12 10:00:00', TIMESTAMP '2026-07-15 18:20:00', 'WITHDRAW_PENDING'),
-    -- 전출 완료 / 빈 세대
-    ('unit_101_401', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 401,  '미등록',           '미등록',        'RESIDENT', TIMESTAMP '2025-01-21 10:00:00', TIMESTAMP '2026-05-20 14:00:00', 'EMPTY'),
-
+    -- 101동 401호 빈 세대는 apartment_unit에만 존재한다.
     ('res5',         '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 501,  '칼',               '010-2222-0201', 'RESIDENT', TIMESTAMP '2025-02-14 10:00:00', NULL,                              'ACTIVE'),
     ('res6',         '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 601,  '찰스',             '010-2222-0202', 'RESIDENT', TIMESTAMP '2025-03-03 10:00:00', NULL,                              'ACTIVE'),
     ('res7',         '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 101, 701,  '마이클',           '010-2222-0203', 'RESIDENT', TIMESTAMP '2025-03-27 10:00:00', NULL,                              'ACTIVE'),
@@ -85,8 +106,6 @@ VALUES
     ('res37',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 702,  '에릭렌셔',   '010-3000-0036', 'RESIDENT', TIMESTAMP '2025-08-25 10:00:00', NULL,                              'ACTIVE'),
     ('res38',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 802,  '브루스웨인', '010-3000-0037', 'RESIDENT', TIMESTAMP '2025-09-08 10:00:00', NULL,                              'ACTIVE'),
     ('res39',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 902,  '클라크켄트', '010-3000-0038', 'RESIDENT', TIMESTAMP '2025-09-22 10:00:00', NULL,                              'ACTIVE'),
-    ('res40',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 102, 1002, '미등록',     '미등록',        'RESIDENT', TIMESTAMP '2025-10-06 10:00:00', NULL,                              'ACTIVE'),
-
     -- [201동]
     -- 거주 15세대 / 가입 승인 대기 5세대
     ('res42',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 201,  '배리앨런',       '010-3000-0040', 'RESIDENT', TIMESTAMP '2025-02-17 10:00:00', NULL,                              'ACTIVE'),
@@ -96,11 +115,11 @@ VALUES
     ('res45',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 501,  '딕그레이슨',     '010-3000-0043', 'RESIDENT', TIMESTAMP '2025-03-31 10:00:00', NULL,                              'ACTIVE'),
 
     -- 가입 승인 대기
-    ('res46',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 601,  '셀리나카일',     '010-3000-0044', 'PENDING',  TIMESTAMP '2026-07-16 09:20:00', NULL,                              'ACTIVE'),
-    ('res47',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 701,  '할리퀸',         '010-3000-0045', 'PENDING',  TIMESTAMP '2026-07-17 10:20:00', NULL,                              'ACTIVE'),
-    ('res48',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 801,  '존콘스탄틴',     '010-3000-0046', 'PENDING',  TIMESTAMP '2026-07-18 11:20:00', NULL,                              'ACTIVE'),
-    ('res49',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 901,  '고죠사토루',     '010-3000-0047', 'PENDING',  TIMESTAMP '2026-07-19 12:20:00', NULL,                              'ACTIVE'),
-    ('res50',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 1001, '이타도리유지',   '010-3000-0048', 'PENDING',  TIMESTAMP '2026-07-20 13:20:00', NULL,                              'ACTIVE'),
+    ('res46',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 601,  '셀리나카일',     '010-3000-0044', 'RESIDENT', TIMESTAMP '2026-07-16 09:20:00', NULL,                              'PENDING'),
+    ('res47',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 701,  '할리퀸',         '010-3000-0045', 'RESIDENT', TIMESTAMP '2026-07-17 10:20:00', NULL,                              'PENDING'),
+    ('res48',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 801,  '존콘스탄틴',     '010-3000-0046', 'RESIDENT', TIMESTAMP '2026-07-18 11:20:00', NULL,                              'PENDING'),
+    ('res49',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 901,  '고죠사토루',     '010-3000-0047', 'RESIDENT', TIMESTAMP '2026-07-19 12:20:00', NULL,                              'PENDING'),
+    ('res50',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 1001, '이타도리유지',   '010-3000-0048', 'RESIDENT', TIMESTAMP '2026-07-20 13:20:00', NULL,                              'PENDING'),
 
     ('res51',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 102,  '후시구로메구미', '010-3000-0049', 'RESIDENT', TIMESTAMP '2025-04-14 10:00:00', NULL,                              'ACTIVE'),
     ('res52',        '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 201, 202,  '쿠기사키노바라', '010-3000-0050', 'RESIDENT', TIMESTAMP '2025-04-28 10:00:00', NULL,                              'ACTIVE'),
@@ -205,31 +224,59 @@ VALUES
     ('res137',       '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 401, 702,  '링크',             '010-3000-0132', 'RESIDENT', TIMESTAMP '2025-09-09 10:00:00', NULL, 'ACTIVE'),
     ('res138',       '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 401, 802,  '젤다',             '010-3000-0133', 'RESIDENT', TIMESTAMP '2025-09-23 10:00:00', NULL, 'ACTIVE'),
     ('res139',       '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 401, 902,  '마리오',           '010-3000-0134', 'RESIDENT', TIMESTAMP '2025-10-07 10:00:00', NULL, 'ACTIVE'),
-    ('res140',       '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 401, 1002, '루이지',           '010-3000-0135', 'RESIDENT', TIMESTAMP '2025-10-21 10:00:00', NULL, 'ACTIVE'),
+    ('res140',       '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 401, 1002, '루이지',           '010-3000-0135', 'RESIDENT', TIMESTAMP '2025-10-21 10:00:00', NULL, 'ACTIVE');
 
-    -- [402동]
-    -- 빈 세대 20세대
-    ('unit_402_101',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 101,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-01-10 10:00:00', TIMESTAMP '2025-12-01 10:00:00', 'EMPTY'),
-    ('unit_402_201',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 201,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-01-24 10:00:00', TIMESTAMP '2025-12-15 10:00:00', 'EMPTY'),
-    ('unit_402_301',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 301,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-02-07 10:00:00', TIMESTAMP '2026-01-05 10:00:00', 'EMPTY'),
-    ('unit_402_401',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 401,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-02-21 10:00:00', TIMESTAMP '2026-01-19 10:00:00', 'EMPTY'),
-    ('unit_402_501',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 501,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-03-07 10:00:00', TIMESTAMP '2026-02-02 10:00:00', 'EMPTY'),
-    ('unit_402_601',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 601,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-03-21 10:00:00', TIMESTAMP '2026-02-16 10:00:00', 'EMPTY'),
-    ('unit_402_701',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 701,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-04-04 10:00:00', TIMESTAMP '2026-03-02 10:00:00', 'EMPTY'),
-    ('unit_402_801',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 801,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-04-18 10:00:00', TIMESTAMP '2026-03-16 10:00:00', 'EMPTY'),
-    ('unit_402_901',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 901,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-05-02 10:00:00', TIMESTAMP '2026-03-30 10:00:00', 'EMPTY'),
-    ('unit_402_1001', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 1001, '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-05-16 10:00:00', TIMESTAMP '2026-04-13 10:00:00', 'EMPTY'),
-    ('unit_402_102',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 102,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-05-30 10:00:00', TIMESTAMP '2026-04-27 10:00:00', 'EMPTY'),
-    ('unit_402_202',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 202,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-06-13 10:00:00', TIMESTAMP '2026-05-11 10:00:00', 'EMPTY'),
-    ('unit_402_302',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 302,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-06-27 10:00:00', TIMESTAMP '2026-05-25 10:00:00', 'EMPTY'),
-    ('unit_402_402',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 402,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-07-11 10:00:00', TIMESTAMP '2026-06-08 10:00:00', 'EMPTY'),
-    ('unit_402_502',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 502,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-07-25 10:00:00', TIMESTAMP '2026-06-22 10:00:00', 'EMPTY'),
-    ('unit_402_602',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 602,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-08-08 10:00:00', TIMESTAMP '2026-07-01 10:00:00', 'EMPTY'),
-    ('unit_402_702',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 702,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-08-22 10:00:00', TIMESTAMP '2026-07-04 10:00:00', 'EMPTY'),
-    ('unit_402_802',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 802,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-09-05 10:00:00', TIMESTAMP '2026-07-08 10:00:00', 'EMPTY'),
-    ('unit_402_902',  '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 902,  '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-09-19 10:00:00', TIMESTAMP '2026-07-12 10:00:00', 'EMPTY'),
-    ('unit_402_1002', '$2a$10$4HZzIIhKHAc3Bmy1t8vdKeoI9fWfl/.a3Il8qR7qp7sdLvE4ZkXU6', 402, 1002, '미등록', '미등록', 'RESIDENT', TIMESTAMP '2025-10-03 10:00:00', TIMESTAMP '2026-07-16 10:00:00', 'EMPTY');
 
+
+
+-- 관리자는 unit_no를 NULL로 연결하고 입주민은 실제 세대의 unit_no를 참조한다.
+-- 기존 번호를 유지하여 차량 등 나머지 더미의 member_no 참조를 보존한다.
+INSERT INTO member (
+    member_no,
+    login_id,
+    login_pwd,
+    unit_no,
+    mem_name,
+    mem_phone,
+    role,
+    mem_status,
+    create_at,
+    delete_at
+)
+SELECT
+    CASE
+        WHEN seed.seed_order >= 39 THEN seed.seed_order + 2
+        WHEN seed.seed_order >= 8 THEN seed.seed_order + 1
+        ELSE seed.seed_order
+    END,
+    seed.login_id,
+    seed.login_pwd,
+    CASE WHEN seed.role = 'ADMIN' THEN NULL ELSE au.apartment_unit_no END,
+    seed.mem_name,
+    seed.mem_phone,
+    seed.role,
+    seed.mem_status,
+    seed.create_at,
+    seed.delete_at
+FROM legacy_member_seed seed
+LEFT JOIN apartment_unit au
+    ON au.dong = seed.mem_dong
+   AND au.ho = seed.mem_ho;
+
+-- 기존 다른 더미가 참조하는 회원 번호와 충돌하지 않도록 다음 발급 번호만 유지한다.
+SELECT setval(pg_get_serial_sequence('member', 'member_no'), 164, TRUE);
+
+UPDATE apartment_unit au
+SET unit_status = 'OCCUPIED'
+WHERE EXISTS (
+    SELECT 1
+    FROM member m
+    WHERE m.unit_no = au.apartment_unit_no
+      AND m.role = 'RESIDENT'
+      AND m.mem_status IN ('PENDING', 'ACTIVE', 'WITHDRAW_PENDING')
+);
+
+DROP TABLE legacy_member_seed;
 
 -- =====================================================
 -- 1-1. 전출 이력
@@ -256,7 +303,7 @@ VALUES
     (125, 'old_res_401_101', '이전거주자401101', '010-7400-1101', 'RESIDENT', 'WITHDRAW_PENDING', 401, 101, TIMESTAMP '2025-06-06 10:00:00', TIMESTAMP '2026-05-14 17:00:00', TIMESTAMP '2026-05-14 17:10:00');
 
 -- =====================================================
--- 2. 주차장
+-- 주차 관제 더미 데이터
 -- =====================================================
 INSERT INTO parking (parking_name, parking_spaces, parking_location)
 VALUES
@@ -265,6 +312,25 @@ VALUES
     ('C 주차장', 100, 'C 지하 주차장'),
     ('D 주차장', 50,  '지상 주차장');
 
+
+-- =====================================================
+-- 2. 주차면
+-- =====================================================
+-- 주차장별 최대 주차 가능 대수만큼 주차면을 생성한다.
+INSERT INTO parking_space (
+    parking_no,
+    space_number,
+    space_status
+)
+SELECT
+    p.parking_no,
+    generated.space_number,
+    'EMPTY'
+FROM parking p
+CROSS JOIN LATERAL generate_series(
+    1,
+    p.parking_spaces
+) AS generated(space_number);
 
 -- =====================================================
 -- 3. 게이트
@@ -280,7 +346,7 @@ VALUES
     (4, 'D-IN',  'In'),
     (4, 'D-OUT', 'Out');
 
- -- =====================================================
+-- =====================================================
 -- 4. 카메라
 -- =====================================================
 INSERT INTO camera (gate_no, camera_name, camera_type, install_date)
@@ -308,80 +374,80 @@ CREATE TEMP TABLE demo_plate (
 
 -- val.txt를 실제 .jpeg 파일명과 대조한 공유 이미지 목록.
 INSERT INTO demo_plate(plate_no, car_no, image_file, crop_file) VALUES
-    (1, '49도1839', 'img_000747.jpeg', 'img_000747.jpeg'),
-    (2, '34다8346', 'img_000605.jpeg', 'img_000605.jpeg'),
-    (3, '299러4344', 'img_000542.jpeg', 'img_000542.jpeg'),
-    (4, '06러3795', 'img_000031.jpeg', 'img_000031.jpeg'),
-    (5, '210고4056', 'img_000345.jpeg', 'img_000345.jpeg'),
-    (6, '188부1972', 'img_000282.jpeg', 'img_000282.jpeg'),
-    (7, '55소7745', 'img_000788.jpeg', 'img_000788.jpeg'),
-    (8, '180하1107', 'img_000271.jpeg', 'img_000271.jpeg'),
-    (9, '170로6099', 'img_000234.jpeg', 'img_000234.jpeg'),
-    (10, '50우0386', 'img_000759.jpeg', 'img_000759.jpeg'),
-    (11, '87머7056', 'img_000956.jpeg', 'img_000956.jpeg'),
-    (12, '93더1306', 'img_000984.jpeg', 'img_000984.jpeg'),
-    (13, '156누8346', 'img_000197.jpeg', 'img_000197.jpeg'),
-    (14, '52소6756', 'img_000774.jpeg', 'img_000774.jpeg'),
-    (15, '163가7411', 'img_000217.jpeg', 'img_000217.jpeg'),
-    (16, '314부6765', 'img_000571.jpeg', 'img_000571.jpeg'),
-    (17, '120무6377', 'img_000095.jpeg', 'img_000095.jpeg'),
-    (18, '55무0825', 'img_000787.jpeg', 'img_000787.jpeg'),
-    (19, '243보2032', 'img_000446.jpeg', 'img_000446.jpeg'),
-    (20, '07두7942', 'img_000033.jpeg', 'img_000033.jpeg'),
-    (21, '35수2784', 'img_000624.jpeg', 'img_000624.jpeg'),
-    (22, '96오5139', 'img_000993.jpeg', 'img_000993.jpeg'),
-    (23, '14나6164', 'img_000176.jpeg', 'img_000176.jpeg'),
-    (24, '143하2621', 'img_000162.jpeg', 'img_000162.jpeg'),
-    (25, '22나6912', 'img_000395.jpeg', 'img_000395.jpeg'),
-    (26, '83마0327', 'img_000931.jpeg', 'img_000931.jpeg'),
-    (27, '145주5974', 'img_000168.jpeg', 'img_000168.jpeg'),
-    (28, '129조1193', 'img_000118.jpeg', 'img_000118.jpeg'),
-    (29, '181서3569', 'img_000272.jpeg', 'img_000272.jpeg'),
-    (30, '204도6527', 'img_000323.jpeg', 'img_000323.jpeg'),
-    (31, '145어2319', 'img_000167.jpeg', 'img_000167.jpeg'),
-    (32, '127루3517', 'img_000113.jpeg', 'img_000113.jpeg'),
-    (33, '204도8991', 'img_000324.jpeg', 'img_000324.jpeg'),
-    (34, '229하7128', 'img_000391.jpeg', 'img_000391.jpeg'),
-    (35, '341저6026', 'img_000599.jpeg', 'img_000599.jpeg'),
-    (36, '161머8942', 'img_000215.jpeg', 'img_000215.jpeg'),
-    (37, '62누4783', 'img_000827.jpeg', 'img_000827.jpeg'),
-    (38, '128모5622', 'img_000115.jpeg', 'img_000115.jpeg'),
-    (39, '93나0823', 'img_000983.jpeg', 'img_000983.jpeg'),
-    (40, '24거1096', 'img_000460.jpeg', 'img_000460.jpeg'),
-    (41, '163저8578', 'img_000218.jpeg', 'img_000218.jpeg'),
-    (42, '41저1645', 'img_000702.jpeg', 'img_000702.jpeg'),
-    (43, '216러7763', 'img_000353.jpeg', 'img_000353.jpeg'),
-    (44, '90러2980', 'img_000971.jpeg', 'img_000971.jpeg'),
-    (45, '43소0198', 'img_000719.jpeg', 'img_000719.jpeg'),
-    (46, '62구3638', 'img_000825.jpeg', 'img_000825.jpeg'),
-    (47, '52너2284', 'img_000769.jpeg', 'img_000769.jpeg'),
-    (48, '142머5623', 'img_000157.jpeg', 'img_000157.jpeg'),
-    (49, '225하2171', 'img_000374.jpeg', 'img_000374.jpeg'),
-    (50, '143모8849', 'img_000160.jpeg', 'img_000160.jpeg'),
-    (51, '91어6511', 'img_000975.jpeg', 'img_000975.jpeg'),
-    (52, '41서5534', 'img_000699.jpeg', 'img_000699.jpeg'),
-    (53, '308소1608', 'img_000559.jpeg', 'img_000559.jpeg'),
-    (54, '131보2915', 'img_000128.jpeg', 'img_000128.jpeg'),
-    (55, '87마5686', 'img_000955.jpeg', 'img_000955.jpeg'),
-    (56, '257러4242', 'img_000480.jpeg', 'img_000480.jpeg'),
-    (57, '168러5334', 'img_000224.jpeg', 'img_000224.jpeg'),
-    (58, '103호3307', 'img_000058.jpeg', 'img_000058.jpeg'),
-    (59, '40거2054', 'img_000687.jpeg', 'img_000687.jpeg'),
-    (60, '48나8278', 'img_000739.jpeg', 'img_000739.jpeg'),
-    (61, '117어3971', 'img_000082.jpeg', 'img_000082.jpeg'),
-    (62, '166누1189', 'img_000221.jpeg', 'img_000221.jpeg'),
-    (63, '727고6666', 'img_000876.jpeg', 'img_000876.jpeg'),
-    (64, '251도4009', 'img_000470.jpeg', 'img_000470.jpeg'),
-    (65, '50소1546', 'img_000755.jpeg', 'img_000755.jpeg'),
-    (66, '184두3996', 'img_000275.jpeg', 'img_000275.jpeg'),
-    (67, '97조9295', 'img_000999.jpeg', 'img_000999.jpeg'),
-    (68, '48가8873', 'img_000736.jpeg', 'img_000736.jpeg'),
-    (69, '230호2607', 'img_000409.jpeg', 'img_000409.jpeg'),
-    (70, '13나1643', 'img_000143.jpeg', 'img_000143.jpeg'),
-    (71, '301나7718', 'img_000552.jpeg', 'img_000552.jpeg');
+                    (1, '49도1839', 'img_000747.jpeg', 'img_000747.jpeg'),
+                    (2, '34다8346', 'img_000605.jpeg', 'img_000605.jpeg'),
+                    (3, '299러4344', 'img_000542.jpeg', 'img_000542.jpeg'),
+                    (4, '06러3795', 'img_000031.jpeg', 'img_000031.jpeg'),
+                    (5, '210고4056', 'img_000345.jpeg', 'img_000345.jpeg'),
+                    (6, '188부1972', 'img_000282.jpeg', 'img_000282.jpeg'),
+                    (7, '55소7745', 'img_000788.jpeg', 'img_000788.jpeg'),
+                    (8, '180하1107', 'img_000271.jpeg', 'img_000271.jpeg'),
+                    (9, '170로6099', 'img_000234.jpeg', 'img_000234.jpeg'),
+                    (10, '50우0386', 'img_000759.jpeg', 'img_000759.jpeg'),
+                    (11, '87머7056', 'img_000956.jpeg', 'img_000956.jpeg'),
+                    (12, '93더1306', 'img_000984.jpeg', 'img_000984.jpeg'),
+                    (13, '156누8346', 'img_000197.jpeg', 'img_000197.jpeg'),
+                    (14, '52소6756', 'img_000774.jpeg', 'img_000774.jpeg'),
+                    (15, '163가7411', 'img_000217.jpeg', 'img_000217.jpeg'),
+                    (16, '314부6765', 'img_000571.jpeg', 'img_000571.jpeg'),
+                    (17, '120무6377', 'img_000095.jpeg', 'img_000095.jpeg'),
+                    (18, '55무0825', 'img_000787.jpeg', 'img_000787.jpeg'),
+                    (19, '243보2032', 'img_000446.jpeg', 'img_000446.jpeg'),
+                    (20, '07두7942', 'img_000033.jpeg', 'img_000033.jpeg'),
+                    (21, '35수2784', 'img_000624.jpeg', 'img_000624.jpeg'),
+                    (22, '96오5139', 'img_000993.jpeg', 'img_000993.jpeg'),
+                    (23, '14나6164', 'img_000176.jpeg', 'img_000176.jpeg'),
+                    (24, '143하2621', 'img_000162.jpeg', 'img_000162.jpeg'),
+                    (25, '22나6912', 'img_000395.jpeg', 'img_000395.jpeg'),
+                    (26, '83마0327', 'img_000931.jpeg', 'img_000931.jpeg'),
+                    (27, '145주5974', 'img_000168.jpeg', 'img_000168.jpeg'),
+                    (28, '129조1193', 'img_000118.jpeg', 'img_000118.jpeg'),
+                    (29, '181서3569', 'img_000272.jpeg', 'img_000272.jpeg'),
+                    (30, '204도6527', 'img_000323.jpeg', 'img_000323.jpeg'),
+                    (31, '145어2319', 'img_000167.jpeg', 'img_000167.jpeg'),
+                    (32, '127루3517', 'img_000113.jpeg', 'img_000113.jpeg'),
+                    (33, '204도8991', 'img_000324.jpeg', 'img_000324.jpeg'),
+                    (34, '229하7128', 'img_000391.jpeg', 'img_000391.jpeg'),
+                    (35, '341저6026', 'img_000599.jpeg', 'img_000599.jpeg'),
+                    (36, '161머8942', 'img_000215.jpeg', 'img_000215.jpeg'),
+                    (37, '62누4783', 'img_000827.jpeg', 'img_000827.jpeg'),
+                    (38, '128모5622', 'img_000115.jpeg', 'img_000115.jpeg'),
+                    (39, '93나0823', 'img_000983.jpeg', 'img_000983.jpeg'),
+                    (40, '24거1096', 'img_000460.jpeg', 'img_000460.jpeg'),
+                    (41, '163저8578', 'img_000218.jpeg', 'img_000218.jpeg'),
+                    (42, '41저1645', 'img_000702.jpeg', 'img_000702.jpeg'),
+                    (43, '216러7763', 'img_000353.jpeg', 'img_000353.jpeg'),
+                    (44, '90러2980', 'img_000971.jpeg', 'img_000971.jpeg'),
+                    (45, '43소0198', 'img_000719.jpeg', 'img_000719.jpeg'),
+                    (46, '62구3638', 'img_000825.jpeg', 'img_000825.jpeg'),
+                    (47, '52너2284', 'img_000769.jpeg', 'img_000769.jpeg'),
+                    (48, '142머5623', 'img_000157.jpeg', 'img_000157.jpeg'),
+                    (49, '225하2171', 'img_000374.jpeg', 'img_000374.jpeg'),
+                    (50, '143모8849', 'img_000160.jpeg', 'img_000160.jpeg'),
+                    (51, '91어6511', 'img_000975.jpeg', 'img_000975.jpeg'),
+                    (52, '41서5534', 'img_000699.jpeg', 'img_000699.jpeg'),
+                    (53, '308소1608', 'img_000559.jpeg', 'img_000559.jpeg'),
+                    (54, '131보2915', 'img_000128.jpeg', 'img_000128.jpeg'),
+                    (55, '87마5686', 'img_000955.jpeg', 'img_000955.jpeg'),
+                    (56, '257러4242', 'img_000480.jpeg', 'img_000480.jpeg'),
+                    (57, '168러5334', 'img_000224.jpeg', 'img_000224.jpeg'),
+                    (58, '103호3307', 'img_000058.jpeg', 'img_000058.jpeg'),
+                    (59, '40거2054', 'img_000687.jpeg', 'img_000687.jpeg'),
+                    (60, '48나8278', 'img_000739.jpeg', 'img_000739.jpeg'),
+                    (61, '117어3971', 'img_000082.jpeg', 'img_000082.jpeg'),
+                    (62, '166누1189', 'img_000221.jpeg', 'img_000221.jpeg'),
+                    (63, '727고6666', 'img_000876.jpeg', 'img_000876.jpeg'),
+                    (64, '251도4009', 'img_000470.jpeg', 'img_000470.jpeg'),
+                    (65, '50소1546', 'img_000755.jpeg', 'img_000755.jpeg'),
+                    (66, '184두3996', 'img_000275.jpeg', 'img_000275.jpeg'),
+                    (67, '97조9295', 'img_000999.jpeg', 'img_000999.jpeg'),
+                    (68, '48가8873', 'img_000736.jpeg', 'img_000736.jpeg'),
+                    (69, '230호2607', 'img_000409.jpeg', 'img_000409.jpeg'),
+                    (70, '13나1643', 'img_000143.jpeg', 'img_000143.jpeg'),
+                    (71, '301나7718', 'img_000552.jpeg', 'img_000552.jpeg');
 
 INSERT INTO vehicle_car
-    (vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
+(vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
 VALUES
     -- 필수 9대
     ('normal', '222하5233', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP + INTERVAL '335 days', 5,  CURRENT_TIMESTAMP - INTERVAL '30 days'),
@@ -390,11 +456,11 @@ VALUES
     ('normal', '47조2603',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '21 days', CURRENT_TIMESTAMP + INTERVAL '344 days', 11, CURRENT_TIMESTAMP - INTERVAL '21 days'),
     ('normal', '81라7385',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '18 days', CURRENT_TIMESTAMP + INTERVAL '347 days', 12, CURRENT_TIMESTAMP - INTERVAL '18 days'),
     ('normal', '95마7152',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '15 days', CURRENT_TIMESTAMP + INTERVAL '350 days', 13, CURRENT_TIMESTAMP - INTERVAL '15 days'),
-    ('normal', '67모4231',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '12 days', CURRENT_TIMESTAMP + INTERVAL '353 days', 14, CURRENT_TIMESTAMP - INTERVAL '12 days'),
+    ('normal', '817라7385',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '15 days', CURRENT_TIMESTAMP + INTERVAL '350 days', 13, CURRENT_TIMESTAMP - INTERVAL '15 days'),
 
     -- 시연용 더미
     ('normal', '40두9797',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '11 days', CURRENT_TIMESTAMP + INTERVAL '354 days', 82, CURRENT_TIMESTAMP - INTERVAL '11 days'),
-    ('normal', '26무3111',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP + INTERVAL '355 days', 71, CURRENT_TIMESTAMP - INTERVAL '10 days'),
+    ('normal', '40무3111',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP + INTERVAL '355 days', 71, CURRENT_TIMESTAMP - INTERVAL '10 days'),
     ('normal', '826수4755', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '9 days',  CURRENT_TIMESTAMP + INTERVAL '356 days', 10, CURRENT_TIMESTAMP - INTERVAL '9 days'),
     ('normal',  '93로6277',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '8 days',  CURRENT_TIMESTAMP + INTERVAL '357 days', 11, CURRENT_TIMESTAMP - INTERVAL '8 days'),
     ('normal', '18나8473',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '7 days',  CURRENT_TIMESTAMP + INTERVAL '358 days', 62, CURRENT_TIMESTAMP - INTERVAL '7 days'),
@@ -409,35 +475,55 @@ VALUES
 
 -- 현재 주차 및 통계용 입주민 차량 48대. 과거 만료 행은 두지 않고 새 1년 등록만 둔다.
 INSERT INTO vehicle_car
-    (vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
+(vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
 SELECT 'normal', dp.car_no, 'APPROVED',
        CURRENT_TIMESTAMP - INTERVAL '30 days',
-       CURRENT_TIMESTAMP + INTERVAL '335 days',
-       9 + ((dp.plate_no - 1) % 100), CURRENT_TIMESTAMP - INTERVAL '30 days'
+    CURRENT_TIMESTAMP + INTERVAL '335 days',
+    CASE
+           WHEN 9 + ((dp.plate_no - 1) % 100) >= 40
+           THEN 10 + ((dp.plate_no - 1) % 100)
+           ELSE 9 + ((dp.plate_no - 1) % 100)
+       END,
+       CURRENT_TIMESTAMP - INTERVAL '30 days'
 FROM demo_plate dp
 WHERE dp.plate_no BETWEEN 1 AND 48;
 
 -- 현재 주차 방문차량 9대. 1번은 오전 6~8시 승인 후 만료·미출차 상황이다.
 INSERT INTO vehicle_car
-    (vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
+(vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
 SELECT 'visit', dp.car_no, 'APPROVED',
-       CASE WHEN dp.plate_no = 49 THEN CURRENT_DATE + TIME '06:15:00'
-            ELSE CURRENT_TIMESTAMP - INTERVAL '30 minutes' END,
-       CASE WHEN dp.plate_no = 49 THEN CURRENT_DATE + TIME '07:15:00'
-            ELSE CURRENT_TIMESTAMP + INTERVAL '4 hours 30 minutes' END,
+       CASE
+           WHEN dp.plate_no = 49
+               THEN CURRENT_TIMESTAMP - INTERVAL '2 hours'
+           WHEN dp.plate_no = 57
+               THEN CURRENT_TIMESTAMP - INTERVAL '3 hours'
+           ELSE CURRENT_TIMESTAMP - INTERVAL '30 minutes'
+       END,
+       CASE
+           WHEN dp.plate_no = 49
+               THEN CURRENT_TIMESTAMP - INTERVAL '1 hour'
+           WHEN dp.plate_no = 57
+               THEN CURRENT_TIMESTAMP + INTERVAL '2 hours'
+           ELSE CURRENT_TIMESTAMP + INTERVAL '4 hours 30 minutes'
+       END,
        30 + (dp.plate_no - 48),
-       CASE WHEN dp.plate_no = 49 THEN CURRENT_DATE + TIME '06:00:00'
-            ELSE CURRENT_TIMESTAMP - INTERVAL '1 hour' END
+       CASE
+           WHEN dp.plate_no = 49
+               THEN CURRENT_TIMESTAMP - INTERVAL '2 hours 15 minutes'
+           WHEN dp.plate_no = 57
+               THEN CURRENT_TIMESTAMP - INTERVAL '4 hours'
+           ELSE CURRENT_TIMESTAMP - INTERVAL '1 hour'
+       END
 FROM demo_plate dp
 WHERE dp.plate_no BETWEEN 49 AND 57;
 
 -- 방문승인 대기 알림 3건.
 INSERT INTO vehicle_car
-    (vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
+(vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
 SELECT 'visit', dp.car_no, 'WAITING',
        CURRENT_TIMESTAMP - ((72 - dp.plate_no) * INTERVAL '5 minutes'),
-       CURRENT_TIMESTAMP + INTERVAL '6 hours',
-       50 + (dp.plate_no - 69), NULL
+    CURRENT_TIMESTAMP + INTERVAL '6 hours',
+    50 + (dp.plate_no - 69), NULL
 FROM demo_plate dp
 WHERE dp.plate_no BETWEEN 69 AND 71;
 
@@ -463,9 +549,9 @@ INSERT INTO demo_event
 SELECT 'BASE-R-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = g), 'REGISTERED',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       CURRENT_DATE - INTERVAL '1 day' + TIME '20:00:00' + (g * INTERVAL '4 minutes'),
+       CURRENT_TIMESTAMP - INTERVAL '20 hours' - (g * INTERVAL '4 minutes'),
        (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-       CURRENT_DATE + TIME '06:00:00' + (g * INTERVAL '3 minutes')
+       CURRENT_TIMESTAMP - INTERVAL '8 hours' - (g * INTERVAL '3 minutes')
 FROM generate_series(1, 40) AS g;
 
 INSERT INTO demo_event
@@ -473,9 +559,9 @@ INSERT INTO demo_event
 SELECT 'BASE-V-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 48 + g), 'VISIT',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       CURRENT_DATE - INTERVAL '1 day' + TIME '21:00:00' + (g * INTERVAL '4 minutes'),
+       CURRENT_TIMESTAMP - INTERVAL '18 hours' - (g * INTERVAL '4 minutes'),
        (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-       CURRENT_DATE + TIME '06:10:00' + (g * INTERVAL '9 minutes')
+       CURRENT_TIMESTAMP - INTERVAL '6 hours' - (g * INTERVAL '9 minutes')
 FROM generate_series(1, 4) AS g;
 
 INSERT INTO demo_event
@@ -483,9 +569,9 @@ INSERT INTO demo_event
 SELECT 'BASE-U-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 57 + g), 'UNKNOWN',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       CURRENT_DATE - INTERVAL '1 day' + TIME '22:00:00' + (g * INTERVAL '4 minutes'),
+       CURRENT_TIMESTAMP - INTERVAL '16 hours' - (g * INTERVAL '4 minutes'),
        (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-       CURRENT_DATE + TIME '06:20:00' + (g * INTERVAL '9 minutes')
+       CURRENT_TIMESTAMP - INTERVAL '4 hours' - (g * INTERVAL '9 minutes')
 FROM generate_series(1, 4) AS g;
 
 -- 09시 이후 현재 시각 사이에 입주민 48대가 입차한다.
@@ -494,8 +580,7 @@ INSERT INTO demo_event
 SELECT 'NOW-R-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = g), 'REGISTERED',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       CURRENT_DATE + TIME '09:00:00'
-         + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * (g::NUMERIC / 49)),
+       CURRENT_TIMESTAMP - ((49 - g) * INTERVAL '5 minutes'),
        NULL, NULL
 FROM generate_series(1, 48) AS g;
 
@@ -505,9 +590,12 @@ INSERT INTO demo_event
 SELECT 'NOW-V-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 48 + g), 'VISIT',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       CASE WHEN g = 1 THEN CURRENT_DATE + TIME '06:30:00'
-            ELSE CURRENT_DATE + TIME '09:00:00'
-              + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * (g::NUMERIC / 9)) END,
+       CASE
+            WHEN g = 1 THEN CURRENT_TIMESTAMP - INTERVAL '30 hours'
+            WHEN g = 2 THEN CURRENT_TIMESTAMP - INTERVAL '55 hours'
+            WHEN g = 3 THEN CURRENT_TIMESTAMP - INTERVAL '80 hours'
+            ELSE CURRENT_TIMESTAMP - ((9 - g) * INTERVAL '7 minutes')
+       END,
        NULL, NULL
 FROM generate_series(1, 8) AS g;
 
@@ -518,8 +606,12 @@ INSERT INTO demo_event
 SELECT 'NOW-U-' || g,
        (SELECT car_no FROM demo_plate WHERE plate_no = 57 + g), 'UNKNOWN',
        (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-       CURRENT_DATE + TIME '09:00:00'
-         + ((CURRENT_TIMESTAMP - (CURRENT_DATE + TIME '09:00:00')) * (g::NUMERIC / 5)),
+       CASE
+            WHEN g = 1 THEN CURRENT_TIMESTAMP - INTERVAL '50 hours'
+            WHEN g = 2 THEN CURRENT_TIMESTAMP - INTERVAL '75 hours'
+            WHEN g = 3 THEN CURRENT_TIMESTAMP - INTERVAL '100 hours'
+            ELSE CURRENT_TIMESTAMP - ((5 - g) * INTERVAL '20 minutes')
+       END,
        NULL, NULL
 FROM generate_series(1, 4) AS g;
 
@@ -556,235 +648,892 @@ WITH ordered AS (
            ROW_NUMBER() OVER (ORDER BY dc.capture_time, dc.capture_key) AS image_no
     FROM demo_capture dc
 ), inserted AS (
-    INSERT INTO camera_data
-        (camera_no, vehicle_car_no, car_no, ocr_car_no, capture_time,
-         image_path, crop_image_path, recognition_state, confidence_score, cam_note)
-    SELECT o.camera_no, vc.vehicle_car_no, o.car_no,
-           COALESCE(dp.ocr_car_no, o.car_no), o.capture_time,
-           'camera-data/' || dp.image_file,
-           'camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
-           CASE WHEN (o.image_no % 13) = 0 THEN FALSE ELSE TRUE END,
-           CASE WHEN (o.image_no % 13) = 0 THEN 91.40 ELSE 98.20 END,
-           o.capture_key
-    FROM ordered o
-    JOIN demo_plate dp ON dp.car_no = o.car_no
-    LEFT JOIN vehicle_car vc ON vc.car_no = o.car_no
-    ORDER BY o.capture_time, o.capture_key
+INSERT INTO camera_data
+(camera_no, vehicle_car_no, car_no, ocr_car_no, capture_time,
+ image_path, crop_image_path, recognition_state, confidence_score, cam_note)
+SELECT o.camera_no, vc.vehicle_car_no, o.car_no,
+       COALESCE(dp.ocr_car_no, o.car_no), o.capture_time,
+       'camera-data/' || dp.image_file,
+       'camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+       TRUE,
+       CASE WHEN (o.image_no % 13) = 0 THEN 95.40 ELSE 98.20 END,
+       o.capture_key
+FROM ordered o
+         JOIN demo_plate dp ON dp.car_no = o.car_no
+         LEFT JOIN vehicle_car vc ON vc.car_no = o.car_no
+ORDER BY o.capture_time, o.capture_key
     RETURNING camera_data_no, cam_note
 )
 INSERT INTO demo_capture_link(capture_key, camera_data_no)
 SELECT cam_note, camera_data_no FROM inserted;
 
 INSERT INTO car_log
-    (vehicle_car_no, camera_data_no, out_camera_data_no,
-     in_gate_no, in_time, out_gate_no, out_time,
-     snapshot_car_no, snapshot_car_kind)
+(vehicle_car_no, camera_data_no, out_camera_data_no,
+ in_gate_no, in_time, out_gate_no, out_time,
+ snapshot_car_no, snapshot_car_kind)
 SELECT vc.vehicle_car_no, cin.camera_data_no, cout.camera_data_no,
        e.in_gate_no, e.in_time, e.out_gate_no, e.out_time,
        e.car_no, e.car_kind
 FROM demo_event e
-LEFT JOIN vehicle_car vc ON vc.car_no = e.car_no
-JOIN demo_capture_link cin ON cin.capture_key = e.event_key || '-IN'
-LEFT JOIN demo_capture_link cout ON cout.capture_key = e.event_key || '-OUT';
+         LEFT JOIN vehicle_car vc ON vc.car_no = e.car_no
+         JOIN demo_capture_link cin ON cin.capture_key = e.event_key || '-IN'
+         LEFT JOIN demo_capture_link cout ON cout.capture_key = e.event_key || '-OUT';
 
 -- =====================================================
--- 8. 알림 관리: 미확인/확인/처리완료를 모두 제공한다.
--- =====================================================
-INSERT INTO notice
-    (car_log_no, detect_at, stay_days, alert_stat,
-     handled_by_member_no, handled_at, snapshot_car_log_no,
-     snapshot_registered_car_no, snapshot_captured_car_no,
-     snapshot_car_kind, snapshot_parking_name, snapshot_in_time)
-SELECT cl.car_log_no,
-       CURRENT_TIMESTAMP - (x.age_hours * INTERVAL '1 hour'),
-       x.stay_days, x.alert_stat,
-       CASE WHEN x.alert_stat = 'Unresolved' THEN NULL ELSE 1 END,
-       CASE WHEN x.alert_stat = 'Unresolved' THEN NULL
-            ELSE CURRENT_TIMESTAMP - ((x.age_hours - 1) * INTERVAL '1 hour') END,
-       cl.car_log_no, vc.car_no, cl.snapshot_car_no, x.car_kind,
-       p.parking_name, cl.in_time
-FROM (VALUES
-    ('225하2171','VISIT',  'Unresolved',1,2),
-    ('103호3307','UNKNOWN','Unresolved',2,3),
-    ('143모8849','VISIT',  'Checked',   2,8),
-    ('40거2054', 'UNKNOWN','Resolved',  3,9),
-    ('91어6511', 'VISIT',  'Resolved',  3,16),
-    ('48나8278', 'UNKNOWN','Resolved',  4,20)
-) AS x(car_no, car_kind, alert_stat, stay_days, age_hours)
-JOIN LATERAL (
-    SELECT * FROM car_log cl0
-    WHERE cl0.snapshot_car_no = x.car_no
-    ORDER BY cl0.in_time DESC LIMIT 1
-) cl ON TRUE
-LEFT JOIN vehicle_car vc ON vc.vehicle_car_no = cl.vehicle_car_no
-JOIN gate g ON g.gate_no = cl.in_gate_no
-JOIN parking p ON p.parking_no = g.parking_no;
-
--- =====================================================
--- 9. 통계 전용 지난 입출차 기록
--- statistics_scope 주석 필드는 통계 화면에서 용도별 중복 집계를 막는다.
+-- 8. 키오스크
 -- =====================================================
 
--- 최근 22일 시간대별 평균: 50,50,36,10,10,10,42,50,50 패턴.
-INSERT INTO trash_bin
-    (data_type, original_no, data_json, delete_type, deleted_at, purge_at)
-SELECT 'CAR_LOG', 20000 + ROW_NUMBER() OVER (ORDER BY d, g),
-       jsonb_build_object(
-           'car_log_no', 20000 + ROW_NUMBER() OVER (ORDER BY d, g),
-           'vehicle_car_no', NULL,
-           'camera_data_no', NULL,
-           'in_gate_no', (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-           'in_time',
-               CASE WHEN g <= 32
-                    THEN (CURRENT_DATE - d - 1) + TIME '16:20:00' + (g * INTERVAL '3 minutes')
-                    ELSE (CURRENT_DATE - d - 1) + TIME '18:00:00' + ((g - 32) * INTERVAL '20 minutes') END,
-           'out_gate_no', (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-           'out_time',
-               CASE WHEN g <= 14
-                    THEN (CURRENT_DATE - d) + TIME '05:00:00' + (g * INTERVAL '3 minutes')
-                    WHEN g <= 40
-                    THEN (CURRENT_DATE - d) + TIME '06:00:00' + ((g - 14) * INTERVAL '6 minutes')
-                    ELSE (CURRENT_DATE - d) + TIME '18:30:00' + ((g - 40) * INTERVAL '12 minutes') END,
-           'snapshot_car_no', dp.car_no,
-           'captured_car_no', dp.car_no,
-           'car_kind', 'REGISTERED',
-           'statistics_scope', 'HOURLY',
-           'statistics_date', (CURRENT_DATE - d)
-       ),
-       'SCHEDULED', CURRENT_TIMESTAMP - (d * INTERVAL '1 hour'),
-       CURRENT_TIMESTAMP + INTERVAL '30 days'
-FROM generate_series(1,22) AS d
-CROSS JOIN generate_series(1,50) AS g
-JOIN demo_plate dp ON dp.plate_no = 1 + ((g - 1) % 48);
-
--- 같은 통계일의 저녁 귀가 50대: 18시에 32대, 21시에 50대가 돌아온다.
-INSERT INTO trash_bin
-    (data_type, original_no, data_json, delete_type, deleted_at, purge_at)
-SELECT 'CAR_LOG', 23000 + ROW_NUMBER() OVER (ORDER BY d, g),
-       jsonb_build_object(
-           'car_log_no', 23000 + ROW_NUMBER() OVER (ORDER BY d, g),
-           'vehicle_car_no', NULL,
-           'camera_data_no', NULL,
-           'in_gate_no', (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-           'in_time',
-               CASE WHEN g <= 32
-                    THEN (CURRENT_DATE - d) + TIME '16:20:00' + (g * INTERVAL '3 minutes')
-                    ELSE (CURRENT_DATE - d) + TIME '18:00:00' + ((g - 32) * INTERVAL '10 minutes') END,
-           'out_gate_no', (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-           'out_time', (CURRENT_DATE - d + 1) + TIME '00:30:00',
-           'snapshot_car_no', dp.car_no,
-           'captured_car_no', dp.car_no,
-           'car_kind', 'REGISTERED',
-           'statistics_scope', 'HOURLY',
-           'statistics_date', (CURRENT_DATE - d)
-       ),
-       'SCHEDULED', CURRENT_TIMESTAMP - (d * INTERVAL '1 hour'),
-       CURRENT_TIMESTAMP + INTERVAL '30 days'
-FROM generate_series(1,22) AS d
-CROSS JOIN generate_series(1,50) AS g
-JOIN demo_plate dp ON dp.plate_no = 1 + ((g - 1) % 48);
-
--- 최근 22일 주간/월간 비교 및 평균 주차시간용 기록.
-INSERT INTO trash_bin
-    (data_type, original_no, data_json, delete_type, deleted_at, purge_at)
-SELECT 'CAR_LOG', 30000 + ROW_NUMBER() OVER (ORDER BY d, kind_order, g),
-       jsonb_build_object(
-           'car_log_no', 30000 + ROW_NUMBER() OVER (ORDER BY d, kind_order, g),
-           'vehicle_car_no', NULL,
-           'camera_data_no', NULL,
-           'in_gate_no', (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-           'in_time', (CURRENT_DATE - d) + TIME '09:05:00' + (g * INTERVAL '21 minutes'),
-           'out_gate_no', (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-           'out_time', (CURRENT_DATE - d) + TIME '09:05:00' + (g * INTERVAL '21 minutes') + stay_interval,
-           'snapshot_car_no', dp.car_no,
-           'captured_car_no', dp.car_no,
-           'car_kind', car_kind,
-           'statistics_scope', 'ENTRY_AVERAGE'
-       ),
-       'SCHEDULED', CURRENT_TIMESTAMP - (d * INTERVAL '1 hour'),
-       CURRENT_TIMESTAMP + INTERVAL '30 days'
-FROM generate_series(1,22) AS d
-CROSS JOIN LATERAL (VALUES
-    (1,'REGISTERED',24,INTERVAL '3 hours',1),
-    (2,'VISIT',       9,INTERVAL '4 hours 30 minutes',49),
-    (3,'UNKNOWN',    11,INTERVAL '1 hour 30 minutes',58)
-) kind(kind_order,car_kind,amount,stay_interval,first_plate)
-CROSS JOIN LATERAL generate_series(1,kind.amount) AS g
-JOIN demo_plate dp
-  ON dp.plate_no = kind.first_plate + ((g - 1) % kind.amount);
-
--- 2026년 1~6월 연간 입차 비교용 지난 기록.
-INSERT INTO trash_bin
-    (data_type, original_no, data_json, delete_type, deleted_at, purge_at)
-SELECT 'CAR_LOG', 50000 + ROW_NUMBER() OVER (ORDER BY m, kind_order, g),
-       jsonb_build_object(
-           'car_log_no', 50000 + ROW_NUMBER() OVER (ORDER BY m, kind_order, g),
-           'vehicle_car_no', NULL,
-           'camera_data_no', NULL,
-           'in_gate_no', (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)],
-           'in_time', MAKE_TIMESTAMP(2026,m,1 + ((g * 3) % 25),8 + (g % 8),10,0),
-           'out_gate_no', (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)],
-           'out_time', MAKE_TIMESTAMP(2026,m,1 + ((g * 3) % 25),8 + (g % 8),10,0) + stay_interval,
-           'snapshot_car_no', dp.car_no,
-           'captured_car_no', dp.car_no,
-           'car_kind', car_kind,
-           'statistics_scope', 'ENTRY_AVERAGE'
-       ),
-       'SCHEDULED', CURRENT_TIMESTAMP - INTERVAL '1 day',
-       CURRENT_TIMESTAMP + INTERVAL '30 days'
-FROM generate_series(1,6) AS m
-CROSS JOIN LATERAL (VALUES
-    (1,'REGISTERED',18 + (m * 2),INTERVAL '3 hours',1),
-    (2,'VISIT',       7 + m,      INTERVAL '4 hours 30 minutes',49),
-    (3,'UNKNOWN',     9 + m,      INTERVAL '1 hour 30 minutes',58)
-) kind(kind_order,car_kind,amount,stay_interval,first_plate)
-CROSS JOIN LATERAL generate_series(1,kind.amount) AS g
-JOIN demo_plate dp
-  ON dp.plate_no = kind.first_plate + ((g - 1) %
-      CASE WHEN kind.car_kind='REGISTERED' THEN 48
-           WHEN kind.car_kind='VISIT' THEN 9 ELSE 11 END);
+INSERT INTO kiosk (
+    kiosk_name,
+    kiosk_type,
+    parking_no,
+    active
+) VALUES
+    ('B1 입주민 키오스크 1', 'RESIDENT',     1, TRUE),
+    ('B1 입주민 키오스크 2', 'RESIDENT',     1, TRUE),
+    ('B2 방문·미등록 키오스크 1', 'NON_RESIDENT', 2, TRUE),
+    ('B2 방문·미등록 키오스크 2', 'NON_RESIDENT', 2, TRUE);
 
 -- =====================================================
--- 10. 일반 지난 기록: 페이지 크기 10 기준 추가 4페이지(36건)
--- 복원 화면에서도 필드 형식이 맞도록 유형별 JSON 구조를 사용한다.
+-- 공지·알림 더미 데이터
 -- =====================================================
-INSERT INTO trash_bin
-    (data_type, original_no, data_json, delete_type, deleted_at, purge_at)
+-- 관리자 차량 알림
+INSERT INTO notice (
+    notice_type,
+    car_log_no,
+    camera_data_no,
+    detect_at,
+    due_at,
+    alert_stat,
+    snapshot_car_log_no,
+    snapshot_camera_data_no,
+    snapshot_registered_car_no,
+    snapshot_captured_car_no,
+    snapshot_car_kind,
+    snapshot_parking_name,
+    snapshot_in_time,
+    snapshot_image_path,
+    snapshot_confidence_score
+)
 SELECT
-    CASE WHEN g <= 12 THEN 'CAMERA_DATA'
-         WHEN g <= 24 THEN 'CAR_LOG'
-         ELSE 'NOTICE' END,
-    10000 + g,
-    CASE WHEN g <= 12 THEN jsonb_build_object(
-        'camera_data_no',10000+g,'camera_no',1,'vehicle_car_no',NULL,
-        'car_no','88아'||LPAD(g::TEXT,4,'0'),'ocr_car_no','88아'||LPAD(g::TEXT,4,'0'),
-        'capture_time',(CURRENT_TIMESTAMP - ((40+g) * INTERVAL '1 day')),
-        'image_path',NULL,'crop_image_path',NULL,'recognition_state',TRUE,'confidence_score',97.5)
-      WHEN g <= 24 THEN jsonb_build_object(
-        'car_log_no',10000+g,'vehicle_car_no',NULL,'camera_data_no',NULL,
-        'in_gate_no',1,'in_time',(CURRENT_TIMESTAMP - ((40+g) * INTERVAL '1 day')),
-        'out_gate_no',2,'out_time',(CURRENT_TIMESTAMP - ((40+g) * INTERVAL '1 day') + INTERVAL '90 minutes'),
-        'free_time',NULL,'snapshot_car_no','88아'||LPAD(g::TEXT,4,'0'),
-        'captured_car_no','88아'||LPAD(g::TEXT,4,'0'))
-      ELSE jsonb_build_object(
-        'notice_no',10000+g,'car_log_no',NULL,
-        'detect_at',(CURRENT_TIMESTAMP - ((40+g) * INTERVAL '1 day')),
-        'stay_days',2,'alert_stat','Resolved','handled_by_member_no',1,
-        'handled_at',(CURRENT_TIMESTAMP - ((39+g) * INTERVAL '1 day')),
-        'snapshot_car_log_no',NULL,'snapshot_registered_car_no',NULL,
-        'snapshot_captured_car_no','88아'||LPAD(g::TEXT,4,'0'),
-        'snapshot_car_kind','UNKNOWN','snapshot_parking_name','A 주차장',
-        'snapshot_in_time',(CURRENT_TIMESTAMP - ((42+g) * INTERVAL '1 day')))
-    END,
-    CASE WHEN (g % 3) = 0 THEN 'MANUAL' ELSE 'SCHEDULED' END,
-    CURRENT_TIMESTAMP - (g * INTERVAL '2 hours'),
-    CURRENT_TIMESTAMP + INTERVAL '30 days' - (g * INTERVAL '2 hours')
-FROM generate_series(1, 36) AS g;
+    o.notice_type,
+    o.car_log_no,
+    NULL,
+    o.due_at + INTERVAL '1 minute',
+    o.due_at,
+    'Unresolved',
+    o.car_log_no,
+    o.snapshot_camera_data_no,
+    o.snapshot_registered_car_no,
+    o.snapshot_captured_car_no,
+    o.snapshot_car_kind,
+    o.snapshot_parking_name,
+    o.snapshot_in_time,
+    o.snapshot_image_path,
+    o.snapshot_confidence_score
+FROM notice_overstay o
+WHERE CURRENT_TIMESTAMP >= o.due_at
+  AND o.snapshot_captured_car_no IN (
+      '225하2171',
+      '143모8849',
+      '91어6511',
+      '103호3307',
+      '40거2054',
+      '48나8278'
+  )
+ON CONFLICT DO NOTHING;
 
+-- 네 차량은 초과 알림이 발생한 뒤 출차한 상태로 만든다.
+-- 이 중 두 건은 처리완료, 두 건은 관리자가 처리할 수 있는 미처리 상태다.
+WITH exit_targets AS (
+    SELECT
+        n.notice_no,
+        cl.car_log_no,
+        cl.vehicle_car_no,
+        cl.snapshot_car_no AS car_no,
+        cl.in_gate_no + 1 AS out_gate_no,
+        n.due_at + INTERVAL '2 hours' AS out_time
+    FROM notice n
+    JOIN car_log cl
+        ON n.car_log_no = cl.car_log_no
+    WHERE n.snapshot_captured_car_no IN (
+        '143모8849',
+        '91어6511',
+        '40거2054',
+        '48나8278'
+    )
+      AND cl.out_time IS NULL
+), inserted_exit_camera AS (
+    INSERT INTO camera_data (
+        camera_no,
+        vehicle_car_no,
+        car_no,
+        ocr_car_no,
+        capture_time,
+        image_path,
+        crop_image_path,
+        recognition_state,
+        confidence_score,
+        cam_note
+    )
+    SELECT
+        et.out_gate_no,
+        et.vehicle_car_no,
+        et.car_no,
+        COALESCE(dp.ocr_car_no, et.car_no),
+        et.out_time,
+        'camera-data/' || dp.image_file,
+        'camera-data/crop/'
+            || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+        TRUE,
+        98.20,
+        'NOTICE-OUT-' || et.notice_no
+    FROM exit_targets et
+    JOIN demo_plate dp
+        ON dp.car_no = et.car_no
+    RETURNING camera_data_no, cam_note
+)
+UPDATE car_log cl
+SET out_gate_no = et.out_gate_no,
+    out_time = et.out_time,
+    out_camera_data_no = iec.camera_data_no
+FROM exit_targets et
+JOIN inserted_exit_camera iec
+    ON iec.cam_note = 'NOTICE-OUT-' || et.notice_no
+WHERE cl.car_log_no = et.car_log_no;
+
+UPDATE notice n
+SET alert_stat = 'Resolved',
+    handled_by_member_no = (
+        SELECT member_no
+        FROM member
+        WHERE login_id = 'admin1'
+        LIMIT 1
+    ),
+    handled_at = cl.out_time + INTERVAL '10 minutes'
+FROM car_log cl
+WHERE n.car_log_no = cl.car_log_no
+  AND n.snapshot_captured_car_no IN (
+      '143모8849',
+      '40거2054'
+  );
+
+-- =====================================================
+-- OCR 확인 및 입차기록 없는 출차 시도 알림
+-- =====================================================
+INSERT INTO camera_data (
+    camera_no,
+    vehicle_car_no,
+    car_no,
+    ocr_car_no,
+    capture_time,
+    image_path,
+    crop_image_path,
+    recognition_state,
+    confidence_score,
+    cam_note
+)
+SELECT
+    x.camera_no,
+    NULL,
+    dp.car_no,
+    CASE
+        WHEN x.notice_type = 'OCR_REVIEW'
+            THEN LEFT(dp.car_no, LENGTH(dp.car_no) - 1) || '8'
+        ELSE dp.car_no
+    END,
+    CURRENT_TIMESTAMP - (x.age_minutes * INTERVAL '1 minute'),
+    'camera-data/' || dp.image_file,
+    'camera-data/crop/'
+        || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+    x.notice_type <> 'OCR_REVIEW',
+    CASE
+        WHEN x.notice_type = 'OCR_REVIEW' THEN 62.40
+        ELSE 98.10
+    END,
+    x.event_key
+FROM (VALUES
+    ('NOTICE-OCR-OPEN',  'OCR_REVIEW',        62, 1, 45),
+    ('NOTICE-OCR-DONE',  'OCR_REVIEW',        63, 3, 90),
+    ('NOTICE-EXIT-OPEN', 'EXIT_WITHOUT_ENTRY',64, 2, 30),
+    ('NOTICE-EXIT-DONE', 'EXIT_WITHOUT_ENTRY',65, 4, 75)
+) AS x(
+    event_key,
+    notice_type,
+    plate_no,
+    camera_no,
+    age_minutes
+)
+JOIN demo_plate dp
+    ON dp.plate_no = x.plate_no;
+
+INSERT INTO notice (
+    notice_type,
+    car_log_no,
+    camera_data_no,
+    detect_at,
+    due_at,
+    alert_stat,
+    handled_by_member_no,
+    handled_at,
+    snapshot_car_log_no,
+    snapshot_camera_data_no,
+    snapshot_registered_car_no,
+    snapshot_captured_car_no,
+    snapshot_car_kind,
+    snapshot_parking_name,
+    snapshot_in_time,
+    snapshot_image_path,
+    snapshot_confidence_score
+)
+SELECT
+    x.notice_type,
+    NULL,
+    cd.camera_data_no,
+    cd.capture_time,
+    NULL,
+    x.alert_stat,
+    CASE
+        WHEN x.alert_stat = 'Resolved' THEN (
+            SELECT member_no
+            FROM member
+            WHERE login_id = 'admin1'
+            LIMIT 1
+        )
+        ELSE NULL
+    END,
+    CASE
+        WHEN x.alert_stat = 'Resolved'
+            THEN cd.capture_time + INTERVAL '10 minutes'
+        ELSE NULL
+    END,
+    NULL,
+    cd.camera_data_no,
+    NULL,
+    COALESCE(cd.ocr_car_no, cd.car_no),
+    'UNKNOWN',
+    p.parking_name,
+    NULL,
+    cd.image_path,
+    cd.confidence_score
+FROM (VALUES
+    ('NOTICE-OCR-OPEN',  'OCR_REVIEW',         'Unresolved'),
+    ('NOTICE-OCR-DONE',  'OCR_REVIEW',         'Resolved'),
+    ('NOTICE-EXIT-OPEN', 'EXIT_WITHOUT_ENTRY', 'Unresolved'),
+    ('NOTICE-EXIT-DONE', 'EXIT_WITHOUT_ENTRY', 'Resolved')
+) AS x(event_key, notice_type, alert_stat)
+JOIN camera_data cd
+    ON cd.cam_note = x.event_key
+JOIN camera c
+    ON cd.camera_no = c.camera_no
+JOIN gate g
+    ON c.gate_no = g.gate_no
+JOIN parking p
+    ON g.parking_no = p.parking_no
+ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- 입주민 차량 알림
+-- 승인·반려·시간초과·미입차·초과 후 출차를 모두 시연한다.
+-- =====================================================
+INSERT INTO vehicle_nt (
+    recipient_member_no,
+    sender_member_no,
+    vehicle_car_no,
+    car_log_no,
+    snapshot_car_no,
+    notification_type,
+    message,
+    overdue_minutes,
+    created_at,
+    read_at
+)
+SELECT
+    vc.member_no,
+    admin_member.member_no,
+    vc.vehicle_car_no,
+    NULL::INT,
+    vc.car_no,
+    'ADMIN_APPROVED',
+    '방문차량 신청이 승인되었습니다.',
+    NULL::INT,
+    CURRENT_TIMESTAMP - INTERVAL '2 hours',
+    CURRENT_TIMESTAMP - INTERVAL '1 hour'
+FROM vehicle_car vc
+CROSS JOIN LATERAL (
+    SELECT member_no
+    FROM member
+    WHERE login_id = 'admin1'
+    LIMIT 1
+) admin_member
+WHERE vc.car_no = '41서5534'
+
+UNION ALL
+
+SELECT
+    recipient.member_no,
+    admin_member.member_no,
+    NULL,
+    NULL,
+    '12가3456',
+    'ADMIN_REJECTED',
+    '방문 목적을 확인할 수 없어 신청이 반려되었습니다.',
+    NULL,
+    CURRENT_TIMESTAMP - INTERVAL '90 minutes',
+    NULL
+FROM LATERAL (
+    SELECT member_no
+    FROM member
+    WHERE login_id = 'res35'
+    LIMIT 1
+) recipient
+CROSS JOIN LATERAL (
+    SELECT member_no
+    FROM member
+    WHERE login_id = 'admin1'
+    LIMIT 1
+) admin_member
+
+UNION ALL
+
+SELECT
+    recipient.member_no,
+    NULL,
+    NULL,
+    NULL,
+    '34나5678',
+    'APPROVAL_TIMEOUT',
+    '예상 방문시간 내 승인이 완료되지 않아 신청이 자동 취소되었습니다.',
+    NULL,
+    CURRENT_TIMESTAMP - INTERVAL '70 minutes',
+    NULL
+FROM LATERAL (
+    SELECT member_no
+    FROM member
+    WHERE login_id = 'res36'
+    LIMIT 1
+) recipient
+
+UNION ALL
+
+SELECT
+    vc.member_no,
+    NULL,
+    vc.vehicle_car_no,
+    NULL,
+    vc.car_no,
+    'NO_ENTRY_EXPIRED',
+    '입차 가능시간 내 방문하지 않아 방문차량 등록이 만기되었습니다.',
+    FLOOR(
+        EXTRACT(
+            EPOCH FROM (
+                CURRENT_TIMESTAMP
+                - (vc.start_date + INTERVAL '1 hour')
+            )
+        ) / 60
+    )::INTEGER,
+    vc.start_date + INTERVAL '1 hour',
+    NULL
+FROM vehicle_car vc
+WHERE vc.car_no = '168러5334'
+
+UNION ALL
+
+SELECT
+    vc.member_no,
+    NULL,
+    vc.vehicle_car_no,
+    cl.car_log_no,
+    vc.car_no,
+    'VISIT_OVERDUE',
+    '방문차량 등록시간이 초과되었으나 아직 출차하지 않았습니다.',
+    FLOOR(
+        EXTRACT(
+            EPOCH FROM (
+                CURRENT_TIMESTAMP - n.due_at
+            )
+        ) / 60
+    )::INTEGER,
+    n.detect_at,
+    NULL
+FROM notice n
+JOIN car_log cl
+    ON n.car_log_no = cl.car_log_no
+JOIN vehicle_car vc
+    ON cl.vehicle_car_no = vc.vehicle_car_no
+WHERE n.notice_type = 'VISIT_OVERDUE'
+  AND n.snapshot_captured_car_no = '225하2171'
+
+UNION ALL
+
+SELECT
+    vc.member_no,
+    NULL,
+    vc.vehicle_car_no,
+    cl.car_log_no,
+    vc.car_no,
+    'VISIT_OVERDUE_EXIT',
+    CONCAT(
+        '방문차량이 등록시간을 ',
+        FLOOR(
+            EXTRACT(
+                EPOCH FROM (
+                    cl.out_time - n.due_at
+                )
+            ) / 60
+        )::INTEGER,
+        '분 초과한 후 출차했습니다.'
+    ),
+    FLOOR(
+        EXTRACT(
+            EPOCH FROM (
+                cl.out_time - n.due_at
+            )
+        ) / 60
+    )::INTEGER,
+    cl.out_time,
+    NULL
+FROM notice n
+JOIN car_log cl
+    ON n.car_log_no = cl.car_log_no
+JOIN vehicle_car vc
+    ON cl.vehicle_car_no = vc.vehicle_car_no
+WHERE n.notice_type = 'VISIT_OVERDUE'
+  AND n.snapshot_captured_car_no = '143모8849'
+  AND cl.out_time IS NOT NULL;
+
+-- =====================================================
+-- 게시판 공지
+-- =====================================================
+
+INSERT INTO board (
+    title,
+    content,
+    image_path,
+    image_name,
+    image_type,
+    start_at,
+    end_at,
+    active,
+    created_by,
+    created_at,
+    updated_at
+) VALUES (
+    '엘리베이터 점검 및 보수 안내',
+    $content$
+입주민 여러분의 안전하고 편리한 엘리베이터 이용을 위해 점검 및 보수를 실시합니다.
+
+점검기간: 2025. 7. 27.(일) ~ 2025. 7. 31.(금)
+점검시간: 10:00 ~ 16:00
+
+7월 27일: 101동·102동
+7월 28일: 201동·202동
+7월 29일: 301동·302동
+7월 30일: 401동·402동
+
+점검 시간에는 엘리베이터 이용이 제한될 수 있으니 입주민 여러분의 양해를 부탁드립니다.
+BunhoBono APT
+$content$,
+    'classpath:board-seed/elevator-inspection-poster.png',
+    '엘레베이터점검포스터.png',
+    'image/png',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP + INTERVAL '30 days',
+    TRUE,
+    'admin1',
+    CURRENT_TIMESTAMP - INTERVAL '2 minutes',
+    CURRENT_TIMESTAMP - INTERVAL '2 minutes'
+);
+
+-- 아파트 단수 공지를 등록한다.
+INSERT INTO board (
+    title,
+    content,
+    image_path,
+    image_name,
+    image_type,
+    start_at,
+    end_at,
+    active,
+    created_by,
+    created_at,
+    updated_at
+) VALUES (
+    '아파트 단수 안내',
+    $content$
+구내 수도 설비 점검으로 인해 동별 단수가 진행될 예정입니다.
+
+단수기간: 2025. 7. 26.(월) ~ 2025. 7. 29.(목)
+단수시간: 09:00 ~ 17:00
+
+7월 26일: 101동·102동
+7월 27일: 201동·202동
+7월 28일: 301동·302동
+7월 29일: 401동·402동
+
+작업 진행 상황에 따라 단수 시간이 변경될 수 있으니 필요한 물을 미리 받아두시기 바랍니다.
+BunhoBono APT
+$content$,
+    'classpath:board-seed/water-outage-poster.png',
+    '단수안내포스터.png',
+    'image/png',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP + INTERVAL '30 days',
+    TRUE,
+    'admin1',
+    CURRENT_TIMESTAMP - INTERVAL '1 minute',
+    CURRENT_TIMESTAMP - INTERVAL '1 minute'
+);
+
+-- 알뜰 나눔 장터 공지를 등록한다.
+INSERT INTO board (
+    title,
+    content,
+    image_path,
+    image_name,
+    image_type,
+    start_at,
+    end_at,
+    active,
+    created_by,
+    created_at,
+    updated_at
+) VALUES (
+    '알뜰 나눔 장터 행사 안내',
+    $content$
+입주민이 함께 나누고 소통하는 알뜰 나눔 장터를 개최합니다.
+
+행사기간: 2025. 7. 31.(금) ~ 2025. 8. 2.(일)
+행사시간: 11:00 ~ 18:00
+행사장소: 아파트 내 별빛공원
+
+도서, 의류, 생활용품과 장난감 등 이웃과 나누고 싶은 물품을 준비해 주세요.
+입주민 여러분의 많은 참여를 부탁드립니다.
+BunhoBono APT
+$content$,
+    'classpath:board-seed/sharing-market-poster.png',
+    '알뜰장터포스터.png',
+    'image/png',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP + INTERVAL '30 days',
+    TRUE,
+    'admin1',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- 요금·결제 더미 데이터
+-- =====================================================
+INSERT INTO fee_rule (
+    rule_name,
+    unit_minutes,
+    unit_fee,
+    daily_max_fee,
+    active
+) VALUES
+    ('방문·미등록 공통 요금', 10, 500, 20000, TRUE);
+
+WITH target_log AS (
+    SELECT
+        cl.car_log_no,
+        cl.snapshot_car_no,
+        cl.snapshot_car_kind,
+        ROW_NUMBER() OVER (
+            ORDER BY cl.in_time DESC NULLS LAST, cl.car_log_no DESC
+        ) AS row_no
+    FROM car_log cl
+    WHERE cl.snapshot_car_kind IN ('VISIT', 'UNKNOWN')
+      AND cl.snapshot_car_no IS NOT NULL
+      AND cl.in_time IS NOT NULL
+    ORDER BY cl.in_time DESC NULLS LAST, cl.car_log_no DESC
+    LIMIT 10
+), calculated AS (
+    SELECT
+        t.*,
+        CASE
+            WHEN t.snapshot_car_kind = 'VISIT' THEN 10 + (t.row_no * 5)::INT
+            ELSE 60 + (t.row_no * 15)::INT
+        END AS charge_minutes
+    FROM target_log t
+)
+INSERT INTO bill (
+    car_log_no,
+    fee_rule_no,
+    snapshot_car_no,
+    snapshot_car_kind,
+    charge_minutes,
+    bill_amount,
+    bill_status,
+    issued_at
+)
+SELECT
+    c.car_log_no,
+    (SELECT fee_rule_no FROM fee_rule WHERE rule_name = '방문·미등록 공통 요금'),
+    c.snapshot_car_no,
+    c.snapshot_car_kind,
+    c.charge_minutes,
+    CEIL(c.charge_minutes::NUMERIC / 10) * 500,
+    CASE WHEN c.row_no IN (4, 9) THEN 'UNPAID' ELSE 'PAID' END,
+    CURRENT_TIMESTAMP - ((11 - c.row_no) * INTERVAL '10 minutes')
+FROM calculated c
+ORDER BY c.row_no;
+
+WITH bill_target AS (
+    SELECT
+        b.*,
+        ROW_NUMBER() OVER (ORDER BY b.bill_no) AS row_no
+    FROM bill b
+    ORDER BY b.bill_no
+    LIMIT 10
+), kiosk_target AS (
+    SELECT
+        k.kiosk_no,
+        ROW_NUMBER() OVER (ORDER BY k.kiosk_no) AS row_no
+    FROM kiosk k
+    WHERE k.kiosk_type = 'NON_RESIDENT'
+      AND k.active = TRUE
+), kiosk_count AS (
+    SELECT COUNT(*) AS total_count
+    FROM kiosk_target
+)
+INSERT INTO payment (
+    bill_no,
+    kiosk_no,
+    transaction_id,
+    paid_amount,
+    payment_status,
+    paid_at,
+    cancelled_at
+)
+SELECT
+    b.bill_no,
+    k.kiosk_no,
+    'DEMO-TXN-' || LPAD(b.bill_no::TEXT, 4, '0'),
+    b.bill_amount,
+    CASE WHEN b.bill_no IN (4, 9) THEN 'CANCELLED' ELSE 'COMPLETED' END,
+    b.issued_at + INTERVAL '2 minutes',
+    CASE
+        WHEN b.bill_no IN (4, 9)
+        THEN b.issued_at + INTERVAL '7 minutes'
+        ELSE NULL
+    END
+FROM bill_target b
+CROSS JOIN kiosk_count kc
+JOIN kiosk_target k
+    ON k.row_no = MOD(b.row_no - 1, NULLIF(kc.total_count, 0)) + 1
+ORDER BY b.bill_no;
+
+-- =====================================================
+-- 삭제·보관 더미 데이터
+-- =====================================================
+CREATE TEMP TABLE demo_stats_event (
+    stat_no SERIAL PRIMARY KEY,
+    car_no VARCHAR(50) NOT NULL,
+    car_kind VARCHAR(20) NOT NULL,
+    in_gate_no INT NOT NULL,
+    in_time TIMESTAMP NOT NULL,
+    out_gate_no INT NOT NULL,
+    out_time TIMESTAMP NOT NULL
+) ON COMMIT DROP;
+
+-- 올해 1월부터 지난달까지 월별 18~22일, 날짜별 약 33~39건을 생성한다.
+INSERT INTO demo_stats_event
+(car_no, car_kind, in_gate_no, in_time, out_gate_no, out_time)
+SELECT dp.car_no, kind.car_kind,
+       (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)], event_time,
+       (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)], event_time + kind.stay_interval
+FROM generate_series(
+         DATE_TRUNC('year', CURRENT_DATE)::date,
+         (DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month')::date,
+         INTERVAL '1 month'
+     ) AS months(month_start)
+CROSS JOIN LATERAL generate_series(1,18 + (EXTRACT(MONTH FROM month_start)::int % 5)) AS days(day_no)
+CROSS JOIN LATERAL (VALUES
+    ('REGISTERED',28 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 5),INTERVAL '3 hours',1,48),
+    ('VISIT',      3 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 3),INTERVAL '4 hours 30 minutes',49,9),
+    ('UNKNOWN',    1 + ((EXTRACT(MONTH FROM month_start)::int + day_no) % 2),INTERVAL '1 hour 30 minutes',58,11)
+) kind(car_kind,amount,stay_interval,first_plate,plate_count)
+CROSS JOIN LATERAL generate_series(1,kind.amount) AS series(g)
+CROSS JOIN LATERAL (
+    SELECT month_start::date + ((day_no - 1) * INTERVAL '1 day')
+           + TIME '00:05:00' + (g * INTERVAL '21 minutes') AS event_time
+) event
+JOIN demo_plate dp ON dp.plate_no = kind.first_plate + ((g - 1) % kind.plate_count)
+WHERE event_time < CURRENT_DATE - INTERVAL '22 days';
+
+-- 7월을 포함한 최근 22일 데이터도 같은 비율로 생성한다.
+INSERT INTO demo_stats_event
+(car_no, car_kind, in_gate_no, in_time, out_gate_no, out_time)
+SELECT dp.car_no, kind.car_kind,
+       (ARRAY[1,3,5,7])[1 + ((g - 1) % 4)], event_time,
+       (ARRAY[2,4,6,8])[1 + ((g - 1) % 4)], event_time + kind.stay_interval
+FROM generate_series(1,22) AS days(day_no)
+CROSS JOIN LATERAL (VALUES
+    ('REGISTERED',28 + (day_no % 5),INTERVAL '3 hours',1,48),
+    ('VISIT',      3 + (day_no % 3),INTERVAL '4 hours 30 minutes',49,9),
+    ('UNKNOWN',    1 + ((day_no + 1) % 2),INTERVAL '1 hour 30 minutes',58,11)
+) kind(car_kind,amount,stay_interval,first_plate,plate_count)
+CROSS JOIN LATERAL generate_series(1,kind.amount) AS series(g)
+CROSS JOIN LATERAL (
+    SELECT (CURRENT_DATE - day_no) + TIME '00:05:00' + (g * INTERVAL '21 minutes') AS event_time
+) event
+JOIN demo_plate dp ON dp.plate_no = kind.first_plate + ((g - 1) % kind.plate_count);
+
+-- 출차 후 3개월 이내인 기록의 입차·출차 카메라 데이터는 현재 테이블에 둔다.
+INSERT INTO camera_data
+(camera_data_no, camera_no, vehicle_car_no, car_no, ocr_car_no, capture_time,
+ image_path, crop_image_path, recognition_state, confidence_score, cam_note)
+SELECT 100000 + (e.stat_no * 2) + cap.offset_no,
+       cap.camera_no, NULL, e.car_no, e.car_no, cap.capture_time,
+       'camera-data/' || dp.image_file,
+       'camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+       TRUE, 96.10 + ((e.stat_no + cap.offset_no) % 8) * 0.35,
+       'STAT-' || e.stat_no || '-' || cap.capture_side
+FROM demo_stats_event e
+JOIN demo_plate dp ON dp.car_no = e.car_no
+CROSS JOIN LATERAL (VALUES
+    (0,e.in_gate_no,e.in_time,'IN'),
+    (1,e.out_gate_no,e.out_time,'OUT')
+) cap(offset_no,camera_no,capture_time,capture_side)
+WHERE e.out_time >= CURRENT_TIMESTAMP - INTERVAL '3 months';
+
+-- 출차 후 3개월이 지난 기록의 카메라 데이터는 스케줄러 이동 형태로 지난 기록에 둔다.
+INSERT INTO trash_bin
+(data_type, original_no, data_json, delete_type, deleted_at, purge_at)
+SELECT 'CAMERA_DATA', 100000 + (e.stat_no * 2) + cap.offset_no,
+       jsonb_build_object(
+           'camera_data_no',100000 + (e.stat_no * 2) + cap.offset_no,
+           'camera_no',cap.camera_no,'vehicle_car_no',NULL,
+           'car_no',e.car_no,'ocr_car_no',e.car_no,'capture_time',cap.capture_time,
+           'image_path','camera-data/' || dp.image_file,
+           'crop_image_path','camera-data/crop/' || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
+           'recognition_state',TRUE,
+           'confidence_score',96.10 + ((e.stat_no + cap.offset_no) % 8) * 0.35,
+           'cam_note',NULL
+       ),
+       'SCHEDULED', e.out_time + INTERVAL '3 months', CURRENT_TIMESTAMP + INTERVAL '1 year'
+FROM demo_stats_event e
+JOIN demo_plate dp ON dp.car_no = e.car_no
+CROSS JOIN LATERAL (VALUES
+    (0,e.in_gate_no,e.in_time,'IN'),
+    (1,e.out_gate_no,e.out_time,'OUT')
+) cap(offset_no,camera_no,capture_time,capture_side)
+WHERE e.out_time < CURRENT_TIMESTAMP - INTERVAL '3 months';
+
+-- 아직 3개월이 지나지 않은 완료 기록은 현재 car_log에 둔다.
+INSERT INTO car_log
+(vehicle_car_no, camera_data_no, out_camera_data_no,
+ in_gate_no, in_time, out_gate_no, out_time, free_time,
+ snapshot_car_no, snapshot_car_kind)
+SELECT NULL, 100000 + (e.stat_no * 2), 100000 + (e.stat_no * 2) + 1,
+       e.in_gate_no, e.in_time, e.out_gate_no, e.out_time,
+       NULL, e.car_no, e.car_kind
+FROM demo_stats_event e
+WHERE e.out_time >= CURRENT_TIMESTAMP - INTERVAL '3 months';
+
+-- 출차 후 3개월이 지난 완료 기록은 지난 기록에 둔다.
+INSERT INTO trash_bin
+(data_type, original_no, data_json, delete_type, deleted_at, purge_at)
+SELECT 'CAR_LOG', 50000 + e.stat_no,
+       jsonb_build_object(
+           'car_log_no',50000 + e.stat_no,'vehicle_car_no',NULL,
+           'camera_data_no',100000 + (e.stat_no * 2),
+           'out_camera_data_no',100000 + (e.stat_no * 2) + 1,
+           'in_gate_no',e.in_gate_no,'in_time',e.in_time,
+           'out_gate_no',e.out_gate_no,'out_time',e.out_time,'free_time',NULL,
+           'snapshot_car_no',e.car_no,'captured_car_no',e.car_no,
+           'snapshot_car_kind',e.car_kind,'statistics_scope','ENTRY_AVERAGE'
+       ),
+       'SCHEDULED', e.out_time + INTERVAL '3 months', CURRENT_TIMESTAMP + INTERVAL '1 year'
+FROM demo_stats_event e
+WHERE e.out_time < CURRENT_TIMESTAMP - INTERVAL '3 months';
+
+
+-- =====================================================
+-- 일반 지난 기록: 카메라 데이터 12건 + 처리 완료 알림 12건
+-- 통계용 CAR_LOG와 중복되지 않도록 별도 번호를 사용한다.
+-- =====================================================
+INSERT INTO trash_bin
+(data_type, original_no, data_json, delete_type, deleted_at, purge_at)
+SELECT CASE WHEN g <= 12 THEN 'CAMERA_DATA' ELSE 'NOTICE' END,
+       10000 + g,
+       CASE WHEN g <= 12 THEN jsonb_build_object(
+           'camera_data_no',10000+g,'camera_no',1,'vehicle_car_no',NULL,
+           'car_no','88아'||LPAD(g::TEXT,4,'0'),'ocr_car_no','88아'||LPAD(g::TEXT,4,'0'),
+           'capture_time',CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day'),
+           'image_path',NULL,'crop_image_path',NULL,'recognition_state',TRUE,'confidence_score',97.5)
+       ELSE jsonb_build_object(
+           'notice_no',10000+g,
+           'notice_type',CASE WHEN g % 2 = 0
+                              THEN 'OCR_REVIEW'
+                              ELSE 'EXIT_WITHOUT_ENTRY' END,
+           'car_log_no',NULL,
+           'camera_data_no',NULL,
+           'detect_at',CURRENT_TIMESTAMP - ((100+g) * INTERVAL '1 day'),
+           'due_at',NULL,
+           'alert_stat','Resolved',
+           'handled_by_member_no',1,
+           'handled_at',CURRENT_TIMESTAMP - ((99+g) * INTERVAL '1 day'),
+           'snapshot_car_log_no',NULL,
+           'snapshot_camera_data_no',10000+g,
+           'snapshot_registered_car_no',NULL,
+           'snapshot_captured_car_no','88아'||LPAD(g::TEXT,4,'0'),
+           'snapshot_car_kind','UNKNOWN','snapshot_parking_name','A 주차장',
+           'snapshot_in_time',NULL,
+           'snapshot_image_path',NULL,
+           'snapshot_confidence_score',97.5)
+       END,
+       'SCHEDULED',
+       CURRENT_TIMESTAMP - (g * INTERVAL '2 hours'),
+       CURRENT_TIMESTAMP + INTERVAL '30 days' - (g * INTERVAL '2 hours')
+FROM generate_series(1,24) AS g;
 SELECT setval(pg_get_serial_sequence('vehicle_car','vehicle_car_no'), MAX(vehicle_car_no), TRUE) FROM vehicle_car;
 SELECT setval(pg_get_serial_sequence('camera_data','camera_data_no'), MAX(camera_data_no), TRUE) FROM camera_data;
 SELECT setval(pg_get_serial_sequence('car_log','car_log_no'), MAX(car_log_no), TRUE) FROM car_log;
 SELECT setval(pg_get_serial_sequence('notice','notice_no'), MAX(notice_no), TRUE) FROM notice;
+SELECT setval(pg_get_serial_sequence('vehicle_nt','vehicle_nt_no'), MAX(vehicle_nt_no), TRUE) FROM vehicle_nt;
 SELECT setval(pg_get_serial_sequence('trash_bin','trash_no'), MAX(trash_no), TRUE) FROM trash_bin;
+
+-- cam_note는 연결용 임시 키로만 사용한다. 최초 더미 비고는 모두 비워 둔다.
+UPDATE camera_data
+SET cam_note = NULL;
+-- =====================================================
+-- 초기화 결과 확인
+-- =====================================================
+SELECT 'member' AS data_name, COUNT(*) AS data_count FROM member
+UNION ALL
+SELECT 'vehicle_car', COUNT(*) FROM vehicle_car
+UNION ALL
+SELECT 'camera_data', COUNT(*) FROM camera_data
+UNION ALL
+SELECT 'car_log', COUNT(*) FROM car_log
+UNION ALL
+SELECT 'notice', COUNT(*) FROM notice
+UNION ALL
+SELECT 'vehicle_nt', COUNT(*) FROM vehicle_nt
+UNION ALL
+SELECT 'trash_bin', COUNT(*) FROM trash_bin
+ORDER BY data_name;
+
+SELECT
+    notice_type,
+    alert_stat,
+    COUNT(*) AS notice_count
+FROM notice
+GROUP BY notice_type, alert_stat
+ORDER BY notice_type, alert_stat;
+
+SELECT
+    'notice_detail' AS view_name,
+    COUNT(*) AS row_count
+FROM notice_detail
+UNION ALL
+SELECT
+    'notice_overstay',
+    COUNT(*)
+FROM notice_overstay;
+
+-- 기존 공지사항을 모두 삭제하고 번호를 1번부터 다시 시작한다.
 
 COMMIT;
