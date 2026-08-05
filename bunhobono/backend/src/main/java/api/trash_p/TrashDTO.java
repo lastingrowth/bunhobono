@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TrashDTO {
-    private Long trashNo;           // 휴지통 고유 번호
+    private Integer trashNo;        // 휴지통 고유 번호
     private String dataType;        // CAMERA_DATA, CAR_LOG, NOTICE
     private Integer originalNo;     // 원본 테이블의 PK 번호
     private String carNo;            // 삭제 데이터의 차량번호

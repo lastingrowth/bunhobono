@@ -7,6 +7,6 @@ export const getMemberArchiveList = () => {
 
 // 전출 회원 이력 영구 삭제
 // member 원본이 아니라 member_archive 기록만 삭제
-export const deleteMemberArchive = (archiveNo) => {
-    return api.delete(`/member-archive/${archiveNo}`)
+export const deleteMemberArchive = (memberArchiveNo) => {
+    return api.delete(`/member-archive/${memberArchiveNo}`)
 }

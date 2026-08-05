@@ -34,7 +34,7 @@
             <tbody>
                 <tr
                     v-for="(member, index) in paginatedArchives"
-                    :key="member.archiveNo">
+                    :key="member.memberArchiveNo">
                     <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                     <td>{{ member.memName || '-' }}</td>
                     <td>{{ member.loginId || '-' }}</td>
@@ -44,7 +44,7 @@
                     <td>{{ member.role || '-' }}</td>
                     <td>{{ formatDate(member.deleteAt) }}</td>
                     <td>{{ formatDate(member.archivedAt) }}</td>
-                    <td><button type="button" @click="remove(member.archiveNo)">이력 삭제</button></td>
+                    <td><button type="button" @click="remove(member.memberArchiveNo)">이력 삭제</button></td>
                 </tr>
 
                 <tr v-if="list.length === 0">
@@ -98,12 +98,12 @@ const formatDate = (value) => {
     return date.toLocaleString('ko-KR')
 }
 
-const remove = async (archiveNo) => {
+const remove = async (memberArchiveNo) => {
     if (!confirm('선택한 전출 회원 이력을 삭제하시겠습니까?')) {
         return
     }
 
-    await archiveStore.remove(archiveNo)
+    await archiveStore.remove(memberArchiveNo)
 }
 
 onMounted(async () => {

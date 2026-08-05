@@ -33,8 +33,8 @@
     <div v-if="mode === 'list'" class="resident-vehicle-member">
       {{ resVehicleStore.member.memName }}
       ({{ resVehicleStore.member.loginId }})
-      {{ resVehicleStore.member.memDong }}동
-      {{ resVehicleStore.member.memHo }}호
+      {{ resVehicleStore.member.dong }}동
+      {{ resVehicleStore.member.ho }}호
     </div>
 
     <template v-if="mode === 'list'">
