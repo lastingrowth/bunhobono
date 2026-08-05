@@ -46,6 +46,16 @@ export const signupMember = (member) => {
     return api.post("/members", member);
 };
 
+// [sms인증] 회원가입 전화번호로 인증번호를 발송한다.
+export const sendSignupPhoneCode = (phone) => {
+    return api.post("/signup/phone/send-code", { phone });
+};
+
+// [sms인증] 사용자가 입력한 전화번호 인증번호를 확인한다.
+export const verifySignupPhoneCode = (phone, code) => {
+    return api.post("/signup/phone/verify-code", { phone, code });
+};
+
 // 입주민 로그인 시, 마이페이지
 export const residentMypage = () => {
     return api.get(`/resident/mypage`);

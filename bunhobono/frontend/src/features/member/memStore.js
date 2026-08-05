@@ -14,8 +14,10 @@ import {
   residentMypage,
   restoreWithdrawnMembers,
   searchMember,
+  sendSignupPhoneCode,
   signupMember,
   updateMember,
+  verifySignupPhoneCode,
   verifyResidentWithdrawal,
 } from "./memApi";
 
@@ -101,6 +103,16 @@ export const useMemStore =  defineStore("member", () => {
     await signupMember(memberData);
   };
 
+  // [sms인증] 입력한 전화번호로 인증번호 발송을 요청한다.
+  const sendPhoneCode = async (phone) => {
+    return sendSignupPhoneCode(phone);
+  };
+
+  // [sms인증] 문자로 받은 인증번호 확인을 요청한다.
+  const verifyPhoneCode = async (phone, code) => {
+    return verifySignupPhoneCode(phone, code);
+  };
+
   const loadAvailableSignupUnits = async () => {
     const res = await getAvailableSignupUnits();
     availableSignupUnits.value = res.data || [];
@@ -158,6 +170,8 @@ export const useMemStore =  defineStore("member", () => {
     editMember,
     approveMembers,
     signup,
+    sendPhoneCode,
+    verifyPhoneCode,
     loadAvailableSignupUnits,
 
     loadMypage,

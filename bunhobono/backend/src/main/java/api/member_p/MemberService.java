@@ -40,6 +40,9 @@ public class MemberService {
     @Resource
     PasswordEncoder passwordEncoder;
 
+    @Resource
+    SmsAuthService smsAuthService;
+
     // =====================================================
     // 1. 회원가입 역할·세대·비밀번호를 검증하고 회원 정보를 저장한다.
     // =====================================================
@@ -47,6 +50,14 @@ public class MemberService {
     // 역할을 표준화하고 가입 유형에 맞는 저장 방식을 선택한다.
     @Transactional
     public void signup(MemberDTO dto) {
+        // [sms인증] 외부 가입과 관리자 회원 추가 모두 인증된 전화번호만 저장한다.
+        if (!smsAuthService.isVerified(dto.getMemPhone())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "전화번호 인증을 완료해 주세요."
+            );
+        }
+
         // 역할 비교와 DB 저장 형식을 맞추기 위해 대문자로 통일한다.
         if (dto.getRole() != null) {
             dto.setRole(dto.getRole().toUpperCase());
@@ -73,6 +84,8 @@ public class MemberService {
                     "회원으로 등록할 수 없는 동·호수입니다."
             );
         }
+
+        smsAuthService.consumeVerification(dto.getMemPhone());
     }
 
     // 공개 회원가입에서 선택할 수 있는 빈 세대 목록을 반환한다.
