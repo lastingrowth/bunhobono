@@ -83,8 +83,8 @@ public class MemberDTO {
 
     // =====================================================
     // 4. 입주민 차량의 입차·출차 기록을 전달한다.
-    @Data
     // =====================================================
+    @Data
     public static class ResidentCarLog {
 
         private Integer carLogNo;
@@ -122,5 +122,4 @@ public class MemberDTO {
             // 사용자가 입력한 보안문자 정답
             String challengeAnswer
     ) {}
-
 }

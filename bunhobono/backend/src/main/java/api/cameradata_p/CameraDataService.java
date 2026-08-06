@@ -1,4 +1,5 @@
 package api.cameradata_p;
+
 import api.carlog_p.CarLogService;
 import api.carlog_p.CarLogDTO;
 import api.gate_p.GateDTO;
@@ -19,6 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import api.trash_p.TrashService;
+import api.vehicle_p.VehicleService;
+
 
 @Service
 public class CameraDataService {
@@ -38,6 +41,9 @@ public class CameraDataService {
 
     @Resource
     NoticeService noticeService;
+
+    @Resource
+    VehicleService vehicleService;
 
     @Value("${file.camera-data}")
     private String uploadDir;
@@ -59,10 +65,10 @@ public class CameraDataService {
     //ocr
     @Transactional
     public CameraDataDTO ocr(int cameraNo,
-                           String carNo,
-                           Double confidenceScore,
-                           MultipartFile file,
-                           MultipartFile cropFile) {
+                             String carNo,
+                             Double confidenceScore,
+                             MultipartFile file,
+                             MultipartFile cropFile) {
         try{
             //1. 저장 폴더 없으면 생성
             Files.createDirectories(Paths.get(uploadDir));
@@ -176,7 +182,6 @@ public class CameraDataService {
                 );
             }
 
-
             if (saved) {
                 // 데이터를 촬영한 카메라가 어느 게이트에 연결되어 있는지 확인
                 GateDTO gate = gateService.findByCameraNo(cameraNo);
@@ -192,52 +197,104 @@ public class CameraDataService {
 
                 gateNo = gate.getGateNo();
 
-                // 등록 차량이면 자동으로 게이트를 열고 입출차 로그를 처리한다
-                // vehicleCarNo 가 Null이 아니면 vehicle_car 테이블에 존재하는 차량
+                boolean isSiteGate =
+                        "SITE".equalsIgnoreCase(gate.getGateArea());
+
+                boolean isParkingGate =
+                        "B1".equalsIgnoreCase(gate.getGateArea())
+                                || "B2".equalsIgnoreCase(gate.getGateArea());
+
                 boolean isEntryGate =
                         "In".equalsIgnoreCase(gate.getGateType());
+
                 boolean isExitGate =
                         "Out".equalsIgnoreCase(gate.getGateType());
 
-                CarLogDTO parkedLog = isExitGate
-                        ? carLogService.findCurrentlyParked(dto)
-                        : null;
-                boolean currentlyParked = parkedLog != null;
-
-                if (isExitGate
-                        && recognitionConfirmed
-                        && !currentlyParked) {
-
-                    noticeService.createExitWithoutEntryNotice(
-                            dto.getCameraDataNo()
-                    );
-                }
+                // 내부 주차장 출차 차량의 미출차 기록 조회
+                CarLogDTO parkedLog =
+                        isParkingGate && isExitGate
+                                ? carLogService.findCurrentlyParked(dto)
+                                : null;
 
                 // 출차 OCR 원본은 ocr_car_no에 유지하고, 화면과 카메라
                 // 데이터에는 입차 때 관리자가 확정한 차량번호를 표시한다.
-                if (currentlyParked && parkedLog.getCarNo() != null) {
+                if (parkedLog != null && parkedLog.getCarNo() != null) {
                     dto.setCarNo(parkedLog.getCarNo());
                     dto.setVehicleCarNo(parkedLog.getVehicleCarNo());
                     dto.setRecognitionState(true);
                     cameraDataMapper.applyMatchedCarNo(dto);
                 }
 
-                boolean canOpenAutomatically =
-                        (isEntryGate && registered && recognitionConfirmed) ||
-                        (isExitGate && currentlyParked);
+                // B1·B2에서 입차기록 없이 출차를 시도한 경우
+                if (isParkingGate
+                        && isExitGate
+                        && recognitionConfirmed
+                        && parkedLog == null) {
+                    noticeService.createExitWithoutEntryNotice(
+                            dto.getCameraDataNo()
+                    );
+                }
 
-                if (canOpenAutomatically) {
-                    gateOpened = gateService.open(gate.getGateNo()) == 1;
+                // 차량 유형·승인상태·방문기간을 포함하여 다시 조회
+                CameraDataDTO processingData =
+                        cameraDataMapper.detail(dto.getCameraDataNo());
 
-                    if (gateOpened) {
-                        carLogService.processCameraData(dto);
-                        gateService.scheduleClose(gate.getGateNo());
+                if (processingData == null) {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT
+                    );
+                }
+
+                registered = processingData.getVehicleCarNo() != null;
+
+                int processed = 0;
+
+                // B1·B2는 입출차 처리가 성공해야 게이트 개방
+                if (isParkingGate) {
+                    boolean canProcess =
+                            (isEntryGate
+                                    && registered
+                                    && recognitionConfirmed)
+                                    ||
+                                    (isExitGate && parkedLog != null);
+
+                    if (canProcess) {
+                        processed =
+                                carLogService.processCameraData(
+                                        processingData
+                                );
                     }
+                }
+
+                // 정문·후문은 승인 차량이면 car_log 없이 개방
+                boolean canOpenGate =
+                        (isSiteGate
+                                && registered
+                                && recognitionConfirmed)
+                                || processed == 1;
+
+                if (canOpenGate) {
+                    if (gateService.open(gate.getGateNo()) != 1) {
+                        throw new ResponseStatusException(
+                                HttpStatus.CONFLICT
+                        );
+                    }
+
+                    gateOpened = true;
+
+                    cameraDataMapper.markGateOpened(
+                            dto.getCameraDataNo()
+                    );
+
+                    gateService.scheduleClose(
+                            gate.getGateNo()
+                    );
                 }
 
                 // 미등록 차량이면 camera_data만 저장하고 멈춤
                 // 이후 관리자 대시보드에서 확인 후 수동으로 게이트를 열도록 처리
             }
+
             dto.setSaved(saved);
             dto.setRegistered(registered);
             dto.setGateOpened(gateOpened);
@@ -346,12 +403,14 @@ public class CameraDataService {
         return updated;
     }
 
-    // 관리자 수동 게이트 열기
-    // 미등록 차량처럼 자동 통과되지 않은 camera_data를 관리자가 확인한 뒤 통과시킴
+    // 긴급·작업 차량 방문등록과 게이트 개방
     @Transactional
-    public int openGateByCameraData(int cameraDataNo) {
-        // 1. camera_data 상세 정보를 조회한다
-        CameraDataDTO dto = cameraDataMapper.detail(cameraDataNo);
+    public int openGateByCameraData(
+            String adminLoginId,
+            int cameraDataNo
+    ) {
+        CameraDataDTO dto =
+                cameraDataMapper.detail(cameraDataNo);
 
         if (dto == null) {
             throw new ResponseStatusException(
@@ -360,8 +419,8 @@ public class CameraDataService {
             );
         }
 
-        // 2. camera_data 에 저장된 cameraNo 로 연결된 게이트를 찾는다
-        GateDTO gate = gateService.findByCameraNo(dto.getCameraNo());
+        GateDTO gate =
+                gateService.findByCameraNo(dto.getCameraNo());
 
         if (gate == null) {
             throw new ResponseStatusException(
@@ -370,14 +429,74 @@ public class CameraDataService {
             );
         }
 
-        // 3. 게이트를 연다
+        // 긴급·작업 승인은 정문·후문 입구에서만 가능
+        if (
+                !"SITE".equalsIgnoreCase(gate.getGateArea())
+                        || !"In".equalsIgnoreCase(
+                        gate.getGateType()
+                )
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // 이미 등록된 차량에는 긴급·작업 등록을 적용하지 않음
+        if (dto.getVehicleCarNo() != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        String carNo = dto.getCarNo();
+
+        if (carNo == null || carNo.isBlank()) {
+            carNo = dto.getOcrCarNo();
+        }
+
+        carNo = carNo == null
+                ? ""
+                : carNo.replaceAll("\\s+", "");
+
+        if (carNo.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // 로그인 관리자의 24시간 방문차량으로 등록
+        int registered =
+                vehicleService.registerEmergencyVisit(
+                        adminLoginId,
+                        carNo
+                );
+
+        if (registered != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        Integer vehicleCarNo =
+                cameraDataMapper.findVehicleCarNo(carNo);
+
+        if (vehicleCarNo == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        // 촬영 데이터와 새 방문차량 연결
+        CameraDataDTO matched = new CameraDataDTO();
+        matched.setCameraDataNo(cameraDataNo);
+        matched.setCarNo(carNo);
+        matched.setVehicleCarNo(vehicleCarNo);
+
+        cameraDataMapper.applyMatchedCarNo(matched);
+
+        // 정문·후문은 car_log를 만들지 않고 게이트만 개방
         gateService.open(gate.getGateNo());
-
-        // 4. 실제 통과 기록을 car_log에 반영
-        // IN 게이트면 입차 로그 생성, OUT 게이트면 출차 처리
-        carLogService.processCameraData(dto);
-
-        // 5. 일정 시간이 지나면 게이트를 자동으로 닫는다
+        cameraDataMapper.markGateOpened(cameraDataNo);
         gateService.scheduleClose(gate.getGateNo());
 
         return 1;

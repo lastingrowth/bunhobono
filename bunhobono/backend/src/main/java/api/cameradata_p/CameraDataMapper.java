@@ -87,13 +87,14 @@ public interface CameraDataMapper {
 
             OR
 
-            -- 방문차량은 예상 방문시간 1시간 전부터
-            -- 예상 방문시간 1시간 후까지 최초 입차 가능
+           
+            -- 방문차량은 등록된 시작시각부터 종료시각까지 입차 가능
             (
                 vc.vehicle_type = 'visit'
+                AND vc.start_date IS NOT NULL
+                AND vc.end_date IS NOT NULL
                 AND CURRENT_TIMESTAMP
-                    BETWEEN vc.start_date - INTERVAL '1 hour'
-                        AND vc.start_date + INTERVAL '1 hour'
+                    BETWEEN vc.start_date AND vc.end_date
             )
 
             OR
@@ -136,12 +137,13 @@ public interface CameraDataMapper {
 
             OR
 
-            -- 방문차량은 예상 방문시간 앞뒤 1시간 동안 최초 입차 가능
+            -- 방문차량은 등록된 시작시각부터 종료시각까지 입차 가능
             (
                 vc.vehicle_type = 'visit'
+                AND vc.start_date IS NOT NULL
+                AND vc.end_date IS NOT NULL
                 AND CURRENT_TIMESTAMP
-                    BETWEEN vc.start_date - INTERVAL '1 hour'
-                        AND vc.start_date + INTERVAL '1 hour'
+                    BETWEEN vc.start_date AND vc.end_date
             )
 
             OR
@@ -229,6 +231,19 @@ public interface CameraDataMapper {
     int updateNote(
             @Param("cameraDataNo") int cameraDataNo,
             @Param("camNote") String camNote
+    );
+
+
+    // 카메라 촬영 데이터에 게이트 개방 기록
+    @Update("""
+    UPDATE camera_data
+    SET gate_opened = TRUE,
+        gate_opened_at = CURRENT_TIMESTAMP
+    WHERE camera_data_no = #{cameraDataNo}
+      AND gate_opened = FALSE
+    """)
+    int markGateOpened(
+            @Param("cameraDataNo") int cameraDataNo
     );
 
 }
