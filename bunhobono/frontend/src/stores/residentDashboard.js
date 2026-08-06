@@ -1,4 +1,7 @@
-import { getResidentDashboard } from "@/shared/api/residentDashboardApi"; 
+import {
+    getResidentDashboard,
+    getTodayWeather
+} from "@/shared/api/residentDashboardApi"; 
 import { getParkingsList } from "@/features/parking/parkingsApi";
 import { toVehicleView } from "@/features/vehicle/vehicleFormat";
 import { defineStore } from "pinia";
@@ -8,6 +11,17 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
 
     const loading = ref(false);
     const errorMessage = ref("");
+    const weatherLoading = ref(false);
+    const weatherErrorMessage = ref("");
+
+    const weather = ref({
+        temperature: null,
+        humidity: null,
+        precipitation: "강수 없음",
+        rainfall: null,
+        windSpeed: null,
+        observedAt: ""
+    });
 
     const dashboard = ref({
         member: {},
@@ -80,6 +94,61 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         });
     });
 
+    const precipitationText = (code) => {
+        const labels = {
+            "0": "강수 없음",
+            "1": "비",
+            "2": "비 또는 눈",
+            "3": "눈",
+            "5": "빗방울",
+            "6": "빗방울 또는 눈날림",
+            "7": "눈날림"
+        };
+
+        return labels[String(code)] ?? "강수 없음";
+    };
+
+    // 기상청 원본 JSON에서 입주민 홈에 필요한 날씨 값만 꺼낸다.
+    const loadWeather = async () => {
+        weatherLoading.value = true;
+        weatherErrorMessage.value = "";
+
+        try {
+            const response = await getTodayWeather();
+            const rawData = typeof response.data === "string"
+                ? JSON.parse(response.data)
+                : response.data;
+
+            const items = rawData?.response?.body?.items?.item;
+
+            if (!Array.isArray(items) || items.length === 0) {
+                throw new Error("기상청 날씨 데이터가 없습니다.");
+            }
+
+            const valueOf = (category) => {
+                return items.find((item) => item.category === category)?.obsrValue;
+            };
+
+            const firstItem = items[0];
+
+            weather.value = {
+                temperature: valueOf("T1H") ?? null,
+                humidity: valueOf("REH") ?? null,
+                precipitation: precipitationText(valueOf("PTY")),
+                rainfall: valueOf("RN1") ?? null,
+                windSpeed: valueOf("WSD") ?? null,
+                observedAt: firstItem
+                    ? `${firstItem.baseDate} ${firstItem.baseTime}`
+                    : ""
+            };
+        } catch (error) {
+            console.error("날씨 정보를 불러오지 못했습니다.", error);
+            weatherErrorMessage.value = "날씨 정보를 불러오지 못했습니다.";
+        } finally {
+            weatherLoading.value = false;
+        }
+    };
+
     // 입주민 대시보드에 필요한 데이터를 조회하고 조합
     const loadDashboard = async () => {
         loading.value = true;
@@ -88,7 +157,8 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         try {
             const [residentResponse, parkingResponse] = await Promise.all([
                 getResidentDashboard(),
-                getParkingsList()
+                getParkingsList(),
+                loadWeather()
             ]);
 
             const residentData = residentResponse.data || {};
@@ -131,11 +201,15 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
     return {
         loading,
         errorMessage,
+        weatherLoading,
+        weatherErrorMessage,
+        weather,
         dashboard,
         residenceText,
         normalVehicles,
         visitVehicles,
         parkingStatusList,
+        loadWeather,
         loadDashboard
     };
 

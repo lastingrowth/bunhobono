@@ -5,3 +5,7 @@ export const getResidentDashboard = () => {
     return api.get("/resident/mypage/dashboard");
 };
 
+// 부산 현재 날씨 조회
+export const getTodayWeather = () => {
+    return api.get("/weather/today");
+};

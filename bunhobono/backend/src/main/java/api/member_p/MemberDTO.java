@@ -95,6 +95,7 @@ public class MemberDTO {
         private LocalDateTime outTime;
     }
 
+
     // =====================================================
     // 5. 회원 정보·본인 차량·입출차 기록을 대시보드 응답 하나로 묶는다.
     // =====================================================
@@ -104,6 +105,8 @@ public class MemberDTO {
         private MemberDTO member;
         private List<ResidentVehicle> vehicles;
         private List<ResidentCarLog> recentCarLogs;
+
+
     }
 
     // =====================================================

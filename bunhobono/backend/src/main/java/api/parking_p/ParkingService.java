@@ -30,5 +30,4 @@ public class ParkingService {
         return parkingMapper.updateParking(dto);
     }
 
-
 }
