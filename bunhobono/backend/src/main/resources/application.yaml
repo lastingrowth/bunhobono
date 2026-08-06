@@ -33,3 +33,12 @@ jwt:
 
 file:
   camera-data : ${local.camera-data}
+
+weather:
+  api:
+    base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+    service-key: IUeADriUDPgMGwjyPsPQqkr%2F1W407k8MKpZgiPTbtZFowc6P2SLHrfLqEPL1mF7fnXgFTUae5%2FqG9Vq2jCWT8w%3D%3D
+## 부산 좌표
+  location:
+    nx: 98
+    ny: 76
