@@ -18,9 +18,6 @@ public class MemberController {
     @Resource
     MemberService service;
 
-    @Resource
-    SmsAuthService smsAuthService;
-
     // 인증된 사용자의 로그인 아이디를 반환하고 비로그인 요청은 거부한다.
     private String authenticatedLoginId(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -56,18 +53,6 @@ public class MemberController {
             dto.setMemStatus("PENDING");
         }
         service.signup(dto);
-    }
-
-    // [sms인증] 회원가입 전화번호로 인증번호를 발송한다.
-    @PostMapping("/signup/phone/send-code")
-    public void sendPhoneCode(@RequestBody MemberDTO.PhoneCodeRequest request) {
-        smsAuthService.sendCode(request.phone());
-    }
-
-    // [sms인증] 사용자가 입력한 전화번호 인증번호를 확인한다.
-    @PostMapping("/signup/phone/verify-code")
-    public void verifyPhoneCode(@RequestBody MemberDTO.PhoneCodeRequest request) {
-        smsAuthService.verifyCode(request.phone(), request.code());
     }
 
     // 입력한 로그인 아이디가 이미 존재하는지 확인한다.

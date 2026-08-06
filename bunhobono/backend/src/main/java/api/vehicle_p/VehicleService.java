@@ -97,6 +97,39 @@ public class VehicleService {
         return vehicleMapper.insert(null, dto);
     }
 
+    // 긴급·작업 차량 24시간 방문등록
+    @Transactional
+    public int registerEmergencyVisit(
+            String adminLoginId,
+            String carNo
+    ) {
+        VehicleDTO dto = new VehicleDTO();
+        dto.setCarNo(carNo);
+
+        normalizeCarNo(dto);
+
+        // 현재 사용 중인 동일 차량번호는 중복 등록하지 않음
+        if (vehicleMapper.countActiveByCarNo(dto.getCarNo()) > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 등록되어 있거나 사용 중인 차량번호입니다."
+            );
+        }
+
+        LocalDateTime startDate = LocalDateTime.now();
+
+        dto.setVehicleType("visit");
+        dto.setVehicleStatus("APPROVED");
+        dto.setStartDate(startDate);
+        dto.setEndDate(startDate.plusHours(24));
+
+        // 로그인 관리자를 등록자로 지정
+        return vehicleMapper.insert(
+                adminLoginId,
+                dto
+        );
+    }
+
     // RESIDENT 방문차량 신청
     // 로그인한 회원에게 WAITING 상태로 등록
     public int residentVisitRequest(

@@ -4,6 +4,7 @@ import api.cameradata_p.CameraDataDTO;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -13,231 +14,240 @@ import java.util.List;
 @Mapper
 public interface CarLogMapper {
 
+    // 차량 입출차 목록 조회
     @Select("""
         <script>
         SELECT
-            ROW_NUMBER() OVER (ORDER BY cl.in_time ASC) AS display_no,
-            cl.car_log_no,
-            COALESCE(vc.car_no, cd.car_no, cl.snapshot_car_no) AS car_no,
-            COALESCE(
-                cl.snapshot_car_kind,
-                CASE
-                    WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
-                    WHEN vc.vehicle_type = 'visit' THEN 'VISIT'
-                    ELSE 'REGISTERED'
-                END
-            ) AS car_kind,
-            CASE WHEN cl.out_time IS NULL THEN 'PARKING' ELSE 'OUT' END AS parking_state,
-            cl.vehicle_car_no,
-            vc.vehicle_type,
-            vc.vehicle_status,
-            p.parking_no,
-            p.parking_name,
-            cl.camera_data_no,
-            cl.out_camera_data_no,
-            cl.in_gate_no,
-            ig.gate_name AS in_gate_name,
-            cl.in_time,
-            cl.out_gate_no,
-            og.gate_name AS out_gate_name,
-            cl.out_time
-        FROM car_log cl
-        LEFT JOIN vehicle_car vc ON cl.vehicle_car_no = vc.vehicle_car_no
-        LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no
-        LEFT JOIN gate ig ON cl.in_gate_no = ig.gate_no
-        LEFT JOIN gate og ON cl.out_gate_no = og.gate_no
-        LEFT JOIN parking p ON ig.parking_no = p.parking_no
+            ROW_NUMBER() OVER (
+                ORDER BY detail.in_time
+            ) AS display_no,
+            detail.*,
+            detail.snapshot_car_kind AS car_kind
+        FROM car_log_detail detail
         WHERE 1 = 1
+
         <if test="gateNo != null">
-            AND (cl.in_gate_no = #{gateNo} OR cl.out_gate_no = #{gateNo})
+            AND (
+                detail.in_gate_no = #{gateNo}
+                OR detail.out_gate_no = #{gateNo}
+            )
         </if>
+
         <if test="parkingNo != null">
-            AND p.parking_no = #{parkingNo}
+            AND detail.parking_no = #{parkingNo}
         </if>
-        <if test="parkingState == 'PARKING'">
-            AND cl.out_time IS NULL
+
+        <if test="parkingState != null and parkingState != ''">
+            AND detail.parking_state = #{parkingState}
         </if>
-        <if test="parkingState == 'OUT'">
-            AND cl.out_time IS NOT NULL
-        </if>
+
         <if test="carKind != null and carKind != ''">
-            AND COALESCE(
-                cl.snapshot_car_kind,
-                CASE
-                    WHEN cl.vehicle_car_no IS NULL THEN 'UNKNOWN'
-                    WHEN vc.vehicle_type = 'visit' THEN 'VISIT'
-                    ELSE 'REGISTERED'
-                END
-            ) = #{carKind}
+            AND detail.snapshot_car_kind = #{carKind}
         </if>
+
         <if test="carNo != null and carNo != ''">
-            AND COALESCE(vc.car_no, cd.car_no, cl.snapshot_car_no) LIKE CONCAT('%', #{carNo}, '%')
+            AND detail.car_no LIKE CONCAT(
+                '%',
+                #{carNo},
+                '%'
+            )
         </if>
+
         <choose>
-            <when test="sort == 'oldest'">ORDER BY cl.in_time ASC</when>
-            <when test="sort == 'activity'">
-                ORDER BY COALESCE(cl.out_time, cl.in_time) DESC
+            <when test="sort == 'oldest'">
+                ORDER BY detail.in_time
             </when>
-            <otherwise>ORDER BY cl.in_time DESC</otherwise>
+            <otherwise>
+                ORDER BY detail.in_time DESC
+            </otherwise>
         </choose>
         </script>
     """)
     List<CarLogDTO> list(CarLogDTO dto);
 
-    @Select("SELECT g.gate_no, g.gate_type " +
-            "FROM camera c " +
-            "JOIN gate g ON c.gate_no = g.gate_no " +
-            "WHERE c.camera_no = #{cameraNo}")
-    CarLogDTO findGateByCameraNo(int cameraNo);
-
+    // 차량 입출차 상세 조회
     @Select("""
-        <script>
-        SELECT EXISTS (
-            SELECT 1
-            FROM car_log cl
-            LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no
-            WHERE cl.out_time IS NULL
-            <choose>
-                <when test="vehicleCarNo != null">
-                    AND cl.vehicle_car_no = #{vehicleCarNo}
-                </when>
-                <otherwise>
-                    AND cl.vehicle_car_no IS NULL
-                    AND (
-                        cd.car_no = #{carNo}
-                        OR cd.ocr_car_no = #{carNo}
-                        OR cd.car_no = #{ocrCarNo}
-                        OR cd.ocr_car_no = #{ocrCarNo}
-                        OR cl.snapshot_car_no = #{carNo}
-                        OR cl.snapshot_car_no = #{ocrCarNo}
-                    )
-                </otherwise>
-            </choose>
-        )
-        </script>
+        SELECT
+            detail.*,
+            detail.snapshot_car_kind AS car_kind
+        FROM car_log_detail detail
+        WHERE detail.car_log_no = #{carLogNo}
     """)
-    boolean existsOpenLog(CameraDataDTO dto);
+    CarLogDTO detail(
+            @Param("carLogNo") int carLogNo
+    );
 
+    // 촬영 카메라가 연결된 게이트 조회
+    @Select("""
+        SELECT
+            gate.gate_no,
+            gate.parking_no,
+            gate.gate_type,
+            gate.gate_area
+        FROM camera
+
+        JOIN gate
+            ON camera.gate_no = gate.gate_no
+
+        WHERE camera.camera_no = #{cameraNo}
+          AND camera.active = TRUE
+          AND gate.active = TRUE
+    """)
+    CarLogDTO findGateByCameraNo(
+            @Param("cameraNo") int cameraNo
+    );
+
+    // 아직 출차하지 않은 차량 기록 조회
     @Select("""
         <script>
         SELECT
-            cl.car_log_no,
-            cl.vehicle_car_no,
-            COALESCE(vc.car_no, cl.snapshot_car_no, cd.car_no) AS car_no
-        FROM car_log cl
-        LEFT JOIN vehicle_car vc ON cl.vehicle_car_no = vc.vehicle_car_no
-        LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no
-        WHERE cl.out_time IS NULL
+            detail.*,
+            detail.snapshot_car_kind AS car_kind
+        FROM car_log_detail detail
+        WHERE detail.out_time IS NULL
+
         <choose>
             <when test="vehicleCarNo != null">
-                AND cl.vehicle_car_no = #{vehicleCarNo}
+                AND detail.vehicle_car_no =
+                    #{vehicleCarNo}
             </when>
+
             <otherwise>
-                AND cl.vehicle_car_no IS NULL
                 AND (
-                    cd.car_no = #{carNo}
-                    OR cd.ocr_car_no = #{carNo}
-                    OR cd.car_no = #{ocrCarNo}
-                    OR cd.ocr_car_no = #{ocrCarNo}
-                    OR cl.snapshot_car_no = #{carNo}
-                    OR cl.snapshot_car_no = #{ocrCarNo}
+                    detail.car_no = #{carNo}
+                    OR detail.car_no = #{ocrCarNo}
+                    OR detail.snapshot_car_no = #{carNo}
+                    OR detail.snapshot_car_no =
+                        #{ocrCarNo}
                 )
             </otherwise>
         </choose>
-        ORDER BY cl.in_time DESC
+
+        ORDER BY detail.in_time DESC
         LIMIT 1
         </script>
     """)
-    CarLogDTO findOpenLog(CameraDataDTO dto);
+    CarLogDTO findOpenLog(
+            CameraDataDTO dto
+    );
 
-    // [지난 기록 통계] 입차 당시 차량번호와 차량 종류를 함께 보존한다.
+    // B1·B2 입차 기록 생성
     @Insert("""
-        INSERT INTO car_log
-            (vehicle_car_no, camera_data_no, in_gate_no, in_time,
-             snapshot_car_no, snapshot_car_kind)
-        VALUES
-            (#{data.vehicleCarNo}, #{data.cameraDataNo}, #{gateNo},
-             #{data.captureTime}, #{data.carNo},
-             CASE
-                 WHEN #{data.vehicleCarNo, jdbcType=INTEGER} IS NULL THEN 'UNKNOWN'
-                 WHEN #{data.vehicleType, jdbcType=VARCHAR} = 'visit' THEN 'VISIT'
-                 ELSE 'REGISTERED'
-             END)
-        """)
-    int insertEntry(
+        INSERT INTO car_log (
+            vehicle_car_no,
+            camera_data_no,
+            in_gate_no,
+            in_time,
+            free_time,
+            snapshot_car_no,
+            snapshot_car_kind
+        )
+        VALUES (
+            #{vehicleCarNo},
+            #{cameraDataNo},
+            #{inGateNo},
+            #{inTime},
+            COALESCE(#{freeTime}, 0),
+            #{snapshotCarNo},
+            #{snapshotCarKind}
+        )
+    """)
+    @Options(
+            useGeneratedKeys = true,
+            keyProperty = "carLogNo",
+            keyColumn = "car_log_no"
+    )
+    int insertEntry(CarLogDTO dto);
+
+    // B1·B2 출차 처리
+    @Update("""
+        UPDATE car_log
+        SET out_camera_data_no =
+                #{data.cameraDataNo},
+            out_gate_no = #{gateNo},
+            out_time = #{data.captureTime}
+        WHERE car_log_no = #{carLogNo}
+          AND out_time IS NULL
+    """)
+    int exitParking(
+            @Param("carLogNo") int carLogNo,
             @Param("data") CameraDataDTO data,
             @Param("gateNo") int gateNo
     );
 
+    // OCR 관리자 수정사항 반영
     @Update("""
         <script>
         UPDATE car_log
-        SET out_gate_no = #{gateNo},
-            out_time = #{data.captureTime},
-            out_camera_data_no = #{data.cameraDataNo}
-        WHERE car_log_no = (
-            SELECT cl.car_log_no
-            FROM car_log cl
-            LEFT JOIN camera_data cd ON cl.camera_data_no = cd.camera_data_no
-            WHERE cl.out_time IS NULL
-            <choose>
-                <when test="data.vehicleCarNo != null">
-                    AND cl.vehicle_car_no = #{data.vehicleCarNo}
-                </when>
-                <otherwise>
-                    AND cl.vehicle_car_no IS NULL
-                    AND (
-                        cd.car_no = #{data.carNo}
-                        OR cd.ocr_car_no = #{data.carNo}
-                        OR cd.car_no = #{data.ocrCarNo}
-                        OR cd.ocr_car_no = #{data.ocrCarNo}
-                        OR cl.snapshot_car_no = #{data.carNo}
-                        OR cl.snapshot_car_no = #{data.ocrCarNo}
-                    )
-                </otherwise>
-            </choose>
-            ORDER BY cl.in_time DESC
-            LIMIT 1
-        )
-        </script>
-    """)
-    int completeExit(@Param("data") CameraDataDTO data, @Param("gateNo") int gateNo);
 
-    @Update("""
-        <script>
-        UPDATE car_log
         <choose>
             <when test="vehicleCarNo != null">
                 SET vehicle_car_no = #{vehicleCarNo},
                     snapshot_car_no = #{carNo},
                     snapshot_car_kind =
                         CASE
-                            WHEN #{vehicleType} = 'visit' THEN 'VISIT'
+                            WHEN #{vehicleType} = 'visit'
+                                THEN 'VISIT'
                             ELSE 'REGISTERED'
                         END
             </when>
+
             <otherwise>
                 SET vehicle_car_no = NULL,
                     snapshot_car_no = #{carNo},
                     snapshot_car_kind = 'UNKNOWN'
             </otherwise>
         </choose>
+
         WHERE camera_data_no = #{cameraDataNo}
            OR out_camera_data_no = #{cameraDataNo}
         </script>
     """)
-    int correctByCameraData(CameraDataDTO dto);
+    int correctByCameraData(
+            CameraDataDTO dto
+    );
 
-    @Delete("DELETE FROM car_log WHERE car_log_no = #{carLogNo}")
-    int delete(int carLogNo);
+    // 입출차 기록 삭제
+    @Delete("""
+        DELETE FROM car_log
+        WHERE car_log_no = #{carLogNo}
+    """)
+    int delete(
+            @Param("carLogNo") int carLogNo
+    );
 
-    // 출차 완료 후 15일이 지난 입출차 기록 번호 조회
+    // 출차 후 3개월이 지난 기록 조회
     @Select("""
-    SELECT car_log_no
-    FROM car_log
-    WHERE out_time IS NOT NULL
-      AND out_time < NOW() - INTERVAL '3 months'
+        SELECT car_log_no
+        FROM car_log
+        WHERE out_time IS NOT NULL
+          AND out_time
+              < CURRENT_TIMESTAMP
+                - INTERVAL '3 months'
     """)
     List<Integer> findOldCarLogNosForTrash();
-    //테스트 날짜 알아서
+
+
+    // 주차장 수용 가능 여부 확인
+    @Select("""
+    SELECT EXISTS (
+        SELECT 1
+        FROM parking
+        WHERE parking_no = #{parkingNo}
+          AND active = TRUE
+          AND (
+              SELECT COUNT(*)
+              FROM car_log log
+
+              JOIN gate
+                  ON log.in_gate_no = gate.gate_no
+
+              WHERE gate.parking_no = #{parkingNo}
+                AND log.out_time IS NULL
+          ) < parking_spaces
+    )
+""")
+    boolean hasAvailableCapacity(
+            @Param("parkingNo") int parkingNo
+    );
 }

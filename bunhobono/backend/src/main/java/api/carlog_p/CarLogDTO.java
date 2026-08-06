@@ -8,40 +8,53 @@ import java.time.LocalDateTime;
 @Data
 public class CarLogDTO {
 
-    // 목록 응답 순서
+    // 목록 표시값
     private Integer displayNo;
-    private Integer carLogNo;
     private String carNo;
     private String carKind;
     private String parkingState;
 
+    // 입출차 기록
+    private Integer carLogNo;
     private Integer vehicleCarNo;
-    private String vehicleType;
-    private String vehicleStatus;
-
-    private Integer parkingNo;
-    private String parkingName;
 
     private Integer cameraDataNo;
     private Integer outCameraDataNo;
+
     private Integer inGateNo;
     private String inGateName;
-    private LocalDateTime inTime, realEndDate;
+    private LocalDateTime inTime;
 
     private Integer outGateNo;
     private String outGateName;
     private LocalDateTime outTime;
 
+    private Integer freeTime;
+
+    // 입차 당시 차량 정보
+    private String snapshotCarNo;
+    private String snapshotCarKind;
+
+    // 차량 조회값
+    private String vehicleType;
+    private String vehicleStatus;
+
+    // 주차장 조회값
+    private Integer parkingNo;
+    private String parkingCode;
+    private String parkingName;
+
     // 목록 검색 조건
     @JsonIgnore
     private Integer gateNo;
+
+    @JsonIgnore
     private String sort;
 
-    // camera_data 자동 처리용 게이트 정보
+    // 카메라 게이트 처리용
     @JsonIgnore
     private String gateType;
 
-    // [지난 기록 통계] 입차 당시 차량번호와 차량 종류를 보존한다.
-    private String snapshotCarNo;
-    private String snapshotCarKind;
+    @JsonIgnore
+    private String gateArea;
 }

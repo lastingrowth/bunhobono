@@ -9,26 +9,21 @@ import java.util.List;
 public class ParkingService {
 
     @Resource
-    ParkingMapper parkingMapper;
+    private ParkingMapper parkingMapper;
 
-    //조회
-    public List<ParkingDTO> listservice(ParkingDTO dto) {
-        return parkingMapper.list(dto);
+    public List<ParkingDTO> list() {
+        return parkingMapper.list();
     }
 
-    //주차장등록
-    public int signUp(ParkingDTO dto) {
+    public int insert(ParkingDTO dto) {
         return parkingMapper.insert(dto);
     }
 
-    //Delete
     public int delete(int parkingNo) {
         return parkingMapper.delete(parkingNo);
     }
 
-    public int updateParking(ParkingDTO dto) {
+    public int update(ParkingDTO dto) {
         return parkingMapper.updateParking(dto);
     }
-
-
 }
