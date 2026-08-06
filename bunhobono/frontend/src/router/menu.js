@@ -33,6 +33,10 @@ export const adminMenu = [
     path: '/admin/boards'
   },
   {
+    title: '1:1 문의',
+    path: '/admin/inquiries'
+  },
+  {
     title: '지난기록',
     path: '/admin/trash'
   },

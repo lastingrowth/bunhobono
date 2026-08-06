@@ -2,6 +2,7 @@ package api.inquiry_p;
 
 import api.a_security_config.AuthService;
 import api.a_security_config.LoginDTO;
+import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,9 @@ public class InquiryService {
 
     @Resource
     private AuthService authService;
+
+    @Resource
+    private TrashService trashService;
 
 
     // 입주민 문의 등록
@@ -201,6 +205,19 @@ public class InquiryService {
         dto.setContent(dto.getContent().trim());
 
         return inquiryMapper.insert(dto);
+    }
+
+    // 답변 완료 후 3개월이 지난 문의를 지난 기록으로 이동
+    public void moveOldInquiriesToTrash() {
+        List<Integer> inquiryNos = inquiryMapper.findInquiryNosForTrash();
+
+        for (Integer inquiryNo : inquiryNos) {
+            try {
+                trashService.moveInquiry(inquiryNo, "SCHEDULED");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     // 문의 입력값 검사

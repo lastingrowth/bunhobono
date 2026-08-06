@@ -42,6 +42,11 @@
                         @click="closeResidentMenu"
                     >공지사항</RouterLink>
                     <RouterLink
+                        to="/resident/inquiries"
+                        :class="{ 'menu-active': route.path.startsWith('/resident/inquiries') }"
+                        @click="closeResidentMenu"
+                    >1:1 문의</RouterLink>
+                    <RouterLink
                         :to="{ path: '/resident/vehicles', query: { mode: 'notification' } }"
                         :class="{ 'menu-active': route.path === '/resident/vehicles' && route.query.mode === 'notification' }"
                         @click="closeResidentMenu"

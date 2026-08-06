@@ -34,7 +34,7 @@
       {{ store.errorMessage }}
     </p>
 
-    <template v-if="!store.loading && !store.errorMessage">
+    <template v-if="!store.loading">
     <!-- 입주민 문의 목록 -->
     <template v-if="mode === 'list'">
       <section
@@ -70,7 +70,7 @@
         </button>
       </section>
 
-      <p v-else class="page-state">
+      <p v-else-if="!store.errorMessage" class="page-state">
         등록한 문의사항이 없습니다.
       </p>
     </template>
@@ -180,7 +180,7 @@
 
     <!-- 재문의 작성 -->
     <form
-      v-else-if="mode === 'reInquiry'"
+      v-else-if="mode === 'reInquiry' && 'store.inquiry'"
       class="inquiry-form"
       @submit.prevent="submitReInquiry"
     >

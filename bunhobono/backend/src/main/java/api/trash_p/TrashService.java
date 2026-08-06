@@ -39,6 +39,7 @@ public class TrashService {
             case "CAMERA_DATA" -> trashMapper.restoreCameraData(trashNo);
             case "CAR_LOG" -> trashMapper.restoreCarLog(trashNo);
             case "NOTICE" -> trashMapper.restoreNotice(trashNo);
+            case "INQUIRY" -> trashMapper.restoreInquiry(trashNo);
             default -> throw new IllegalArgumentException("복원할 수 없는 데이터 유형입니다: " + trash.getDataType());
         };
 

@@ -85,10 +85,6 @@
       </header>
 
       <p v-if="store.loading" class="page-state">문의사항을 불러오는 중입니다.</p>
-      <p v-else-if="store.errorMessage" class="page-state error">
-        {{ store.errorMessage }}
-      </p>
-
       <article v-else-if="store.inquiry" class="detail-card">
         <div class="detail-heading">
           <div>
@@ -127,12 +123,22 @@
             rows="8"
             placeholder="답변 내용을 입력해 주세요"
           />
-          <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
+          <p v-if="store.errorMessage" class="form-error">
+            {{ store.errorMessage }}
+          </p>
           <button type="submit" :disabled="store.saving">
             {{ store.saving ? "등록 중" : "답변 등록" }}
           </button>
         </form>
+
+        <p v-if="successMessage" class="success-message">
+          {{ successMessage }}
+        </p>
       </article>
+
+      <p v-else-if="store.errorMessage" class="page-state error">
+        {{ store.errorMessage }}
+      </p>
     </template>
   </main>
 </template>
@@ -278,6 +284,7 @@ th { background: #f2f6f9; }
 .answer-form label { font-weight: 800; }
 .answer-form textarea { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #cbd8e2; border-radius: 7px; resize: vertical; font: inherit; }
 .answer-form button { justify-self: end; }
+.form-error { margin: 0; color: #c73d3d; }
 .success-message { color: #157344; }
 button:disabled { cursor: not-allowed; opacity: .6; }
 @media (max-width: 760px) {
