@@ -76,6 +76,17 @@ public interface TrashMapper {
             @Param("deleteType") String deleteType
     );
 
+    // 1:1 문의를 JSON 으로 변환해 휴지통에 저장
+    @Insert("INSERT INTO trash_bin " +
+            " (data_type, original_no, data_json, delete_type) " +
+            " SELECT 'INQUIRY', i.inquiry_no, to_jsonb(i), #{deleteType} " +
+            " FROM inquiry i " +
+            " WHERE i.inquiry_no = #{inquiryNo}")
+    int saveInquiry(
+            @Param("inquiryNo") int inquiryNo,
+            @Param("deleteType") String deleteType
+    );
+
     // 복원 완료 또는 영구 삭제 시 휴지통 행 제거
     @Delete("DELETE FROM trash_bin " +
             "WHERE trash_no = #{trashNo}")

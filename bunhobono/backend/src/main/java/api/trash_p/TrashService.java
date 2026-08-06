@@ -2,6 +2,7 @@ package api.trash_p;
 
 import api.cameradata_p.CameraDataMapper;
 import api.carlog_p.CarLogMapper;
+import api.inquiry_p.InquiryMapper;
 import api.notice_p.NoticeMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class TrashService {
     private final CameraDataMapper cameraDataMapper;
     private final CarLogMapper carLogMapper;
     private final NoticeMapper noticeMapper;
+    private final InquiryMapper inquiryMapper;
 
     public List<TrashDTO> list(String dataType) {
         return trashMapper.list(dataType);
@@ -96,6 +98,22 @@ public class TrashService {
         int deleted = noticeMapper.delete(noticeNo);
         if (deleted != 1) {
             throw new IllegalStateException("알림 삭제에 실패했습니다.");
+        }
+    }
+
+    // 1:1 문의 휴지통 이동
+    @Transactional
+    public void moveInquiry(int inquiryNo, String deleteType) {
+        int saved = trashMapper.saveInquiry(inquiryNo, deleteType);
+
+        if (saved != 1) {
+            throw new IllegalArgumentException("문의사항을 찾을 수 없습니다.");
+        }
+
+        int deleted = inquiryMapper.delete(inquiryNo);
+
+        if (deleted != 1) {
+            throw new IllegalStateException("문의사항 삭제에 실패했습니다.");
         }
     }
     

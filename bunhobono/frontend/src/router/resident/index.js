@@ -6,6 +6,7 @@ import parkings from "./parkings";
 import mypage from "./mypage";
 import carlogs from "./carlogs";
 import boards from "./boards";
+import inquiries from "./inquiries";
 
 export const residentRoutes = [
     {
@@ -23,6 +24,7 @@ export const residentRoutes = [
             ...mypage,
             ...carlogs,
             ...boards,
+            ...inquiries,
         ]
     }
 ]
