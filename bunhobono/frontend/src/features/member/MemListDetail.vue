@@ -24,6 +24,7 @@
             <tr><th>호수</th><td>{{ store.member.role === 'ADMIN' ? '-' : store.member.ho }}</td></tr>
             <tr><th>연락처</th><td>{{ store.member.memPhone }}</td></tr>
             <tr><th>아이디</th><td>{{ store.member.loginId }}</td></tr>
+            <tr><th>이메일</th><td>{{ store.member.email }}</td></tr>
             <tr><th>가입일</th><td>{{ store.formatMemberDateTime(store.member.memCreateAt) }}</td></tr>
             <tr v-if="store.member.memDeleteAt">
                 <th>{{ memberEndDateLabel }}</th>

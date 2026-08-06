@@ -43,14 +43,18 @@
       </button>
     </form>
 
-    <div class="signup-guide">
-      <span>아직 계정이 없으신가요?</span>
-
-      <RouterLink
-        class="signup-link"
-        to="/resident/signup">
+    <div class="account-actions">
+      <RouterLink class="account-link" to="/resident/find-account?mode=id">
+        아이디 찾기
+      </RouterLink>
+      <span class="account-divider" aria-hidden="true">|</span>
+      <RouterLink class="account-link" to="/resident/find-account?mode=password">
+        비밀번호 찾기
+      </RouterLink>
+      <span class="account-divider" aria-hidden="true">|</span>
+      <RouterLink class="account-link" to="/resident/signup">
         회원가입
-    </RouterLink>
+      </RouterLink>
     </div>
   </section>
 
@@ -84,6 +88,32 @@ async function loginGo() {
 </script>
 
 <style scoped>
+.account-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.account-link {
+  color: #64748b;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.account-link:hover {
+  color: #0284c7;
+}
+
+.account-divider {
+  color: #cbd5e1;
+  font-weight: 400;
+}
+
 /* 로그인 화면 오른쪽 아래에 고정되는 OCR 시연 버튼 */
 .ocr-demo-link {
   position: fixed;

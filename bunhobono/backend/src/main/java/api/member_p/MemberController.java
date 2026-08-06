@@ -1,5 +1,6 @@
 package api.member_p;
 
+import api.a_security_config.VerificationService;
 import api.apartmentunit_p.ApartmentUnitDTO;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
@@ -19,7 +20,7 @@ public class MemberController {
     MemberService service;
 
     @Resource
-    SmsAuthService smsAuthService;
+    VerificationService verificationService;
 
     // 인증된 사용자의 로그인 아이디를 반환하고 비로그인 요청은 거부한다.
     private String authenticatedLoginId(Authentication authentication) {
@@ -61,13 +62,33 @@ public class MemberController {
     // [sms인증] 회원가입 전화번호로 인증번호를 발송한다.
     @PostMapping("/signup/phone/send-code")
     public void sendPhoneCode(@RequestBody MemberDTO.PhoneCodeRequest request) {
-        smsAuthService.sendCode(request.phone());
+        verificationService.sendSignupPhoneCode(request.phone());
     }
 
     // [sms인증] 사용자가 입력한 전화번호 인증번호를 확인한다.
     @PostMapping("/signup/phone/verify-code")
     public void verifyPhoneCode(@RequestBody MemberDTO.PhoneCodeRequest request) {
-        smsAuthService.verifyCode(request.phone(), request.code());
+        verificationService.verifySignupPhoneCode(request.phone(), request.code());
+    }
+
+    // [email인증] 아이디·비밀번호 찾기에 사용할 보안문자를 문자 또는 이메일로 발송한다.
+    @PostMapping("/account/recovery/send-code")
+    public void sendAccountRecoveryCode(@RequestBody MemberDTO.AccountRecoveryRequest request) {
+        service.sendAccountRecoveryCode(request);
+    }
+
+    // 보안문자를 확인하고 가입된 아이디를 반환한다.
+    @PostMapping("/account/recovery/find-id")
+    public MemberDTO.AccountRecoveryResponse findAccountLoginId(
+            @RequestBody MemberDTO.AccountRecoveryRequest request
+    ) {
+        return service.findAccountLoginId(request);
+    }
+
+    // 보안문자를 확인한 뒤 계정의 비밀번호를 변경한다.
+    @PutMapping("/account/recovery/password")
+    public void resetAccountPassword(@RequestBody MemberDTO.AccountRecoveryRequest request) {
+        service.resetAccountPassword(request);
     }
 
     // 입력한 로그인 아이디가 이미 존재하는지 확인한다.

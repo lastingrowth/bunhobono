@@ -17,6 +17,7 @@
                     <tr><th>연락처</th><td>{{ store.member.memPhone }}</td></tr>
                     <tr><th>동</th><td>{{ store.member.dong }}</td></tr>
                     <tr><th>호수</th><td>{{ store.member.ho }}</td></tr>
+                    <tr><th>이메일</th><td>{{ store.member.email }}</td></tr>
                     <tr><th>상태</th><td>{{ store.member.memStatus === 'ACTIVE' ? '거주' : store.member.memStatus }}</td></tr>
                 </tbody>
             </table>

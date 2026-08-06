@@ -30,6 +30,7 @@ public interface MemberMapper {
             unit_no,
             mem_name,
             mem_phone,
+            email,
             role,
             create_at,
             delete_at,
@@ -41,6 +42,7 @@ public interface MemberMapper {
             selected_unit.apartment_unit_no,
             #{memName},
             #{memPhone},
+            #{email},
             #{role},
             CURRENT_TIMESTAMP,
             NULL,
@@ -58,6 +60,7 @@ public interface MemberMapper {
             unit_no,
             mem_name,
             mem_phone,
+            email,
             role,
             create_at,
             delete_at,
@@ -69,6 +72,7 @@ public interface MemberMapper {
             NULL,
             #{memName},
             #{memPhone},
+            #{email},
             'ADMIN',
             CURRENT_TIMESTAMP,
             NULL,
@@ -80,6 +84,56 @@ public interface MemberMapper {
     // 회원가입 전에 입력한 아이디가 이미 사용 중인지 확인한다.
     @Select("SELECT EXISTS (SELECT 1 FROM member WHERE login_id = #{loginId})" )
     boolean checkLoginId(String loginId);
+
+    // 이름 또는 아이디와 선택한 연락수단이 모두 일치하는 회원의 아이디를 조회한다.
+    @Select("""
+        SELECT m.login_id
+        FROM member m
+        LEFT JOIN apartment_unit au
+          ON au.apartment_unit_no = m.unit_no
+        WHERE (
+                (#{purpose} = 'FIND_ID'
+                    AND m.mem_name = #{memName}
+                    AND au.dong = #{dong}
+                    AND au.ho = #{ho})
+                OR (#{purpose} = 'RESET_PASSWORD' AND m.login_id = #{loginId})
+              )
+          AND (
+                (#{channel} = 'PHONE'
+                    AND REGEXP_REPLACE(COALESCE(m.mem_phone, ''), '[^0-9]', '', 'g')
+                        = REGEXP_REPLACE(COALESCE(#{contact}, ''), '[^0-9]', '', 'g'))
+                OR
+                (#{channel} = 'EMAIL'
+                    AND LOWER(TRIM(COALESCE(m.email, ''))) = LOWER(TRIM(#{contact})))
+              )
+          AND m.mem_status NOT IN ('WITHDRAWN', 'REJECTED', 'INACTIVE')
+        ORDER BY m.member_no DESC
+        LIMIT 1
+    """)
+    String findRecoveryLoginId(MemberDTO.AccountRecoveryRequest request);
+
+    // [email인증] 새 비밀번호가 기존 비밀번호와 같은지 비교할 암호화 비밀번호를 조회한다.
+    @Select("""
+        SELECT login_pwd
+        FROM member
+        WHERE login_id = #{loginId}
+          AND mem_status NOT IN ('WITHDRAWN', 'REJECTED', 'INACTIVE')
+        ORDER BY member_no DESC
+        LIMIT 1
+    """)
+    String findRecoveryPassword(@Param("loginId") String loginId);
+
+    // 계정 복구 인증이 완료된 회원의 비밀번호를 변경한다.
+    @Update("""
+        UPDATE member
+        SET login_pwd = #{encodedPassword}
+        WHERE login_id = #{loginId}
+          AND mem_status NOT IN ('WITHDRAWN', 'REJECTED', 'INACTIVE')
+    """)
+    int updateRecoveredPassword(
+            @Param("loginId") String loginId,
+            @Param("encodedPassword") String encodedPassword
+    );
 
     // 회원가입 화면에서 선택할 수 있는 빈 세대 정보를 조회한다.
     @Select("""

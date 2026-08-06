@@ -19,6 +19,7 @@ public class MemberDTO {
     private Integer unitNo;        // 아파트 동/호수. 관리자는 null
     private String memName;
     private String memPhone;
+    private String email;
     private String role;
     private String memStatus;
     private Integer dong;
@@ -34,6 +35,33 @@ public class MemberDTO {
     public record PhoneCodeRequest(
             String phone,
             String code
+    ) {}
+
+    // 아이디·비밀번호 찾기의 발송, 인증, 비밀번호 변경 요청값을 함께 전달한다.
+    public record AccountRecoveryRequest(
+            // 요청 목적: 아이디 찾기(FIND_ID) 또는 비밀번호 재설정(RESET_PASSWORD)
+            String purpose,
+            // 인증 방법: 문자(PHONE) 또는 이메일(EMAIL)
+            String channel,
+            // 보안코드를 받을 전화번호 또는 이메일 주소
+            String contact,
+            // 아이디 찾기에 사용하는 회원 이름
+            String memName,
+            // 아이디 찾기에 사용하는 동
+            Integer dong,
+            // 아이디 찾기에 사용하는 호수
+            Integer ho,
+            // 비밀번호 재설정 대상 아이디
+            String loginId,
+            // 사용자가 입력한 6자리 보안코드
+            String code,
+            // 인증 성공 후 저장할 새 비밀번호
+            String newPassword
+    ) {}
+
+    // 보안문자 인증 후 조회된 아이디를 반환한다.
+    public record AccountRecoveryResponse(
+            String loginId
     ) {}
 
     // =====================================================
@@ -79,12 +107,16 @@ public class MemberDTO {
     }
 
     // =====================================================
-    // 6. 입주민 본인 확인에 필요한 비밀번호와 보안문자 값을 전달한다.
+    // 6. 비밀번호 변경 및 회원 탈퇴시, 입주민 본인 확인에 필요한 비밀번호와 보안문자 값을 전달한다.
     // =====================================================
     public record ResidentSecurityRequest(
+            // 본인 확인에 사용하는 현재 비밀번호
             String currentPassword,
+            // 비밀번호 변경 시 저장할 새 비밀번호
             String newPassword,
+            // 서버에서 발급한 보안문자 이미지의 식별값
             String challengeId,
+            // 사용자가 입력한 보안문자 정답
             String challengeAnswer
     ) {}
 
