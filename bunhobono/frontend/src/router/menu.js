@@ -48,6 +48,10 @@ export const adminMenu = [
     title: '카메라',
     path: '/admin/cameras'
   },
+  {
+    title: '키오스크',
+    path: '/admin/kiosk'
+  },
 ];
 
 

@@ -12,6 +12,7 @@ import trash from "./trash";
 import memberArchive from "./memberArchive";
 import statistics from "./statistics";
 import boards from "./boards";
+import kiosk from "./kiosk";
 
 export const adminRoutes = [
     {
@@ -35,7 +36,8 @@ export const adminRoutes = [
             ...trash,
             ...memberArchive,
             ...statistics,
-            ...boards
+            ...boards,
+            ...kiosk
         ]
     }
 ]

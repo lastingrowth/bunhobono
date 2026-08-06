@@ -156,8 +156,7 @@ CREATE TABLE member_archive (
 CREATE TABLE parking (
     parking_no SERIAL PRIMARY KEY,
     parking_name VARCHAR(100) NOT NULL,
-    parking_spaces INT NOT NULL
-        CHECK (parking_spaces >= 0),
+    parking_spaces INT NOT NULL,
     parking_location VARCHAR(255)
 );
 
@@ -449,6 +448,23 @@ CREATE INDEX idx_trash_type_deleted_at
 
 CREATE INDEX idx_trash_purge_at
     ON trash_bin(purge_at);
+
+-- =====================================================
+-- KIOSK
+-- 주차장에 설치된 키오스크 장비 정보를 관리한다.
+-- =====================================================
+CREATE TABLE kiosk (
+    kiosk_no SERIAL PRIMARY KEY,       -- 키오스크 고유번호
+    parking_no INT NOT NULL,           -- 키오스크가 설치된 주차장 번호
+    model_name VARCHAR(100),           -- 키오스크 장비 모델명
+    kiosk_location VARCHAR(255),       -- 주차장 내부의 키오스크 설치 위치
+    install_date DATE,                 -- 키오스크 장비 설치일
+
+    CONSTRAINT fk_kiosk_parking        -- 소속 주차장이 존재하도록 제한
+        FOREIGN KEY (parking_no)
+        REFERENCES parking(parking_no)
+        ON DELETE RESTRICT             -- 키오스크가 남아 있으면 주차장 삭제 차단
+);
 
 -- =====================================================
 -- NOTICE DETAIL VIEW
