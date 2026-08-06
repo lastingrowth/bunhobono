@@ -1,0 +1,51 @@
+{
+  "model_type": "XGBoost",
+  "target_column": "risk_level",
+  "feature_columns": [
+    "drive_motor_temperature_c",
+    "drive_motor_current_a",
+    "drive_vibration_mm_s",
+    "battery_voltage_v",
+    "battery_temperature_c",
+    "days_since_maintenance"
+  ],
+  "label_to_id": {
+    "위험": 0,
+    "정상": 1,
+    "주의": 2
+  },
+  "id_to_label": {
+    "0": "위험",
+    "1": "정상",
+    "2": "주의"
+  },
+  "danger_class_id": 0,
+  "danger_weight_multiplier": 1.0,
+  "best_tree_count": 375,
+  "data_split": {
+    "train": 0.7,
+    "validation": 0.1,
+    "test": 0.2,
+    "method": "robot별 시간순 분리"
+  },
+  "validation_metrics": {
+    "accuracy": 0.89,
+    "precision_weighted": 0.9022993698374449,
+    "recall_weighted": 0.89,
+    "f1_weighted": 0.8944603770559918,
+    "macro_f1": 0.7978323268017609,
+    "danger_precision": 0.6310679611650486,
+    "danger_recall": 0.8333333333333334,
+    "danger_f1": 0.7182320441988951
+  },
+  "test_metrics": {
+    "accuracy": 0.831,
+    "precision_weighted": 0.8833413479840029,
+    "recall_weighted": 0.831,
+    "f1_weighted": 0.849553638303331,
+    "macro_f1": 0.7555644919658442,
+    "danger_precision": 0.7954545454545454,
+    "danger_recall": 0.9722222222222222,
+    "danger_f1": 0.875
+  }
+}
