@@ -2,6 +2,7 @@ package api.scheduler_p;
 
 import api.cameradata_p.CameraDataService;
 import api.carlog_p.CarLogService;
+import api.inquiry_p.InquiryService;
 import api.notice_p.NoticeService;
 import api.vehicle_nt_p.VehicleNtService;
 import jakarta.annotation.Resource;
@@ -16,6 +17,9 @@ public class Scheduler {
 
     @Resource
     private CarLogService carLogService;
+
+    @Resource
+    private InquiryService inquiryService;
 
     @Resource
     private NoticeService noticeService;
@@ -45,6 +49,12 @@ public class Scheduler {
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void moveOldCarLogsToTrash() {
         carLogService.moveOldCarLogsToTrash();
+    }
+
+    // 매일 자정 : 답변 완료 후 3개월이 지난 문의를 휴지통으로 이동한다
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    public void moveOldInquiriesToTrash() {
+        inquiryService.moveOldInquiriesToTrash();
     }
 
     // 매일 자정: 처리 완료 후 3개월이 지난 장기주차 알림을 휴지통으로 이동한다.

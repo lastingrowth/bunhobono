@@ -76,6 +76,17 @@ public interface TrashMapper {
             @Param("deleteType") String deleteType
     );
 
+    // 1:1 문의를 JSON 으로 변환해 휴지통에 저장
+    @Insert("INSERT INTO trash_bin " +
+            " (data_type, original_no, data_json, delete_type) " +
+            " SELECT 'INQUIRY', i.inquiry_no, to_jsonb(i), #{deleteType} " +
+            " FROM inquiry i " +
+            " WHERE i.inquiry_no = #{inquiryNo}")
+    int saveInquiry(
+            @Param("inquiryNo") int inquiryNo,
+            @Param("deleteType") String deleteType
+    );
+
     // 복원 완료 또는 영구 삭제 시 휴지통 행 제거
     @Delete("DELETE FROM trash_bin " +
             "WHERE trash_no = #{trashNo}")
@@ -285,6 +296,41 @@ public interface TrashMapper {
       AND tb.data_type = 'NOTICE'
 """)
     int restoreNotice(int trashNo);
+
+    // 휴지통에 보관된 1:1 문의 복원
+    @Insert("""
+        INSERT INTO inquiry
+            (inquiry_no, member_no, root_inquiry_no, category, title, content,
+             status, answer_content, answered_by, answered_at, created_at)
+        SELECT
+            (tb.data_json ->> 'inquiry_no')::int,
+            (tb.data_json ->> 'member_no')::int,
+            NULLIF(tb.data_json ->> 'root_inquiry_no', '')::int,
+            tb.data_json ->> 'category',
+            tb.data_json ->> 'title',
+            tb.data_json ->> 'content',
+            COALESCE(
+                tb.data_json ->> 'status',
+                'WAITING'
+            ),
+            tb.data_json ->> 'answer_content',
+            CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM member m
+                    WHERE m.member_no = NULLIF(tb.data_json ->> 'answered_by', '')::int
+                ) THEN NULLIF(tb.data_json ->> 'answered_by', '')::int
+                ELSE NULL
+            END,
+            NULLIF(tb.data_json ->> 'answered_at', '')::timestamp,
+            COALESCE(
+                NULLIF(tb.data_json ->> 'created_at', '')::timestamp,
+                CURRENT_TIMESTAMP
+            )
+        FROM trash_bin tb
+        WHERE tb.trash_no = #{trashNo}
+          AND tb.data_type = 'INQUIRY'
+        """)
+    int restoreInquiry(int trashNo);
 
     //검색
     @Select("SELECT trash_no, data_type, original_no, " +
