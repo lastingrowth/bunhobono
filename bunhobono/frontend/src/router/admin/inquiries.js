@@ -1,3 +1,4 @@
+import AdminFaqView from "@/features/faq/AdminFaqView.vue";
 import AdminInquiryView from "@/features/inquiry/AdminInquiryView.vue";
 
 export default [
@@ -10,5 +11,10 @@ export default [
     path: "inquiries/:inquiryNo/detail",
     name: "AdminInquiryDetail",
     component: AdminInquiryView,
+  },
+  {
+    path: "inquiries/faqs",
+    name: "AdminFaqList",
+    component: AdminFaqView,
   },
 ];
