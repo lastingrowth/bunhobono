@@ -4,16 +4,21 @@ import lombok.Data;
 
 @Data
 public class GateDTO {
+
     private int gateNo;
 
-    private String gateName, gateType, parkingName, parkingLocation;
+    private Integer parkingNo;
 
-    //외래키
-    private int parkingNo;
-    //일련번호
+    private String gateCode;
+    private String gateName;
+    private String gateType;
+    private String gateArea;
+
+    private String parkingName;
+    private String parkingLocation;
+
     private int displayNo;
 
-    // 게이트 상태
-    // 0 = 닫힘, 1 = 열림
+    // 0: 닫힘, 1: 열림
     private int gateStatus;
 }

@@ -66,7 +66,6 @@
                         :value="member.loginPwd"
                         minlength="8"
                         maxlength="20"
-                        autocomplete="new-password"
                         placeholder="영문, 숫자, 특수문자 포함 8~20자"
                         required
                         @input="handlePasswordInput">
@@ -83,7 +82,6 @@
                         }"
                         minlength="8"
                         maxlength="20"
-                        autocomplete="new-password"
                         placeholder="비밀번호를 다시 입력하세요"
                         required
                         @input="handlePasswordConfirmInput">
@@ -139,16 +137,48 @@
                 </div>
                 <span v-if="phoneVerified" class="phone-auth-success">전화번호 인증이 완료되었습니다.</span>
                 <div v-if="phoneCodeSent && !phoneVerified" class="input-action phone-code-row">
-                    <input
-                        v-model="phoneAuthCode"
-                        type="text"
-                        inputmode="numeric"
-                        maxlength="6"
-                        placeholder="인증번호 6자리"
-                        @input="handlePhoneCodeInput">
-                    <button type="button" :disabled="phoneVerifying" @click="verifyPhoneAuthCode">
+                    <div class="phone-code-input-wrap">
+                        <input
+                            v-model="phoneAuthCode"
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="6"
+                            placeholder="인증번호 6자리"
+                            @input="handlePhoneCodeInput">
+                        <span
+                            class="phone-auth-timer"
+                            :class="{ 'is-expired': phoneAuthRemainingSeconds === 0 }">
+                            {{ phoneAuthTimerText }}
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        :disabled="phoneVerifying || phoneAuthRemainingSeconds === 0"
+                        @click="verifyPhoneAuthCode">
                         {{ phoneVerifying ? '확인 중' : '인증 확인' }}
                     </button>
+                </div>
+            </div>
+
+            <div class="form-field email-field">
+                <span>이메일</span>
+                <div class="email-fields">
+                    <input
+                        v-model.trim="emailParts.id"
+                        type="text"
+                        maxlength="64"
+                        placeholder="이메일 아이디"
+                        required>
+                    <span class="email-at">@</span>
+                    <select v-model="emailParts.domain" required>
+                        <option disabled value="">이메일 선택</option>
+                        <option value="naver.com">naver.com</option>
+                        <option value="gmail.com">gmail.com</option>
+                        <option value="nate.com">nate.com</option>
+                        <option value="hanmail.net">hanmail.net</option>
+                        <option value="yahoo.co.kr">yahoo.co.kr</option>
+                        <option value="kakao.com">kakao.com</option>
+                    </select>
                 </div>
             </div>
 
@@ -165,7 +195,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useDialog } from "@/shared/alert/useDialog";
 import { useMemStore } from "./memStore";
@@ -188,6 +218,7 @@ const member = ref({
     dong: "",
     ho: "",
     memPhone: "",
+    email: "",
     loginId: "",
     loginPwd: "",
     // 공개 입주민 회원가입은 관리자 승인 전까지 PENDING 상태로 저장한다.
@@ -198,15 +229,49 @@ const idChecked = ref(false);
 const checkedLoginId = ref("");
 const passwordConfirm = ref("");
 const phoneParts = reactive({ first: "", middle: "", last: "" });
+const emailParts = reactive({ id: "", domain: "" });
 const phoneAuthCode = ref("");
 const phoneCodeSent = ref(false);
 const phoneVerified = ref(false);
 const phoneSending = ref(false);
 const phoneVerifying = ref(false);
+const phoneAuthRemainingSeconds = ref(0);
+let phoneAuthTimerId = null;
 
 const needsAvailableUnit = computed(() => !props.adminMode || member.value.role === "RESIDENT");
 const dialogTheme = computed(() => props.adminMode ? "admin" : "resident");
 const passwordsMatch = computed(() => member.value.loginPwd === passwordConfirm.value);
+const phoneAuthTimerText = computed(() => {
+    const minutes = Math.floor(phoneAuthRemainingSeconds.value / 60);
+    const seconds = phoneAuthRemainingSeconds.value % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+});
+
+const stopPhoneAuthTimer = () => {
+    if (phoneAuthTimerId !== null) {
+        clearInterval(phoneAuthTimerId);
+        phoneAuthTimerId = null;
+    }
+};
+
+const startPhoneAuthTimer = () => {
+    stopPhoneAuthTimer();
+    const expiresAt = Date.now() + 3 * 60 * 1000;
+    phoneAuthRemainingSeconds.value = 180;
+
+    phoneAuthTimerId = window.setInterval(() => {
+        phoneAuthRemainingSeconds.value = Math.max(
+            0,
+            Math.ceil((expiresAt - Date.now()) / 1000)
+        );
+
+        if (phoneAuthRemainingSeconds.value === 0) {
+            stopPhoneAuthTimer();
+        }
+    }, 1000);
+};
+
+onBeforeUnmount(stopPhoneAuthTimer);
 
 const statusOptions = computed(() => {
     if (member.value.role === 'ADMIN') {
@@ -260,6 +325,7 @@ const syncStatusWithRole = () => {
 const namePattern = /^(?=.*[가-힣])[가-힣]{2,10}$/;
 const loginIdPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{4,20}$/;
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,20}$/;
+const emailIdPattern = /^[A-Za-z0-9._%+-]{1,64}$/;
 
 const validateSignupFields = async () => {
     if (!namePattern.test(member.value.memName)) {
@@ -329,22 +395,22 @@ const validateSignupFields = async () => {
         return false;
     }
 
-    if (needsAvailableUnit.value && (!member.value.memDong || !member.value.memHo)) {
-        await alertDialog({
-            theme: dialogTheme.value,
-            type: "warning",
-            title: "동·호수 확인",
-            message: "동과 호수를 선택해주세요."
-        });
-        return false;
-    }
-
     if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
         await alertDialog({
             theme: dialogTheme.value,
             type: "warning",
             title: "연락처 형식 확인",
             message: "연락처를 정확히 입력하세요."
+        });
+        return false;
+    }
+
+    if (!emailIdPattern.test(emailParts.id) || !emailParts.domain) {
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "warning",
+            title: "이메일 형식 확인",
+            message: "이메일 주소를 정확히 입력하세요."
         });
         return false;
     }
@@ -370,6 +436,8 @@ const handlePhoneInput = (event, part, maxLength) => {
     phoneAuthCode.value = "";
     phoneCodeSent.value = false;
     phoneVerified.value = false;
+    phoneAuthRemainingSeconds.value = 0;
+    stopPhoneAuthTimer();
 };
 
 const getPhoneNumber = () => `${phoneParts.first}${phoneParts.middle}${phoneParts.last}`;
@@ -397,6 +465,7 @@ const sendPhoneAuthCode = async () => {
         await store.sendPhoneCode(phone);
         phoneCodeSent.value = true;
         phoneAuthCode.value = "";
+        startPhoneAuthTimer();
         await alertDialog({
             theme: dialogTheme.value,
             type: "success",
@@ -431,6 +500,7 @@ const verifyPhoneAuthCode = async () => {
     try {
         await store.verifyPhoneCode(getPhoneNumber(), phoneAuthCode.value);
         phoneVerified.value = true;
+        stopPhoneAuthTimer();
         await alertDialog({
             theme: dialogTheme.value,
             type: "success",
@@ -498,16 +568,15 @@ const idCheck = async () => {
             title: "아이디 사용 가능",
             message: "사용 가능한 아이디입니다."
         });
-    }
-    
+    }    
 }
-
 
 const signupGo = async () => {
 
     if (!(await validateSignupFields())) return;
 
     member.value.memPhone = `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`;
+    member.value.email = `${emailParts.id}@${emailParts.domain}`;
 
     try {
         await store.signup(member.value);
@@ -882,8 +951,63 @@ const signupGo = async () => {
     margin-top: 8px;
 }
 
+.phone-code-input-wrap {
+    position: relative;
+    min-width: 0;
+}
+
+.phone-code-input-wrap input {
+    width: 100%;
+    padding-right: 72px;
+}
+
+.phone-auth-timer {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
+.phone-auth-timer.is-expired {
+    color: #dc2626;
+}
+
+:global(.admin-layout .admin-signup-card .phone-auth-timer) {
+    color: var(--admin-accent) !important;
+}
+
+:global(.admin-layout .admin-signup-card .phone-auth-timer.is-expired) {
+    color: #f87171 !important;
+}
+
 .contact-field {
     grid-column: 1 / -1;
+}
+
+.email-field {
+    grid-column: 1 / -1;
+}
+
+.email-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+}
+
+.email-at {
+    color: var(--text-muted);
+    font-size: 18px;
+    font-weight: 800;
+}
+
+:global(.admin-layout .admin-signup-card .email-at) {
+    color: var(--admin-ink) !important;
 }
 
 .input-action {
@@ -979,6 +1103,11 @@ const signupGo = async () => {
 
     .phone-auth-button {
         width: auto;
+    }
+
+    .email-fields {
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        gap: 7px;
     }
 
     .input-action {

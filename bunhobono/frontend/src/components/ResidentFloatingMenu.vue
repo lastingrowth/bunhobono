@@ -31,6 +31,13 @@
             공지사항
         </RouterLink>
 
+        <RouterLink to="/resident/inquiries"
+            :class="{
+                active: route.path.startsWith('/resident/inquiries')
+            }">
+            1:1 문의
+        </RouterLink>
+
         <RouterLink to="/resident/vehicles?mode=notification"
             :class="{
                 active: route.path === '/resident/vehicles'

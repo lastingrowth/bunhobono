@@ -56,6 +56,21 @@ export const verifySignupPhoneCode = (phone, code) => {
     return api.post("/signup/phone/verify-code", { phone, code });
 };
 
+// 아이디·비밀번호 찾기에 사용할 보안문자를 발송한다.
+export const sendAccountRecoveryCode = (data) => {
+    return api.post("/account/recovery/send-code", data);
+};
+
+// 보안문자를 확인하고 가입된 아이디를 조회한다.
+export const findAccountLoginId = (data) => {
+    return api.post("/account/recovery/find-id", data);
+};
+
+// 보안문자와 새 비밀번호를 함께 전달해 비밀번호를 변경한다.
+export const resetAccountPassword = (data) => {
+    return api.put("/account/recovery/password", data);
+};
+
 // 입주민 로그인 시, 마이페이지
 export const residentMypage = () => {
     return api.get(`/resident/mypage`);

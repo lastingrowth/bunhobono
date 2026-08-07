@@ -13,6 +13,7 @@ import memberArchive from "./memberArchive";
 import statistics from "./statistics";
 import boards from "./boards";
 import kiosk from "./kiosk";
+import inquiries from "./inquiries";
 
 export const adminRoutes = [
     {
@@ -38,6 +39,7 @@ export const adminRoutes = [
             ...statistics,
             ...boards,
             ...kiosk
+            ...inquiries,
         ]
     }
 ]

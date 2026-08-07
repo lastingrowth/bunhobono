@@ -2,11 +2,13 @@ package api.scheduler_p;
 
 import api.cameradata_p.CameraDataService;
 import api.carlog_p.CarLogService;
+import api.inquiry_p.InquiryService;
 import api.notice_p.NoticeService;
 import api.vehicle_nt_p.VehicleNtService;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import api.robot_task_p.RobotTaskService;
 
 @Component
 public class Scheduler {
@@ -18,10 +20,16 @@ public class Scheduler {
     private CarLogService carLogService;
 
     @Resource
+    private InquiryService inquiryService;
+
+    @Resource
     private NoticeService noticeService;
 
     @Resource
     private VehicleNtService vehicleNtService;
+
+    @Resource
+    private RobotTaskService robotTaskService;
 
     // 10분마다 방문차량 상태를 확인하고 입주민 차량 알림을 생성한다.
     @Scheduled(cron = "0 */10 * * * *", zone = "Asia/Seoul")
@@ -47,6 +55,12 @@ public class Scheduler {
         carLogService.moveOldCarLogsToTrash();
     }
 
+    // 매일 자정 : 답변 완료 후 3개월이 지난 문의를 휴지통으로 이동한다
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    public void moveOldInquiriesToTrash() {
+        inquiryService.moveOldInquiriesToTrash();
+    }
+
     // 매일 자정: 처리 완료 후 3개월이 지난 장기주차 알림을 휴지통으로 이동한다.
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void moveResolvedParkingNoticesToTrash() {
@@ -59,4 +73,15 @@ public class Scheduler {
     public void createParkingNotices() {
         noticeService.createNoticesFromCarLog();
     }
+
+    // 대기 작업을 사용 가능한 로봇 세트에 배정한다.
+    @Scheduled(
+            fixedDelay = 2000,
+            initialDelay = 3000
+    )
+    public void dispatchRobotTasks() {
+        robotTaskService.dispatchWaitingTasks(); }
+
+
+
 }

@@ -427,7 +427,8 @@ CREATE TABLE trash_bin (
         CHECK (data_type IN (
             'CAMERA_DATA',                          -- 카메라 촬영 기록
             'CAR_LOG',                              -- 차량 입출차 기록
-            'NOTICE'                                -- 알림 기록
+            'NOTICE',                               -- 알림 기록
+			'INQUIRY'								-- 문의 사항 기록								
         )),
     original_no INT NOT NULL,                       -- 삭제 전 원본 테이블의 PK 번호
     data_json JSONB NOT NULL,                       -- 삭제 전 원본 행 전체 데이터 및 복원용 JSON

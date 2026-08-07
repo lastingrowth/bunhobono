@@ -4,12 +4,16 @@ import lombok.Data;
 
 @Data
 public class ParkingDTO {
-    private int parkingNo, parkingSpaces;
-    private String parkingName,  parkingLocation;
 
-    //일련번호 vue용
+    private int parkingNo;
+    private int parkingSpaces;
     private int displayNo;
-    //현재 주차 가능한 자리 수
     private int availableSpaces;
-    //외래키없음
+
+    private String parkingCode;
+    private String parkingName;
+    private String parkingType;
+    private String parkingLocation;
+
+    private boolean active;
 }

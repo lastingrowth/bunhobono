@@ -10,36 +10,30 @@ import java.util.List;
 @RequestMapping("/api/parkings")
 public class ParkingController {
 
-
     @Resource
-    ParkingService parkingService;
+    private ParkingService parkingService;
 
-    //list
     @GetMapping("")
-    public List<ParkingDTO> list(ParkingDTO dto){
-        List<ParkingDTO> list = parkingService.listservice(dto);
-        System.out.println("주차장정보 확인: " + list);
-        System.out.println(parkingService);
-        return list;
-    }
-    //추가
-    @PostMapping("/signUp")
-    public int sighUp(@RequestBody ParkingDTO dto){
-        return parkingService.signUp(dto);
+    public List<ParkingDTO> list() {
+        return parkingService.list();
     }
 
-    //삭제
+    @PostMapping("/signUp")
+    public int insert(@RequestBody ParkingDTO dto) {
+        return parkingService.insert(dto);
+    }
+
     @DeleteMapping("/{parkingNo}/delete")
-    public int deleteParking(@PathVariable int parkingNo) {
+    public int delete(@PathVariable int parkingNo) {
         return parkingService.delete(parkingNo);
     }
-    //수정
+
     @PutMapping("/{parkingNo}/edit")
-    public int updateParking(@PathVariable int parkingNo,
-                             @RequestBody ParkingDTO dto) {
+    public int update(
+            @PathVariable int parkingNo,
+            @RequestBody ParkingDTO dto
+    ) {
         dto.setParkingNo(parkingNo);
-        return parkingService.updateParking(dto);
+        return parkingService.update(dto);
     }
-
-
 }

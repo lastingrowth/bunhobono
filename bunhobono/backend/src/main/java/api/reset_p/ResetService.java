@@ -27,12 +27,12 @@ public class ResetService {
     }
 
     /**
-     * 06_full_dummy.sql을 실행해 DB 데이터를 초기화한다.
+     * db_basic_dummy.sql을 실행해 DB 데이터를 초기화한다.
      */
     private void resetDatabase() {
         ClassPathResource sqlFile =
                 new ClassPathResource(
-                        "sql/06_full_dummy.sql"
+                        "sql/db_basic_dummy.sql"
                 );
 
         ResourceDatabasePopulator populator =

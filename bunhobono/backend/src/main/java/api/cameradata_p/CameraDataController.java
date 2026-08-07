@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,10 +58,16 @@ public class CameraDataController {
     }
 
     // 관리자 수동 게이트 열기
-    // 자동 통과되지 않은 camera_data를 관리자가 확인한 뒤 게이트를 열 때 호출
+    // 긴급·작업 차량 방문등록과 게이트 개방
     @PostMapping("/{cameraDataNo}/open-gate")
-    public int openGate(@PathVariable int cameraDataNo) {
-        return cameraDataService.openGateByCameraData(cameraDataNo);
+    public int openGate(
+            Authentication authentication,
+            @PathVariable int cameraDataNo
+    ) {
+        return cameraDataService.openGateByCameraData(
+                authentication.getName(),
+                cameraDataNo
+        );
     }
 
     // 차량번호 검색 API

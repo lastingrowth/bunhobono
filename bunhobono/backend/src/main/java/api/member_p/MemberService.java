@@ -1,5 +1,6 @@
 package api.member_p;
 
+import api.a_security_config.VerificationService;
 import api.apartmentunit_p.ApartmentUnitDTO;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
@@ -41,7 +42,7 @@ public class MemberService {
     PasswordEncoder passwordEncoder;
 
     @Resource
-    SmsAuthService smsAuthService;
+    VerificationService verificationService;
 
     // =====================================================
     // 1. 회원가입 역할·세대·비밀번호를 검증하고 회원 정보를 저장한다.
@@ -50,14 +51,6 @@ public class MemberService {
     // 역할을 표준화하고 가입 유형에 맞는 저장 방식을 선택한다.
     @Transactional
     public void signup(MemberDTO dto) {
-        // [sms인증] 외부 가입과 관리자 회원 추가 모두 인증된 전화번호만 저장한다.
-        if (!smsAuthService.isVerified(dto.getMemPhone())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "전화번호 인증을 완료해 주세요."
-            );
-        }
-
         // 역할 비교와 DB 저장 형식을 맞추기 위해 대문자로 통일한다.
         if (dto.getRole() != null) {
             dto.setRole(dto.getRole().toUpperCase());
@@ -73,6 +66,9 @@ public class MemberService {
 
         // 비밀번호 암호화
         dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
+        // [sms인증] 저장 직전에 인증 여부를 확인하고 사용한 인증정보를 제거한다.
+        verificationService.consumeSignupPhoneVerification(dto.getMemPhone());
+
         // ADMIN은 주소 없이 등록하고 RESIDENT는 빈 세대와 연결해 새 회원으로 등록한다.
         int savedCount = "ADMIN".equals(dto.getRole())
                 ? mapper.signupAdmin(dto)
@@ -84,8 +80,6 @@ public class MemberService {
                     "회원으로 등록할 수 없는 동·호수입니다."
             );
         }
-
-        smsAuthService.consumeVerification(dto.getMemPhone());
     }
 
     // 공개 회원가입에서 선택할 수 있는 빈 세대 목록을 반환한다.
@@ -96,6 +90,121 @@ public class MemberService {
     // true이면 이미 사용 중이고 false이면 사용할 수 있다.
     public boolean checkLoginId(String loginId){
         return mapper.checkLoginId(loginId);
+    }
+
+    // 입력한 회원정보가 일치하면 선택한 연락수단으로 계정 복구 보안문자를 발송한다.
+    public void sendAccountRecoveryCode(MemberDTO.AccountRecoveryRequest request) {
+        MemberDTO.AccountRecoveryRequest normalized = normalizeRecoveryRequest(request);
+        String loginId = mapper.findRecoveryLoginId(normalized);
+        if (loginId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "일치하는 회원정보가 없습니다.");
+        }
+
+        verificationService.sendRecoveryCode(
+                normalized.purpose(),
+                loginId,
+                normalized.channel(),
+                normalized.contact()
+        );
+    }
+
+    // 아이디 찾기 보안문자를 확인하고 가입된 아이디를 반환한다.
+    public MemberDTO.AccountRecoveryResponse findAccountLoginId(
+            MemberDTO.AccountRecoveryRequest request
+    ) {
+        MemberDTO.AccountRecoveryRequest normalized = normalizeRecoveryRequest(request);
+        if (!"FIND_ID".equals(normalized.purpose())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 아이디 찾기 요청이 아닙니다.");
+        }
+        String loginId = mapper.findRecoveryLoginId(normalized);
+        if (loginId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "일치하는 회원정보가 없습니다.");
+        }
+
+        verificationService.verifyRecoveryCode(
+                normalized.purpose(),
+                loginId,
+                normalized.channel(),
+                normalized.contact(),
+                normalized.code()
+        );
+        return new MemberDTO.AccountRecoveryResponse(loginId);
+    }
+
+    // 보안문자를 확인한 뒤 새 비밀번호를 암호화해 저장한다.
+    @Transactional
+    public void resetAccountPassword(MemberDTO.AccountRecoveryRequest request) {
+        MemberDTO.AccountRecoveryRequest normalized = normalizeRecoveryRequest(request);
+        if (!"RESET_PASSWORD".equals(normalized.purpose())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 비밀번호 재설정 요청이 아닙니다.");
+        }
+        if (normalized.loginId() == null || normalized.loginId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "아이디를 입력해 주세요.");
+        }
+        if (normalized.newPassword() == null
+                || !normalized.newPassword().matches("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,20}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 새 비밀번호를 입력해 주세요.");
+        }
+
+        String loginId = mapper.findRecoveryLoginId(normalized);
+        if (loginId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "일치하는 회원정보가 없습니다.");
+        }
+        String savedPassword = mapper.findRecoveryPassword(loginId);
+        if (savedPassword == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "회원정보를 찾을 수 없습니다.");
+        }
+
+        // [email인증] 계정 복구 시 현재 비밀번호를 새 비밀번호로 다시 사용할 수 없게 한다.
+        if (passwordEncoder.matches(normalized.newPassword(), savedPassword)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "기존 비밀번호와 다른 비밀번호를 입력해 주세요."
+            );
+        }
+
+        verificationService.verifyRecoveryCode(
+                normalized.purpose(),
+                loginId,
+                normalized.channel(),
+                normalized.contact(),
+                normalized.code()
+        );
+        int updatedCount = mapper.updateRecoveredPassword(
+                loginId,
+                passwordEncoder.encode(normalized.newPassword())
+        );
+        if (updatedCount != 1) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "회원정보를 찾을 수 없습니다.");
+        }
+    }
+
+    // 계정 복구 목적과 인증수단을 표준화한다.
+    private MemberDTO.AccountRecoveryRequest normalizeRecoveryRequest(
+            MemberDTO.AccountRecoveryRequest request
+    ) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "계정 복구 정보를 입력해 주세요.");
+        }
+
+        String purpose = request.purpose() == null ? "" : request.purpose().trim().toUpperCase();
+        String channel = request.channel() == null ? "" : request.channel().trim().toUpperCase();
+        if (!Set.of("FIND_ID", "RESET_PASSWORD").contains(purpose)
+                || !Set.of("PHONE", "EMAIL").contains(channel)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 계정 복구 방법을 선택해 주세요.");
+        }
+
+        return new MemberDTO.AccountRecoveryRequest(
+                purpose,
+                channel,
+                request.contact() == null ? "" : request.contact().trim(),
+                request.memName() == null ? null : request.memName().trim(),
+                request.dong(),
+                request.ho(),
+                request.loginId() == null ? null : request.loginId().trim(),
+                request.code(),
+                request.newPassword()
+        );
     }
 
     // 동·호수 형식과 동일 세대의 활성 회원 존재 여부를 확인한다.
