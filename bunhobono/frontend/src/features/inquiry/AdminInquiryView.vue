@@ -4,15 +4,21 @@
       <header class="page-header">
         <h2>1:1 문의 관리</h2>
 
-        <div class="status-tabs">
-          <button
-            v-for="option in statusOptions"
-            :key="option.value"
-            type="button"
-            :class="{ active: selectedStatus === option.value }"
-            @click="changeStatus(option.value)"
-          >
-            {{ option.label }}
+        <div class="header-actions">
+          <div class="status-tabs">
+            <button
+              v-for="option in statusOptions"
+              :key="option.value"
+              type="button"
+              :class="{ active: selectedStatus === option.value }"
+              @click="changeStatus(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+
+          <button type="button" class="secondary-button" @click="goFaqs">
+            FAQ 관리
           </button>
         </div>
       </header>
@@ -228,6 +234,9 @@ const goDetail = (number) => router.push({
   query: { status: selectedStatus.value },
 });
 
+// FAQ 관리로 이동
+const goFaqs = () => router.push("/admin/inquiries/faqs");
+
 const goList = () => router.push({
   path: "/admin/inquiries",
   query: route.query.status === "ANSWERED" ? { status: "ANSWERED" } : {},
@@ -256,6 +265,7 @@ watch(
 .admin-inquiry-page { padding: 24px; color: #22364a; }
 .page-header,.detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
 .page-header h2,.detail-heading h3 { margin: 0; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
 .status-tabs { display: flex; gap: 8px; }
 .status-tabs button,.secondary-button,.answer-form button { min-height: 38px; padding: 8px 15px; border: 1px solid #c9d5df; border-radius: 7px; background: #fff; cursor: pointer; font-weight: 700; }
 .status-tabs button.active,.answer-form button { border-color: #168bd2; color: #fff; background: #168bd2; }

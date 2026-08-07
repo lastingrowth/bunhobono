@@ -5,20 +5,25 @@
 
       <div class="header-actions">
         <button
+          type="button"
+          class="secondary"
+          @click="goFaq">
+          자주하는 질문
+        </button>
+
+        <button
           v-if="mode === 'list'"
           type="button"
-          @click="goWrite"
-        >
-          문의 작성
+          @click="goWrite">
+          문의하기
         </button>
 
         <button
           v-else
           type="button"
           class="secondary"
-          @click="goList"
-        >
-          문의 목록
+          @click="goList">
+          내 문의
         </button>
       </div>
     </header>
@@ -273,7 +278,7 @@ const pageTitle = computed(() => {
     return "1:1 문의 상세";
   }
 
-  return "1:1 문의";
+  return "내 문의";
 });
 
 const categoryText = (category) => {
@@ -342,8 +347,13 @@ const submitReInquiry = async () => {
   goList();
 };
 
-const goList = () =>
+// 자주하는 질문으로 이동
+const goFaq = () =>
   router.push("/resident/inquiries");
+
+// 내 문의 목록으로 이동
+const goList = () =>
+  router.push("/resident/inquiries/my");
 
 const goWrite = () =>
   router.push("/resident/inquiries/write");
