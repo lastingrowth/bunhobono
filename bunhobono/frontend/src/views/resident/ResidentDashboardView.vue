@@ -125,6 +125,9 @@
                 >
                     <header class="summary-card-header">
                         <h2>차량현황</h2>
+                        <span class="visit-registration-remaining">
+                            방문등록 {{ dashboard.visitRegistrationRemaining ?? 10 }}회 남음
+                        </span>
                     </header>
                     <div class="vehicle-status-groups">
                         <div class="vehicle-status-group">
@@ -546,6 +549,7 @@ onUnmounted(() => {
 .member-summary-card { display: flex; flex-direction: column; border-color: #d8e6f2; background: #fff; }
 .summary-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .summary-card-header h2 { margin: 0; color: #263f59; font-size: 18px; }
+.visit-registration-remaining { color: #8b9aaa; font-size: 12px; font-weight: 500; white-space: nowrap; }
 .summary-card-header button { padding: 6px 10px; border: 1px solid #c9dcef; border-radius: 8px; color: #315c86; background: #f5faff; font-size: 11px; font-weight: 700; cursor: pointer; }
 .summary-card-header button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
 .summary-card-header h2,.recent-log-card h2,.parking-card h2 { display: flex; align-items: center; gap: 7px; }

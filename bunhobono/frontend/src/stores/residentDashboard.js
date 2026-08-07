@@ -27,6 +27,7 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         member: {},
         normalVehicleCount : 0,
         visitVehicleCount: 0,
+        visitRegistrationRemaining: 10,
         totalParkingSpaces: 0,
         availableParkingSpaces: 0,
         vehicles: [],
@@ -57,6 +58,13 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         return dashboard.value.vehicles.filter((vehicle) => {
             return vehicle.vehicleType === "visit";
         });
+    });
+
+    const visitRegistrationRemaining = computed(() => {
+        return Math.max(
+            Number(dashboard.value.visitRegistrationRemaining ?? 10),
+            0
+        );
     });
 
     // 주차장별 전체·사용·가능 면수와 사용률
@@ -155,7 +163,10 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         errorMessage.value = "";
 
         try {
-            const [residentResponse, parkingResponse] = await Promise.all([
+            const [
+                residentResponse,
+                parkingResponse
+            ] = await Promise.all([
                 getResidentDashboard(),
                 getParkingsList(),
                 loadWeather()
@@ -179,6 +190,13 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
                 visitVehicleCount: vehicles.filter((vehicle) => {
                     return vehicle.vehicleType === "visit";
                 }).length,
+                // 현재 등록된 방문차량을 기준으로 무료 잔여 횟수를 표시한다.
+                visitRegistrationRemaining: Math.max(
+                    10 - vehicles.filter((vehicle) => {
+                        return vehicle.vehicleType === "visit";
+                    }).length,
+                    0
+                ),
                 totalParkingSpaces: parkings.reduce((sum, parking) => {
                     return sum + Number(parking.parkingSpaces || 0);
                 }, 0),
@@ -208,6 +226,7 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         residenceText,
         normalVehicles,
         visitVehicles,
+        visitRegistrationRemaining,
         parkingStatusList,
         loadWeather,
         loadDashboard
