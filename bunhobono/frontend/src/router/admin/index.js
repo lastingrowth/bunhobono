@@ -38,7 +38,7 @@ export const adminRoutes = [
             ...memberArchive,
             ...statistics,
             ...boards,
-            ...kiosk
+            ...kiosk,
             ...inquiries,
         ]
     }
