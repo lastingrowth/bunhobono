@@ -9,16 +9,16 @@
                     <button type="button" @click="goDashboard">홈페이지로</button>
                     <button type="button" @click="goVisitVehicleForm">방문차량 등록</button>
                 </div>
-                <p v-if="visitRegistrationMessage" class="visit-registration-message">
+                <!--<p v-if="visitRegistrationMessage" class="visit-registration-message">
                     {{ visitRegistrationMessage }}
                 </p>
                 <RouterLink
                     v-if="visitRegistrationMessage"
                     class="vehicle-list-text-link"
-                    to="/resident/vehicles"
+                    to="/resident/visit-credit"
                 >
-                    차량 목록으로 가기
-                </RouterLink>
+                    방문차량 횟수 충전하기 (충전 페이지 생기면 활성화 예정)
+                </RouterLink>-->
             </div>
         </article>
     </section>
@@ -36,15 +36,7 @@ const resVehicleStore = useResVehicleStore();
 const visitRegistrationMessage = ref("");
 const memberName = computed(() => memberStore.member.memName || "입주민");
 
-const goVisitVehicleForm = async () => {
-    await resVehicleStore.loadVehicleList();
-
-    if (resVehicleStore.hasActiveVisitVehicle) {
-        visitRegistrationMessage.value = "방문차량이 이미 등록되어있습니다";
-        return;
-    }
-
-    visitRegistrationMessage.value = "";
+const goVisitVehicleForm = () => {
     router.push("/resident/vehicles?mode=form");
 };
 const goDashboard = () => router.push("/resident/dashboard");

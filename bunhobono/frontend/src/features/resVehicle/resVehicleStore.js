@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import {
+    cancelResVisitVehicle,
     createResVehicle,
     getResVehicleList,
     getResVehicleMemberInfo,
@@ -63,36 +64,13 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
             });
     });
 
-    // 현재 추가 방문차량을 신청할 수 없는지 확인
-    const hasActiveVisitVehicle = computed(() => {
-        const now = Date.now();
-
-        return visitVehicles.value.some((item) => {
-            if (item.vehicleStatus === "WAITING") {
-                return true;
-            }
-
-            if (item.vehicleStatus !== "APPROVED" || item.outTime) {
-                return false;
-            }
-
-            if (item.expiryType === "NO_ENTRY" || item.expiryType === "OVERSTAY") {
-                return false;
-            }
-
-            if (item.inTime || !item.startDate) {
-                return true;
-            }
-
-            const noEntryDeadline =
-                new Date(item.startDate).getTime() + (60 * 60 * 1000);
-
-            return now <= noEntryDeadline;
-        });
-    });
-
     const addVisitVehicle = async (data) => {
         await createResVehicle(data);
+        await loadVehicleList();
+    };
+
+    const cancelVisitVehicle = async (vehicleCarNo) => {
+        await cancelResVisitVehicle(vehicleCarNo);
         await loadVehicleList();
     };
 
@@ -111,13 +89,13 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         notifications,
         normalVehicles,
         visitVehicles,
-        hasActiveVisitVehicle,
         unreadNotificationCount,
         removeNotification,
         loadMyInfo,
         loadVehicleList,
         loadNotifications,
         markAllNotificationsRead,
-        addVisitVehicle
+        addVisitVehicle,
+        cancelVisitVehicle
     };
 });

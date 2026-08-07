@@ -12,7 +12,7 @@
         <col class="vehicle-col-period">
         <col class="vehicle-col-date">
         <col class="vehicle-col-remaining">
-        <col v-if="showManage" class="vehicle-col-manage">
+        <col v-if="showManage || showCancel" class="vehicle-col-manage">
       </colgroup>
 
       <thead>
@@ -24,7 +24,7 @@
           <th>등록기간</th>
           <th>만기일</th>
           <th>남은기간</th>
-          <th v-if="showManage">관리</th>
+          <th v-if="showManage || showCancel">관리</th>
         </tr>
       </thead>
 
@@ -63,14 +63,26 @@
             </span>
           </td>
 
-          <td v-if="showManage">
-            <button @click="$emit('edit', vehicle)">수정</button>
-            <button @click="$emit('remove', vehicle.vehicleCarNo)">삭제</button>
+          <td v-if="showManage || showCancel">
+            <template v-if="showManage">
+              <button @click="$emit('edit', vehicle)">수정</button>
+              <button @click="$emit('remove', vehicle.vehicleCarNo)">삭제</button>
+            </template>
+
+            <button
+              v-if="showCancel && !vehicle.inTime"
+              type="button"
+              @click="$emit('cancel-visit', vehicle)"
+            >
+             취소
+            </button>
+
+            <span v-else-if="showCancel">입차 완료</span>
           </td>
         </tr>
 
         <tr v-if="vehicles.length === 0">
-          <td :colspan="showManage ? 8 : 7" align="center">
+          <td :colspan="showManage || showCancel ? 8 : 7" align="center">
             {{ emptyMessage }}
             <a
               v-if="emptyActionLabel"
@@ -104,10 +116,14 @@ defineProps({
   showManage: {
     type: Boolean,
     default: false
+  },
+  showCancel: {
+    type: Boolean,
+    default: false
   }
 });
 
-defineEmits(["edit", "remove", "empty-action"]);
+defineEmits(["edit", "remove", "cancel-visit", "empty-action"]);
 
 const normalizedText = (value) => String(value || "-").trim();
 

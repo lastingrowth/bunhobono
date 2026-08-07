@@ -53,6 +53,23 @@ public class VehicleController {
         return vehicleService.residentList(authentication.getName());
     }
 
+    // 로그인한 입주민 세대의 이번 달 방문차량 등록 현황
+    @GetMapping("/resident/visit/monthly-registration")
+    public Map<String, Integer> monthlyVisitRegistration(
+            Authentication authentication
+    ) {
+        int registeredCount =
+                vehicleService.getMonthlyRegisteredVisitCount(
+                        authentication.getName()
+                );
+
+        return Map.of(
+                "limitCount", 10,
+                "registeredCount", registeredCount,
+                "remainingCount", Math.max(0, 10 - registeredCount)
+        );
+    }
+
     // ADMIN 차량 등록
     // URL은 기존 프론트 호환을 위해 /signUp 유지
     // 관리자가 등록하면 승인대기 없이 바로 APPROVED로 등록된다.
@@ -70,6 +87,18 @@ public class VehicleController {
         return vehicleService.residentVisitRequest(authentication.getName(), dto);
     }
 
+    // 입주민과 같은 세대의 미입차 방문차량 등록 취소
+    @DeleteMapping("/resident/visit/{vehicleCarNo}")
+    public int cancelUnenteredVisit(
+            Authentication authentication,
+            @PathVariable int vehicleCarNo
+    ) {
+        return vehicleService.cancelUnenteredVisit(
+                authentication.getName(),
+                vehicleCarNo
+        );
+    }
+
     // 차량 삭제
     @DeleteMapping("/{vehicleCarNo}/delete")
     public int deleteVehicle(@PathVariable int vehicleCarNo) {
@@ -82,25 +111,5 @@ public class VehicleController {
                              @RequestBody VehicleDTO dto) {
         dto.setVehicleCarNo(vehicleCarNo);
         return vehicleService.update(dto);
-    }
-
-    // 관리자 차량 승인 또는 반려
-    // APPROVED는 차량 상태로 저장한다.
-    // REJECTED는 알림 저장 후 승인대기 신청을 삭제한다.
-    @PatchMapping("/{vehicleCarNo}/status")
-    public int updateVehicleStatus(
-            Authentication authentication,
-            @PathVariable int vehicleCarNo,
-            @RequestBody VehicleDTO dto) {
-
-        // URL로 전달된 차량 고유번호를 DTO에 넣는다.
-        dto.setVehicleCarNo(vehicleCarNo);
-
-        // JWT에서 만들어진 Authentication의 loginId를
-        // 관리자 발신자 정보로 Service에 전달한다.
-        return vehicleService.updateStatus(
-                authentication.getName(),
-                dto
-        );
     }
 }

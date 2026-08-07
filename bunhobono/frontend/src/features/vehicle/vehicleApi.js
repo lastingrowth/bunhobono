@@ -26,8 +26,3 @@ export const updateVehicle = (vehicleCarNo, data) => {
 export const deleteVehicle = (vehicleCarNo) => {
     return api.delete(`/vehicles/${vehicleCarNo}/delete`);
 };
-
-// 차량 승인 상태 변경
-export const updateVehicleStatus = (vehicleCarNo, data) => {
-    return api.patch(`/vehicles/${vehicleCarNo}/status`, data);
-};

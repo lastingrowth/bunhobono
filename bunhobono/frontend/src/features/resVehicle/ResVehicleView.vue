@@ -1,5 +1,10 @@
 <template>
   <div class="resident-vehicle-management">
+    <ManagementFeedbackToast
+      :message="feedbackMessage"
+      :type="feedbackType"
+    />
+
     <div v-if="mode !== 'form'" class="resident-vehicle-header">
       <h2>차량관리</h2>
 
@@ -59,24 +64,18 @@
 
           <div class="visit-application-actions">
             <small>(방문차량 조회는 3개월까지만 가능합니다.)</small>
-            <button
-              :disabled="resVehicleStore.hasActiveVisitVehicle"
-              @click="openInsert"
-            >
+            <button @click="openInsert">
               방문차량 신청
             </button>
           </div>
-        </div>
-
-        <div v-if="resVehicleStore.hasActiveVisitVehicle">
-          승인 대기 또는 사용 중인 방문차량이 있어
-          추가 신청할 수 없습니다.
         </div>
 
         <ResVehicleList
           :vehicles="visibleVisitVehicles"
           empty-message="신청한 방문차량이 없습니다."
           :show-manage="false"
+          :show-cancel="true"
+          @cancel-visit="cancelVisitVehicle"
         />
       </section>
     </template>
@@ -96,6 +95,31 @@
       @submit="submitVisitVehicle"
       @cancel="openList"
     />
+
+    <ManagementConfirm
+      :open="cancelConfirmOpen"
+      title="방문차량 등록 취소"
+      :item-name="cancelTarget?.carNo || ''"
+      message="방문차량 등록을 취소하시겠습니까?"
+      caution="입차 전 차량만 등록 취소할 수 있습니다."
+      :processing="cancelProcessing"
+      confirm-text="등록 취소"
+      processing-text="취소 중"
+      @cancel="closeCancelConfirm"
+      @confirm="confirmCancelVisit"
+    />
+
+    <ManagementConfirm
+      :open="paymentRequiredOpen"
+      icon="₩"
+      title="방문차량 추가 등록"
+      message="이번 달 무료 등록 10대를 모두 사용했습니다. 추가 등록을 위해 횟수를 충전해 주세요."
+      caution="결제가 완료되면 결제한 수량만큼 추가 등록할 수 있습니다."
+      cancel-text="닫기"
+      confirm-text="횟수 충전"
+      @cancel="closePaymentRequired"
+      @confirm="openVisitCreditCharge"
+    />
   </div>
 
 
@@ -106,20 +130,32 @@ import {
   computed,
   onBeforeUnmount,
   onMounted,
+  ref,
   watch
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useResVehicleStore } from "./resVehicleStore";
+import { getMonthlyVisitRegistration } from "./resVehicleApi";
 import ResVehicleForm from "./components/ResVehicleForm.vue";
 import ResVehicleList from "./components/ResVehicleList.vue";
 import ResVehicleNt from "./components/ResVehicleNt.vue";
+import ManagementConfirm from "@/shared/components/ManagementConfirm.vue";
+import ManagementFeedbackToast from "@/shared/components/ManagementFeedbackToast.vue";
 
 const resVehicleStore = useResVehicleStore();
 const route = useRoute();
 const router = useRouter();
 
 let refreshTimer;
+let feedbackTimer;
+
+const cancelTarget = ref(null);
+const cancelConfirmOpen = ref(false);
+const cancelProcessing = ref(false);
+const paymentRequiredOpen = ref(false);
+const feedbackMessage = ref("");
+const feedbackType = ref("success");
 
 const mode = computed(() => {
   if (route.query.mode === "form") {
@@ -164,6 +200,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.clearInterval(refreshTimer);
+  window.clearTimeout(feedbackTimer);
 });
 
 // 차량관리 화면 안에서 알림 화면으로 이동했을 때 읽음 처리
@@ -180,11 +217,6 @@ async function refreshData() {
     resVehicleStore.loadNotifications()
   ]);
 
-  if (mode.value === "form" && resVehicleStore.hasActiveVisitVehicle) {
-    openList();
-    return;
-  }
-
   if (mode.value === "notification") {
     await resVehicleStore.markAllNotificationsRead();
   }
@@ -194,11 +226,26 @@ function openList() {
   router.replace("/resident/vehicles");
 }
 
-function openInsert() {
-  router.replace({
-    path: "/resident/vehicles",
-    query: { mode: "form" }
-  });
+async function openInsert() {
+  try {
+    const response = await getMonthlyVisitRegistration();
+
+    if (response.data.remainingCount <= 0) {
+      paymentRequiredOpen.value = true;
+      return;
+    }
+
+    router.replace({
+      path: "/resident/vehicles",
+      query: { mode: "form" }
+    });
+  } catch (error) {
+    showFeedback(
+      error.response?.data?.message
+      || "방문차량 등록 가능 횟수를 확인하지 못했습니다.",
+      "error"
+    );
+  }
 }
 
 function openNotifications() {
@@ -220,8 +267,77 @@ function scrollToResidentContact() {
 }
 
 async function submitVisitVehicle(data) {
-  await resVehicleStore.addVisitVehicle(data);
-  openList();
+  try {
+    await resVehicleStore.addVisitVehicle(data);
+    openList();
+  } catch (error) {
+    if (error.response?.status === 402) {
+      paymentRequiredOpen.value = true;
+      return;
+    }
+
+    showFeedback(
+      error.response?.data?.message
+      || "방문차량을 등록하지 못했습니다.",
+      "error"
+    );
+  }
+}
+
+function closePaymentRequired() {
+  paymentRequiredOpen.value = false;
+}
+
+function openVisitCreditCharge() {
+  paymentRequiredOpen.value = false;
+  showFeedback("방문차량 횟수 충전 기능을 준비 중입니다.");
+}
+
+function cancelVisitVehicle(vehicle) {
+  cancelTarget.value = vehicle;
+  cancelConfirmOpen.value = true;
+}
+
+function closeCancelConfirm() {
+  if (cancelProcessing.value) {
+    return;
+  }
+
+  cancelConfirmOpen.value = false;
+  cancelTarget.value = null;
+}
+
+function showFeedback(message, type = "success") {
+  feedbackMessage.value = message;
+  feedbackType.value = type;
+  window.clearTimeout(feedbackTimer);
+  feedbackTimer = window.setTimeout(() => {
+    feedbackMessage.value = "";
+  }, 2500);
+}
+
+async function confirmCancelVisit() {
+  if (!cancelTarget.value || cancelProcessing.value) {
+    return;
+  }
+
+  const vehicle = cancelTarget.value;
+  cancelProcessing.value = true;
+
+  try {
+    await resVehicleStore.cancelVisitVehicle(vehicle.vehicleCarNo);
+    cancelConfirmOpen.value = false;
+    cancelTarget.value = null;
+    showFeedback(`${vehicle.carNo} 방문차량 등록을 취소했습니다.`);
+  } catch (error) {
+    showFeedback(
+      error.response?.data?.message
+      || "방문차량 등록을 취소하지 못했습니다.",
+      "error"
+    );
+  } finally {
+    cancelProcessing.value = false;
+  }
 }
 
 async function deleteNotification(vehicleNtNo) {

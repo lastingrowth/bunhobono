@@ -7,15 +7,13 @@ import {
     deleteVehicle,
     getVehicleList,
     searchVehicleMembers,
-    updateVehicle,
-    updateVehicleStatus
+    updateVehicle
 } from "./vehicleApi";
 
 export const useVehicleStore = defineStore("vehicle", () => {
 
     const vehicleList = ref([]);
     const vehicle = ref({});
-    const approveList = ref([]);
     const registerMembers = ref([]);
 
     // 차량 목록
@@ -72,40 +70,9 @@ export const useVehicleStore = defineStore("vehicle", () => {
         await loadVehicleList();
     };
 
-    // 승인 대기 차량 목록
-    const loadVehicleApproveList = async () => {
-        const res = await getVehicleList();
-
-        approveList.value = res.data
-            .filter((item) => {
-                return item.vehicleStatus === "WAITING";
-            })
-            .map(toVehicleView);
-    };
-
-    // 승인 대기 차량 상세
-    const loadVehicleApproveDetail = async (vehicleCarNo) => {
-        if (approveList.value.length === 0) {
-            await loadVehicleApproveList();
-        }
-
-        vehicle.value = approveList.value.find((item) => {
-            return Number(item.vehicleCarNo) === Number(vehicleCarNo);
-        }) ?? {};
-    };
-
-    // 승인 상태 변경
-    const changeVehicleApproveStatus = async (vehicleCarNo, data) => {
-        await updateVehicleStatus(vehicleCarNo, data);
-
-        await loadVehicleList();
-        await loadVehicleApproveList();
-    };
-
     return {
         vehicleList,
         vehicle,
-        approveList,
         registerMembers,
 
         loadVehicleList,
@@ -115,9 +82,5 @@ export const useVehicleStore = defineStore("vehicle", () => {
         addVehicle,
         editVehicle,
         removeVehicle,
-
-        loadVehicleApproveList,
-        loadVehicleApproveDetail,
-        changeVehicleApproveStatus,
     };
 });

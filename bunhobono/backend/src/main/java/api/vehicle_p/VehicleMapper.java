@@ -432,4 +432,82 @@ public interface VehicleMapper {
     int delete(
             @Param("vehicleCarNo") int vehicleCarNo
     );
+
+    // 로그인한 세대의 미입차 방문차량 등록 취소
+    @Delete("""
+        DELETE FROM vehicle_car vc
+        USING member owner,
+              member login_member
+
+        WHERE vc.vehicle_car_no = #{vehicleCarNo}
+          AND vc.member_no = owner.member_no
+          AND login_member.login_id = #{loginId}
+          AND owner.unit_no = login_member.unit_no
+          AND vc.vehicle_type = 'visit'
+          AND vc.vehicle_status = 'APPROVED'
+
+          AND NOT EXISTS (
+              SELECT 1
+              FROM car_log cl
+              WHERE cl.vehicle_car_no = vc.vehicle_car_no
+                AND cl.in_time IS NOT NULL
+          )
+    """)
+    int cancelUnenteredVisit(
+            @Param("loginId") String loginId,
+            @Param("vehicleCarNo") int vehicleCarNo
+    );
+
+    // 같은 세대의 이번 달 방문차량 실제 입차 횟수
+    @Select("""
+    SELECT COUNT(DISTINCT cl.car_log_no)
+    FROM member login_member 
+
+    JOIN member household_member
+        ON household_member.unit_no = login_member.unit_no
+
+    JOIN vehicle_car vc
+        ON vc.member_no = household_member.member_no
+       AND vc.vehicle_type = 'visit'
+
+    JOIN car_log cl
+        ON cl.vehicle_car_no = vc.vehicle_car_no
+
+    WHERE login_member.login_id = #{loginId}
+      AND cl.in_time >= DATE_TRUNC('month', CURRENT_TIMESTAMP)
+      AND cl.in_time < DATE_TRUNC('month', CURRENT_TIMESTAMP)
+                       + INTERVAL '1 month'
+    """)
+    //실제 입차 한 차량 수
+    int countMonthlyVisitEntriesByLoginId(
+            @Param("loginId") String loginId
+    );
+
+    // 같은 세대의 이번 달 방문차량 등록 수
+    @Select("""
+    SELECT COUNT(DISTINCT vc.vehicle_car_no)
+
+    FROM member login_member
+
+    JOIN member household_member
+        ON household_member.unit_no =
+           login_member.unit_no
+
+    JOIN vehicle_car vc
+        ON vc.member_no =
+           household_member.member_no
+       AND vc.vehicle_type = 'visit'
+       AND vc.vehicle_status = 'APPROVED'
+
+    WHERE login_member.login_id = #{loginId}
+      AND vc.start_date >=
+          DATE_TRUNC('month', CURRENT_TIMESTAMP)
+      AND vc.start_date <
+          DATE_TRUNC('month', CURRENT_TIMESTAMP)
+          + INTERVAL '1 month'
+    """)
+    //등록한 차량 수
+    int countMonthlyRegisteredVisitsByLoginId(
+            @Param("loginId") String loginId
+    );
 }

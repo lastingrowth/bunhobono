@@ -1,6 +1,5 @@
 package api.vehicle_p;
 
-import api.vehicle_nt_p.VehicleNtService;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,10 +14,6 @@ public class VehicleService {
 
     @Resource
     VehicleMapper vehicleMapper;
-
-    // 차량 알림과 자동 시간 처리는 별도 Service가 담당
-    @Resource
-    VehicleNtService vehicleNtService;
 
     // ADMIN 전체 차량 목록
     public List<VehicleDTO> listservice() {
@@ -48,6 +43,18 @@ public class VehicleService {
     // JWT loginId를 기준으로 조회
     public List<VehicleDTO> residentList(String loginId) {
         return vehicleMapper.list(loginId);
+    }
+
+    // 로그인한 입주민 세대의 이번 달 방문차량 입차 횟수
+    public int getMonthlyVisitUsedCount(String loginId) {
+        return vehicleMapper
+                .countMonthlyVisitEntriesByLoginId(loginId);
+    }
+
+    // 로그인한 입주민 세대의 이번 달 방문차량 등록 수
+    public int getMonthlyRegisteredVisitCount(String loginId) {
+        return vehicleMapper
+                .countMonthlyRegisteredVisitsByLoginId(loginId);
     }
 
     // ADMIN 차량 등록
@@ -98,7 +105,7 @@ public class VehicleService {
     }
 
     // RESIDENT 방문차량 신청
-    // 로그인한 회원에게 WAITING 상태로 등록
+    // 로그인한 회원이 바로 등록 가능. 월 10대 제한, (입차 된 후에 차감, 입차전에는 목록에서 삭제도 가능)
     public int residentVisitRequest(
             String loginId,
             VehicleDTO dto
@@ -106,19 +113,21 @@ public class VehicleService {
         normalizeCarNo(dto);
 
         dto.setVehicleType("visit");
-        dto.setVehicleStatus("WAITING");
+        dto.setVehicleStatus("APPROVED"); //바로 등록되게 함
 
         // 방문 예정시간과 종료시간 검증
         validateResidentVisitDate(dto);
 
-        // 유효한 방문차량 신청은 한 대만 가능
-        if (
-                vehicleMapper.countActiveVisitByLoginId(
-                        loginId
-                ) > 0
-        ) {
+        int registeredCount =
+                vehicleMapper
+                        .countMonthlyRegisteredVisitsByLoginId(
+                                loginId
+                        );
+
+        if (registeredCount >= 10) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT
+                    HttpStatus.PAYMENT_REQUIRED,
+                    "이번 달 무료 방문차량 등록 10대를 모두 사용했습니다. 추가 등록을 위해 결제해 주세요."
             );
         }
 
@@ -129,7 +138,8 @@ public class VehicleService {
                 ) > 0
         ) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT
+                    HttpStatus.CONFLICT,
+                    "이미 등록되어 있거나 사용 중인 차량번호입니다."
             );
         }
 
@@ -138,11 +148,33 @@ public class VehicleService {
                 loginId,
                 dto
         );
+
+
     }
 
     // 차량 삭제
     public int delete(int vehicleCarNo) {
         return vehicleMapper.delete(vehicleCarNo);
+    }
+
+    // 입주민과 같은 세대의 미입차 방문차량 등록 취소
+    @Transactional
+    public int cancelUnenteredVisit(
+            String loginId,
+            int vehicleCarNo
+    ) {
+        int result = vehicleMapper.cancelUnenteredVisit(
+                loginId,
+                vehicleCarNo
+        );
+
+        if (result == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 입차했거나 취소할 수 없는 방문차량입니다."
+            );
+        }
+        return result;
     }
 
     // 차량 기본 정보 수정
@@ -151,49 +183,6 @@ public class VehicleService {
         validateDateRange(dto);
 
         return vehicleMapper.update(dto);
-    }
-
-    // 관리자의 승인 또는 직접 반려 처리
-    // REJECTED는 vehicle_car 상태로 저장하지 않는다.
-    @Transactional
-    public int updateStatus(
-            String adminLoginId,
-            VehicleDTO dto
-    ) {
-        String status = dto.getVehicleStatus();
-
-        // 승인 상태 변경과 승인 알림 저장을 한 번에 처리
-        if ("APPROVED".equalsIgnoreCase(status)) {
-            return vehicleNtService.approveRequest(
-                    dto.getVehicleCarNo(),
-                    adminLoginId
-            );
-        }
-
-        // 관리자 직접 반려
-        if ("REJECTED".equalsIgnoreCase(status)) {
-            String reason = dto.getRejectReason() == null
-                    ? ""
-                    : dto.getRejectReason().trim();
-
-            if (reason.isEmpty()) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST
-                );
-            }
-
-            // 알림 저장과 WAITING 신청 삭제는
-            // VehicleNtService가 담당
-            return vehicleNtService.rejectRequest(
-                    dto.getVehicleCarNo(),
-                    adminLoginId,
-                    reason
-            );
-        }
-
-        throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST
-        );
     }
 
     // 차량번호의 모든 공백 제거
@@ -269,4 +258,6 @@ public class VehicleService {
             );
         }
     }
+
+
 }

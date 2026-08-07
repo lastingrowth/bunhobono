@@ -25,26 +25,8 @@
         >
           차량 등록
         </button>
-
-        <button
-          type="button"
-          class="vehicle-tab approve-tab"
-          :class="{ active: viewMode === 'approve' }"
-          :aria-pressed="viewMode === 'approve'"
-          @click="openVehicleApprove"
-        >
-          승인 대기
-        </button>
         <button
           v-if="viewMode === 'form'"
-          type="button"
-          class="vehicle-tab list-tab"
-          @click="openVehicleList"
-        >
-          목록으로
-        </button>
-        <button
-          v-if="viewMode === 'approve'"
           type="button"
           class="vehicle-tab list-tab"
           @click="openVehicleList"
@@ -98,11 +80,6 @@
       @registered="handleRegistered"
     />
 
-    <VehicleApprove
-      v-if="viewMode === 'approve'"
-      :vehicles="vehicleStore.approveList"
-      @back="openVehicleList"
-    />
   </section>
 </template>
 
@@ -120,7 +97,6 @@ import { useVehicleStore } from './vehicleStore'
 import VehicleSearch from './components/VehicleSearch.vue'
 import VehicleForm from './components/VehicleForm.vue'
 import VehicleList from './components/VehicleList.vue'
-import VehicleApprove from './components/VehicleApprove.vue'
 import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue'
 
 const vehicleStore = useVehicleStore()
@@ -172,17 +148,11 @@ function openVehicleForm() {
   viewMode.value = 'form'
 }
 
-async function openVehicleApprove() {
-  viewMode.value = 'approve'
-  await vehicleStore.loadVehicleApproveList()
-}
-
 function backToStatistics() {
   router.push('/admin/statistics')
 }
 
 // 목록 화면에 있을 때만 차량 목록을 다시 조회한다.
-// 승인대기 화면은 VehicleApprove.vue의 5초 갱신을 사용한다.
 async function refreshVehicleList() {
   if (viewMode.value !== 'list' || isRefreshing) {
     return
@@ -198,17 +168,12 @@ async function refreshVehicleList() {
 }
 
 onMounted(async () => {
-  if (route.query.mode === 'approve') {
-    viewMode.value = 'approve'
-    await vehicleStore.loadVehicleApproveList()
-  } else {
-    if (route.name === 'ParkedExpiredVehicleList') {
-      vehicleInitialFilter.value = 'parkedExpired'
-    }
-
-    viewMode.value = 'list'
-    await refreshVehicleList()
+  if (route.name === 'ParkedExpiredVehicleList') {
+    vehicleInitialFilter.value = 'parkedExpired'
   }
+
+  viewMode.value = 'list'
+  await refreshVehicleList()
 
   refreshTimer = window.setInterval(() => {
     refreshVehicleList()
@@ -289,19 +254,6 @@ onBeforeUnmount(() => {
 .register-tab.active {
   border-color: #1d4ed8;
   background: #1d4ed8;
-  color: #fff;
-}
-
-.approve-tab {
-  border-color: #d97706;
-  background: #f59e0b;
-  color: #fff;
-}
-
-.approve-tab:hover,
-.approve-tab.active {
-  border-color: #b45309;
-  background: #d97706;
   color: #fff;
 }
 

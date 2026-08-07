@@ -29,10 +29,7 @@ public class VehicleNtDTO {
     private String snapshotCarNo;
 
     // 알림 종류
-    // ADMIN_APPROVED: 관리자 승인
-    // ADMIN_REJECTED: 관리자 직접 반려
-    // APPROVAL_TIMEOUT: 승인시간 초과
-    // NO_ENTRY_EXPIRED: 승인 후 미입차 만기
+    // NO_ENTRY_EXPIRED: 등록 후 미입차 만기
     // VISIT_OVERDUE: 방문 주차시간 초과
     // VISIT_OVERDUE_EXIT: 시간 초과 후 출차
     private String notificationType;
