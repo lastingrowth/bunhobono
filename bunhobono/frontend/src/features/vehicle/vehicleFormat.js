@@ -9,10 +9,9 @@ export function toVehicleView(item) {
             item.vehicleType
         ),
 
-        vehicleStatusText: vehicleStatusText(
-            item.vehicleStatus,
-            item.expiryType
-        ),
+        vehicleStatusText: vehicleStatusText(item),
+
+        vehicleExpiryText: vehicleExpiryText(item),
 
         approvedAtText: dateText(
             item.approvedAt
@@ -49,25 +48,49 @@ function vehicleTypeText(vehicleType) {
     return "-";
 }
 
-// 차량 승인 및 만기 상태 표시
-function vehicleStatusText(vehicleStatus, expiryType) {
-    if (vehicleStatus === "WAITING") {
-        return "승인대기";
-    }
-
-    if (expiryType === "NO_ENTRY") {
+// 차량 승인 상태 표시
+export function vehicleStatusText(item) {
+    if (item.expiryType === "NO_ENTRY") {
         return "미입차 만기";
     }
 
-    if (expiryType === "OVERSTAY") {
+    if (item.expiryType === "OVERSTAY") {
         return "주차시간 만기";
     }
 
-    if (vehicleStatus === "APPROVED") {
+    if (item.vehicleStatus === "APPROVED") {
         return "승인완료";
     }
 
     return "-";
+}
+
+// 일반 등록차량의 endDate를 정확한 시각 기준으로 만료 상태로 변환
+export function vehicleExpiryText(item, now = Date.now()) {
+    if (item.vehicleType !== "normal" || !item.endDate) {
+        return "";
+    }
+
+    const endTime = new Date(item.endDate).getTime();
+    const nowTime = now instanceof Date ? now.getTime() : Number(now);
+
+    if (Number.isNaN(endTime) || Number.isNaN(nowTime)) {
+        return "";
+    }
+
+    const remainingMilliseconds = endTime - nowTime;
+
+    if (remainingMilliseconds <= 0) {
+        return "기간 만료";
+    }
+
+    const dayMilliseconds = 24 * 60 * 60 * 1000;
+
+    if (remainingMilliseconds <= 30 * dayMilliseconds) {
+        return `만료 임박 D-${Math.ceil(remainingMilliseconds / dayMilliseconds)}`;
+    }
+
+    return "";
 }
 
 // 만기일 표시

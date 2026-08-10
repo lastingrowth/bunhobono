@@ -11,7 +11,7 @@ public class MemberArchiveDTO {
     private Integer memberArchiveNo;
 
     // archive로 옮겨지기 전 member 테이블의 member_no
-    private Integer originalMemberNo;
+    private Integer memberNo;
 
     // 전출 확정 당시 회원 정보
     private String loginId;

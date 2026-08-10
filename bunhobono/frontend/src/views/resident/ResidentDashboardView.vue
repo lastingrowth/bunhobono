@@ -142,7 +142,12 @@
                                         <strong>{{ vehicle.carNo || vehicle.vehicleCarNo || "차량번호 없음" }}</strong>
                                     </div>
                                     <div class="vehicle-info-section">
-                                        <small>등록기간</small>
+                                        <div class="vehicle-period-label-line">
+                                            <small>등록기간</small>
+                                            <span v-if="imminentExpiryText(vehicle)" class="vehicle-expiry-badge">
+                                                {{ imminentExpiryText(vehicle) }}
+                                            </span>
+                                        </div>
                                         <span>{{ approvalPeriodText(vehicle) }}</span>
                                     </div>
                                     <div class="vehicle-info-section">
@@ -347,6 +352,7 @@ import { usePagination } from "@/shared/pagination/usePagination";
 import Pagination from "@/shared/pagination/Pagination.vue";
 import { useResVehicleStore } from "@/features/resVehicle/resVehicleStore";
 import { useBoardStore } from "@/features/board/boardStore";
+import { vehicleExpiryText } from "@/features/vehicle/vehicleFormat";
 
 const router = useRouter();
 const route = useRoute();
@@ -355,8 +361,10 @@ const resVehicleStore = useResVehicleStore();
 const boardStore = useBoardStore();
 const mode = computed(() => route.name === "ResidentCarlogList" ? "carlogs" : "dashboard");
 let notificationTimer;
+let vehicleStatusTimer;
 let unreadAlertShown = false;
 const unreadDialog = ref(null);
+const vehicleStatusNow = ref(Date.now());
 
 const {
     loading,
@@ -440,6 +448,11 @@ const approvalPeriodText = (vehicle) => {
     return `~ ${approvalDateText(endDate)}`;
 };
 
+const imminentExpiryText = (vehicle) => {
+    const text = vehicleExpiryText(vehicle, vehicleStatusNow.value);
+    return text.startsWith("만료 임박") ? text : "";
+};
+
 const parkingColor = () => "#39e98a";
 const parkedCarNumbers = (parking) => normalVehicles.value
     .filter((vehicle) => {
@@ -481,6 +494,10 @@ function confirmUnreadNotifications() {
 
 
 onMounted(async () => {
+    vehicleStatusTimer = window.setInterval(() => {
+        vehicleStatusNow.value = Date.now();
+    }, 1000);
+
     await Promise.all([
         loadDashboard(),
         resVehicleStore.loadNotifications(),
@@ -502,6 +519,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
     window.clearInterval(notificationTimer);
+    window.clearInterval(vehicleStatusTimer);
 });
 </script>
 
@@ -587,6 +605,8 @@ onUnmounted(() => {
 .vehicle-info-section small { color: #71879a; font-size: 11px; font-weight: 700; }
 .vehicle-info-section span { min-width: 0; }
 .vehicle-number-section strong { overflow: hidden; color: #243f58; font-size: 16px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.vehicle-period-label-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.vehicle-expiry-badge { flex: 0 0 auto; padding: 3px 7px; border: 1px solid #f1a43c; border-radius: 999px; color: #c96d00; background: #fff4df; font-size: 10px; font-weight: 900; line-height: 1.2; white-space: nowrap; }
 .vehicle-status-group:not(.visit-group) .vehicle-number-section strong { color: #287fd5 !important; }
 .vehicle-status-group.visit-group .vehicle-number-section strong { color: #2ca66a !important; }
 .vehicle-status-group:not(.visit-group) .vehicle-info-section:last-child span { color: #287fd5; font-weight: 800; }
