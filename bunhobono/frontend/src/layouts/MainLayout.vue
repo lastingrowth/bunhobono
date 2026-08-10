@@ -19,6 +19,9 @@
         </div>
 
         <ResidentFooter v-if="isResidentRoute"/>
+
+        <!-- 입주민 화면 AI 챗봇 -->
+        <AiChatWidget v-if="isResidentRoute"/>
     </div>
 </template>
 
@@ -27,6 +30,7 @@ import Header from '@/components/Header.vue';
 import ResidentFloatingMenu from '@/components/ResidentFloatingMenu.vue';
 import ResidentFooter from '@/components/ResidentFooter.vue';
 import Sidebar from '@/components/Sidebar.vue';
+import AiChatWidget from '@/features/ai-chat/AiChatWidget.vue';
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
