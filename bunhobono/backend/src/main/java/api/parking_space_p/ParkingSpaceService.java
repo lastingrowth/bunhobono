@@ -75,4 +75,11 @@ public class ParkingSpaceService {
                 dropoffSpaceNo
         );
     }
+
+    //내 차량 조회
+    public List<ParkingSpaceDTO> myVehicleLocations(
+            String loginId
+    ) {
+        return parkingSpaceMapper.myVehicleLocations(loginId);
+    }
 }

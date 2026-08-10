@@ -775,6 +775,59 @@ FROM demo_event e
          LEFT JOIN demo_capture_link cout ON cout.capture_key = e.event_key || '-OUT';
 
 -- =====================================================
+-- res1 현재 주차 위치 확인용
+-- 만료 임박 차량 99보9999를 B1-P023 주차면에 배정한다.
+-- =====================================================
+WITH inserted_camera AS (
+    INSERT INTO camera_data (
+        camera_no,
+        vehicle_car_no,
+        car_no,
+        ocr_car_no,
+        capture_time,
+        recognition_state,
+        confidence_score,
+        cam_note
+    )
+    SELECT
+        5,
+        vc.vehicle_car_no,
+        vc.car_no,
+        vc.car_no,
+        CURRENT_TIMESTAMP - INTERVAL '45 minutes',
+        TRUE,
+        99.00,
+        'RES1-PARKING-DEMO'
+    FROM vehicle_car vc
+    WHERE vc.member_no = 5
+      AND vc.car_no = '99보9999'
+    RETURNING camera_data_no, vehicle_car_no, car_no, capture_time
+), inserted_log AS (
+    INSERT INTO car_log (
+        vehicle_car_no,
+        camera_data_no,
+        in_gate_no,
+        in_time,
+        snapshot_car_no,
+        snapshot_car_kind
+    )
+    SELECT
+        vehicle_car_no,
+        camera_data_no,
+        5,
+        capture_time,
+        car_no,
+        'REGISTERED'
+    FROM inserted_camera
+    RETURNING car_log_no
+)
+UPDATE parking_space
+SET car_log_no = (SELECT car_log_no FROM inserted_log),
+    updated_at = CURRENT_TIMESTAMP
+WHERE space_code = 'B1-P023'
+  AND car_log_no IS NULL;
+
+-- =====================================================
 -- 공지·알림 더미 데이터
 -- =====================================================
 -- 관리자 차량 알림
@@ -1181,6 +1234,51 @@ JOIN vehicle_car vc
 WHERE n.notice_type = 'VISIT_OVERDUE'
   AND n.snapshot_captured_car_no = '143모8849'
   AND cl.out_time IS NOT NULL;
+
+-- res1 차량알림 배지 확인용 읽지 않은 알림 2건
+INSERT INTO vehicle_nt (
+    recipient_member_no,
+    sender_member_no,
+    vehicle_car_no,
+    car_log_no,
+    snapshot_car_no,
+    notification_type,
+    message,
+    overdue_minutes,
+    created_at,
+    read_at
+)
+SELECT
+    recipient.member_no,
+    admin_member.member_no,
+    vc.vehicle_car_no,
+    NULL,
+    vc.car_no,
+    'ADMIN_APPROVED',
+    seed.message,
+    NULL,
+    CURRENT_TIMESTAMP - (seed.minutes_ago * INTERVAL '1 minute'),
+    NULL
+FROM (
+    VALUES
+        ('99보9999', 10, '등록차량 신청이 승인되었습니다.'),
+        ('222하5233', 20, '등록차량 갱신 신청이 승인되었습니다.')
+) AS seed(car_no, minutes_ago, message)
+JOIN vehicle_car vc
+    ON vc.car_no = seed.car_no
+CROSS JOIN LATERAL (
+    SELECT member_no
+    FROM member
+    WHERE login_id = 'res1'
+    LIMIT 1
+) recipient
+CROSS JOIN LATERAL (
+    SELECT member_no
+    FROM member
+    WHERE login_id = 'admin1'
+    LIMIT 1
+) admin_member
+WHERE vc.member_no = recipient.member_no;
 
 -- =====================================================
 -- 게시판 공지

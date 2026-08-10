@@ -25,4 +25,9 @@ public class ParkingSpaceDTO {
     private String gateCode;
     private String carNo;
     private String carKind;
+
+    //다른테이블 추가 변수
+    private Integer vehicleCarNo;
+    private String parkingName;
+    private LocalDateTime inTime;
 }

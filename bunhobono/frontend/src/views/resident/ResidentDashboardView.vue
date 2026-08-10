@@ -140,6 +140,10 @@
                                     <div class="vehicle-info-section vehicle-number-section">
                                         <small>차량번호</small>
                                         <strong>{{ vehicle.carNo || vehicle.vehicleCarNo || "차량번호 없음" }}</strong>
+                                        <span
+                                            class="vehicle-parking-state"
+                                            :class="vehicleParkingStateClass(vehicle)"
+                                        >{{ vehicleParkingStateText(vehicle) }}</span>
                                     </div>
                                     <div class="vehicle-info-section">
                                         <div class="vehicle-period-label-line">
@@ -168,6 +172,10 @@
                                     <div class="vehicle-info-section vehicle-number-section">
                                         <small>차량번호</small>
                                         <strong>{{ vehicle.carNo || vehicle.vehicleCarNo || "차량번호 없음" }}</strong>
+                                        <span
+                                            class="vehicle-parking-state"
+                                            :class="vehicleParkingStateClass(vehicle)"
+                                        >{{ vehicleParkingStateText(vehicle) }}</span>
                                     </div>
                                     <div class="vehicle-info-section">
                                         <small>등록기간</small>
@@ -204,9 +212,20 @@
                                 <span><b class="log-direction in">입차</b>{{ dateTimeText(log.inTime) }}</span>
                                 <span><b class="log-direction out">출차</b>{{ dateTimeText(log.outTime) }}</span>
                             </div>
-                            <span class="carlog-state" :class="{ parking: log.parkingState === 'PARKING' }">
-                                {{ log.parkingState === "PARKING" ? "주차 중" : "출차" }}
-                            </span>
+                            <div class="recent-log-actions">
+                                <span class="carlog-state" :class="{ parking: log.parkingState === 'PARKING' }">
+                                    {{ log.parkingState === "PARKING" ? "주차 중" : "출차" }}
+                                </span>
+                                <button
+                                    v-if="log.parkingState === 'PARKING'"
+                                    type="button"
+                                    class="exit-request-button"
+                                    title="키오스크 출차 기능 연결 예정"
+                                    disabled
+                                >
+                                    출차 신청
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <p v-else class="recent-log-empty">최근 입출차 기록이 없습니다.</p>
@@ -453,6 +472,32 @@ const imminentExpiryText = (vehicle) => {
     return text.startsWith("만료 임박") ? text : "";
 };
 
+const vehicleParkingStateText = (vehicle) => {
+    if (vehicle.parkingState === "PARKING") {
+        const location = vehicle.parkingLocation;
+
+        if (location?.spaceCode) {
+            const parkingCode = location.parkingCode
+                ? `${location.parkingCode} · `
+                : "";
+            return `주차중 · ${parkingCode}${location.spaceCode}`;
+        }
+
+        return "주차중 · 위치 배정 중";
+    }
+
+    if (vehicle.parkingState === "OUT") {
+        return "주차완료";
+    }
+
+    return "미주차";
+};
+
+const vehicleParkingStateClass = (vehicle) => ({
+    parking: vehicle.parkingState === "PARKING",
+    completed: vehicle.parkingState === "OUT"
+});
+
 const parkingColor = () => "#39e98a";
 const parkedCarNumbers = (parking) => normalVehicles.value
     .filter((vehicle) => {
@@ -605,6 +650,9 @@ onUnmounted(() => {
 .vehicle-info-section small { color: #71879a; font-size: 11px; font-weight: 700; }
 .vehicle-info-section span { min-width: 0; }
 .vehicle-number-section strong { overflow: hidden; color: #243f58; font-size: 16px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.vehicle-parking-state { width: fit-content; max-width: 100%; overflow: hidden; color: #8a99a7; font-size: 10px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.vehicle-parking-state.parking { color: #198754; }
+.vehicle-parking-state.completed { color: #55758f; }
 .vehicle-period-label-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .vehicle-expiry-badge { flex: 0 0 auto; padding: 3px 7px; border: 1px solid #f1a43c; border-radius: 999px; color: #c96d00; background: #fff4df; font-size: 10px; font-weight: 900; line-height: 1.2; white-space: nowrap; }
 .vehicle-status-group:not(.visit-group) .vehicle-number-section strong { color: #287fd5 !important; }
@@ -668,6 +716,9 @@ onUnmounted(() => {
 .recent-log-item small.parking-movement-text { color: #df2f2f; font-weight: 800; }
 .recent-log-summary-list { display: grid; gap: 7px; }
 .recent-log-summary-item { display: grid; grid-template-columns: minmax(125px,.75fr) minmax(270px,1.8fr) auto; align-items: center; gap: 14px; min-width: 0; padding: 11px 13px; border-radius: 10px; background: #f7faff; }
+.recent-log-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.exit-request-button { min-width: 70px; height: 28px; padding: 0 10px; border: 1px solid #b9d2e9; border-radius: 7px; color: #5f7f9d; background: #edf5fc; font-size: 10px; font-weight: 800; }
+.exit-request-button:disabled { cursor: not-allowed; opacity: .72; }
 .recent-log-car { display: grid; gap: 2px; min-width: 0; }
 .recent-log-car strong { overflow: hidden; color: #287fd5; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
 .recent-log-car small { overflow: hidden; color: #7b8fa1; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
@@ -679,8 +730,9 @@ onUnmounted(() => {
 @media (max-width:600px) {
     .recent-log-summary-item { grid-template-columns: 1fr auto; gap: 8px; }
     .recent-log-times { grid-column: 1 / -1; }
+    .recent-log-actions { grid-row: 1; grid-column: 2; flex-direction: column; align-items: flex-end; gap: 5px; }
 }
-.parking-zones { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.parking-zones { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
 .parking-zone { position: relative; display: grid; justify-items: center; gap: 4px; padding: 8px 6px 7px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .parking-zone::before { display: none; }
 .zone-heading { display: flex; align-items: center; justify-content: center; width: 100%; }

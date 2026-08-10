@@ -61,11 +61,11 @@ const showResidentFloatingMenu = computed(() => {
         return true;
     }
 
-    if (path.startsWith("/resident/boards")) {
+    if (path.startsWith("/resident/inquiries")) {
         return true;
     }
 
-    if (path.startsWith("/resident/inquiries")) {
+    if (path.startsWith("/resident/parkings")) {
         return true;
     }
 
