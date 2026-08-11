@@ -24,6 +24,7 @@ CameraDataDTO {
     private String vehicleStatus;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private LocalDateTime gateOpenedAt;
 
     //외래키
     private int cameraNo;

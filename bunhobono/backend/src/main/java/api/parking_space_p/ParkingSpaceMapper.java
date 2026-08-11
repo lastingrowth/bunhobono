@@ -164,39 +164,4 @@ public interface ParkingSpaceMapper {
             @Param("carLogNo") int carLogNo
     );
 
-    // 로봇 작업 완료 후 차량 위치 이동
-    @Update("""
-        UPDATE parking_space space
-        SET car_log_no =
-                CASE
-                    WHEN space.space_no = #{pickupSpaceNo}
-                        THEN NULL
-                    WHEN space.space_no = #{dropoffSpaceNo}
-                        THEN #{carLogNo}
-                END,
-            updated_at = CURRENT_TIMESTAMP
-
-        WHERE space.space_no IN (
-                #{pickupSpaceNo},
-                #{dropoffSpaceNo}
-            )
-          AND space.active = TRUE
-
-          AND EXISTS (
-              SELECT 1
-              FROM parking_space pickup
-              JOIN parking_space dropoff
-                  ON dropoff.space_no = #{dropoffSpaceNo}
-              WHERE pickup.space_no = #{pickupSpaceNo}
-                AND pickup.car_log_no = #{carLogNo}
-                AND dropoff.car_log_no IS NULL
-                AND pickup.active = TRUE
-                AND dropoff.active = TRUE
-          )
-    """)
-    int moveCarLog(
-            @Param("carLogNo") int carLogNo,
-            @Param("pickupSpaceNo") long pickupSpaceNo,
-            @Param("dropoffSpaceNo") long dropoffSpaceNo
-    );
 }

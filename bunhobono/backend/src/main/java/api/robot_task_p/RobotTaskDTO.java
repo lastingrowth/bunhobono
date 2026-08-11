@@ -2,7 +2,7 @@ package api.robot_task_p;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 public class RobotTaskDTO {
@@ -19,9 +19,9 @@ public class RobotTaskDTO {
     private String taskStatus;
     private Integer priority;
 
-    private LocalDateTime requestedAt;
-    private LocalDateTime startedAt;
-    private LocalDateTime completedAt;
+    private OffsetDateTime requestedAt;
+    private OffsetDateTime startedAt;
+    private OffsetDateTime completedAt;
 
     private String failureReason;
 

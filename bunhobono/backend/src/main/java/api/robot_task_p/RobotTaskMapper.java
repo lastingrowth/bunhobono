@@ -1,11 +1,6 @@
 package api.robot_task_p;
 
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -65,32 +60,18 @@ public interface RobotTaskMapper {
     """)
     RobotTaskDTO findNextWaitingTask();
 
-    // 가상 로봇이 수행할 배정 작업 조회
+    // 실행 중인 작업을 우선순위 순으로 조회
     @Select("""
         SELECT *
-        FROM robot_task_detail
-        WHERE set_no = #{setNo}
-          AND task_status = 'WAITING'
+        FROM robot_task
+        WHERE task_status = 'RUNNING'
+          AND set_no IS NOT NULL
         ORDER BY
             priority DESC,
             requested_at,
             task_no
-        LIMIT 1
     """)
-    RobotTaskDTO findAssignedTask(
-            @Param("setNo") int setNo
-    );
-
-    // 작업 완료 중복 요청 방지를 위한 잠금 조회
-    @Select("""
-        SELECT *
-        FROM robot_task
-        WHERE task_no = #{taskNo}
-        FOR UPDATE
-    """)
-    RobotTaskDTO findByTaskNoForUpdate(
-            @Param("taskNo") long taskNo
-    );
+    List<RobotTaskDTO> findRunningTasks();
 
     // 로봇 작업 등록
     @Insert("""
@@ -108,7 +89,7 @@ public interface RobotTaskMapper {
             #{carLogNo},
             #{pickupSpaceNo},
             #{dropoffSpaceNo},
-            #{setNo},
+            NULL,
             #{taskType},
             'WAITING',
             'WAITING',
@@ -135,28 +116,23 @@ public interface RobotTaskMapper {
             @Param("setNo") int setNo
     );
 
-    // 가상 로봇 작업 시작
+    // 작업 시작 및 진행 단계 갱신
     @Update("""
         UPDATE robot_task
         SET task_status = 'RUNNING',
-            task_phase = 'MOVING_EMPTY',
-            started_at = CURRENT_TIMESTAMP
+            task_phase = #{taskPhase},
+            started_at = COALESCE(
+                started_at,
+                CURRENT_TIMESTAMP
+            )
         WHERE task_no = #{taskNo}
-          AND task_status = 'WAITING'
+          AND task_status IN (
+              'WAITING',
+              'RUNNING'
+          )
           AND set_no IS NOT NULL
     """)
-    int start(
-            @Param("taskNo") long taskNo
-    );
-
-    // 가상 로봇 작업 단계 갱신
-    @Update("""
-        UPDATE robot_task
-        SET task_phase = #{taskPhase}
-        WHERE task_no = #{taskNo}
-          AND task_status = 'RUNNING'
-    """)
-    int updatePhase(
+    int updateRunning(
             @Param("taskNo") long taskNo,
             @Param("taskPhase") String taskPhase
     );

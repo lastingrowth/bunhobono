@@ -233,6 +233,7 @@ public interface VehicleMapper {
     );
 
 
+
     // ADMIN 등록과 RESIDENT 방문 신청 공용 INSERT
     // loginId가 있으면 로그인 회원, 없으면 dto.memberNo 사용
     @Insert("""
@@ -257,7 +258,8 @@ public interface VehicleMapper {
                 THEN (
                     SELECT m.member_no
                     FROM member m
-                    WHERE m.login_id = CAST(#{loginId} AS VARCHAR)
+                    WHERE m.login_id =
+                          CAST(#{loginId} AS VARCHAR)
                 )
                 ELSE #{dto.memberNo}
             END,
@@ -269,10 +271,16 @@ public interface VehicleMapper {
             END
         )
     """)
+    @Options(
+            useGeneratedKeys = true,
+            keyProperty = "dto.vehicleCarNo",
+            keyColumn = "vehicle_car_no"
+    )
     int insert(
             @Param("loginId") String loginId,
             @Param("dto") VehicleDTO dto
     );
+
 
 
     // 같은 차량번호의 유효한 차량 확인
@@ -336,58 +344,6 @@ public interface VehicleMapper {
     """)
     int countActiveByCarNo(
             @Param("carNo") String carNo
-    );
-
-
-    // 입주민의 유효한 방문차량 신청 확인
-    @Select("""
-        SELECT COUNT(*)
-
-        FROM vehicle_car vc
-
-        JOIN member m
-            ON vc.member_no = m.member_no
-
-        WHERE m.login_id = #{loginId}
-          AND vc.vehicle_type = 'visit'
-          AND (
-                (
-                    vc.vehicle_status = 'WAITING'
-                    AND vc.start_date IS NOT NULL
-                    AND CURRENT_TIMESTAMP
-                        <= vc.start_date
-                           + INTERVAL '1 hour'
-                )
-                OR
-                (
-                    vc.vehicle_status = 'APPROVED'
-                    AND (
-                        EXISTS (
-                            SELECT 1
-                            FROM car_log cl
-                            WHERE cl.vehicle_car_no =
-                                  vc.vehicle_car_no
-                              AND cl.out_time IS NULL
-                        )
-                        OR
-                        (
-                            NOT EXISTS (
-                                SELECT 1
-                                FROM car_log cl
-                                WHERE cl.vehicle_car_no =
-                                      vc.vehicle_car_no
-                            )
-                            AND vc.start_date IS NOT NULL
-                            AND CURRENT_TIMESTAMP
-                                <= vc.start_date
-                                   + INTERVAL '1 hour'
-                        )
-                    )
-                )
-          )
-    """)
-    int countActiveVisitByLoginId(
-            @Param("loginId") String loginId
     );
 
 

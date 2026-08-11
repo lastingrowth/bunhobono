@@ -53,13 +53,6 @@ public class CarLogService {
         return carLogMapper.findOpenLog(cameraData);
     }
 
-    // 현재 주차 여부 확인
-    public boolean isCurrentlyParked(
-            CameraDataDTO cameraData
-    ) {
-        return findCurrentlyParked(cameraData) != null;
-    }
-
     // B1·B2 게이트 입출차 처리
     @Transactional
     public int processCameraData(

@@ -92,73 +92,180 @@ public interface TrashMapper {
             "WHERE trash_no = #{trashNo}")
     int deleteTrash(int trashNo);
 
+    // 카메라 데이터 복원
     @Insert("""
-        INSERT INTO camera_data
-            (camera_data_no, camera_no, vehicle_car_no, car_no, ocr_car_no,
-             capture_time, image_path, crop_image_path, recognition_state,
-             confidence_score)
-        SELECT
-            (tb.data_json ->> 'camera_data_no')::int,
-            (tb.data_json ->> 'camera_no')::int,
-            CASE
-                WHEN EXISTS (
-                    SELECT 1 FROM vehicle_car vc
-                    WHERE vc.vehicle_car_no = NULLIF(tb.data_json ->> 'vehicle_car_no', '')::int
-                ) THEN NULLIF(tb.data_json ->> 'vehicle_car_no', '')::int
-                ELSE NULL
-            END,
-            tb.data_json ->> 'car_no',
-            COALESCE(
-                tb.data_json ->> 'ocr_car_no',
-                tb.data_json ->> 'car_no'
-            ),
-            NULLIF(tb.data_json ->> 'capture_time', '')::timestamp,
-            tb.data_json ->> 'image_path',
-            tb.data_json ->> 'crop_image_path',
-            NULLIF(tb.data_json ->> 'recognition_state', '')::boolean,
-            NULLIF(tb.data_json ->> 'confidence_score', '')::double precision
-        FROM trash_bin tb
-        WHERE tb.trash_no = #{trashNo}
-          AND tb.data_type = 'CAMERA_DATA'
-        """)
+    INSERT INTO camera_data (
+        camera_data_no,
+        camera_no,
+        vehicle_car_no,
+        car_no,
+        ocr_car_no,
+        capture_time,
+        image_path,
+        crop_image_path,
+        recognition_state,
+        confidence_score,
+        cam_note,
+        gate_opened,
+        gate_opened_at
+    )
+    SELECT
+        (tb.data_json ->> 'camera_data_no')::INT,
+        (tb.data_json ->> 'camera_no')::INT,
+
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM vehicle_car vc
+                WHERE vc.vehicle_car_no =
+                      NULLIF(
+                          tb.data_json ->> 'vehicle_car_no',
+                          ''
+                      )::INT
+            )
+            THEN NULLIF(
+                tb.data_json ->> 'vehicle_car_no',
+                ''
+            )::INT
+            ELSE NULL
+        END,
+
+        tb.data_json ->> 'car_no',
+
+        COALESCE(
+            tb.data_json ->> 'ocr_car_no',
+            tb.data_json ->> 'car_no'
+        ),
+
+        NULLIF(
+            tb.data_json ->> 'capture_time',
+            ''
+        )::TIMESTAMP,
+
+        tb.data_json ->> 'image_path',
+        tb.data_json ->> 'crop_image_path',
+
+        NULLIF(
+            tb.data_json ->> 'recognition_state',
+            ''
+        )::BOOLEAN,
+
+        NULLIF(
+            tb.data_json ->> 'confidence_score',
+            ''
+        )::DOUBLE PRECISION,
+
+        tb.data_json ->> 'cam_note',
+
+        COALESCE(
+            NULLIF(
+                tb.data_json ->> 'gate_opened',
+                ''
+            )::BOOLEAN,
+            FALSE
+        ),
+
+        NULLIF(
+            tb.data_json ->> 'gate_opened_at',
+            ''
+        )::TIMESTAMP
+
+    FROM trash_bin tb
+    WHERE tb.trash_no = #{trashNo}
+      AND tb.data_type = 'CAMERA_DATA'
+    """)
     int restoreCameraData(int trashNo);
 
+    // 입출차 기록 복원
     @Insert("""
-        INSERT INTO car_log
-            (car_log_no, vehicle_car_no, camera_data_no, in_gate_no, in_time,
-             out_gate_no, out_time, free_time, snapshot_car_no,
-             snapshot_car_kind)
-        SELECT
-            (tb.data_json ->> 'car_log_no')::int,
-            CASE
-                WHEN EXISTS (
-                    SELECT 1 FROM vehicle_car vc
-                    WHERE vc.vehicle_car_no = NULLIF(tb.data_json ->> 'vehicle_car_no', '')::int
-                ) THEN NULLIF(tb.data_json ->> 'vehicle_car_no', '')::int
-                ELSE NULL
-            END,
-            CASE
-                WHEN EXISTS (
-                    SELECT 1 FROM camera_data cd
-                    WHERE cd.camera_data_no = NULLIF(tb.data_json ->> 'camera_data_no', '')::int
-                ) THEN NULLIF(tb.data_json ->> 'camera_data_no', '')::int
-                ELSE NULL
-            END,
-            NULLIF(tb.data_json ->> 'in_gate_no', '')::int,
-            NULLIF(tb.data_json ->> 'in_time', '')::timestamp,
-            NULLIF(tb.data_json ->> 'out_gate_no', '')::int,
-            NULLIF(tb.data_json ->> 'out_time', '')::timestamp,
-            NULLIF(tb.data_json ->> 'free_time', '')::int,
-            COALESCE(tb.data_json ->> 'snapshot_car_no', tb.data_json ->> 'captured_car_no'),
-            COALESCE(
-                tb.data_json ->> 'snapshot_car_kind',
-                tb.data_json ->> 'car_kind',
-                'UNKNOWN'
+    INSERT INTO car_log (
+        car_log_no,
+        vehicle_car_no,
+        camera_data_no,
+        out_camera_data_no,
+        in_gate_no,
+        in_time,
+        out_gate_no,
+        out_time,
+        free_time,
+        snapshot_car_no,
+        snapshot_car_kind
+    )
+    SELECT
+        (tb.data_json ->> 'car_log_no')::INT,
+
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM vehicle_car vc
+                WHERE vc.vehicle_car_no =
+                      NULLIF(
+                          tb.data_json ->> 'vehicle_car_no',
+                          ''
+                      )::INT
             )
-        FROM trash_bin tb
-        WHERE tb.trash_no = #{trashNo}
-          AND tb.data_type = 'CAR_LOG'
-        """)
+            THEN NULLIF(
+                tb.data_json ->> 'vehicle_car_no',
+                ''
+            )::INT
+            ELSE NULL
+        END,
+
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM camera_data cd
+                WHERE cd.camera_data_no =
+                      NULLIF(
+                          tb.data_json ->> 'camera_data_no',
+                          ''
+                      )::INT
+            )
+            THEN NULLIF(
+                tb.data_json ->> 'camera_data_no',
+                ''
+            )::INT
+            ELSE NULL
+        END,
+
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM camera_data cd
+                WHERE cd.camera_data_no =
+                      NULLIF(
+                          tb.data_json ->> 'out_camera_data_no',
+                          ''
+                      )::INT
+            )
+            THEN NULLIF(
+                tb.data_json ->> 'out_camera_data_no',
+                ''
+            )::INT
+            ELSE NULL
+        END,
+
+        NULLIF(tb.data_json ->> 'in_gate_no', '')::INT,
+        NULLIF(tb.data_json ->> 'in_time', '')::TIMESTAMP,
+        NULLIF(tb.data_json ->> 'out_gate_no', '')::INT,
+        NULLIF(tb.data_json ->> 'out_time', '')::TIMESTAMP,
+        NULLIF(tb.data_json ->> 'free_time', '')::INT,
+
+        COALESCE(
+            tb.data_json ->> 'snapshot_car_no',
+            tb.data_json ->> 'captured_car_no'
+        ),
+
+        COALESCE(
+            tb.data_json ->> 'snapshot_car_kind',
+            tb.data_json ->> 'car_kind',
+            'UNKNOWN'
+        )
+
+    FROM trash_bin tb
+    WHERE tb.trash_no = #{trashNo}
+      AND tb.data_type = 'CAR_LOG'
+    """)
     int restoreCarLog(int trashNo);
 
     // 휴지통에 보관된 관리자 알림 복원
