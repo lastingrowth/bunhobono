@@ -82,10 +82,13 @@ public interface RobotMapper {
             @Param("robotStatus") String robotStatus
     );
 
-    // Python 가상 로봇이 보낸 현재 상태를 반영한다.
+    // 로봇의 현재 상태를 반영한다.
     @Update("""
         UPDATE robot
-        SET robot_status = #{robotStatus},
+        SET robot_status = COALESCE(
+                #{robotStatus},
+                robot_status
+            ),
             battery_level = COALESCE(
                 #{batteryLevel},
                 battery_level
@@ -99,4 +102,26 @@ public interface RobotMapper {
         WHERE robot_no = #{robotNo}
     """)
     int updateState(RobotDTO dto);
+
+    // 충전 중인 로봇 조회
+    @Select("""
+    SELECT *
+    FROM robot
+    WHERE robot_status = 'CHARGING'
+    ORDER BY
+        set_no,
+        set_position
+    """)
+    List<RobotDTO> findChargingRobots();
+
+    // 로봇 점검 완료 시각 갱신
+    @Update("""
+    UPDATE robot
+    SET last_maintenance_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE robot_no = #{robotNo}
+    """)
+    int completeMaintenance(
+            @Param("robotNo") long robotNo
+    );
 }

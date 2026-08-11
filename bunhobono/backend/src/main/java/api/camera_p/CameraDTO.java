@@ -26,4 +26,7 @@ CameraDTO {
 
     /** 카메라가 설치된 주차장명과 차단기명 */
     private String parkingName,gateName;
+
+    /** 카메라 사용 여부 */
+    private boolean active;
 }

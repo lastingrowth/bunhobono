@@ -38,4 +38,12 @@ public class RobotController {
                 dto
         );
     }
+
+    // 관리자 로봇 점검 완료
+    @PatchMapping("/{robotNo}/maintenance")
+    public int completeMaintenance(
+            @PathVariable long robotNo
+    ) {
+        return robotService.completeMaintenance(robotNo);
+    }
 }

@@ -217,6 +217,7 @@ public interface VehicleMapper {
     );
 
 
+
     // ADMIN 등록과 RESIDENT 방문 신청 공용 INSERT
     // loginId가 있으면 로그인 회원, 없으면 dto.memberNo 사용
     @Insert("""
@@ -241,7 +242,8 @@ public interface VehicleMapper {
                 THEN (
                     SELECT m.member_no
                     FROM member m
-                    WHERE m.login_id = CAST(#{loginId} AS VARCHAR)
+                    WHERE m.login_id =
+                          CAST(#{loginId} AS VARCHAR)
                 )
                 ELSE #{dto.memberNo}
             END,
@@ -253,10 +255,16 @@ public interface VehicleMapper {
             END
         )
     """)
+    @Options(
+            useGeneratedKeys = true,
+            keyProperty = "dto.vehicleCarNo",
+            keyColumn = "vehicle_car_no"
+    )
     int insert(
             @Param("loginId") String loginId,
             @Param("dto") VehicleDTO dto
     );
+
 
 
     // 같은 차량번호의 유효한 차량 확인

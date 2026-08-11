@@ -123,8 +123,6 @@ CREATE TABLE vehicle_car (
     member_no INT,                                            -- 차량을 등록하거나 방문 신청한 회원 고유번호
     approved_at TIMESTAMP,                                    -- 차량 등록이 승인된 시각
 
-    -- fee_exempt BOOLEAN NOT NULL DEFAULT FALSE,                 -- 긴급·작업 차량 등 주차요금 면제 여부
-
     CONSTRAINT fk_vehicle_member
         FOREIGN KEY (member_no)                               -- vehicle_car.member_no를 member 테이블과 연결
         REFERENCES member(member_no)
@@ -337,7 +335,6 @@ CREATE TABLE robot_log (
     drive_vibration_mm_s NUMERIC(8,4),                         -- 구동부 진동 속도(mm/s)
     battery_voltage_v NUMERIC(8,3),                            -- 배터리 전압(V)
     battery_temperature_c NUMERIC(6,2),                        -- 배터리 온도(섭씨)
-    -- days_since_maintenance INT NOT NULL,                       -- 마지막 정비 이후 경과 일수
     battery_level NUMERIC(5,2),                                -- 로그 생성 당시 배터리 잔량 또는 충전율
     obstacle_detected BOOLEAN NOT NULL DEFAULT FALSE,          -- 장애물 감지 여부
     safety_stop BOOLEAN NOT NULL DEFAULT FALSE,                -- 안전장치에 의한 긴급 정지 여부

@@ -24,10 +24,12 @@ public interface CameraMapper {
                     "c.camera_name, " +
                     "c.camera_type, " +
                     "c.install_date, " +
+                    "c.active, " +
                     "p.parking_name " +
                     "FROM camera c " +
                     "LEFT JOIN gate g ON c.gate_no = g.gate_no " +
                     "LEFT JOIN parking p ON g.parking_no = p.parking_no " +
+                    "WHERE c.active = TRUE " +
                     "ORDER BY c.camera_no"
     )
     List<CameraDTO> list(CameraDTO dto);
@@ -49,7 +51,13 @@ public interface CameraMapper {
      * @param cameraNo 카메라 고유번호
      * @return 삭제 처리 건수
      */
-    @Delete("DELETE FROM camera WHERE camera_no = #{cameraNo}")
+    // 카메라 비활성화
+    @Update("""
+    UPDATE camera
+    SET active = FALSE
+    WHERE camera_no = #{cameraNo}
+      AND active = TRUE
+    """)
     int delete(int cameraNo);
 
     /**
@@ -63,7 +71,8 @@ public interface CameraMapper {
             "    camera_name = #{cameraName}, " +
             "    camera_type = #{cameraType}, " +
             "    install_date = #{installDate} " +
-            "WHERE camera_no = #{cameraNo}")
+            "WHERE camera_no = #{cameraNo} " +
+            "  AND active = TRUE")
     int update(CameraDTO dto);
 }
 
