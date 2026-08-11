@@ -8,8 +8,9 @@ export const useAiChatStore = defineStore("aiChat", () => {
     const messages = ref([
         {
             role: "assistant",
-            text: "안녕하세요. 주차 및 방문차량 이용 방법을 질문해 주세요.",
-            fallback: false
+            text: "안녕하세요. 주차관리 서비스 이용 방법을 질문해 주세요.",
+            fallback: false,
+            responseType: "ANSWER"
         }
     ]);
 
@@ -31,7 +32,8 @@ export const useAiChatStore = defineStore("aiChat", () => {
         messages.value.push({
             role: "user",
             text: trimmedQuestion,
-            fallback: false
+            fallback: false,
+            responseType: null
         });
 
         sending.value = true;
@@ -46,7 +48,8 @@ export const useAiChatStore = defineStore("aiChat", () => {
             messages.value.push({
                 role: "assistant",
                 text: response.data.answer,
-                fallback: response.data.fallback
+                fallback: response.data.fallback,
+                responseType: response.data.responseType
             });
 
             return response.data;
@@ -60,7 +63,8 @@ export const useAiChatStore = defineStore("aiChat", () => {
             messages.value.push({
                 role: "assistant",
                 text: errorMessage.value,
-                fallback: true
+                fallback: true,
+                responseType: "AI_UNAVAILABLE"
             });
 
             return null;
@@ -75,8 +79,9 @@ export const useAiChatStore = defineStore("aiChat", () => {
         messages.value = [
             {
                 role: "assistant",
-                text: "안녕하세요. 주차 및 방문차량 이용 방법을 질문해 주세요.",
-                fallback: false
+                text: "안녕하세요. 주차관리 서비스 이용 방법을 질문해 주세요.",
+                fallback: false,
+                responseType: "ANSWER"
             }
         ];
 

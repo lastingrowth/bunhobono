@@ -33,6 +33,9 @@ public class AiChatService {
     @Resource
     private FaqService faqService;
 
+    @Resource
+    private AiKnowledgeService aiKnowledgeService;
+
     private final RestClient restClient;
 
     public AiChatService() {
@@ -46,10 +49,13 @@ public class AiChatService {
         // DB에 등록된 FAQ 목록 조회
         List<FaqDTO> faqList = faqService.list();
 
+        List<String> knowledgeDocuments = aiKnowledgeService.getDocuments();
+
         // FAQ 목록과 사용자 질문을 Gemini용 문장으로 생성
         String prompt = createPrompt(
                 question,
-                faqList
+                faqList,
+                knowledgeDocuments
         );
 
         // API 키가 없으면 Gemini를 호출하지 않고 대체 답변 반환
@@ -100,13 +106,10 @@ public class AiChatService {
                     .retrieve()
                     .body(Map.class);
 
-            // Gemini 응답 JSON에서 실제 답변 추출
+            // Gemini 응답 JSON에서 실제 답변 추출 후 답변 가능 여부 분기
             String answer = extractAnswer(responseBody);
 
-            return response(
-                    answer,
-                    false
-            );
+            return modelResponse(answer);
 
         } catch (Exception e) {
             log.error(
@@ -147,37 +150,69 @@ public class AiChatService {
         return question;
     }
 
-    // FAQ 목록과 사용자 질문을 하나의 문장으로 생성
+    // FAQ, 프로젝트 안내 문서와 사용자 질문을 하나의 문장으로 생성
     private String createPrompt(
             String question,
-            List<FaqDTO> faqList
+            List<FaqDTO> faqList,
+            List<String> knowledgeDocuments
     ) {
         StringBuilder prompt = new StringBuilder();
 
-        prompt.append(
-                "너는 아파트 주차관리 시스템의 입주민 안내 챗봇이다.\n"
-        );
-        prompt.append(
-                "반드시 아래 FAQ 내용을 기준으로 간단하고 정확하게 답변한다.\n"
-        );
-        prompt.append(
-                "FAQ에서 답을 찾을 수 없으면 추측하지 말고 1:1 문의를 이용하라고 안내한다.\n\n"
-        );
+        prompt.append("""
+                너는 아파트 주차관리 시스템의 전문 상담 챗봇이다.
 
-        for (FaqDTO faq : faqList) {
-            prompt.append("[FAQ]\n");
-            prompt.append("분류: ")
-                    .append(faq.getCategory())
-                    .append("\n");
-            prompt.append("질문: ")
-                    .append(faq.getQuestion())
-                    .append("\n");
-            prompt.append("답변: ")
-                    .append(faq.getAnswer())
-                    .append("\n\n");
+                다음 규칙을 반드시 지킨다.
+                1. FAQ에 정확한 답변이 있으면 FAQ를 우선 사용한다.
+                2. FAQ에 없으면 프로젝트 안내 문서를 근거로 답변한다.
+                3. 제공된 자료에 없는 사실을 추측하거나 만들어내지 않는다.
+                4. 사용자별 실제 데이터 조회나 관리자 판단이 필요한 질문은 답을 추측하지 않는다.
+                5. 다른 입주민의 개인정보, 차량번호, 연락처, 출입 기록은 제공하지 않는다.
+                6. 비밀번호, 인증번호, API 키, JWT 같은 보안정보를 요청하거나 출력하지 않는다.
+                7. 개발 코드나 DB 구조가 아니라 사용자가 이해하기 쉬운 한국어로 간결하게 답한다.
+
+                답변 근거가 충분하면 반드시 다음 형식으로 반환한다.
+                ANSWER: 답변 내용
+
+                다음 중 하나에 해당하면 다른 설명 없이 NEED_INQUIRY만 반환한다.
+                - FAQ와 프로젝트 안내 문서에 답변 근거가 없는 경우
+                - 사용자별 실제 차량, 계정, 결제, 입출차 상태를 직접 조회해야 하는 경우
+                - 관리자 판단이나 예외 처리가 필요한 경우
+                - 개인정보 또는 민감정보 제공을 요구하는 경우
+
+                ## FAQ
+
+                """);
+
+        if (faqList == null || faqList.isEmpty()) {
+            prompt.append("등록된 FAQ가 없습니다.\n\n");
+        } else {
+            for (FaqDTO faq : faqList) {
+                prompt.append("[FAQ]\n");
+                prompt.append("분류: ")
+                        .append(faq.getCategory())
+                        .append("\n");
+                prompt.append("질문: ")
+                        .append(faq.getQuestion())
+                        .append("\n");
+                prompt.append("답변: ")
+                        .append(faq.getAnswer())
+                        .append("\n\n");
+            }
         }
 
-        prompt.append("[사용자 질문]\n");
+        prompt.append("## 프로젝트 안내 문서\n\n");
+
+        if (knowledgeDocuments == null
+                || knowledgeDocuments.isEmpty()) {
+            prompt.append("등록된 프로젝트 안내 문서가 없습니다.\n\n");
+        } else {
+            for (String document : knowledgeDocuments) {
+                prompt.append(document)
+                        .append("\n\n");
+            }
+        }
+
+        prompt.append("## 사용자 질문\n\n");
         prompt.append(question);
 
         return prompt.toString();
@@ -251,6 +286,49 @@ public class AiChatService {
         return answer.trim();
     }
 
+    // Gemini가 반환한 제어 문자열을 실제 사용자 응답으로 변환
+    private AiChatResponseDTO modelResponse(String answer) {
+        String normalizedAnswer = answer
+                .replace("```", "")
+                .trim();
+
+        if ("NEED_INQUIRY".equalsIgnoreCase(normalizedAnswer)) {
+            return response(
+                    "안내 자료에서 정확한 답변을 찾지 못했습니다. "
+                            + "1:1 문의 화면에서 문의를 등록해 주세요.",
+                    false,
+                    "NEED_INQUIRY"
+            );
+        }
+
+        if (normalizedAnswer.regionMatches(
+                true,
+                0,
+                "ANSWER:",
+                0,
+                "ANSWER:".length()
+        )) {
+            normalizedAnswer = normalizedAnswer
+                    .substring("ANSWER:".length())
+                    .trim();
+        }
+
+        if (normalizedAnswer.isBlank()) {
+            return response(
+                    "안내 자료에서 정확한 답변을 찾지 못했습니다. "
+                            + "1:1 문의 화면에서 문의를 등록해 주세요.",
+                    false,
+                    "NEED_INQUIRY"
+            );
+        }
+
+        return response(
+                normalizedAnswer,
+                false,
+                "ANSWER"
+        );
+    }
+
     // Gemini 호출 실패 시 FAQ 또는 안내 문구 반환
     private AiChatResponseDTO fallback(
             String question,
@@ -267,15 +345,17 @@ public class AiChatService {
                     || normalizedFaqQuestion.contains(normalizedQuestion)) {
                 return response(
                         faq.getAnswer(),
-                        true
+                        true,
+                        "FAQ_FALLBACK"
                 );
             }
         }
 
         return response(
-                "현재 AI 답변을 불러올 수 없습니다. "
-                        + "자주하는 질문을 확인하거나 1:1 문의를 이용해 주세요.",
-                true
+                "현재 AI 상담 서비스에 연결할 수 없습니다. "
+                        + "잠시 후 다시 시도하거나 1:1 문의를 이용해 주세요.",
+                true,
+                "AI_UNAVAILABLE"
         );
     }
 
@@ -296,13 +376,15 @@ public class AiChatService {
     // 최종 챗봇 응답 DTO 생성
     private AiChatResponseDTO response(
             String answer,
-            boolean fallback
+            boolean fallback,
+            String responseType
     ) {
         AiChatResponseDTO response =
                 new AiChatResponseDTO();
 
         response.setAnswer(answer);
         response.setFallback(fallback);
+        response.setResponseType(responseType);
 
         return response;
     }

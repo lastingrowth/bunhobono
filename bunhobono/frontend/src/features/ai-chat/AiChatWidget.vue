@@ -11,7 +11,7 @@
             <header class="ai-chat-header">
                 <div>
                     <strong>보노 AI 챗봇</strong>
-                    <span>FAQ 기반 입주민 안내</span>
+                    <span>주차관리 서비스 이용 안내</span>
                 </div>
 
                 <div class="ai-chat-header-actions">
@@ -58,10 +58,10 @@
 
                     <small
                         v-if="message.role === 'assistant'
-                            && message.fallback"
+                            && message.responseType === 'AI_UNAVAILABLE'"
                         class="ai-chat-fallback"
                     >
-                        AI 연결 대체 안내
+                        AI 연결 오류
                     </small>
                 </div>
 
