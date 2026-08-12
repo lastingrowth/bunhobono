@@ -92,4 +92,26 @@ public class InquiryController {
                 authentication.getName()
         );
     }
+
+    // 입주민 본인 문의 삭제
+    @DeleteMapping("/resident/{inquiryNo}")
+    public int deleteByMember(
+            Authentication authentication,
+            @PathVariable int inquiryNo
+    ) {
+        return inquiryService.deleteByMember(
+                inquiryNo,
+                authentication.getName()
+        );
+    }
+
+    //입주민 본인문의 3개월이상 자동삭제도 보이게
+    @GetMapping("/resident/archived")
+    public List<InquiryDTO> archivedListByMember(
+            Authentication authentication
+    ) {
+        return inquiryService.archivedListByMember(
+                authentication.getName()
+        );
+    }
 }

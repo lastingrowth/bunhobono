@@ -12,6 +12,14 @@ export const adminMenu = [
     path: "/admin/camera-data"
   },
   {
+    title: '예지보전',
+    path: '/admin/predictive-maintenance'
+  },
+  {
+    title: '주차장 배치도',
+    path: '/admin/parking-map'
+  },
+  {
     title: '입출차 기록',
     path: '/admin/carlogs'
   },

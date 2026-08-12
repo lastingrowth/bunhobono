@@ -83,4 +83,47 @@ public interface InquiryMapper {
     // 휴지통 저장이 끝난 문의 삭제
     @Delete("DELETE FROM inquiry WHERE inquiry_no = #{inquiryNo}")
     int delete(int inquiryNo);
+
+    // 입주민 본인 지난 문의 목록 조회
+    @Select("""
+        SELECT
+            tb.trash_no,
+            (tb.data_json ->> 'inquiry_no')::int AS inquiry_no,
+            (tb.data_json ->> 'member_no')::int AS member_no,
+            NULLIF(
+                tb.data_json ->> 'root_inquiry_no',
+                ''
+            )::int AS root_inquiry_no,
+            tb.data_json ->> 'category' AS category,
+            tb.data_json ->> 'title' AS title,
+            tb.data_json ->> 'content' AS content,
+            tb.data_json ->> 'status' AS status,
+            tb.data_json ->> 'answer_content' AS answer_content,
+            NULLIF(
+                tb.data_json ->> 'answered_by',
+                ''
+            )::int AS answered_by,
+            NULLIF(
+                tb.data_json ->> 'answered_at',
+                ''
+            )::timestamp AS answered_at,
+            NULLIF(
+                tb.data_json ->> 'created_at',
+                ''
+            )::timestamp AS created_at
+        FROM trash_bin tb
+        WHERE tb.data_type = 'INQUIRY'
+          AND tb.delete_type = 'SCHEDULED'
+          AND (tb.data_json ->> 'member_no')::int = #{memberNo}
+        ORDER BY
+            NULLIF(
+                tb.data_json ->> 'answered_at',
+                ''
+            )::timestamp DESC,
+            tb.trash_no DESC
+        """)
+    List<InquiryDTO> archivedListByMemberNo(
+            @Param("memberNo") int memberNo
+    );
+
 }
