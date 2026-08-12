@@ -25,6 +25,7 @@ public interface CameraMapper {
                     "c.camera_type, " +
                     "c.install_date, " +
                     "c.active, " +
+                    "c.camera_status, " +
                     "p.parking_name " +
                     "FROM camera c " +
                     "LEFT JOIN gate g ON c.gate_no = g.gate_no " +

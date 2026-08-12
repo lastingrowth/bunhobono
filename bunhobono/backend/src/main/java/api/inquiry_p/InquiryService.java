@@ -296,4 +296,47 @@ public class InquiryService {
         }
         return member;
     }
+
+    // 입주민 본인 문의 삭제
+    public int deleteByMember(int inquiryNo, String loginId) {
+
+        LoginDTO member = resident(loginId);
+
+        // 로그인한 입주민 본인의 문의인지 확인
+        InquiryDTO inquiry =
+                inquiryMapper.detailByMember(
+                        inquiryNo,
+                        member.getMemberNo()
+                );
+
+        if (inquiry == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "삭제할 문의사항이 없습니다."
+            );
+        }
+
+        // 답변이 등록되기 전 문의만 삭제 가능
+        if (!"WAITING".equals(inquiry.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "답변이 완료된 문의는 삭제할 수 없습니다."
+            );
+        }
+
+        // 휴지통으로 이동한 뒤 원본 문의 삭제
+        trashService.moveInquiry(inquiryNo, "MANUAL");
+
+        return 1;
+    }
+
+    // 입주민 본인 지난 문의 목록 조회
+    public List<InquiryDTO> archivedListByMember(String loginId) {
+
+        LoginDTO member = resident(loginId);
+
+        return inquiryMapper.archivedListByMemberNo(
+                member.getMemberNo()
+        );
+    }
 }

@@ -51,7 +51,7 @@
           :key="item.inquiryNo"
           type="button"
           class="inquiry-row"
-          @click="goDetail(item.inquiryNo)"
+          @click="goDetail(item)"
         >
           <span class="category">
             {{ categoryText(item.category) }}
@@ -175,7 +175,17 @@
       </section>
 
       <button
-        v-if="store.inquiry.status === 'ANSWERED'"
+        v-if="store.inquiry.status === 'WAITING'"
+        type="button"
+        class="delete-button"
+        :disabled="store.deletingInquiryNo === store.inquiry.inquiryNo"
+        @click="deleteInquiry(store.inquiry)"
+      >
+        {{ store.deletingInquiryNo === store.inquiry.inquiryNo ? "삭제 중" : "삭제하기" }}
+      </button>
+
+      <button
+        v-if="store.inquiry.status === 'ANSWERED' && !store.inquiry.trashNo"
         type="button"
         @click="goReInquiry"
       >
@@ -249,6 +259,10 @@ const inquiryNo = computed(() =>
   Number(route.params.inquiryNo)
 );
 
+const trashNo = computed(() =>
+  Number(route.params.trashNo)
+);
+
 const mode = computed(() => {
   if (route.name === "ResidentInquiryWrite") {
     return "write";
@@ -258,7 +272,10 @@ const mode = computed(() => {
     return "reInquiry";
   }
 
-  if (route.name === "ResidentInquiryDetail") {
+  if (
+    route.name === "ResidentInquiryDetail"
+    || route.name === "ResidentArchivedInquiryDetail"
+  ) {
     return "detail";
   }
 
@@ -321,6 +338,13 @@ const loadPage = async () => {
   }
 
   if (
+    route.name === "ResidentArchivedInquiryDetail"
+  ) {
+    await store.loadArchivedInquiry(trashNo.value);
+    return;
+  }
+
+  if (
     mode.value === "detail"
     || mode.value === "reInquiry"
   ) {
@@ -358,13 +382,38 @@ const goList = () =>
 const goWrite = () =>
   router.push("/resident/inquiries/write");
 
-const goDetail = (number) =>
-  router.push(`/resident/inquiries/${number}/detail`);
+const goDetail = (item) => {
+  if (item.trashNo) {
+    router.push(
+      `/resident/inquiries/archived/${item.trashNo}/detail`
+    );
+    return;
+  }
+
+  router.push(`/resident/inquiries/${item.inquiryNo}/detail`);
+};
 
 const goReInquiry = () =>
   router.push(
     `/resident/inquiries/${inquiryNo.value}/re-inquiry`
   );
+
+const deleteInquiry = async (item) => {
+  const confirmed = window.confirm(
+    `「${item.title}」 문의를 삭제하시겠습니까?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await store.removeResidentInquiry(item.inquiryNo);
+    goList();
+  } catch (error) {
+    window.alert(store.errorMessage);
+  }
+};
 
 watch(
   () => route.fullPath,
@@ -438,6 +487,16 @@ button:disabled {
 
 .inquiry-row:hover {
   background: #f5f9fc;
+}
+
+.delete-button {
+  align-self: flex-end;
+  color: #c13f3f;
+  background: #fff0f0;
+}
+
+.delete-button:hover {
+  background: #ffe1e1;
 }
 
 .title {
