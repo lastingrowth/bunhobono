@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -114,6 +115,86 @@ public class BoardController {
     ) {
         requireRole(authentication, "ADMIN");
         service.delete(boardNo);
+    }
+
+    // ================================
+    // 댓글
+    // ================================
+
+
+    // 공지사항의 댓글과 대댓글 조회
+    // [댓글] 로그인 사용자의 이름 조회
+    @GetMapping("/comments/writer")
+    public String commentWriterName(Authentication authentication) {
+        requireRole(authentication, "ADMIN", "RESIDENT");
+        return service.commentWriterName(authentication.getName());
+    }
+
+    @GetMapping("/{boardNo}/comments")
+    public List<BoardDTO> comments(
+            @PathVariable int boardNo,
+            Authentication authentication
+    ) {
+        requireRole(authentication, "ADMIN", "RESIDENT");
+        requireBoardAccess(boardNo, authentication);
+        return service.commentList(boardNo, authentication.getName());
+    }
+
+    // 댓글 또는 대댓글 등록
+    @PostMapping("/{boardNo}/comments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public BoardDTO createComment(
+            @PathVariable int boardNo,
+            @RequestBody BoardDTO dto,
+            Authentication authentication
+    ) {
+        requireRole(authentication, "ADMIN", "RESIDENT");
+        requireBoardAccess(boardNo, authentication);
+        return service.createComment(boardNo, dto, authentication.getName());
+    }
+
+    // 작성자 본인의 댓글을 수정
+    @PutMapping("/{boardNo}/comments/{commentNo}")
+    public BoardDTO updateComment(
+            @PathVariable int boardNo,
+            @PathVariable int commentNo,
+            @RequestBody BoardDTO dto,
+            Authentication authentication
+    ) {
+        requireRole(authentication, "ADMIN", "RESIDENT");
+        requireBoardAccess(boardNo, authentication);
+        return service.updateComment(
+                boardNo,
+                commentNo,
+                dto,
+                authentication.getName()
+        );
+    }
+
+    // 작성자 본인의 댓글과 모든 하위 댓글을 삭제
+    @DeleteMapping("/{boardNo}/comments/{commentNo}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteComment(
+            @PathVariable int boardNo,
+            @PathVariable int commentNo,
+            Authentication authentication
+    ) {
+        requireRole(authentication, "ADMIN", "RESIDENT");
+        requireBoardAccess(boardNo, authentication);
+        service.deleteComment(
+                boardNo,
+                commentNo,
+                authentication.getName(),
+                hasRole(authentication, "ADMIN")
+        );
+    }
+
+    // 입주민은 현재 게시 중인 공지사항의 댓글만 이용할 수 있음.
+    private void requireBoardAccess(
+            int boardNo,
+            Authentication authentication
+    ) {
+        service.detail(boardNo, !hasRole(authentication, "ADMIN"));
     }
 
     // 권한 확인 (로그인 사용자의 관리자·입주민 권한을 검사)

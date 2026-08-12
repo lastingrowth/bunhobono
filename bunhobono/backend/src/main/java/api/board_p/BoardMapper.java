@@ -4,6 +4,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -99,4 +100,136 @@ public interface BoardMapper {
                     "WHERE board_no = #{boardNo}"
     )
     int delete(int boardNo);
+
+
+    // ================================
+    // 댓글
+    // ================================
+    // [댓글] 공지사항의 댓글을 계층 순서로 조회한다.
+    @Select("""
+            SELECT bc.comment_no,
+                   bc.board_no,
+                   bc.parent_comment_no,
+                   bc.content AS comment_content,
+                   bc.created_at AS comment_created_at,
+                   bc.updated_at AS comment_updated_at,
+                   m.mem_name AS comment_writer_name,
+                   m.role AS comment_writer_role,
+                   au.dong AS comment_writer_dong,
+                   au.ho AS comment_writer_ho,
+                   (m.login_id = #{loginId}) AS my_comment
+            FROM board_comment bc
+            JOIN member m ON m.member_no = bc.member_no
+            LEFT JOIN apartment_unit au ON au.apartment_unit_no = m.unit_no
+            WHERE bc.board_no = #{boardNo}
+            ORDER BY bc.created_at DESC, bc.comment_no DESC
+            """)
+    List<BoardDTO> commentList(
+            @Param("boardNo") int boardNo,
+            @Param("loginId") String loginId
+    );
+
+    // 로그인한 사용자의 이름을 조회한다.
+    @Select("SELECT mem_name FROM member WHERE login_id = #{loginId}")
+    String findCommentWriterName(@Param("loginId") String loginId);
+
+    // 댓글 번호로 댓글과 작성자를 조회한다.
+    @Select("""
+            SELECT bc.comment_no,
+                   bc.board_no,
+                   bc.parent_comment_no,
+                   bc.content AS comment_content,
+                   bc.created_at AS comment_created_at,
+                   bc.updated_at AS comment_updated_at,
+                   m.mem_name AS comment_writer_name,
+                   m.role AS comment_writer_role,
+                   au.dong AS comment_writer_dong,
+                   au.ho AS comment_writer_ho
+            FROM board_comment bc
+            JOIN member m ON m.member_no = bc.member_no
+            LEFT JOIN apartment_unit au ON au.apartment_unit_no = m.unit_no
+            WHERE bc.comment_no = #{commentNo}
+            """)
+    BoardDTO findComment(@Param("commentNo") int commentNo);
+
+    // 선택한 댓글이 몇 단계인지 부모 관계를 따라 계산.
+    @Select("""
+            WITH RECURSIVE parent_tree AS (
+                SELECT comment_no, parent_comment_no, 1 AS comment_depth
+                FROM board_comment
+                WHERE comment_no = #{commentNo}
+                UNION ALL
+                SELECT parent.comment_no,
+                       parent.parent_comment_no,
+                       child.comment_depth + 1
+                FROM board_comment parent
+                JOIN parent_tree child
+                  ON parent.comment_no = child.parent_comment_no
+            )
+            SELECT MAX(comment_depth) FROM parent_tree
+            """)
+    Integer findCommentDepth(@Param("commentNo") int commentNo);
+
+
+    // 로그인 사용자의 회원 번호로 댓글을 등록.
+    @Insert("""
+            INSERT INTO board_comment (
+                board_no, member_no, parent_comment_no, content
+            )
+            SELECT #{boardNo}, member_no, #{dto.parentCommentNo}, #{dto.commentContent}
+            FROM member
+            WHERE login_id = #{loginId}
+            """)
+    @Options(useGeneratedKeys = true, keyProperty = "dto.commentNo")
+    int insertComment(
+            @Param("boardNo") int boardNo,
+            @Param("loginId") String loginId,
+            @Param("dto") BoardDTO dto
+    );
+
+    // 작성자 본인의 댓글만 수정.
+    @Update("""
+            UPDATE board_comment bc
+            SET content = #{commentContent}, updated_at = CURRENT_TIMESTAMP
+            FROM member m
+            WHERE bc.comment_no = #{commentNo}
+              AND bc.board_no = #{boardNo}
+              AND bc.member_no = m.member_no
+              AND m.login_id = #{loginId}
+            """)
+    int updateComment(
+            @Param("boardNo") int boardNo,
+            @Param("commentNo") int commentNo,
+            @Param("loginId") String loginId,
+            @Param("commentContent") String commentContent
+    );
+
+    // 선택한 댓글과 모든 하위 댓글을 함께 삭제.
+    @Delete("""
+            WITH RECURSIVE comment_tree AS (
+                SELECT bc.comment_no
+                FROM board_comment bc
+                JOIN member m ON m.member_no = bc.member_no
+                WHERE bc.comment_no = #{commentNo}
+                  AND bc.board_no = #{boardNo}
+                  AND (#{admin} = TRUE OR m.login_id = #{loginId})
+                UNION ALL
+                SELECT child.comment_no
+                FROM board_comment child
+                JOIN comment_tree parent
+                  ON child.parent_comment_no = parent.comment_no
+            )
+            DELETE FROM board_comment
+            WHERE comment_no IN (SELECT comment_no FROM comment_tree)
+            """)
+    int deleteCommentTree(
+            @Param("boardNo") int boardNo,
+            @Param("commentNo") int commentNo,
+            @Param("loginId") String loginId,
+            @Param("admin") boolean admin
+    );
+
+    // 공지사항에 연결된 모든 댓글을 삭제.
+    @Delete("DELETE FROM board_comment WHERE board_no = #{boardNo}")
+    int deleteCommentsByBoardNo(@Param("boardNo") int boardNo);
 }

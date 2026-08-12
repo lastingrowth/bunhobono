@@ -112,7 +112,6 @@
             </span>
             <h3>{{ store.board.title }}</h3>
           </div>
-          <span>{{ store.board.active ? "노출" : "숨김" }}</span>
         </header>
 
         <dl class="detail-meta">
@@ -129,6 +128,11 @@
           </div>
         </div>
       </article>
+      <BoardCommentList
+        v-if="store.board"
+        :board-no="store.board.boardNo"
+        admin-mode
+      />
     </template>
 
     <template v-else>
@@ -201,6 +205,7 @@ import { storeToRefs } from "pinia";
 import Pagination from "@/shared/pagination/Pagination.vue";
 import { usePagination } from "@/shared/pagination/usePagination";
 import { useDialog } from "@/shared/alert/useDialog";
+import BoardCommentList from "./BoardCommentList.vue";
 import { useBoardStore } from "./boardStore";
 
 const route = useRoute();
