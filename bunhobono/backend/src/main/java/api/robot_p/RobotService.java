@@ -415,56 +415,35 @@ public class RobotService {
         saveSetLogs(task, "COMPLETED");
     }
 
-    // 세트에 속한 두 로봇의 원시 상태값 저장
+    // 세트에 포함된 두 로봇의 원시 상태값 저장
     private void saveSetLogs(
             RobotTaskDTO task,
             String taskPhase
     ) {
         List<RobotDTO> robots =
-                findBySetNo(task.getSetNo());
-
-        if (robots.size() != 2) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT
-            );
-        }
+                robotMapper.findBySetNo(task.getSetNo());
 
         for (RobotDTO robot : robots) {
-            RobotLogDTO log =
-                    createRobotLog(
-                            robot,
-                            task,
-                            taskPhase
-                    );
-
-            int inserted =
-                    robotLogService.insert(log);
-
-            if (inserted != 1) {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT
-                );
-            }
-
-            RobotDTO currentState = new RobotDTO();
-
-            currentState.setRobotStatus(
-                    log.getRobotStatus()
-            );
-            currentState.setBatteryLevel(
-                    log.getBatteryLevel()
+            RobotLogDTO log = createRobotLog(
+                    robot,
+                    task,
+                    taskPhase
             );
 
-            int updated =
-                    updateState(
-                            robot.getRobotNo(),
-                            currentState
-                    );
+            int inserted = robotLogService.insert(log);
 
-            if (updated != 1) {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT
+            if (inserted == 1) {
+                RobotDTO currentState = new RobotDTO();
+
+                currentState.setRobotNo(log.getRobotNo());
+                currentState.setRobotStatus(
+                        log.getRobotStatus()
                 );
+                currentState.setBatteryLevel(
+                        log.getBatteryLevel()
+                );
+
+                robotMapper.updateState(currentState);
             }
         }
     }

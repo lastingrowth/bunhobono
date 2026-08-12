@@ -4,6 +4,7 @@ import dashboard from "./dashboard";
 import members from "./members";
 import carlogs from "./carlogs";
 import parkings from "./parkings";
+import robots from "./robots";
 import gates from "./gates";
 import cameraData from "./cameraData";
 import notices from "./notices";
@@ -14,6 +15,7 @@ import statistics from "./statistics";
 import boards from "./boards";
 import kiosk from "./kiosk";
 import inquiries from "./inquiries";
+
 
 export const adminRoutes = [
     {
@@ -30,6 +32,7 @@ export const adminRoutes = [
             ...carlogs,
             ...vehicles,
             ...parkings,
+            ...robots,
             ...gates,
             ...cameras,
             ...cameraData,
