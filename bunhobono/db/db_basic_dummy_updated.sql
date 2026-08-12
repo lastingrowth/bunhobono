@@ -776,6 +776,54 @@ FROM demo_event e
          LEFT JOIN demo_capture_link cout ON cout.capture_key = e.event_key || '-OUT';
 
 -- =====================================================
+-- B1 로봇 주차장 현재 주차 차량 배정
+-- 기존 입주민 등록차량 중 미출차 차량 29대를 일반 주차면에 배정한다.
+-- 아래 res1 차량 1대를 포함하면 B1에는 총 30대가 주차 중으로 표시된다.
+-- 주차면 번호를 단순 오름차순으로 채우지 않고 B1 전체에 고르게 분산한다.
+-- =====================================================
+WITH parked_resident AS (
+    SELECT
+        car_log_no,
+        ROW_NUMBER() OVER (
+            ORDER BY in_time DESC, car_log_no DESC
+        ) AS row_no
+    FROM car_log
+    WHERE snapshot_car_kind = 'REGISTERED'
+      AND out_time IS NULL
+      AND snapshot_car_no <> '99보9999'
+      AND snapshot_car_no NOT IN (
+          '143모8849',
+          '91어6511',
+          '40거2054',
+          '48나8278'
+      )
+    LIMIT 29
+), empty_space AS (
+    SELECT
+        space_no,
+        ROW_NUMBER() OVER (
+            ORDER BY
+                MOD(RIGHT(space_code, 3)::INT * 37, 100),
+                space_code
+        ) AS row_no
+    FROM parking_space
+    WHERE space_type = 'PARKING'
+      AND space_code <> 'B1-P023'
+      AND car_log_no IS NULL
+    ORDER BY
+        MOD(RIGHT(space_code, 3)::INT * 37, 100),
+        space_code
+    LIMIT 29
+)
+UPDATE parking_space space
+SET car_log_no = parked.car_log_no,
+    updated_at = CURRENT_TIMESTAMP
+FROM parked_resident parked
+JOIN empty_space empty
+    ON empty.row_no = parked.row_no
+WHERE space.space_no = empty.space_no;
+
+-- =====================================================
 -- res1 현재 주차 위치 확인용
 -- 만료 임박 차량 99보9999를 B1-P023 주차면에 배정한다.
 -- =====================================================
