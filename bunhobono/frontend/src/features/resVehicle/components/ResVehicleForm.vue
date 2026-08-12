@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h3>방문차량 신청</h3>
+    <h3>{{ isEditMode ? '방문차량 시간 변경' : '방문차량 신청' }}</h3>
 
     <form @submit.prevent="submit">
       <table border="">
@@ -11,6 +11,7 @@
               <input
                 v-model="form.carNo"
                 placeholder="예: 12가3456"
+                :disabled="isEditMode"
                 required
               >
             </td>
@@ -89,11 +90,11 @@
           <tr>
             <td colspan="2" class="visit-form-actions">
               <div class="visit-form-action-buttons">
-                <button type="submit">신청</button>
+                <button type="submit">{{ isEditMode ? '변경' : '신청' }}</button>
                 <button type="button" @click="emit('cancel')">
                   돌아가기
                 </button>
-                <button type="button" class="reset-button" @click="resetForm">
+                <button v-if="!isEditMode" type="button" class="reset-button" @click="resetForm">
                   입력 초기화
                 </button>
               </div>
@@ -111,11 +112,19 @@ import {
   onBeforeUnmount,
   onMounted,
   reactive,
-  ref
+  ref,
+  watch
 } from 'vue'
 import { useDialog } from '@/shared/alert/useDialog'
 
 const emit = defineEmits(['submit', 'cancel'])
+const props = defineProps({
+  editVehicle: {
+    type: Object,
+    default: null
+  }
+})
+const isEditMode = computed(() => Boolean(props.editVehicle))
 // 입주민 차량 등록 폼의 기본 alert를 공통 Dialog로 대체합니다.
 const { alertDialog } = useDialog()
 
@@ -185,6 +194,33 @@ onMounted(() => {
     clearInvalidTime()
   }, 30000)
 })
+
+watch(
+  () => props.editVehicle,
+  (vehicle) => {
+    if (!vehicle) return
+
+    const startDate = new Date(vehicle.startDate)
+    const endDate = new Date(vehicle.endDate)
+
+    form.carNo = vehicle.carNo || ''
+
+    if (!Number.isNaN(startDate.getTime())) {
+      form.visitDate = formatDateValue(startDate)
+      form.visitHour = String(startDate.getHours())
+      form.visitMinute = String(startDate.getMinutes())
+    }
+
+    const durationHours = Math.round(
+      (endDate.getTime() - startDate.getTime()) / (60 * 60 * 1000)
+    )
+
+    if ([2, 4, 6, 8, 12].includes(durationHours)) {
+      form.periodHours = durationHours
+    }
+  },
+  { immediate: true }
+)
 
 onBeforeUnmount(() => {
   window.clearInterval(currentTimeTimer)

@@ -59,8 +59,27 @@ export const deleteCameraData = (cameraDataNo) => {
   return api.delete(`/camera-data/${cameraDataNo}/delete`);
 };
 
-// 관리자 수동 게이트 열기
-// 자동 통과되지 않은 OCR 데이터를 관리자가 확인한 뒤 게이트를 열 때 사용
-export const openGateByCameraData = (cameraDataNo) => {
-  return api.post(`/camera-data/${cameraDataNo}/open-gate`)
+// 관리자가 저신뢰 OCR 차량번호를 확인하거나 수정한 뒤
+// 기존 승인 차량을 다시 조회하여 입출차 처리와 게이트 개방을 요청한다.
+export const confirmLowConfidenceGate = (cameraDataNo, carNo) => {
+  return api.post(
+    `/camera-data/${cameraDataNo}/confirm-gate`,
+    { carNo },
+  )
+}
+
+// 일반 미등록 차량을 관리실 방문차량으로 등록하고 게이트를 연다.
+// 해당 차량은 B2 입차 시 무료시간을 적용하지 않는다.
+export const openVisitGateByCameraData = (cameraDataNo) => {
+  return api.post(
+    `/camera-data/${cameraDataNo}/open-visit-gate`,
+  )
+}
+
+// 미등록 긴급차량을 관리실 방문차량으로 등록하고 게이트를 연다.
+// 해당 차량은 B2 입차 시 72시간 무료시간을 적용한다.
+export const openEmergencyGateByCameraData = (cameraDataNo) => {
+  return api.post(
+    `/camera-data/${cameraDataNo}/open-emergency-gate`,
+  )
 }

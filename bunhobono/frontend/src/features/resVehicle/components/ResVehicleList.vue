@@ -12,7 +12,7 @@
         <col class="vehicle-col-period">
         <col class="vehicle-col-date">
         <col class="vehicle-col-remaining">
-        <col v-if="showManage || showCancel" class="vehicle-col-manage">
+        <col v-if="showManage || showCancel || showExtend" class="vehicle-col-manage">
       </colgroup>
 
       <thead>
@@ -24,7 +24,7 @@
           <th>등록기간</th>
           <th>만기일</th>
           <th>남은기간</th>
-          <th v-if="showManage || showCancel">관리</th>
+          <th v-if="showManage || showCancel || showExtend">관리</th>
         </tr>
       </thead>
 
@@ -63,11 +63,27 @@
             </span>
           </td>
 
-          <td v-if="showManage || showCancel">
+          <td v-if="showManage || showCancel || showExtend">
             <template v-if="showManage">
               <button @click="$emit('edit', vehicle)">수정</button>
               <button @click="$emit('remove', vehicle.vehicleCarNo)">삭제</button>
             </template>
+
+            <button
+              v-if="showExtend && canExtendNormalVehicle(vehicle)"
+              type="button"
+              @click="$emit('extend-normal', vehicle)"
+            >
+              기간 연장
+            </button>
+
+            <button
+              v-if="showCancel && !vehicle.inTime"
+              type="button"
+              @click="$emit('edit-visit-time', vehicle)"
+            >
+             수정
+            </button>
 
             <button
               v-if="showCancel && !vehicle.inTime"
@@ -82,7 +98,7 @@
         </tr>
 
         <tr v-if="vehicles.length === 0">
-          <td :colspan="showManage || showCancel ? 8 : 7" align="center">
+          <td :colspan="showManage || showCancel || showExtend ? 8 : 7" align="center">
             {{ emptyMessage }}
             <a
               v-if="emptyActionLabel"
@@ -120,12 +136,31 @@ defineProps({
   showCancel: {
     type: Boolean,
     default: false
+  },
+  showExtend: {
+    type: Boolean,
+    default: false
   }
 });
 
-defineEmits(["edit", "remove", "cancel-visit", "empty-action"]);
+defineEmits(["edit", "remove", "extend-normal", "edit-visit-time", "cancel-visit", "empty-action"]);
 
 const normalizedText = (value) => String(value || "-").trim();
+
+// 일반차량은 만기 전 14일 이내에서만 기간을 연장할 수 있습니다.
+const canExtendNormalVehicle = (vehicle) => {
+  const endDate = new Date(vehicle.endDate);
+
+  if (Number.isNaN(endDate.getTime())) {
+    return false;
+  }
+
+  const remainingMilliseconds = endDate.getTime() - Date.now();
+  const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+
+  return remainingMilliseconds >= 0
+    && remainingMilliseconds <= fourteenDays;
+};
 
 // 날짜와 시간을 항상 의미가 분리된 두 줄로 표시합니다.
 const splitDateTime = (value) => {

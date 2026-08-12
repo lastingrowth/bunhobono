@@ -69,17 +69,56 @@
             }">
             마이페이지
         </RouterLink>
+
+        <div class="resident-menu-divider" aria-hidden="true"></div>
+
+        <section class="resident-menu-weather" aria-label="부산 현재 날씨">
+            <div class="resident-menu-weather-heading">
+                <span>부산 날씨</span>
+                <button
+                    type="button"
+                    title="날씨 새로고침"
+                    :disabled="weatherLoading"
+                    @click="dashboardStore.loadWeather"
+                >
+                    {{ weatherLoading ? '…' : '↻' }}
+                </button>
+            </div>
+
+            <div class="resident-menu-weather-main">
+                <span aria-hidden="true">{{ weatherIcon }}</span>
+                <strong>{{ weather.temperature ?? '--' }}°</strong>
+            </div>
+
+            <p v-if="weatherErrorMessage">날씨 정보 없음</p>
+            <template v-else>
+                <p>{{ weather.precipitation }} · 습도 {{ weather.humidity ?? '--' }}%</p>
+                <p>풍속 {{ weather.windSpeed ?? '--' }}m/s</p>
+            </template>
+        </section>
     </nav>
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useResVehicleStore } from '@/features/resVehicle/resVehicleStore';
+import { useResidentDashboardStore } from '@/stores/residentDashboard';
 
 const route = useRoute()
 const resVehicleStore = useResVehicleStore()
+const dashboardStore = useResidentDashboardStore()
+const { weather, weatherLoading, weatherErrorMessage } = storeToRefs(dashboardStore)
 const menuTop = ref(0)
+
+const weatherIcon = computed(() => {
+    const state = weather.value.precipitation || ''
+
+    if (state.includes('눈')) return '❄️'
+    if (state.includes('비') || state.includes('빗방울')) return '🌧️'
+    return '☀️'
+})
 
 let currentTop = 0
 let animationFrame = 0
@@ -135,6 +174,7 @@ onMounted(() => {
     window.addEventListener('scroll', startFollowing, { passive: true })
     window.addEventListener('resize', resetMenuPosition)
     resVehicleStore.loadNotifications().catch(() => {})
+    dashboardStore.loadWeather().catch(() => {})
 })
 
 onUnmounted(() => {
@@ -214,6 +254,56 @@ onUnmounted(() => {
     background: #dce8f2;
 }
 
+.resident-menu-weather {
+    width: 100px;
+    padding: 10px;
+    border: 1px solid #dce8f2;
+    border-radius: 12px;
+    color: #38536d;
+    background: linear-gradient(135deg, #f4faff, #eaf5fd);
+}
+
+.resident-menu-weather-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.resident-menu-weather-heading button {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    color: #557993;
+    background: transparent;
+    cursor: pointer;
+}
+
+.resident-menu-weather-main {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 7px 0 5px;
+}
+
+.resident-menu-weather-main span {
+    font-size: 20px;
+}
+
+.resident-menu-weather-main strong {
+    font-size: 19px;
+}
+
+.resident-menu-weather p {
+    margin: 0;
+    color: #71879a;
+    font-size: 9px;
+    line-height: 1.45;
+    white-space: nowrap;
+}
+
 /* 현재 페이지 */
 .resident-floating-menu a.active {
     color: #1768bd;
@@ -236,6 +326,19 @@ onUnmounted(() => {
         width: 85px;
         padding: 12px 5px;
         font-size: 12px;
+    }
+
+    .resident-menu-weather {
+        width: 85px;
+        padding: 8px 6px;
+    }
+
+    .resident-menu-weather-main {
+        gap: 4px;
+    }
+
+    .resident-menu-weather-main strong {
+        font-size: 16px;
     }
 }
 

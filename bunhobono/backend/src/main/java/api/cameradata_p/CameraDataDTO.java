@@ -26,6 +26,10 @@ CameraDataDTO {
     private LocalDateTime endDate;
     private LocalDateTime gateOpenedAt;
 
+    // 등록 차량 소유 회원의 세대 연결 정보
+    // 값이 있으면 입주민 차량, NULL이면 관리실 등록 차량이다.
+    private Integer apartmentUnitNo;
+
     //외래키
     private int cameraNo;
 

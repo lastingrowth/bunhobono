@@ -25,6 +25,7 @@
             <th>주차장 이름</th>
             <th>게이트 분류</th>
             <th>상태</th>
+            <th>장비 상태</th>
             <th>관리</th>
           </tr>
         </thead>
@@ -37,12 +38,17 @@
             <td>{{ g.gateType }}</td>
             <td>{{ g.gateStatus === 1 ? '열림' : '닫힘' }}</td>
             <td>
+              <span class="operating-status" :class="operatingStatusClass(g.operatingStatus)">
+                {{ operatingStatusText(g.operatingStatus) }}
+              </span>
+            </td>
+            <td>
               <button class="delete-button" type="button" @click="requestDelete(g)">삭제</button>
             </td>
           </tr>
 
           <tr v-if="gStore.list.length === 0">
-            <td class="empty-row" colspan="6">등록된 게이트가 없습니다.</td>
+            <td class="empty-row" colspan="7">등록된 게이트가 없습니다.</td>
           </tr>
         </tbody>
       </table>
@@ -180,6 +186,18 @@ const createEmptyGate = () => ({
 });
 
 const gate = ref(createEmptyGate());
+
+const operatingStatusText = (status) => ({
+  NORMAL: '정상',
+  FAULT: '고장',
+  MAINTENANCE: '점검 중',
+}[status] ?? '-');
+
+const operatingStatusClass = (status) => ({
+  NORMAL: 'normal',
+  FAULT: 'fault',
+  MAINTENANCE: 'maintenance',
+}[status] ?? 'unknown');
 
 // 게이트 등록 다이얼로그 열기
 const openDialog = () => {
@@ -357,6 +375,36 @@ button:hover {
   padding: 7px 12px;
   color: #d33f49;
   background: #fff0f0;
+}
+
+.operating-status {
+  display: inline-flex;
+  min-width: 54px;
+  padding: 3px 9px;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.operating-status.normal {
+  color: #18794e;
+  background: #e8f7ef;
+}
+
+.operating-status.fault {
+  color: #c33c46;
+  background: #fff0f1;
+}
+
+.operating-status.maintenance {
+  color: #a8640d;
+  background: #fff6df;
+}
+
+.operating-status.unknown {
+  color: #667085;
+  background: #f0f2f5;
 }
 
 /* 게이트 등록 다이얼로그 */

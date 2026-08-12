@@ -294,23 +294,61 @@ public class CarLogService {
         log.setInTime(
                 captureTime(cameraData)
         );
-        log.setFreeTime(0);
+
+        boolean visitVehicle =
+                "visit".equalsIgnoreCase(
+                        cameraData.getVehicleType()
+                );
+
+        // 입주민이 등록한 방문차량인지 확인한다.
+        // 입주민 차량은 member를 통해 실제 세대와 연결되어 있다.
+        boolean residentVisit =
+                visitVehicle && cameraData.getApartmentUnitNo() != null;
+
+        // 관리실에 등록된 72시간 긴급차량인지 확인한다.
+        // 관리실 차량은 apartment_unit_no가 없으며,
+        // 긴급차량 등록기간은 정확히 72시간으로 설정된다.
+        boolean emergencyVisit =
+                visitVehicle
+                        && cameraData.getApartmentUnitNo() == null
+                        && cameraData.getStartDate() != null
+                        && cameraData.getEndDate() != null
+                        && cameraData.getEndDate().equals(
+                        cameraData.getStartDate().plusHours(72)
+                );
+
+        // 입주민 방문차량은 B2 입차 시점부터 24시간 무료,
+        // 관리실 긴급차량은 B2 입차 시점부터 72시간 무료,
+        // 관리실 일반 방문차량과 그 외 차량은 무료시간이 없다.
+        if (residentVisit) {
+            log.setFreeTime(1440);
+        } else if (emergencyVisit) {
+            log.setFreeTime(4320);
+        } else {
+            log.setFreeTime(0);
+        }
 
         log.setSnapshotCarNo(
                 resolvedCarNo(cameraData)
         );
-        log.setSnapshotCarKind(
-                "visit".equalsIgnoreCase(
-                        cameraData.getVehicleType()
-                )
-                        ? "VISIT"
-                        : "REGISTERED"
-        );
+
+        // 입주민 방문차량과 관리실 일반·긴급차량은
+        // 모두 vehicle_car에 방문차량으로 등록된다.
+        if (visitVehicle) {
+            log.setSnapshotCarKind("VISIT");
+        }
+
+        // 나머지는 입주민 등록차량이다.
+        else {
+            log.setSnapshotCarKind("REGISTERED");
+        }
 
         return log;
     }
 
-    // 주차장별 차량 입차 자격 확인
+    // 주차장별 차량 입차 자격을 확인한다.
+    // 정문·후문에서 승인된 일반·긴급차량도 vehicle_car에 등록되므로
+    // 등록번호와 승인상태가 확인된 차량만 내부 주차장에 입차할 수 있다.
     private boolean canEnter(
             CameraDataDTO cameraData,
             String gateArea
@@ -324,6 +362,7 @@ public class CarLogService {
             return false;
         }
 
+        // B1은 입주민 등록차량만 입차할 수 있다.
         if (B1.equalsIgnoreCase(gateArea)) {
             return "normal".equalsIgnoreCase(
                     cameraData.getVehicleType()
@@ -331,6 +370,18 @@ public class CarLogService {
         }
 
         if (B2.equalsIgnoreCase(gateArea)) {
+
+            // 입주민 등록차량은 B2에도 입차할 수 있다.
+            if (
+                    "normal".equalsIgnoreCase(
+                            cameraData.getVehicleType()
+                    )
+            ) {
+                return true;
+            }
+
+            // 일반 방문차량과 긴급·작업 차량은
+            // 등록된 방문기간 안에 B2로 입차할 수 있다.
             return "visit".equalsIgnoreCase(
                     cameraData.getVehicleType()
             ) && isWithinVisitPeriod(cameraData);

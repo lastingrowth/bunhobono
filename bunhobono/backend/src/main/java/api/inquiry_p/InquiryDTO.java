@@ -22,4 +22,5 @@ public class InquiryDTO {
     private LocalDateTime answeredAt;
 
     private LocalDateTime createdAt;
+    private Integer trashNo;
 }

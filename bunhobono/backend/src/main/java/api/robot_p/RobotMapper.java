@@ -1,9 +1,6 @@
 package api.robot_p;
 
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -124,4 +121,19 @@ public interface RobotMapper {
     int completeMaintenance(
             @Param("robotNo") long robotNo
     );
+
+    // 주차로봇 등록
+    @Insert("INSERT INTO robot " +
+            "(robot_code, set_no, set_position, robot_status, battery_level, operating_hours) " +
+            "VALUES " +
+            "(#{robotCode}, #{setNo}, #{setPosition}, 'STANDBY', 100, 0)")
+    int insert(RobotDTO dto);
+
+    // 사용 이력이 없는 주차로봇 삭제
+    @Delete("DELETE FROM robot " +
+            "WHERE robot_no = #{robotNo} " +
+            "AND robot_status <> 'WORKING' " +
+            "AND NOT EXISTS " +
+            "(SELECT 1 FROM robot_log WHERE robot_no = #{robotNo})")
+    int delete(long robotNo);
 }

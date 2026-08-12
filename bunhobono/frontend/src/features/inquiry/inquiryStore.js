@@ -5,8 +5,10 @@ import {
     answerInquiry,
     createInquiry,
     createReInquiry,
+    deleteResidentInquiry,
     getAdminInquiries,
     getAdminInquiry,
+    getResidentArchivedInquiries,
     getResidentInquiries,
     getResidentInquiry
 } from "./inquiryApi";
@@ -27,6 +29,7 @@ export const useInquiryStore = defineStore("inquiry", () => {
 
     const loading = ref(false);
     const saving = ref(false);
+    const deletingInquiryNo = ref(null);
     const errorMessage = ref("");
 
     // 서버 오류 메시지 추출
@@ -41,12 +44,26 @@ export const useInquiryStore = defineStore("inquiry", () => {
         errorMessage.value = "";
 
         try {
-            const response = await getResidentInquiries();
+            const [currentResponse, archivedResponse] = await Promise.all([
+                getResidentInquiries(),
+                getResidentArchivedInquiries()
+            ]);
 
-            residentInquiries.value =
-                Array.isArray(response.data)
-                    ? response.data
-                    : [];
+            const currentInquiries = Array.isArray(currentResponse.data)
+                ? currentResponse.data
+                : [];
+            const archivedInquiries = Array.isArray(archivedResponse.data)
+                ? archivedResponse.data
+                : [];
+
+            residentInquiries.value = [
+                ...currentInquiries,
+                ...archivedInquiries
+            ].sort(
+                (left, right) =>
+                    new Date(right.createdAt).getTime()
+                    - new Date(left.createdAt).getTime()
+            );
 
             return residentInquiries.value;
         } catch (error) {
@@ -132,6 +149,65 @@ export const useInquiryStore = defineStore("inquiry", () => {
             throw error;
         } finally {
             saving.value = false;
+        }
+    };
+
+    // 자동 보관된 문의 상세 조회
+    // 목록 API에 상세 내용이 포함되므로 별도 상세 API 없이 해당 항목을 사용한다.
+    const loadArchivedInquiry = async (trashNo) => {
+        loading.value = true;
+        errorMessage.value = "";
+
+        try {
+            const response = await getResidentArchivedInquiries();
+            const archivedInquiries = Array.isArray(response.data)
+                ? response.data
+                : [];
+
+            inquiry.value = archivedInquiries.find(
+                (item) => item.trashNo === trashNo
+            ) ?? null;
+
+            if (!inquiry.value) {
+                throw new Error("보관된 문의를 찾을 수 없습니다.");
+            }
+
+            return inquiry.value;
+        } catch (error) {
+            inquiry.value = null;
+            errorMessage.value = message(
+                error,
+                error.message || "문의사항을 불러오지 못했습니다."
+            );
+
+            throw error;
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    // 입주민 본인 문의 삭제
+    const removeResidentInquiry = async (inquiryNo) => {
+        deletingInquiryNo.value = inquiryNo;
+        errorMessage.value = "";
+
+        try {
+            const response = await deleteResidentInquiry(inquiryNo);
+
+            residentInquiries.value = residentInquiries.value.filter(
+                (item) => item.inquiryNo !== inquiryNo
+            );
+
+            return response.data;
+        } catch (error) {
+            errorMessage.value = message(
+                error,
+                "문의사항을 삭제하지 못했습니다."
+            );
+
+            throw error;
+        } finally {
+            deletingInquiryNo.value = null;
         }
     };
 
@@ -229,12 +305,15 @@ export const useInquiryStore = defineStore("inquiry", () => {
         adminStatus,
         loading,
         saving,
+        deletingInquiryNo,
         errorMessage,
 
         loadResidentInquiries,
         loadResidentInquiry,
+        loadArchivedInquiry,
         addInquiry,
         addReInquiry,
+        removeResidentInquiry,
         loadAdminInquiries,
         loadAdminInquiry,
         submitAnswer

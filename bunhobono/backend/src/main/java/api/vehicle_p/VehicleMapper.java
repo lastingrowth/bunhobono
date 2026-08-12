@@ -419,6 +419,53 @@ public interface VehicleMapper {
             @Param("vehicleCarNo") int vehicleCarNo
     );
 
+    // 로그인한 세대의 미입차 방문차량 예정시간 수정
+    @Update("""
+        UPDATE vehicle_car vc
+        SET start_date = #{startDate},
+            end_date = #{endDate}
+        FROM member owner,
+             member login_member
+        WHERE vc.vehicle_car_no = #{vehicleCarNo}
+          AND vc.member_no = owner.member_no
+          AND login_member.login_id = #{loginId}
+          AND owner.unit_no = login_member.unit_no
+          AND vc.vehicle_type = 'visit'
+          AND vc.vehicle_status = 'APPROVED'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM car_log cl
+              WHERE cl.vehicle_car_no = vc.vehicle_car_no
+                AND cl.in_time IS NOT NULL
+          )
+    """)
+    int updateUnenteredVisitTime(
+            @Param("loginId") String loginId,
+            @Param("vehicleCarNo") int vehicleCarNo,
+            @Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate
+    );
+
+    // 로그인한 입주민 본인 일반차량 만기일 연장
+    @Update("""
+        UPDATE vehicle_car vc
+        SET end_date = #{endDate}
+        FROM member m
+        WHERE vc.vehicle_car_no = #{vehicleCarNo}
+          AND vc.member_no = m.member_no
+          AND m.login_id = #{loginId}
+          AND vc.vehicle_type = 'normal'
+          AND vc.vehicle_status = 'APPROVED'
+          AND vc.end_date >= CURRENT_TIMESTAMP
+          AND vc.end_date <= CURRENT_TIMESTAMP + INTERVAL '14 days'
+          AND (vc.end_date IS NULL OR vc.end_date < #{endDate})
+    """)
+    int extendResidentNormalVehicle(
+            @Param("loginId") String loginId,
+            @Param("vehicleCarNo") int vehicleCarNo,
+            @Param("endDate") java.time.LocalDateTime endDate
+    );
+
     // 같은 세대의 이번 달 방문차량 실제 입차 횟수
     @Select("""
     SELECT COUNT(DISTINCT cl.car_log_no)

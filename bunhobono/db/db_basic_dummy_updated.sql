@@ -19,7 +19,8 @@ TRUNCATE TABLE
     parking,
     member_archive,
     member,
-    apartment_unit
+    apartment_unit,
+    faq
 RESTART IDENTITY CASCADE;
 
 INSERT INTO apartment_unit (dong, ho, unit_status)
@@ -775,6 +776,54 @@ FROM demo_event e
          LEFT JOIN demo_capture_link cout ON cout.capture_key = e.event_key || '-OUT';
 
 -- =====================================================
+-- B1 로봇 주차장 현재 주차 차량 배정
+-- 기존 입주민 등록차량 중 미출차 차량 29대를 일반 주차면에 배정한다.
+-- 아래 res1 차량 1대를 포함하면 B1에는 총 30대가 주차 중으로 표시된다.
+-- 주차면 번호를 단순 오름차순으로 채우지 않고 B1 전체에 고르게 분산한다.
+-- =====================================================
+WITH parked_resident AS (
+    SELECT
+        car_log_no,
+        ROW_NUMBER() OVER (
+            ORDER BY in_time DESC, car_log_no DESC
+        ) AS row_no
+    FROM car_log
+    WHERE snapshot_car_kind = 'REGISTERED'
+      AND out_time IS NULL
+      AND snapshot_car_no <> '99보9999'
+      AND snapshot_car_no NOT IN (
+          '143모8849',
+          '91어6511',
+          '40거2054',
+          '48나8278'
+      )
+    LIMIT 29
+), empty_space AS (
+    SELECT
+        space_no,
+        ROW_NUMBER() OVER (
+            ORDER BY
+                MOD(RIGHT(space_code, 3)::INT * 37, 100),
+                space_code
+        ) AS row_no
+    FROM parking_space
+    WHERE space_type = 'PARKING'
+      AND space_code <> 'B1-P023'
+      AND car_log_no IS NULL
+    ORDER BY
+        MOD(RIGHT(space_code, 3)::INT * 37, 100),
+        space_code
+    LIMIT 29
+)
+UPDATE parking_space space
+SET car_log_no = parked.car_log_no,
+    updated_at = CURRENT_TIMESTAMP
+FROM parked_resident parked
+JOIN empty_space empty
+    ON empty.row_no = parked.row_no
+WHERE space.space_no = empty.space_no;
+
+-- =====================================================
 -- res1 현재 주차 위치 확인용
 -- 만료 임박 차량 99보9999를 B1-P023 주차면에 배정한다.
 -- =====================================================
@@ -954,71 +1003,22 @@ WHERE n.car_log_no = cl.car_log_no
 -- =====================================================
 -- OCR 확인 및 입차기록 없는 출차 시도 알림
 -- =====================================================
-INSERT INTO camera_data (
-    camera_no,
-    vehicle_car_no,
-    car_no,
-    ocr_car_no,
-    capture_time,
-    image_path,
-    crop_image_path,
-    recognition_state,
-    confidence_score,
-    cam_note
-)
-SELECT
-    x.camera_no,
-    NULL,
-    dp.car_no,
-    CASE
-        WHEN x.notice_type = 'OCR_REVIEW'
-            THEN LEFT(dp.car_no, LENGTH(dp.car_no) - 1) || '8'
-        ELSE dp.car_no
-    END,
-    CURRENT_TIMESTAMP - (x.age_minutes * INTERVAL '1 minute'),
-    'camera-data/' || dp.image_file,
-    'camera-data/crop/'
-        || REPLACE(dp.crop_file, '.jpeg', '.jpg'),
-    x.notice_type <> 'OCR_REVIEW',
-    CASE
-        WHEN x.notice_type = 'OCR_REVIEW' THEN 62.40
-        ELSE 98.10
-    END,
-    x.event_key
-FROM (VALUES
-    ('NOTICE-OCR-OPEN',  'OCR_REVIEW',        62, 1, 45),
-    ('NOTICE-OCR-DONE',  'OCR_REVIEW',        63, 3, 90),
-    ('NOTICE-EXIT-OPEN', 'EXIT_WITHOUT_ENTRY',64, 2, 30),
-    ('NOTICE-EXIT-DONE', 'EXIT_WITHOUT_ENTRY',65, 4, 75)
-) AS x(
-    event_key,
-    notice_type,
-    plate_no,
-    camera_no,
-    age_minutes
-)
-JOIN demo_plate dp
-    ON dp.plate_no = x.plate_no;
+INSERT INTO camera_data (camera_no, vehicle_car_no, car_no, ocr_car_no, capture_time, image_path, crop_image_path, recognition_state, confidence_score, cam_note)
+VALUES
+    -- OCR 오인식 미처리 확인용
+    (1, NULL, '12가3456', '12가3458', CURRENT_TIMESTAMP - INTERVAL '45 minutes', 'camera-data/car1.jpeg', 'camera-data/crop/car1.jpg', FALSE, 62.40, 'NOTICE-OCR-OPEN'),
 
-INSERT INTO notice (
-    notice_type,
-    car_log_no,
-    camera_data_no,
-    detect_at,
-    due_at,
-    alert_stat,
-    handled_by_member_no,
-    handled_at,
-    snapshot_car_log_no,
-    snapshot_camera_data_no,
-    snapshot_registered_car_no,
-    snapshot_captured_car_no,
-    snapshot_car_kind,
-    snapshot_parking_name,
-    snapshot_in_time,
-    snapshot_image_path,
-    snapshot_confidence_score
-)
+    -- OCR 오인식 처리 완료 확인용
+    (3, NULL, '34나5678', '34나5679', CURRENT_TIMESTAMP - INTERVAL '90 minutes', 'camera-data/car2.jpeg', 'camera-data/crop/car2.jpg', FALSE, 62.40, 'NOTICE-OCR-DONE'),
+
+    -- 입차 기록 없는 출차 미처리 확인용
+    (2, NULL, '56다7890', '56다7890', CURRENT_TIMESTAMP - INTERVAL '30 minutes', 'camera-data/car3.jpeg', 'camera-data/crop/car3.jpg', TRUE, 98.10, 'NOTICE-EXIT-OPEN'),
+
+    -- 입차 기록 없는 출차 처리 완료 확인용
+    (4, NULL, '78라9012', '78라9012', CURRENT_TIMESTAMP - INTERVAL '75 minutes', 'camera-data/car4.jpeg', 'camera-data/crop/car4.jpg', TRUE, 98.10, 'NOTICE-EXIT-DONE');
+
+INSERT INTO notice (notice_type, car_log_no, camera_data_no, detect_at, due_at, alert_stat, handled_by_member_no, handled_at, snapshot_car_log_no, snapshot_camera_data_no,
+    snapshot_registered_car_no, snapshot_captured_car_no, snapshot_car_kind, snapshot_parking_name, snapshot_in_time, snapshot_image_path, snapshot_confidence_score)
 SELECT
     x.notice_type,
     NULL,
@@ -1564,6 +1564,38 @@ SELECT CASE WHEN g <= 12 THEN 'CAMERA_DATA' ELSE 'NOTICE' END,
        CURRENT_TIMESTAMP - (g * INTERVAL '2 hours'),
        CURRENT_TIMESTAMP + INTERVAL '30 days' - (g * INTERVAL '2 hours')
 FROM generate_series(1,24) AS g;
+
+-- =====================================================
+-- res1 자동 보관 문의 확인용
+-- 답변 완료 후 3개월이 지나 스케줄러가 trash_bin으로 이동한 상태를 재현한다.
+-- 입주민 화면에서는 일반 답변 완료 문의와 동일하게 표시한다.
+-- =====================================================
+INSERT INTO trash_bin
+(data_type, original_no, data_json, delete_type, deleted_at, purge_at)
+SELECT
+    'INQUIRY',
+    900001,
+    jsonb_build_object(
+        'inquiry_no', 900001,
+        'member_no', resident.member_no,
+        'root_inquiry_no', NULL,
+        'category', 'PARKING',
+        'title', '지난 주차 이용 내역 문의',
+        'content', '이전에 이용한 주차 기록의 입출차 시간을 확인하고 싶습니다.',
+        'status', 'ANSWERED',
+        'answer_content', '확인 결과 정상적으로 입차 및 출차 처리된 기록입니다.',
+        'answered_by', admin_member.member_no,
+        'answered_at', CURRENT_TIMESTAMP - INTERVAL '4 months',
+        'created_at', CURRENT_TIMESTAMP - INTERVAL '5 months'
+    ),
+    'SCHEDULED',
+    CURRENT_TIMESTAMP - INTERVAL '1 month',
+    CURRENT_TIMESTAMP + INTERVAL '30 days'
+FROM member resident
+CROSS JOIN member admin_member
+WHERE resident.login_id = 'res1'
+  AND admin_member.login_id = 'admin1';
+
 SELECT setval(pg_get_serial_sequence('vehicle_car','vehicle_car_no'), MAX(vehicle_car_no), TRUE) FROM vehicle_car;
 SELECT setval(pg_get_serial_sequence('camera_data','camera_data_no'), MAX(camera_data_no), TRUE) FROM camera_data;
 SELECT setval(pg_get_serial_sequence('car_log','car_log_no'), MAX(car_log_no), TRUE) FROM car_log;
@@ -1610,6 +1642,21 @@ SELECT
     COUNT(*)
 FROM notice_overstay;
 
--- 기존 공지사항을 모두 삭제하고 번호를 1번부터 다시 시작한다.
+-- 자주하는 질문 테스트 데이터
+INSERT INTO faq (category, question, answer)
+VALUES
+    ('PARKING', '입주민 차량은 어떻게 등록하나요?', '입주민 차량은 관리실에서 등록할 수 있습니다. 등록이 필요한 경우 관리실에 문의해 주세요.'),
+    ('PARKING', '내 차량의 현재 주차 위치는 어디에서 확인하나요?', '입주민 메인 화면의 차량 현황에서 현재 주차 상태와 주차 위치를 확인할 수 있습니다.'),
+    ('PARKING', '차량 입출차 내역은 어디에서 확인하나요?', '입주민 화면의 메뉴에서 입출차 내역을 선택하면 내 차량의 최근 입차와 출차 기록을 확인할 수 있습니다.'),
+    ('VISIT', '방문차량은 어떻게 등록하나요?', '입주민 화면의 차량 관리에서 방문차량 신청을 선택한 뒤 차량번호, 방문 시작 시간, 방문 시간을 입력해 주세요. 방문 시작은 현재 시간으로부터 1시간 이후로 선택해야 합니다.'),
+    ('VISIT', '등록한 방문차량을 취소할 수 있나요?', '아직 입차하지 않은 방문차량만 등록을 취소할 수 있습니다. 차량 관리의 방문차량 목록에서 등록 취소를 선택해 주세요.'),
+    ('VISIT', '방문차량 등록 가능 횟수는 어디에서 확인하나요?', '입주민 메인 화면의 차량 현황에서 이번 달에 남아 있는 방문차량 등록 횟수를 확인할 수 있습니다.'),
+    ('VISIT', '방문차량의 주차 시간이 초과되면 어떻게 확인하나요?', '방문차량의 주차 시간이 초과되면 차량 알림에서 관련 내용을 확인할 수 있습니다.'),
+    ('PAYMENT', '방문차량 추가 등록 횟수를 충전할 수 있나요?', '방문차량 추가 등록 횟수 충전 기능은 현재 준비 중입니다. 추가 등록이 필요한 경우 관리실에 문의해 주세요.'),
+    ('ETC', '차량 알림은 어디에서 확인하나요?', '입주민 화면의 메뉴 또는 화면 오른쪽의 차량 알림 버튼을 이용하면 차량 관련 알림을 확인할 수 있습니다.'),
+    ('ETC', '자주하는 질문에서 해결하지 못한 내용은 어떻게 문의하나요?', '1:1 문의 화면에서 문의하기 버튼을 선택해 문의를 등록해 주세요. 등록한 문의와 관리자 답변은 내 문의에서 확인할 수 있습니다.');
+
+
+
 
 COMMIT;

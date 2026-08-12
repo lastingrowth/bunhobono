@@ -89,12 +89,46 @@
                                     <span class="approval-wait-title"><i></i>{{ approvalWaitTitle(panel) }}</span>
                                     <strong>{{ getCameraStatus(panel.cameraNo)?.lastOcrCarNo || '차량번호 확인 중' }}</strong>
                                     <p>{{ approvalWaitMessage(panel) }}</p>
+                                    <!-- 저신뢰 OCR 번호를 아직 확인하지 않은 경우 먼저 차량번호를 확인한다. -->
                                     <button
+                                        v-if="
+                                            isLowConfidenceWaiting(panel)
+                                            && !isConfirmedUnregistered(panel)
+                                        "
                                         type="button"
-                                        :disabled="!panel.gate || !getPendingCameraDataNo(panel.cameraNo)"
-                                        @click.stop="openGateAndResume(panel)">
-                                        {{ approvalWaitButtonText(panel) }}
+                                        :disabled="
+                                            !panel.gate
+                                            || !getPendingCameraDataNo(panel.cameraNo)
+                                        "
+                                        @click.stop="confirmLowConfidenceAndResume(panel)">
+                                        차량번호 확인
                                     </button>
+
+                                    <!-- 정상 신뢰도 미등록차량 또는 저신뢰 확인 후 미등록차량은
+                                        일반·긴급 등록 유형을 관리자가 선택한다. -->
+                                    <div
+                                        v-else
+                                        class="approval-action-buttons">
+                                        <button
+                                            type="button"
+                                            :disabled="
+                                                !panel.gate
+                                                || !getPendingCameraDataNo(panel.cameraNo)
+                                            "
+                                            @click.stop="openGateAndResume(panel, 'VISIT')">
+                                            일반 방문차량 승인
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            :disabled="
+                                                !panel.gate
+                                                || !getPendingCameraDataNo(panel.cameraNo)
+                                            "
+                                            @click.stop="openGateAndResume(panel, 'EMERGENCY')">
+                                            긴급차량 승인
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -118,14 +152,6 @@
                                 {{ isCameraPlaying(panel.cameraNo) ? '일시정지' : (isCameraFinished(panel.cameraNo) ? '다시 재생' : '재생') }}
                             </button>
 
-                            <!-- 선택된 화면에 연결된 게이트를 연다 -->
-                            <button
-                                type="button"
-                                class="camera-gate-button"
-                                :disabled="!panel.gate"
-                                @click.stop="openGateAndResume(panel)">
-                                게이트 열기
-                            </button>
                         </div>
                     </section>
                 </div>
@@ -616,12 +642,46 @@
                             <span class="approval-wait-title"><i></i>{{ approvalWaitTitle(selectedParkingPanel) }}</span>
                             <strong>{{ getCameraStatus(selectedParkingPanel.cameraNo)?.lastOcrCarNo || '차량번호 확인 중' }}</strong>
                             <p>{{ approvalWaitMessage(selectedParkingPanel) }}</p>
+                            <!-- 저신뢰 OCR 번호를 아직 확인하지 않은 경우 먼저 차량번호를 확인한다. -->
                             <button
+                                v-if="
+                                    isLowConfidenceWaiting(selectedParkingPanel)
+                                    && !isConfirmedUnregistered(selectedParkingPanel)
+                                "
                                 type="button"
-                                :disabled="!selectedParkingPanel.gate || !getPendingCameraDataNo(selectedParkingPanel.cameraNo)"
-                                @click="openGateAndResume(selectedParkingPanel)">
-                                {{ approvalWaitButtonText(selectedParkingPanel) }}
+                                :disabled="
+                                    !selectedParkingPanel.gate
+                                    || !getPendingCameraDataNo(selectedParkingPanel.cameraNo)
+                                "
+                                @click="confirmLowConfidenceAndResume(selectedParkingPanel)">
+                                차량번호 확인
                             </button>
+
+                            <!-- 정상 신뢰도 미등록차량 또는 저신뢰 확인 후 미등록차량은
+                                일반·긴급 등록 유형을 관리자가 선택한다. -->
+                            <div
+                                v-else
+                                class="approval-action-buttons">
+                                <button
+                                    type="button"
+                                    :disabled="
+                                        !selectedParkingPanel.gate
+                                        || !getPendingCameraDataNo(selectedParkingPanel.cameraNo)
+                                    "
+                                    @click="openGateAndResume(selectedParkingPanel, 'VISIT')">
+                                    일반 방문차량 승인
+                                </button>
+
+                                <button
+                                    type="button"
+                                    :disabled="
+                                        !selectedParkingPanel.gate
+                                        || !getPendingCameraDataNo(selectedParkingPanel.cameraNo)
+                                    "
+                                    @click="openGateAndResume(selectedParkingPanel, 'EMERGENCY')">
+                                    긴급차량 승인
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -643,14 +703,6 @@
                             : (isCameraFinished(selectedParkingPanel.cameraNo) ? '다시 재생' : '재생') }}
                     </button>
 
-                    <!-- 백엔드 open API 호출. 자동 닫힘은 백엔드 scheduleClose에서 처리 -->
-                    <button
-                        type="button"
-                        class="camera-gate-button"
-                        :disabled="!selectedParkingPanel.gate"
-                        @click="openGateAndResume(selectedParkingPanel)">
-                        게이트 열기
-                    </button>
                 </div>
             </div>
         </dialog>
@@ -660,7 +712,7 @@
 
 <script setup>
 import { useAdminDashboardStore } from '@/stores/adminDashboard';
-import { editCameraDataCarNo, editCameraDataNote, getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
+import { confirmLowConfidenceGate, editCameraDataCarNo, editCameraDataNote, getCameraDataDetail } from '@/features/camera-data/cameraDataApi';
 import { storeToRefs } from 'pinia';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -686,6 +738,11 @@ const cropImageErrors = ref(new Set())
 const lastOcrEventIds = new Map()
 const pendingCameraDataNos = ref({})
 const cameraStatuses = ref({})
+
+// 저신뢰 차량번호를 확인했지만 기존 등록차량을 찾지 못한
+// 카메라 번호를 보관하여 일반·긴급 승인 버튼을 표시한다.
+const confirmedUnregisteredCameraNos = ref(new Set())
+
 const isEditingCameraCarNo = ref(false)
 const cameraCarNoDraft = ref('')
 const cameraCarNoSaving = ref(false)
@@ -819,18 +876,125 @@ const saveCameraCarNo = async () => {
             true,
         )
 
-        selectedCameraData.value = {
+        // 백엔드에서 반환한 최신 촬영 데이터로 상세화면을 갱신한다.
+        const updatedCameraData = {
             ...selectedCameraData.value,
             ...(response.data ?? {}),
         }
-        await refreshCarlogs()
-        isEditingCameraCarNo.value = false
-        cameraCarNoDraft.value = ''
-        showVehicleFeedback(`${carNo} 차량번호로 수정했습니다.`)
+
+        selectedCameraData.value =
+            updatedCameraData
+
+        // 카메라 데이터 목록에도 수정한 차량번호를 즉시 반영한다.
+        recentCameraData.value =
+            recentCameraData.value.map((item) => {
+                if (
+                    Number(item.cameraDataNo)
+                    !== Number(updatedCameraData.cameraDataNo)
+                ) {
+                    return item
+                }
+
+                return {
+                    ...item,
+                    ...updatedCameraData,
+                }
+            })
+
+        // 승인 대기 오버레이는 FastAPI 상태의 lastOcrCarNo를 표시하므로
+        // 해당 카메라 상태에도 관리자가 수정한 차량번호를 반영한다.
+        const cameraNo =
+            Number(updatedCameraData.cameraNo)
+
+        // 승인 대기 화면에도 관리자가 수정한 차량번호를 즉시 반영한다.
+        cameraStatuses.value = {
+            ...cameraStatuses.value,
+            [cameraNo]: {
+                ...cameraStatuses.value[cameraNo],
+                lastOcrCarNo: carNo,
+            },
+        }
+
+        // 현재 승인 대기 중인 촬영 데이터 번호를 가져온다.
+        const pendingCameraDataNo =
+            getPendingCameraDataNo(cameraNo)
+
+        // 수정한 번호가 등록차량이면 즉시 입출차 처리와 게이트 개방을 요청한다.
+        if (
+            updatedCameraData.registered === true
+            && pendingCameraDataNo
+        ) {
+            const confirmResponse =
+                await confirmLowConfidenceGate(
+                    pendingCameraDataNo,
+                    carNo,
+                )
+
+            const confirmResult =
+                confirmResponse.data
+
+            if (confirmResult?.registered === true) {
+                if (confirmResult?.gateOpened !== true) {
+                    throw new Error('등록차량 확인 후 게이트가 열리지 않았습니다.')
+                }
+
+                const panel =
+                    parkingMonitorPanels.value.find(
+                        (item) =>
+                            Number(item.cameraNo) === cameraNo,
+                    )
+
+                if (!panel) {
+                    throw new Error(`카메라 ${cameraNo} 패널을 찾지 못했습니다.`)
+                }
+
+                await resumeCameraAfterApproval(
+                    panel,
+                    pendingCameraDataNo,
+                )
+
+                await refreshCarlogs()
+                isEditingCameraCarNo.value = false
+                cameraCarNoDraft.value = ''
+
+                showVehicleFeedback(
+                    `${carNo} 등록차량으로 확인되어 통과 처리했습니다.`,
+                )
+
+                return
+            }
+        }
+
+        // 수정한 번호가 미등록 차량일 때만 일반·긴급 승인 버튼을 표시한다.
+        if (
+            updatedCameraData.registered === false
+            && pendingCameraDataNo
+        ) {
+            const nextConfirmedNos =
+                new Set(
+                    confirmedUnregisteredCameraNos.value,
+                )
+
+            nextConfirmedNos.add(cameraNo)
+
+            confirmedUnregisteredCameraNos.value =
+                nextConfirmedNos
+
+            await refreshCarlogs()
+            isEditingCameraCarNo.value = false
+            cameraCarNoDraft.value = ''
+
+            showVehicleFeedback(
+                `${carNo} 차량번호로 수정했습니다. 등록 유형을 선택하세요.`,
+            )
+        }
     } catch (error) {
-        console.error('차량번호 수정 실패', error)
+        console.error('차량번호 수정 또는 자동 통과 실패', error)
+
         showVehicleFeedback(
-            error.response?.data?.message || '차량번호 수정에 실패했습니다.',
+            error.response?.data?.message
+                || error.message
+                || '차량번호 수정 또는 자동 통과에 실패했습니다.',
             'error',
         )
     } finally {
@@ -1051,6 +1215,14 @@ const isLowConfidenceWaiting = (panel) => {
         && cameraData.carNo !== '미인식'
 }
 
+// 저신뢰 차량번호 확인 결과 기존 등록차량이 아니었던 카메라인지 확인한다.
+// 이 상태에서는 차량번호 확인 버튼 대신 일반·긴급 승인 버튼을 표시한다.
+const isConfirmedUnregistered = (panel) => {
+    return confirmedUnregisteredCameraNos.value.has(
+        Number(panel.cameraNo),
+    )
+}
+
 const approvalWaitTitle = (panel) => {
     return isLowConfidenceWaiting(panel)
         ? `${panel.modeText} OCR 확인 필요`
@@ -1066,12 +1238,6 @@ const approvalWaitMessage = (panel) => {
     }
 
     return '미등록 차량입니다. 관리자 게이트 개방을 기다리고 있습니다.'
-}
-
-const approvalWaitButtonText = (panel) => {
-    return isLowConfidenceWaiting(panel)
-        ? '확인 후 통과 승인'
-        : '게이트 열기'
 }
 
 const setCameraPlaying = (cameraNo, playing) => {
@@ -1126,29 +1292,34 @@ const changeCameraMode = async (panel) => {
     toggleParkingCamera(panel.parkingName)
 }
 
-const openGateAndResume = async (panel) => {
-    const pendingCameraDataNo = getPendingCameraDataNo(panel.cameraNo)
-    const opened = await openManualGate(panel.gate, pendingCameraDataNo)
-
-    if (!opened) {
-        return
-    }
-
+// 차량 승인과 게이트 개방이 완료된 후 CCTV를 다시 재생하고
+// 현재 카메라의 승인 대기 상태를 초기화한다.
+const resumeCameraAfterApproval = async (
+    panel,
+    pendingCameraDataNo,
+) => {
     if (detailFollowMode.value === 'CAR_LOG') {
         followLatestCarlog()
     }
 
     try {
-        const endpoint = pendingCameraDataNo ? 'complete' : 'resume'
-        await fetch(`${FASTAPI_URL}/cctv/${panel.cameraNo}/${endpoint}`, {
-            method: 'POST',
-        })
+        const endpoint = pendingCameraDataNo
+            ? 'complete'
+            : 'resume'
+
+        await fetch(
+            `${FASTAPI_URL}/cctv/${panel.cameraNo}/${endpoint}`,
+            {
+                method: 'POST',
+            },
+        )
 
         if (pendingCameraDataNo) {
             pendingCameraDataNos.value = {
                 ...pendingCameraDataNos.value,
                 [panel.cameraNo]: null,
             }
+
             cameraStatuses.value = {
                 ...cameraStatuses.value,
                 [panel.cameraNo]: {
@@ -1159,9 +1330,122 @@ const openGateAndResume = async (panel) => {
                     pendingCameraDataNo: null,
                 },
             }
+
+            const nextConfirmedNos =
+                new Set(confirmedUnregisteredCameraNos.value)
+
+            nextConfirmedNos.delete(
+                Number(panel.cameraNo),
+            )
+
+            confirmedUnregisteredCameraNos.value =
+                nextConfirmedNos
         }
     } catch (error) {
-        console.error('게이트 개방 후 CCTV 재생 실패', error)
+        console.error(
+            '게이트 개방 후 CCTV 재생 실패',
+            error,
+        )
+    }
+}
+
+// 일반 또는 긴급 승인 버튼에서 전달한 approvalType에 따라
+// 관리실 일반차량 또는 긴급차량으로 등록한 뒤 게이트를 연다.
+const openGateAndResume = async (
+    panel,
+    approvalType,
+) => {
+    const pendingCameraDataNo =
+        getPendingCameraDataNo(panel.cameraNo)
+
+    const opened = await openManualGate(
+        panel.gate,
+        pendingCameraDataNo,
+        approvalType,
+    )
+
+    if (!opened) {
+        return
+    }
+
+    await resumeCameraAfterApproval(
+        panel,
+        pendingCameraDataNo,
+    )
+}
+
+// 저신뢰 OCR 차량번호를 관리자가 확인하면 최신 촬영 데이터를 다시 조회하고,
+// 수정된 차량번호로 기존 승인 차량의 등록 여부를 확인한다.
+const confirmLowConfidenceAndResume = async (panel) => {
+    const pendingCameraDataNo =
+        getPendingCameraDataNo(panel.cameraNo)
+
+    if (!pendingCameraDataNo) {
+        alert('확인할 촬영 데이터가 없습니다.')
+        return
+    }
+
+    try {
+        // recentCameraData에는 수정 전 OCR 번호가 남아 있을 수 있으므로
+        // 현재 camera_data 상세정보를 다시 조회하여 최신 차량번호를 사용한다.
+        const detailResponse =
+            await getCameraDataDetail(
+                pendingCameraDataNo,
+            )
+
+        const latestCameraData =
+            detailResponse.data
+
+        const carNo =
+            latestCameraData?.carNo
+                ?.trim()
+                .replace(/\s/g, '')
+
+        if (!carNo) {
+            alert('확인할 차량번호가 없습니다.')
+            return
+        }
+
+        const response =
+            await confirmLowConfidenceGate(
+                pendingCameraDataNo,
+                carNo,
+            )
+
+        const result = response.data
+
+        // 수정한 번호가 기존 승인 차량이면 백엔드에서
+        // 입출차 처리와 게이트 개방까지 완료한다.
+        if (
+            result?.registered === true
+                    && result?.gateOpened === true
+        ) {
+            await resumeCameraAfterApproval(
+                panel,
+                pendingCameraDataNo,
+            )
+            return
+        }
+
+        // 수정한 번호로도 등록차량을 찾지 못한 경우에만
+        // 일반 방문차량과 긴급차량 등록 버튼을 표시한다.
+        if (result?.registered === false) {
+            const nextConfirmedNos =
+                new Set(confirmedUnregisteredCameraNos.value)
+
+            nextConfirmedNos.add(
+                Number(panel.cameraNo),
+            )
+
+            confirmedUnregisteredCameraNos.value =
+                nextConfirmedNos
+        }
+    } catch (error) {
+        console.error(
+            '저신뢰 OCR 차량번호 확인 실패',
+            error,
+        )
+        alert('차량번호를 확인하지 못했습니다.')
     }
 }
 

@@ -5,6 +5,7 @@ import { residentRoutes } from './resident'
 import { useJwtStore } from '@/features/login/jwtStore'
 import { ocrRoutes } from './ocr'
 import { useHistoryStore } from '@/stores/historyStore'
+import { kioskRoutes } from './kiosk'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,7 +27,8 @@ const router = createRouter({
       ...authRoutes,
       ...adminRoutes,
       ...residentRoutes,
-      ...ocrRoutes
+      ...ocrRoutes,
+      ...kioskRoutes
   ],
 })
 

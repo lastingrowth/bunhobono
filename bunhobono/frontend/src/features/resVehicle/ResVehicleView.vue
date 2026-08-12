@@ -51,6 +51,8 @@
           empty-message="관리실에서 등록이 가능합니다."
           empty-action-label="문의"
           :show-manage="false"
+          :show-extend="true"
+          @extend-normal="openNormalExtension"
           @empty-action="scrollToResidentContact"
         />
       </section>
@@ -75,6 +77,7 @@
           empty-message="신청한 방문차량이 없습니다."
           :show-manage="false"
           :show-cancel="true"
+          @edit-visit-time="openVisitTimeEdit"
           @cancel-visit="cancelVisitVehicle"
         />
       </section>
@@ -90,8 +93,16 @@
       />
     </section>
 
+    <ResNormalVehicleExtendForm
+      v-else-if="mode === 'extend-normal'"
+      :vehicle="extendingNormalVehicle"
+      @submit="submitNormalExtension"
+      @cancel="openList"
+    />
+
     <ResVehicleForm
       v-else
+      :edit-vehicle="editingVisitVehicle"
       @submit="submitVisitVehicle"
       @cancel="openList"
     />
@@ -140,6 +151,7 @@ import { getMonthlyVisitRegistration } from "./resVehicleApi";
 import ResVehicleForm from "./components/ResVehicleForm.vue";
 import ResVehicleList from "./components/ResVehicleList.vue";
 import ResVehicleNt from "./components/ResVehicleNt.vue";
+import ResNormalVehicleExtendForm from "./components/ResNormalVehicleExtendForm.vue";
 import ManagementConfirm from "@/shared/components/ManagementConfirm.vue";
 import ManagementFeedbackToast from "@/shared/components/ManagementFeedbackToast.vue";
 
@@ -160,6 +172,14 @@ const feedbackType = ref("success");
 const mode = computed(() => {
   if (route.query.mode === "form") {
     return "form";
+  }
+
+  if (route.query.mode === "edit-time") {
+    return "edit-time";
+  }
+
+  if (route.query.mode === "extend-normal") {
+    return "extend-normal";
   }
 
   if (route.query.mode === "notification") {
@@ -187,6 +207,26 @@ const visibleVisitVehicles = computed(() => {
     const referenceDate = new Date(referenceTime);
     return !Number.isNaN(referenceDate.getTime()) && referenceDate >= cutoff;
   });
+});
+
+const editingVisitVehicle = computed(() => {
+  if (mode.value !== "edit-time") {
+    return null;
+  }
+
+  return resVehicleStore.visitVehicles.find((vehicle) => {
+    return Number(vehicle.vehicleCarNo) === Number(route.query.vehicleCarNo);
+  }) || null;
+});
+
+const extendingNormalVehicle = computed(() => {
+  if (mode.value !== "extend-normal") {
+    return null;
+  }
+
+  return resVehicleStore.normalVehicles.find((vehicle) => {
+    return Number(vehicle.vehicleCarNo) === Number(route.query.vehicleCarNo);
+  }) || null;
 });
 
 onMounted(async () => {
@@ -255,6 +295,43 @@ function openNotifications() {
   });
 }
 
+function openVisitTimeEdit(vehicle) {
+  router.replace({
+    path: "/resident/vehicles",
+    query: {
+      mode: "edit-time",
+      vehicleCarNo: vehicle.vehicleCarNo
+    }
+  });
+}
+
+function openNormalExtension(vehicle) {
+  router.replace({
+    path: "/resident/vehicles",
+    query: {
+      mode: "extend-normal",
+      vehicleCarNo: vehicle.vehicleCarNo
+    }
+  });
+}
+
+async function submitNormalExtension(endDate) {
+  if (!extendingNormalVehicle.value) return;
+
+  const vehicle = extendingNormalVehicle.value;
+
+  try {
+    await resVehicleStore.extendNormalVehicle(vehicle.vehicleCarNo, endDate);
+    openList();
+    showFeedback(`${vehicle.carNo} 등록기간을 연장했습니다.`);
+  } catch (error) {
+    showFeedback(
+      error.response?.data?.message || "차량 등록기간을 연장하지 못했습니다.",
+      "error"
+    );
+  }
+}
+
 function goDashboard() {
   router.push("/resident/dashboard");
 }
@@ -268,7 +345,15 @@ function scrollToResidentContact() {
 
 async function submitVisitVehicle(data) {
   try {
-    await resVehicleStore.addVisitVehicle(data);
+    if (mode.value === "edit-time" && editingVisitVehicle.value) {
+      await resVehicleStore.updateVisitVehicleTime(
+        editingVisitVehicle.value.vehicleCarNo,
+        data
+      );
+      showFeedback(`${editingVisitVehicle.value.carNo} 방문시간을 변경했습니다.`);
+    } else {
+      await resVehicleStore.addVisitVehicle(data);
+    }
     openList();
   } catch (error) {
     if (error.response?.status === 402) {
@@ -278,7 +363,9 @@ async function submitVisitVehicle(data) {
 
     showFeedback(
       error.response?.data?.message
-      || "방문차량을 등록하지 못했습니다.",
+      || (mode.value === "edit-time"
+        ? "방문시간을 변경하지 못했습니다."
+        : "방문차량을 등록하지 못했습니다."),
       "error"
     );
   }

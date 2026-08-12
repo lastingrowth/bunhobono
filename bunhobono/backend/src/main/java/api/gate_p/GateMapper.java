@@ -20,6 +20,7 @@ public interface GateMapper {
             g.gate_type,
             g.gate_area,
             g.gate_status,
+            g.operating_status,
             p.parking_name,
             p.parking_location
         FROM gate g
