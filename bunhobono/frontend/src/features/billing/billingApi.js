@@ -16,3 +16,17 @@ export const calculateBill = (carNo, kioskNo) => {
         kioskNo
     })
 }
+
+
+// 토스페이먼츠 결제를 승인하고 정산을 완료 처리
+export const confirmPayment = (
+    paymentKey,
+    orderId,
+    amount
+) => {
+    return api.post('/billing/confirm', {
+        paymentKey,
+        orderId,
+        amount
+    })
+}
