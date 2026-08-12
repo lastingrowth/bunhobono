@@ -35,7 +35,7 @@ public interface CameraDataMapper {
         ORDER BY cd.capture_time DESC, cd.camera_data_no DESC
         LIMIT #{size} OFFSET #{offset}
         </script>
-        """)
+    """)
     List<CameraDataDTO> page(
             @Param("keyword") String keyword,
             @Param("parkingNo") Integer parkingNo,
@@ -186,8 +186,11 @@ public interface CameraDataMapper {
     @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
             "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, cd.cam_note, " +
             "cd.gate_opened, cd.gate_opened_at, " +
-            "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
-            "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
+            "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date, " +
+            "m.unit_no AS apartment_unit_no " +
+            "FROM camera_data cd " +
+            "LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
+            "LEFT JOIN member m ON vc.member_no = m.member_no " +
             "WHERE cd.camera_data_no = #{cameraDataNo}")
     CameraDataDTO detail(int cameraDataNo);
 
@@ -246,7 +249,4 @@ public interface CameraDataMapper {
     int markGateOpened(
             @Param("cameraDataNo") int cameraDataNo
     );
-
-
-
 }

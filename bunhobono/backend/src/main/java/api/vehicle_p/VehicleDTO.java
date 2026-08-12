@@ -13,6 +13,7 @@ public class VehicleDTO {
 
     private LocalDateTime startDate, endDate, approvedAt, inTime, outTime, realEndDate;
     private Integer memberNo;
+
     private Integer memDong, memHo;
 
     private String expiryType;

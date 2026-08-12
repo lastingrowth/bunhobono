@@ -1,7 +1,6 @@
 import { getCarLogs } from "@/features/carlog/carlogApi";
 import { toCarLogView } from "@/features/carlog/carlogFormat";
-import { openGateByCameraData } from "@/features/camera-data/cameraDataApi";
-import { getCameraDataList } from "@/features/camera-data/cameraDataApi";
+import { getCameraDataList, openEmergencyGateByCameraData, openVisitGateByCameraData } from "@/features/camera-data/cameraDataApi";
 import { useGateStore } from "@/features/gates/gateStore";
 import { useMemStore } from "@/features/member/memStore";
 import { useNoticeStore } from "@/features/notice/noticeStore";
@@ -247,7 +246,14 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         return "unknown";
     };
 
-    const openManualGate = async (gate, cameraDataNo = null) => {
+    // 카메라 승인 대기 차량은 approvalType에 따라
+    // 일반 관리실 차량 또는 긴급차량 등록 API를 호출한다.
+    // cameraDataNo가 없는 단순 수동 개방은 기존 게이트 API를 사용한다.
+    const openManualGate = async (
+        gate,
+        cameraDataNo = null,
+        approvalType = null,
+    ) => {
         if (!gate) {
             alert("연결된 게이트가 없습니다");
             return false;
@@ -256,7 +262,23 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         let opened = false;
 
         if (cameraDataNo) {
-            const response = await openGateByCameraData(cameraDataNo);
+            let response;
+
+            if (approvalType === "VISIT") {
+                response =
+                    await openVisitGateByCameraData(
+                        cameraDataNo,
+                    );
+            } else if (approvalType === "EMERGENCY") {
+                response =
+                    await openEmergencyGateByCameraData(
+                        cameraDataNo,
+                    );
+            } else {
+                alert("일반 방문차량 또는 긴급차량을 선택해 주세요.");
+                return false;
+            }
+
             opened = response.data === 1;
         } else {
             opened = await gateStore.open(gate.gateNo);
