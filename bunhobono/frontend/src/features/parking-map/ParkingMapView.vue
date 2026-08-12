@@ -144,6 +144,7 @@
         <div><dt>연결 게이트</dt><dd>{{ selectedSpace.gateCode || '-' }}</dd></div>
       </dl>
     </aside>
+
   </main>
 </template>
 
