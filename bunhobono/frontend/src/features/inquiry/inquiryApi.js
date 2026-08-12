@@ -10,9 +10,19 @@ export const getResidentInquiries = () => {
     return api.get("/inquiries/resident");
 };
 
+// 입주민 본인 자동 보관 문의 목록 조회
+export const getResidentArchivedInquiries = () => {
+    return api.get("/inquiries/resident/archived");
+};
+
 // 입주민 본인 문의 상세 조회
 export const getResidentInquiry = (inquiryNo) => {
     return api.get(`/inquiries/resident/${inquiryNo}`);
+};
+
+// 입주민 본인 문의 삭제
+export const deleteResidentInquiry = (inquiryNo) => {
+    return api.delete(`/inquiries/resident/${inquiryNo}`);
 };
 
 // 입주민 재문의 등록

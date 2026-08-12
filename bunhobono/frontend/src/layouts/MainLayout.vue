@@ -48,6 +48,10 @@ const showResidentFloatingMenu = computed(() => {
         return true;
     }
 
+    if (path === "/resident/exit-request") {
+        return true;
+    }
+
     if (path === "/resident/mypage") {
         return true;
     }

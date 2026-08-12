@@ -220,8 +220,8 @@
                                     v-if="log.parkingState === 'PARKING'"
                                     type="button"
                                     class="exit-request-button"
-                                    title="키오스크 출차 기능 연결 예정"
-                                    disabled
+                                    title="출차 신청 화면으로 이동"
+                                    @click="openExitRequest(log)"
                                 >
                                     출차 신청
                                 </button>
@@ -374,6 +374,10 @@ import { useBoardStore } from "@/features/board/boardStore";
 import { vehicleExpiryText } from "@/features/vehicle/vehicleFormat";
 
 const router = useRouter();
+
+const openExitRequest = () => {
+    router.push("/resident/exit-request");
+};
 const route = useRoute();
 const dashboardStore = useResidentDashboardStore();
 const resVehicleStore = useResVehicleStore();

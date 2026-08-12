@@ -90,12 +90,15 @@ CREATE TABLE gate (
     parking_no INT,                           -- 게이트가 설치된 주차장 고유번호
     gate_code VARCHAR(30) NOT NULL UNIQUE,    -- 게이트 식별 코드
     gate_name VARCHAR(100) NOT NULL,          -- 게이트 이름
-	
+
     gate_type VARCHAR(10) NOT NULL            -- In: 입차 게이트, Out: 출차 게이트
         CHECK (gate_type IN ('In', 'Out')),
     gate_area VARCHAR(20) NOT NULL,           -- 게이트가 위치한 구역
-    gate_status INT NOT NULL DEFAULT 0        -- 게이트 상태. 0: 닫힘, 1: 열림
+    gate_status INT NOT NULL DEFAULT 0        -- 게이트 개폐 상태. 0: 닫힘, 1: 열림
         CHECK (gate_status IN (0, 1)),
+    operating_status VARCHAR(20) NOT NULL     -- 게이트 장비의 현재 작동 상태
+        DEFAULT 'NORMAL'
+        CHECK (operating_status IN ('NORMAL', 'FAULT', 'MAINTENANCE')), -- 정상 작동-- 고장-- 점검 중
     active BOOLEAN NOT NULL DEFAULT TRUE,     -- 게이트 사용 여부
 
     CONSTRAINT fk_gate_parking
@@ -144,7 +147,10 @@ CREATE TABLE camera (
         CHECK (camera_type IN ('In', 'Out')),
     install_date DATE,                     -- 카메라 설치일
     active BOOLEAN NOT NULL DEFAULT TRUE,  -- 카메라 사용 여부
-
+    camera_status VARCHAR(20) NOT NULL      -- 카메라 현재 상태
+        DEFAULT 'NORMAL'
+        CHECK (camera_status IN ('NORMAL', 'FAULT', 'MAINTENANCE')), -- 정상 작동 -- 고장 -- 점검 중
+		
     CONSTRAINT fk_camera_gate
         FOREIGN KEY (gate_no)              -- camera.gate_no를 gate 테이블과 연결
         REFERENCES gate(gate_no)
