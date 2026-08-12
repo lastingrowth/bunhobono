@@ -39,47 +39,6 @@
                     </div>
                 </div>
 
-                <aside class="weather-widget" aria-label="부산 현재 날씨">
-                    <div class="weather-icon" aria-hidden="true">
-                        {{ weatherIcon }}
-                    </div>
-
-                    <div class="weather-current">
-                        <small>부산 현재 날씨</small>
-                        <div>
-                            <strong>{{ weather.temperature ?? "--" }}°</strong>
-                            <span>{{ weather.precipitation }}</span>
-                        </div>
-                    </div>
-
-                    <dl class="weather-details">
-                        <div>
-                            <dt>습도</dt>
-                            <dd>{{ weather.humidity ?? "--" }}%</dd>
-                        </div>
-                        <div>
-                            <dt>풍속</dt>
-                            <dd>{{ weather.windSpeed ?? "--" }}m/s</dd>
-                        </div>
-                    </dl>
-
-                    <button
-                        class="weather-refresh"
-                        type="button"
-                        title="날씨 새로고침"
-                        :disabled="weatherLoading"
-                        @click="dashboardStore.loadWeather"
-                    >
-                        {{ weatherLoading ? "…" : "↻" }}
-                    </button>
-
-                    <span v-if="weatherErrorMessage" class="weather-state error">
-                        날씨 정보 없음
-                    </span>
-                    <span v-else class="weather-state">
-                        {{ weatherObservedText }}
-                    </span>
-                </aside>
             </header>
 
             <div class="board-info-grid">
@@ -388,9 +347,6 @@ const vehicleStatusNow = ref(Date.now());
 const {
     loading,
     errorMessage,
-    weatherLoading,
-    weatherErrorMessage,
-    weather,
     dashboard,
     residenceText,
     normalVehicles,
@@ -398,21 +354,6 @@ const {
     parkingStatusList
 } = storeToRefs(dashboardStore);
 
-const weatherIcon = computed(() => {
-    const state = weather.value.precipitation || "";
-
-    if (state.includes("눈")) return "❄️";
-    if (state.includes("비") || state.includes("빗방울")) return "🌧️";
-    return "☀️";
-});
-
-const weatherObservedText = computed(() => {
-    const value = weather.value.observedAt || "";
-    const time = value.split(" ")[1];
-
-    if (!time || time.length !== 4) return "부산 기준";
-    return `${time.slice(0, 2)}:${time.slice(2)} 기준`;
-});
 // 대시보드에서는 게시 중인 공지사항을 최대 3건만 표시한다.
 const dashboardBoards = computed(() => boardStore.list.slice(0, 3));
 
@@ -575,22 +516,6 @@ onUnmounted(() => {
 .resident-board { width: min(1500px, 100%); padding: 18px 28px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .resident-board.resident-carlog-page { align-self: start; width: min(760px, calc(100% - 200px)); margin: 30px auto; padding: 24px; border: 0; border-radius: 0; background: rgba(255,255,255,.94); box-shadow: 0 14px 38px rgba(39,79,113,.14); }
 .board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.weather-widget { position: relative; min-width: 360px; padding: 12px 46px 12px 14px; display: grid; grid-template-columns: 48px minmax(120px,1fr) auto; align-items: center; gap: 11px; border: 1px solid rgba(157,198,232,.72); border-radius: 16px; color: #31536f; background: linear-gradient(135deg,rgba(241,249,255,.96),rgba(224,242,255,.94)); box-shadow: 0 10px 28px rgba(47,104,151,.12); }
-.weather-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: rgba(255,255,255,.78); font-size: 29px; box-shadow: inset 0 0 0 1px rgba(170,205,232,.45); }
-.weather-current { display: grid; gap: 2px; }
-.weather-current small { color: #6e899f; font-size: 11px; font-weight: 800; }
-.weather-current > div { display: flex; align-items: baseline; gap: 8px; }
-.weather-current strong { color: #1d527f; font-size: 25px; line-height: 1; }
-.weather-current span { color: #4d718d; font-size: 12px; font-weight: 750; white-space: nowrap; }
-.weather-details { display: flex; gap: 13px; margin: 0; padding-left: 13px; border-left: 1px solid rgba(143,184,216,.5); }
-.weather-details div { display: grid; gap: 2px; }
-.weather-details dt { color: #7a92a6; font-size: 10px; font-weight: 700; }
-.weather-details dd { margin: 0; color: #375d79; font-size: 12px; font-weight: 800; white-space: nowrap; }
-.weather-refresh { position: absolute; top: 8px; right: 9px; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; color: #50758f; background: rgba(255,255,255,.7); font-size: 17px; font-weight: 800; }
-.weather-refresh:hover { color: #1768bd; background: #fff; }
-.weather-refresh:disabled { cursor: wait; opacity: .6; }
-.weather-state { position: absolute; right: 12px; bottom: 5px; color: #8299aa; font-size: 9px; font-weight: 700; }
-.weather-state.error { color: #b84a4a; }
 .board-navigation-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; margin-right: 10px; }
 .board-navigation-actions button { padding: 9px 14px; border: 1px solid transparent; border-radius: 9px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease; }
 .board-navigation-actions .refresh-button { background: #35a554; }
@@ -781,13 +706,9 @@ onUnmounted(() => {
 
 @media (max-width: 900px) {
     .board-header { align-items: stretch; flex-direction: column; gap: 12px; }
-    .weather-widget { width: min(100%, 430px); min-width: 0; }
 }
 
 @media (max-width: 480px) {
-    .weather-widget { grid-template-columns: 44px 1fr; padding-right: 42px; }
-    .weather-icon { width: 44px; height: 44px; font-size: 26px; }
-    .weather-details { grid-column: 1 / -1; padding-top: 8px; padding-left: 0; border-top: 1px solid rgba(143,184,216,.5); border-left: 0; }
 }
 .notification-button {
     position: relative;
@@ -827,16 +748,6 @@ onUnmounted(() => {
     backdrop-filter: blur(5px);
 }
 
-/* 넓은 화면에서는 날씨 위젯을 대시보드 오른쪽의 빈 여백에 배치한다. */
-@media (min-width: 1500px) {
-    .resident-board:not(.resident-carlog-page) .weather-widget {
-        position: absolute;
-        top: 0;
-        left: calc(100% + 24px);
-        width: 340px;
-        min-width: 340px;
-    }
-}
 .resident-board:not(.resident-carlog-page) .board-info-grid,
 .resident-board:not(.resident-carlog-page) .board-bottom-grid { gap: 0; }
 .resident-board:not(.resident-carlog-page) .board-info-grid {
