@@ -3,6 +3,7 @@ package api.parking_space_p;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 public class ParkingSpaceDTO {
@@ -17,8 +18,8 @@ public class ParkingSpaceDTO {
 
     private boolean active;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 
     // 주차면 목록 조회 정보
     private String parkingCode;
