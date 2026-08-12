@@ -5,6 +5,11 @@ export const getResidentDashboard = () => {
     return api.get("/resident/mypage/dashboard");
 };
 
+// 로그인한 입주민 차량의 현재 주차면 조회
+export const getMyVehicleLocations = () => {
+    return api.get("/parking-spaces/my-vehicles");
+};
+
 // 로그인한 입주민 세대의 이번 달 방문차량 등록 현황
 export const getMonthlyVisitRegistration = () => {
     return api.get("/vehicles/resident/visit/monthly-registration");

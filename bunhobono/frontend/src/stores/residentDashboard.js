@@ -1,4 +1,5 @@
 import {
+    getMyVehicleLocations,
     getResidentDashboard,
     getTodayWeather
 } from "@/shared/api/residentDashboardApi"; 
@@ -69,7 +70,11 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
 
     // 주차장별 전체·사용·가능 면수와 사용률
     const parkingStatusList = computed(() => {
-        return dashboard.value.parkings.map((parking) => {
+        return dashboard.value.parkings
+        .filter((parking) => {
+            return Number(parking.parkingSpaces ?? 0) > 0;
+        })
+        .map((parking) => {
             const total = Math.max(
                 Number(parking.parkingSpaces ?? 0),
                 0
@@ -165,16 +170,33 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         try {
             const [
                 residentResponse,
-                parkingResponse
+                parkingResponse,
+                vehicleLocationResponse
             ] = await Promise.all([
                 getResidentDashboard(),
                 getParkingsList(),
+                getMyVehicleLocations().catch((error) => {
+                    console.error("차량 주차면을 불러오지 못했습니다.", error);
+                    return { data: [] };
+                }),
                 loadWeather()
             ]);
 
             const residentData = residentResponse.data || {};
             const member = residentData.member || {};
-            const vehicles = (residentData.vehicles || []).map(toVehicleView);
+            const vehicleLocations = vehicleLocationResponse.data || [];
+            const locationByVehicleNo = new Map(
+                vehicleLocations.map((location) => [
+                    Number(location.vehicleCarNo),
+                    location
+                ])
+            );
+            const vehicles = (residentData.vehicles || []).map((vehicle) => ({
+                ...toVehicleView(vehicle),
+                parkingLocation: locationByVehicleNo.get(
+                    Number(vehicle.vehicleCarNo)
+                ) || null
+            }));
             const parkings = parkingResponse.data || [];
 
             const recentCarLogs = (residentData.recentCarLogs || [])

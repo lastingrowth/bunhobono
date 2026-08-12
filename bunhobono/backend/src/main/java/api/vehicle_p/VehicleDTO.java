@@ -18,4 +18,5 @@ public class VehicleDTO {
     private String expiryType;
     private Long remainingMinutes;
 
+
 }

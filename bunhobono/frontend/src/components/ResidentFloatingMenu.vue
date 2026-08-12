@@ -3,11 +3,11 @@
         class="resident-floating-menu"
         :style="{ top: `${menuTop}px` }"
     >
-        <RouterLink to="/resident/mypage"
+        <RouterLink to="/resident/dashboard"
             :class="{
-                active: route.path === '/resident/mypage'
+                active: route.path === '/resident/dashboard'
             }">
-            마이페이지
+            홈
         </RouterLink>
 
         <RouterLink to="/resident/vehicles"
@@ -17,11 +17,34 @@
             차량관리
         </RouterLink>
 
+        <RouterLink to="/resident/vehicles?mode=notification"
+            :class="{
+                active: route.path === '/resident/vehicles'
+                && route.query.mode === 'notification'
+            }">
+            <span>차량알림</span>
+            <span
+                v-if="resVehicleStore.unreadNotificationCount > 0"
+                class="resident-menu-badge"
+            >
+                {{ resVehicleStore.unreadNotificationCount > 99
+                    ? '99+'
+                    : resVehicleStore.unreadNotificationCount }}
+            </span>
+        </RouterLink>
+
         <RouterLink to="/resident/carlogs"
             :class="{
                 active: route.path === '/resident/carlogs'
             }">
             입출차기록
+        </RouterLink>
+
+        <RouterLink to="/resident/parkings"
+            :class="{
+                active: route.path.startsWith('/resident/parkings')
+            }">
+            주차현황
         </RouterLink>
 
         <RouterLink to="/resident/boards"
@@ -38,12 +61,13 @@
             1:1 문의
         </RouterLink>
 
-        <RouterLink to="/resident/vehicles?mode=notification"
+        <div class="resident-menu-divider" aria-hidden="true"></div>
+
+        <RouterLink to="/resident/mypage"
             :class="{
-                active: route.path === '/resident/vehicles'
-                && route.query.mode === 'notification'
+                active: route.path.startsWith('/resident/mypage')
             }">
-            차량알림
+            마이페이지
         </RouterLink>
     </nav>
 </template>
@@ -51,8 +75,10 @@
 <script setup>
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useResVehicleStore } from '@/features/resVehicle/resVehicleStore';
 
 const route = useRoute()
+const resVehicleStore = useResVehicleStore()
 const menuTop = ref(0)
 
 let currentTop = 0
@@ -108,6 +134,7 @@ onMounted(() => {
     resetMenuPosition()
     window.addEventListener('scroll', startFollowing, { passive: true })
     window.addEventListener('resize', resetMenuPosition)
+    resVehicleStore.loadNotifications().catch(() => {})
 })
 
 onUnmounted(() => {
@@ -165,6 +192,26 @@ onUnmounted(() => {
     font-weight: 700;
 
     transition: .2s;
+}
+
+.resident-menu-badge {
+    display: inline-grid;
+    min-width: 19px;
+    height: 19px;
+    place-items: center;
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 10px;
+    color: #fff;
+    background: #e5484d;
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.resident-menu-divider {
+    height: 1px;
+    margin: 2px 4px;
+    background: #dce8f2;
 }
 
 /* 현재 페이지 */

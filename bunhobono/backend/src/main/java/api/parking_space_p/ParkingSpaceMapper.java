@@ -199,4 +199,35 @@ public interface ParkingSpaceMapper {
             @Param("pickupSpaceNo") long pickupSpaceNo,
             @Param("dropoffSpaceNo") long dropoffSpaceNo
     );
+
+    //내 차량 조회
+    @Select("""
+        SELECT
+            space.space_no,
+            space.space_code,
+            space.space_type,
+            parking.parking_no,
+            parking.parking_code,
+            parking.parking_name,
+            vehicle.vehicle_car_no,
+            vehicle.car_no,
+            log.car_log_no,
+            log.in_time
+        FROM parking_space space
+        JOIN car_log log
+            ON log.car_log_no = space.car_log_no
+        JOIN vehicle_car vehicle
+            ON vehicle.vehicle_car_no = log.vehicle_car_no
+        JOIN member member
+            ON member.member_no = vehicle.member_no
+        JOIN parking parking
+            ON parking.parking_no = space.parking_no
+        WHERE member.login_id = #{loginId}
+        AND log.out_time IS NULL
+        AND space.active = TRUE
+        ORDER BY log.in_time DESC
+    """)
+    List<ParkingSpaceDTO> myVehicleLocations(
+            @Param("loginId") String loginId
+    );
 }

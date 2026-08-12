@@ -3,7 +3,7 @@ package api.robot_p;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 public class RobotDTO {
@@ -18,8 +18,13 @@ public class RobotDTO {
     private BigDecimal batteryLevel;
     private BigDecimal operatingHours;
 
-    private LocalDateTime lastHeartbeatAt;
-    private LocalDateTime lastMaintenanceAt;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private OffsetDateTime lastHeartbeatAt;
+    private OffsetDateTime lastMaintenanceAt;
+
+    // 최근 점검 후 경과일
+    private Integer daysSinceMaintenance;
+
+
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 }

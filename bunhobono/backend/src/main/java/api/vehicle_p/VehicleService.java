@@ -105,7 +105,6 @@ public class VehicleService {
     }
 
     // 긴급·작업 차량 24시간 방문등록
-    @Transactional
     public int registerEmergencyVisit(
             String adminLoginId,
             String carNo
@@ -130,11 +129,19 @@ public class VehicleService {
         dto.setStartDate(startDate);
         dto.setEndDate(startDate.plusHours(24));
 
-        // 로그인 관리자를 등록자로 지정
-        return vehicleMapper.insert(
+        int inserted = vehicleMapper.insert(
                 adminLoginId,
                 dto
         );
+
+        if (inserted != 1 || dto.getVehicleCarNo() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "긴급·작업 차량 방문등록에 실패했습니다."
+            );
+        }
+
+        return dto.getVehicleCarNo();
     }
 
     // RESIDENT 방문차량 신청

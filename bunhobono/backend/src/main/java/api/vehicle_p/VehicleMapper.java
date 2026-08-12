@@ -164,8 +164,7 @@ public interface VehicleMapper {
                     FROM vehicle_car vc
                     WHERE vc.member_no = m.member_no
                       AND vc.vehicle_type = 'normal'
-                      AND vc.vehicle_status
-                          IN ('WAITING', 'APPROVED')
+                      AND vc.vehicle_status = 'APPROVED'
                       AND (
                             vc.end_date IS NULL
                             OR vc.end_date
@@ -182,39 +181,24 @@ public interface VehicleMapper {
                     FROM vehicle_car vc
                     WHERE vc.member_no = m.member_no
                       AND vc.vehicle_type = 'visit'
+                      AND vc.vehicle_status = 'APPROVED'
                       AND (
-                            (
-                                vc.vehicle_status = 'WAITING'
-                                AND vc.start_date IS NOT NULL
-                                AND CURRENT_TIMESTAMP
-                                    &lt;= vc.start_date
-                                        + INTERVAL '1 hour'
+                            EXISTS (
+                                SELECT 1
+                                FROM car_log cl
+                                WHERE cl.vehicle_car_no = vc.vehicle_car_no
+                                  AND cl.out_time IS NULL
                             )
                             OR
                             (
-                                vc.vehicle_status = 'APPROVED'
-                                AND (
-                                    EXISTS (
-                                        SELECT 1
-                                        FROM car_log cl
-                                        WHERE cl.vehicle_car_no =
-                                              vc.vehicle_car_no
-                                          AND cl.out_time IS NULL
-                                    )
-                                    OR
-                                    (
-                                        NOT EXISTS (
-                                            SELECT 1
-                                            FROM car_log cl
-                                            WHERE cl.vehicle_car_no =
-                                                  vc.vehicle_car_no
-                                        )
-                                        AND vc.start_date IS NOT NULL
-                                        AND CURRENT_TIMESTAMP
-                                            &lt;= vc.start_date
-                                                + INTERVAL '1 hour'
-                                    )
+                                NOT EXISTS (
+                                    SELECT 1
+                                    FROM car_log cl
+                                    WHERE cl.vehicle_car_no = vc.vehicle_car_no
                                 )
+                                AND vc.start_date IS NOT NULL
+                                AND CURRENT_TIMESTAMP
+                                    &lt;= vc.start_date + INTERVAL '1 hour'
                             )
                       )
                 )
@@ -231,6 +215,7 @@ public interface VehicleMapper {
             @Param("vehicleType") String vehicleType,
             @Param("role") String role
     );
+
 
 
     // ADMIN 등록과 RESIDENT 방문 신청 공용 INSERT
@@ -257,7 +242,8 @@ public interface VehicleMapper {
                 THEN (
                     SELECT m.member_no
                     FROM member m
-                    WHERE m.login_id = CAST(#{loginId} AS VARCHAR)
+                    WHERE m.login_id =
+                          CAST(#{loginId} AS VARCHAR)
                 )
                 ELSE #{dto.memberNo}
             END,
@@ -269,10 +255,16 @@ public interface VehicleMapper {
             END
         )
     """)
+    @Options(
+            useGeneratedKeys = true,
+            keyProperty = "dto.vehicleCarNo",
+            keyColumn = "vehicle_car_no"
+    )
     int insert(
             @Param("loginId") String loginId,
             @Param("dto") VehicleDTO dto
     );
+
 
 
     // 같은 차량번호의 유효한 차량 확인
@@ -285,8 +277,7 @@ public interface VehicleMapper {
           AND (
                 (
                     vc.vehicle_type = 'normal'
-                    AND vc.vehicle_status
-                        IN ('WAITING', 'APPROVED')
+                    AND vc.vehicle_status = 'APPROVED'
                     AND (
                         vc.end_date IS NULL
                         OR vc.end_date >
@@ -296,39 +287,24 @@ public interface VehicleMapper {
                 OR
                 (
                     vc.vehicle_type = 'visit'
+                    AND vc.vehicle_status = 'APPROVED'
                     AND (
-                        (
-                            vc.vehicle_status = 'WAITING'
-                            AND vc.start_date IS NOT NULL
-                            AND CURRENT_TIMESTAMP
-                                <= vc.start_date
-                                   + INTERVAL '1 hour'
+                        EXISTS (
+                            SELECT 1
+                            FROM car_log cl
+                            WHERE cl.vehicle_car_no = vc.vehicle_car_no
+                              AND cl.out_time IS NULL
                         )
                         OR
                         (
-                            vc.vehicle_status = 'APPROVED'
-                            AND (
-                                EXISTS (
-                                    SELECT 1
-                                    FROM car_log cl
-                                    WHERE cl.vehicle_car_no =
-                                          vc.vehicle_car_no
-                                      AND cl.out_time IS NULL
-                                )
-                                OR
-                                (
-                                    NOT EXISTS (
-                                        SELECT 1
-                                        FROM car_log cl
-                                        WHERE cl.vehicle_car_no =
-                                              vc.vehicle_car_no
-                                    )
-                                    AND vc.start_date IS NOT NULL
-                                    AND CURRENT_TIMESTAMP
-                                        <= vc.start_date
-                                           + INTERVAL '1 hour'
-                                )
+                            NOT EXISTS (
+                                SELECT 1
+                                FROM car_log cl
+                                WHERE cl.vehicle_car_no = vc.vehicle_car_no
                             )
+                            AND vc.start_date IS NOT NULL
+                            AND CURRENT_TIMESTAMP
+                                <= vc.start_date + INTERVAL '1 hour'
                         )
                     )
                 )
@@ -350,39 +326,24 @@ public interface VehicleMapper {
 
         WHERE m.login_id = #{loginId}
           AND vc.vehicle_type = 'visit'
+          AND vc.vehicle_status = 'APPROVED'
           AND (
-                (
-                    vc.vehicle_status = 'WAITING'
-                    AND vc.start_date IS NOT NULL
-                    AND CURRENT_TIMESTAMP
-                        <= vc.start_date
-                           + INTERVAL '1 hour'
+                EXISTS (
+                    SELECT 1
+                    FROM car_log cl
+                    WHERE cl.vehicle_car_no = vc.vehicle_car_no
+                      AND cl.out_time IS NULL
                 )
                 OR
                 (
-                    vc.vehicle_status = 'APPROVED'
-                    AND (
-                        EXISTS (
-                            SELECT 1
-                            FROM car_log cl
-                            WHERE cl.vehicle_car_no =
-                                  vc.vehicle_car_no
-                              AND cl.out_time IS NULL
-                        )
-                        OR
-                        (
-                            NOT EXISTS (
-                                SELECT 1
-                                FROM car_log cl
-                                WHERE cl.vehicle_car_no =
-                                      vc.vehicle_car_no
-                            )
-                            AND vc.start_date IS NOT NULL
-                            AND CURRENT_TIMESTAMP
-                                <= vc.start_date
-                                   + INTERVAL '1 hour'
-                        )
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM car_log cl
+                        WHERE cl.vehicle_car_no = vc.vehicle_car_no
                     )
+                    AND vc.start_date IS NOT NULL
+                    AND CURRENT_TIMESTAMP
+                        <= vc.start_date + INTERVAL '1 hour'
                 )
           )
     """)
@@ -399,7 +360,7 @@ public interface VehicleMapper {
 
         WHERE member_no = #{memberNo}
           AND vehicle_type = 'normal'
-          AND vehicle_status IN ('WAITING', 'APPROVED')
+          AND vehicle_status = 'APPROVED'
           AND (
                 end_date IS NULL
                 OR end_date > CURRENT_TIMESTAMP

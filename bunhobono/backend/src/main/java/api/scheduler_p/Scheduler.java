@@ -8,7 +8,7 @@ import api.vehicle_nt_p.VehicleNtService;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import api.robot_task_p.RobotTaskService;
+import api.robot_p.RobotService;
 
 @Component
 public class Scheduler {
@@ -29,7 +29,7 @@ public class Scheduler {
     private VehicleNtService vehicleNtService;
 
     @Resource
-    private RobotTaskService robotTaskService;
+    private RobotService robotService;
 
     // 10분마다 방문차량 상태를 확인하고 입주민 차량 알림을 생성한다.
     @Scheduled(cron = "0 */10 * * * *", zone = "Asia/Seoul")
@@ -79,8 +79,21 @@ public class Scheduler {
             fixedDelay = 2000,
             initialDelay = 3000
     )
-    public void dispatchRobotTasks() {
-        robotTaskService.dispatchWaitingTasks(); }
+    public void dispatchRobotTasks() { robotService.dispatchWaitingTasks(); }
+
+    // 실행 중인 로봇 작업을 다음 단계로 진행한다.
+    @Scheduled(
+            fixedDelay = 15000,
+            initialDelay = 5000
+    )
+    public void processRunningRobotTasks() { robotService.processRunningTasks(); }
+
+    // 충전 중인 로봇의 배터리를 갱신한다.
+    @Scheduled(
+            fixedDelay = 10000,
+            initialDelay = 10000
+    )
+    public void chargeIdleRobots() { robotService.chargeIdleRobots(); }
 
 
 

@@ -14,7 +14,7 @@ public interface MemberArchiveMapper {
     @Select("""
         SELECT
             member_archive_no,
-            original_member_no,
+            member_no,
             login_id,
             mem_name,
             mem_phone,

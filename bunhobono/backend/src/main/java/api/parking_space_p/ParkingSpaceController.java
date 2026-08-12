@@ -1,6 +1,7 @@
 package api.parking_space_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,4 +21,15 @@ public class ParkingSpaceController {
     ) {
         return parkingSpaceService.list(parkingCode);
     }
+
+    //내 차량 조회
+    @GetMapping("/my-vehicles")
+    public List<ParkingSpaceDTO> myVehicleLocations(
+            Authentication authentication
+    ) {
+        return parkingSpaceService.myVehicleLocations(
+                authentication.getName()
+        );
+    }
+
 }

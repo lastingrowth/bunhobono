@@ -16,6 +16,7 @@ public interface CameraDataMapper {
                cd.camera_data_no, cd.camera_no, cd.vehicle_car_no,
                cd.car_no, cd.ocr_car_no, cd.capture_time,
                cd.recognition_state, cd.confidence_score, cd.cam_note,
+               cd.gate_opened, cd.gate_opened_at,
                vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date
         FROM camera_data cd
         LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no
@@ -184,6 +185,7 @@ public interface CameraDataMapper {
 
     @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
             "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, cd.cam_note, " +
+            "cd.gate_opened, cd.gate_opened_at, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.camera_data_no = #{cameraDataNo}")
@@ -209,6 +211,7 @@ public interface CameraDataMapper {
 
     @Select("SELECT cd.camera_data_no, cd.camera_no, cd.vehicle_car_no, cd.car_no, cd.ocr_car_no, cd.capture_time, " +
             "cd.image_path, cd.crop_image_path, cd.recognition_state, cd.confidence_score, cd.cam_note, " +
+            "cd.gate_opened, cd.gate_opened_at, " +
             "vc.vehicle_type, vc.vehicle_status, vc.start_date, vc.end_date " +
             "FROM camera_data cd LEFT JOIN vehicle_car vc ON cd.vehicle_car_no = vc.vehicle_car_no " +
             "WHERE cd.car_no LIKE CONCAT('%', #{keyword}, '%') " +
@@ -233,17 +236,17 @@ public interface CameraDataMapper {
             @Param("camNote") String camNote
     );
 
-
-    // 카메라 촬영 데이터에 게이트 개방 기록
+    // 게이트 개방 이력 저장
     @Update("""
     UPDATE camera_data
     SET gate_opened = TRUE,
         gate_opened_at = CURRENT_TIMESTAMP
     WHERE camera_data_no = #{cameraDataNo}
-      AND gate_opened = FALSE
     """)
     int markGateOpened(
             @Param("cameraDataNo") int cameraDataNo
     );
+
+
 
 }

@@ -6,6 +6,11 @@ TRUNCATE TABLE
     vehicle_nt,
     notice,
     board,
+    robot_pdm,
+    robot_log,
+    robot_task,
+    robot,
+    parking_space,
     car_log,
     camera_data,
     camera,
@@ -302,23 +307,31 @@ VALUES
 -- 지하 1층과 지하 2층을 각각 별도 주차구역으로 관리한다.
 -- =====================================================
 INSERT INTO parking (
+    parking_code,
     parking_name,
+    parking_type,
     parking_spaces,
     parking_location
 )
 VALUES
 	(
+		'SURFACE',
 		'BONO 아파트 지상 출입구', -- 지상 게이트 관리용 구역
+		'SURFACE',
     	0,                          -- 지상에는 실제 주차면이 없음
     	'BONO 아파트 지상'
 	),
     (
+        'B1',
         'BONO 아파트 지하 1층 주차장', -- 주차장 이름
+        'ROBOT',
         100,                           -- 지하 1층 주차 가능 대수
         'BONO 아파트 지하 1층'         -- 주차장 위치
     ),
     (
+        'B2',
         'BONO 아파트 지하 2층 주차장', -- 주차장 이름
+        'GENERAL',
         100,                           -- 지하 2층 주차 가능 대수
         'BONO 아파트 지하 2층'         -- 주차장 위치
     );
@@ -337,26 +350,26 @@ VALUES
 -- =====================================================
 -- 3. 게이트
 -- =====================================================
-INSERT INTO gate (parking_no, gate_name, gate_type)
+INSERT INTO gate (parking_no, gate_code, gate_name, gate_type, gate_area)
 VALUES
     -- 지상 정문
-    (1, 'GROUND-MAIN-IN',  'In'),   -- 지상 정문 입차 게이트
-    (1, 'GROUND-MAIN-OUT', 'Out'),  -- 지상 정문 출차 게이트
+    (1, 'MAIN-IN',  'GROUND-MAIN-IN',  'In',  'SITE'), -- 지상 정문 입차 게이트
+    (1, 'MAIN-OUT', 'GROUND-MAIN-OUT', 'Out', 'SITE'), -- 지상 정문 출차 게이트
     -- 지상 후문
-    (1, 'GROUND-REAR-IN',  'In'),   -- 지상 후문 입차 게이트
-    (1, 'GROUND-REAR-OUT', 'Out'),  -- 지상 후문 출차 게이트
+    (1, 'REAR-IN',  'GROUND-REAR-IN',  'In',  'SITE'), -- 지상 후문 입차 게이트
+    (1, 'REAR-OUT', 'GROUND-REAR-OUT', 'Out', 'SITE'), -- 지상 후문 출차 게이트
     -- 지하 1층 A구역 입구
-    (2, 'B1-A-IN',         'In'),   -- 지하 1층 A구역 입차 게이트
-    (2, 'B1-A-OUT',        'Out'),  -- 지하 1층 A구역 출차 게이트
+    (2, 'B1-IN-1',  'B1-A-IN',  'In',  'B1'), -- 지하 1층 A구역 입차 게이트
+    (2, 'B1-OUT-1', 'B1-A-OUT', 'Out', 'B1'), -- 지하 1층 A구역 출차 게이트
     -- 지하 1층 B구역 입구
-    (2, 'B1-B-IN',         'In'),   -- 지하 1층 B구역 입차 게이트
-    (2, 'B1-B-OUT',        'Out'),  -- 지하 1층 B구역 출차 게이트
+    (2, 'B1-IN-2',  'B1-B-IN',  'In',  'B1'), -- 지하 1층 B구역 입차 게이트
+    (2, 'B1-OUT-2', 'B1-B-OUT', 'Out', 'B1'), -- 지하 1층 B구역 출차 게이트
     -- 지하 2층 A구역 입구
-    (3, 'B2-A-IN',         'In'),   -- 지하 2층 A구역 입차 게이트
-    (3, 'B2-A-OUT',        'Out'),  -- 지하 2층 A구역 출차 게이트
+    (3, 'B2-IN-1',  'B2-A-IN',  'In',  'B2'), -- 지하 2층 A구역 입차 게이트
+    (3, 'B2-OUT-1', 'B2-A-OUT', 'Out', 'B2'), -- 지하 2층 A구역 출차 게이트
     -- 지하 2층 B구역 입구
-    (3, 'B2-B-IN',         'In'),   -- 지하 2층 B구역 입차 게이트
-    (3, 'B2-B-OUT',        'Out');  -- 지하 2층 B구역 출차 게이트
+    (3, 'B2-IN-2',  'B2-B-IN',  'In',  'B2'), -- 지하 2층 B구역 입차 게이트
+    (3, 'B2-OUT-2', 'B2-B-OUT', 'Out', 'B2'); -- 지하 2층 B구역 출차 게이트
 
 -- =====================================================
 -- 4. 카메라
@@ -381,6 +394,74 @@ VALUES
     -- 지하 2층 B구역
     (11, 'CAM-B2-B-IN',         'In',  DATE '2025-01-05'), -- 지하 2층 B구역 입차 카메라
     (12, 'CAM-B2-B-OUT',        'Out', DATE '2025-01-05'); -- 지하 2층 B구역 출차 카메라
+
+-- =====================================================
+-- 4-1. 주차면
+-- B1 로봇 주차면과 입·출차 대기면을 생성한다.
+-- =====================================================
+INSERT INTO parking_space (
+    parking_no,
+    space_code,
+    space_type
+)
+SELECT
+    parking_no,
+    'B1-P' || LPAD(no::TEXT, 3, '0'),
+    'PARKING'
+FROM parking
+CROSS JOIN generate_series(1, 100) AS numbers(no)
+WHERE parking_code = 'B1';
+
+-- B1 A·B 구역별 입차 대기면 2개와 출차 대기면 3개를 생성한다.
+INSERT INTO parking_space (
+    parking_no,
+    gate_no,
+    space_code,
+    space_type
+)
+SELECT
+    parking.parking_no,
+    gate.gate_no,
+    spaces.space_code,
+    spaces.space_type
+FROM (
+    VALUES
+        ('B1-IN-1',  'B1-IN1-01',  'ENTRY_WAIT'),
+        ('B1-IN-1',  'B1-IN1-02',  'ENTRY_WAIT'),
+        ('B1-OUT-1', 'B1-OUT1-01', 'EXIT_WAIT'),
+        ('B1-OUT-1', 'B1-OUT1-02', 'EXIT_WAIT'),
+        ('B1-OUT-1', 'B1-OUT1-03', 'EXIT_WAIT'),
+        ('B1-IN-2',  'B1-IN2-01',  'ENTRY_WAIT'),
+        ('B1-IN-2',  'B1-IN2-02',  'ENTRY_WAIT'),
+        ('B1-OUT-2', 'B1-OUT2-01', 'EXIT_WAIT'),
+        ('B1-OUT-2', 'B1-OUT2-02', 'EXIT_WAIT'),
+        ('B1-OUT-2', 'B1-OUT2-03', 'EXIT_WAIT')
+) AS spaces(gate_code, space_code, space_type)
+JOIN gate
+    ON gate.gate_code = spaces.gate_code
+JOIN parking
+    ON parking.parking_no = gate.parking_no;
+
+-- =====================================================
+-- 4-2. 로봇
+-- 4개 세트에 A·B 로봇을 각각 한 대씩 배치한다.
+-- =====================================================
+INSERT INTO robot (
+    robot_code,
+    set_no,
+    set_position,
+    robot_status,
+    battery_level
+)
+VALUES
+    ('ROBOT-01A', 1, 'A', 'STANDBY', 100),
+    ('ROBOT-01B', 1, 'B', 'STANDBY', 100),
+    ('ROBOT-02A', 2, 'A', 'STANDBY', 100),
+    ('ROBOT-02B', 2, 'B', 'STANDBY', 100),
+    ('ROBOT-03A', 3, 'A', 'STANDBY', 100),
+    ('ROBOT-03B', 3, 'B', 'STANDBY', 100),
+    ('ROBOT-04A', 4, 'A', 'STANDBY', 100),
+    ('ROBOT-04B', 4, 'B', 'STANDBY', 100);
 
 -- =====================================================
 -- 5. 시연용 차량
@@ -473,6 +554,8 @@ INSERT INTO vehicle_car
 VALUES
     -- 필수 9대
     ('normal', '222하5233', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP + INTERVAL '335 days', 5,  CURRENT_TIMESTAMP - INTERVAL '30 days'),
+    -- res1 만료 임박 표시 확인용: 실행 시점부터 정확히 10일 후 만료
+    ('normal', '99보9999',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '355 days', CURRENT_TIMESTAMP + INTERVAL '10 days', 5, CURRENT_TIMESTAMP - INTERVAL '355 days'),
     ('normal', '26무3111',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '27 days', CURRENT_TIMESTAMP + INTERVAL '338 days', 9,  CURRENT_TIMESTAMP - INTERVAL '27 days'),
     ('normal', '41소2593',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '24 days', CURRENT_TIMESTAMP + INTERVAL '341 days', 10, CURRENT_TIMESTAMP - INTERVAL '24 days'),
     ('normal', '47조2603',  'APPROVED', CURRENT_TIMESTAMP - INTERVAL '21 days', CURRENT_TIMESTAMP + INTERVAL '344 days', 11, CURRENT_TIMESTAMP - INTERVAL '21 days'),
@@ -538,16 +621,6 @@ SELECT 'visit', dp.car_no, 'APPROVED',
        END
 FROM demo_plate dp
 WHERE dp.plate_no BETWEEN 49 AND 57;
-
--- 방문승인 대기 알림 3건.
-INSERT INTO vehicle_car
-(vehicle_type, car_no, vehicle_status, start_date, end_date, member_no, approved_at)
-SELECT 'visit', dp.car_no, 'WAITING',
-       CURRENT_TIMESTAMP - ((72 - dp.plate_no) * INTERVAL '5 minutes'),
-    CURRENT_TIMESTAMP + INTERVAL '6 hours',
-    50 + (dp.plate_no - 69), NULL
-FROM demo_plate dp
-WHERE dp.plate_no BETWEEN 69 AND 71;
 
 -- =====================================================
 -- 6. 입출차 사건 임시표
@@ -700,6 +773,59 @@ FROM demo_event e
          LEFT JOIN vehicle_car vc ON vc.car_no = e.car_no
          JOIN demo_capture_link cin ON cin.capture_key = e.event_key || '-IN'
          LEFT JOIN demo_capture_link cout ON cout.capture_key = e.event_key || '-OUT';
+
+-- =====================================================
+-- res1 현재 주차 위치 확인용
+-- 만료 임박 차량 99보9999를 B1-P023 주차면에 배정한다.
+-- =====================================================
+WITH inserted_camera AS (
+    INSERT INTO camera_data (
+        camera_no,
+        vehicle_car_no,
+        car_no,
+        ocr_car_no,
+        capture_time,
+        recognition_state,
+        confidence_score,
+        cam_note
+    )
+    SELECT
+        5,
+        vc.vehicle_car_no,
+        vc.car_no,
+        vc.car_no,
+        CURRENT_TIMESTAMP - INTERVAL '45 minutes',
+        TRUE,
+        99.00,
+        'RES1-PARKING-DEMO'
+    FROM vehicle_car vc
+    WHERE vc.member_no = 5
+      AND vc.car_no = '99보9999'
+    RETURNING camera_data_no, vehicle_car_no, car_no, capture_time
+), inserted_log AS (
+    INSERT INTO car_log (
+        vehicle_car_no,
+        camera_data_no,
+        in_gate_no,
+        in_time,
+        snapshot_car_no,
+        snapshot_car_kind
+    )
+    SELECT
+        vehicle_car_no,
+        camera_data_no,
+        5,
+        capture_time,
+        car_no,
+        'REGISTERED'
+    FROM inserted_camera
+    RETURNING car_log_no
+)
+UPDATE parking_space
+SET car_log_no = (SELECT car_log_no FROM inserted_log),
+    updated_at = CURRENT_TIMESTAMP
+WHERE space_code = 'B1-P023'
+  AND car_log_no IS NULL;
 
 -- =====================================================
 -- 공지·알림 더미 데이터
@@ -1108,6 +1234,51 @@ JOIN vehicle_car vc
 WHERE n.notice_type = 'VISIT_OVERDUE'
   AND n.snapshot_captured_car_no = '143모8849'
   AND cl.out_time IS NOT NULL;
+
+-- res1 차량알림 배지 확인용 읽지 않은 알림 2건
+INSERT INTO vehicle_nt (
+    recipient_member_no,
+    sender_member_no,
+    vehicle_car_no,
+    car_log_no,
+    snapshot_car_no,
+    notification_type,
+    message,
+    overdue_minutes,
+    created_at,
+    read_at
+)
+SELECT
+    recipient.member_no,
+    admin_member.member_no,
+    vc.vehicle_car_no,
+    NULL,
+    vc.car_no,
+    'ADMIN_APPROVED',
+    seed.message,
+    NULL,
+    CURRENT_TIMESTAMP - (seed.minutes_ago * INTERVAL '1 minute'),
+    NULL
+FROM (
+    VALUES
+        ('99보9999', 10, '등록차량 신청이 승인되었습니다.'),
+        ('222하5233', 20, '등록차량 갱신 신청이 승인되었습니다.')
+) AS seed(car_no, minutes_ago, message)
+JOIN vehicle_car vc
+    ON vc.car_no = seed.car_no
+CROSS JOIN LATERAL (
+    SELECT member_no
+    FROM member
+    WHERE login_id = 'res1'
+    LIMIT 1
+) recipient
+CROSS JOIN LATERAL (
+    SELECT member_no
+    FROM member
+    WHERE login_id = 'admin1'
+    LIMIT 1
+) admin_member
+WHERE vc.member_no = recipient.member_no;
 
 -- =====================================================
 -- 게시판 공지

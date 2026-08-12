@@ -70,6 +70,16 @@ public class CameraDataService {
                              MultipartFile file,
                              MultipartFile cropFile) {
         try{
+            if (file == null || file.isEmpty()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+            String recognizedCarNo = carNo == null
+                    ? ""
+                    : carNo.trim().replaceAll("\\s+", "");
+
             //1. 저장 폴더 없으면 생성
             Files.createDirectories(Paths.get(uploadDir));
 
@@ -89,7 +99,10 @@ public class CameraDataService {
             }
 
             // 4. 파일명에 위험한 문자 제거
-            String okCarNo = carNo.replaceAll("[^가-힣a-zA-Z0-9]", "");
+            String okCarNo = recognizedCarNo.replaceAll(
+                    "[^가-힣a-zA-Z0-9]",
+                    ""
+            );
 
             // 5. 저장할 파일명 생성
             String savedFilename = timeText + "_" + okCarNo + ext;
@@ -124,9 +137,6 @@ public class CameraDataService {
             // 8. DB에 저장할 DTO 생성
             CameraDataDTO dto = new CameraDataDTO();
             dto.setCameraNo(cameraNo);
-            String recognizedCarNo = carNo == null
-                    ? ""
-                    : carNo.trim().replaceAll("\\s+", "");
             dto.setOcrCarNo(recognizedCarNo);
             dto.setCarNo(recognizedCarNo);
             dto.setCaptureTime(Timestamp.valueOf(now));
@@ -280,17 +290,17 @@ public class CameraDataService {
                         );
                     }
 
-                    gateOpened = true;
-
+                    // 촬영 데이터에 게이트 개방 결과 저장
                     cameraDataMapper.markGateOpened(
                             dto.getCameraDataNo()
                     );
+
+                    gateOpened = true;
 
                     gateService.scheduleClose(
                             gate.getGateNo()
                     );
                 }
-
                 // 미등록 차량이면 camera_data만 저장하고 멈춤
                 // 이후 관리자 대시보드에서 확인 후 수동으로 게이트를 열도록 처리
             }
@@ -301,6 +311,8 @@ public class CameraDataService {
             dto.setGateNo(gateNo);
             return dto;
 
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("카메라 OCR 이미지 저장 실패", e);
@@ -465,26 +477,11 @@ public class CameraDataService {
         }
 
         // 로그인 관리자의 24시간 방문차량으로 등록
-        int registered =
+        int vehicleCarNo =
                 vehicleService.registerEmergencyVisit(
                         adminLoginId,
                         carNo
                 );
-
-        if (registered != 1) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT
-            );
-        }
-
-        Integer vehicleCarNo =
-                cameraDataMapper.findVehicleCarNo(carNo);
-
-        if (vehicleCarNo == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT
-            );
-        }
 
         // 촬영 데이터와 새 방문차량 연결
         CameraDataDTO matched = new CameraDataDTO();
@@ -495,8 +492,15 @@ public class CameraDataService {
         cameraDataMapper.applyMatchedCarNo(matched);
 
         // 정문·후문은 car_log를 만들지 않고 게이트만 개방
-        gateService.open(gate.getGateNo());
+        if (gateService.open(gate.getGateNo()) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        // 촬영 데이터에 게이트 개방 결과 저장
         cameraDataMapper.markGateOpened(cameraDataNo);
+
         gateService.scheduleClose(gate.getGateNo());
 
         return 1;
@@ -598,4 +602,6 @@ public class CameraDataService {
 
         return path;
     }
+
+
 }
