@@ -3,9 +3,11 @@ import { ref } from "vue";
 
 import {
     completeRobotMaintenance,
+    deleteRobot,
     getRobotDetail,
     getRobotList,
-    getRobotLogs
+    getRobotLogs,
+    signupRobot
 } from "./robotApi";
 
 export const useRobotStore = defineStore("robot", () => {
@@ -33,6 +35,30 @@ export const useRobotStore = defineStore("robot", () => {
         } finally {
             loading.value = false;
         }
+    };
+
+    // 주차로봇 등록
+    const signup = async (data) => {
+        const response = await signupRobot(data);
+
+        if (response.data !== 1) {
+            return false;
+        }
+
+        await loadList();
+        return true;
+    };
+
+    // 주차로봇 삭제
+    const remove = async (robotNo) => {
+        const response = await deleteRobot(robotNo);
+
+        if (response.data !== 1) {
+            return false;
+        }
+
+        await loadList();
+        return true;
     };
 
     // 로봇 상세 조회
@@ -114,6 +140,8 @@ export const useRobotStore = defineStore("robot", () => {
         logErrorMessage,
 
         loadList,
+        signup,
+        remove,
         loadDetail,
         loadLogs,
         loadDetailData,
