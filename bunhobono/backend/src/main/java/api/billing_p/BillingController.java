@@ -28,4 +28,10 @@ public class BillingController {
                 dto.getKioskNo()
         );
     }
+
+    // 토스페이먼츠 결제를 승인하고 정산을 완료 처리
+    @PostMapping("/confirm")
+    public TossPaymentDTO confirm(@RequestBody TossPaymentDTO dto) {
+        return billingService.confirmPayment(dto);
+    }
 }

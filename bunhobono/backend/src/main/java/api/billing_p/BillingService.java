@@ -1,16 +1,25 @@
 package api.billing_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class BillingService {
@@ -20,6 +29,16 @@ public class BillingService {
 
     @Resource
     private BillingMapper billingMapper;
+
+    // 로컬 설정파일에 저장한 토스페이먼츠 시크릿 키
+    @Value("${toss.secret-key}")
+    private String tossSecretKey;
+
+    // 토스페이먼츠 결제 승인 API 호출에 사용하는 HTTP 클라이언트
+    private final RestClient tossRestClient =
+            RestClient.builder()
+                    .baseUrl("https://api.tosspayments.com")
+                    .build();
 
     // 차량번호 뒤 4자리로 현재 주차 중인 차량 목록 조회
     public List<BillDTO> findParkingCars(String lastFourDigits) {
@@ -139,12 +158,146 @@ public class BillingService {
                         "무료 정산을 완료하지 못했습니다."
                 );
             }
+        } else if (bill.getPaymentOrderId() == null || bill.getPaymentOrderId().isBlank()) {
+            // 유료 정산서에 토스페이먼츠 결제 주문번호를 최초 한 번만 생성
+            String paymentOrderId = "BILL-"
+                                    + bill.getBillNo()
+                                    + "-"
+                                    + UUID.randomUUID().toString().replace("-", "");
+
+            bill.setPaymentOrderId(paymentOrderId);
+
+            // 생성한 결제 주문번호와 결제를 진행한 키오스크를 정산서에 저장
+            if (billingMapper.updatePaymentOrder(bill) != 1) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "결제 주문번호를 저장하지 못했습니다."
+                );
+            }
         }
 
         // INSERT 또는 UPDATE 결과가 반영된 최종 정산서를 다시 조회한다.
         return billingMapper.findByCarLogNo(
                 parkingLog.getCarLogNo()
         );
+    }
+
+    // 토스페이먼츠 결제를 승인하고 정산서를 결제완료 상태로 변경한다
+    @Transactional
+    public TossPaymentDTO confirmPayment(TossPaymentDTO dto) {
+        if(dto == null
+                || dto.getPaymentKey() == null
+                || dto.getPaymentKey().isBlank()
+                || dto.getOrderId() == null
+                || dto.getOrderId().isBlank()
+                || dto.getAmount() == null
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "결제 승인정보를 확인해주세요."
+            );
+        }
+
+        // 결제 요청 전에 저장한 주문번호로 원본 정산서를 조회한다.
+        BillDTO bill = billingMapper.findByPaymentOrderId(dto.getOrderId());
+
+        if (bill == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "결제 주문정보를 찾을 수 없습니다."
+            );
+        }
+
+        // 이미 같은 결제키로 승인된 요청이면 기존 결제 결과를 반환한다.
+        if("PAID".equalsIgnoreCase(bill.getBillStatus())) {
+            if (dto.getPaymentKey().equals(bill.getPaymentKey())) {
+                dto.setMethod(bill.getPaymentMethod());
+                return dto;
+            }
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 결제가 완료된 정산서입니다."
+            );
+        }
+
+        // 주소로 전달된 금액과 백엔드에 저장된 정산금액이 같은지 검증한다.
+        if (bill.getBillAmount().compareTo(dto.getAmount()) != 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "결제금액이 정산금액과 일치하지 않습니다."
+            );
+        }
+
+        String authorization = Base64.getEncoder()
+                                .encodeToString(
+                                        (tossSecretKey + ":")
+                                                .getBytes(StandardCharsets.UTF_8)
+                                );
+
+        TossPaymentDTO approvedPayment;
+
+        try {
+            // 프론트엔드 값이 아닌 백엔드 정산금액으로 토스 결제 승인을 요청한다.
+            approvedPayment =
+                    tossRestClient.post()
+                            .uri("/v1/payments/confirm")
+                            .header(
+                                    HttpHeaders.AUTHORIZATION,
+                                    "Basic " + authorization
+                            )
+                            .header(
+                                    "Idempotency-Key",
+                                    bill.getPaymentOrderId()
+                            )
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(
+                                    Map.of(
+                                            "paymentKey",
+                                            dto.getPaymentKey(),
+                                            "orderId",
+                                            bill.getPaymentOrderId(),
+                                            "amount",
+                                            bill.getBillAmount()
+                                    )
+                            )
+                            .retrieve()
+                            .body(TossPaymentDTO.class);
+        } catch (RestClientException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "토스페이먼츠 결제 승인이 실패했습니다."
+            );
+        }
+
+        if (approvedPayment == null
+                || approvedPayment.getTotalAmount() == null
+                || !dto.getPaymentKey().equals(approvedPayment.getPaymentKey())
+                || !bill.getPaymentOrderId().equals(approvedPayment.getOrderId())
+                || bill.getBillAmount().compareTo(approvedPayment.getTotalAmount()) != 0
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "토스페이먼츠 승인 결과가 정산정보와 일치하지 않습니다."
+            );
+        }
+
+        // 승인된 결제정보를 정산서에 저장하고 결제완료로 변경한다.
+        bill.setPaymentKey(
+                approvedPayment.getPaymentKey()
+        );
+        bill.setPaymentMethod(
+                approvedPayment.getMethod()
+        );
+
+        if (billingMapper.markPaid(bill) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "결제 결과를 저장하지 못했습니다."
+            );
+        }
+
+        return approvedPayment;
     }
 
     // 입차시각부터 현재까지의 주차시간에서 무료시간을 제외하고 요금을 계산

@@ -141,11 +141,7 @@
         >
             <div class="billing-selected-image">
                 <img
-                    :src="
-                        getCarImageUrl(
-                            billingStore.selectedCar.cameraDataNo
-                        )
-                    "
+                    :src="getCarImageUrl(billingStore.selectedCar.cameraDataNo)"
                     :alt="
                         `${billingStore.selectedCar.carNo}
                         선택 차량 이미지`
@@ -164,53 +160,27 @@
 
                     <div>
                         <dt>입차시각</dt>
-                        <dd>
-                            {{
-                                formatDateTime(
-                                    billingStore.bill.inTime
-                                )
-                            }}
-                        </dd>
+                        <dd>{{ formatDateTime(billingStore.bill.inTime) }}</dd>
                     </div>
 
                     <div>
                         <dt>주차시간</dt>
-                        <dd>
-                            {{
-                                formatParkingTime(
-                                    billingStore.bill.inTime
-                                )
-                            }}
-                        </dd>
+                        <dd>{{ formatParkingTime(billingStore.bill.inTime) }}</dd>
                     </div>
 
                     <div>
                         <dt>무료시간</dt>
-                        <dd>
-                            {{
-                                formatMinutes(
-                                    billingStore.bill.freeTime
-                                )
-                            }}
-                        </dd>
+                        <dd>{{ formatMinutes(billingStore.bill.freeTime) }}</dd>
                     </div>
 
                     <div class="billing-amount">
                         <dt>정산금액</dt>
-                        <dd>
-                            {{
-                                formatAmount(
-                                    billingStore.bill.billAmount
-                                )
-                            }}
-                        </dd>
+                        <dd>{{ formatAmount(billingStore.bill.billAmount) }}</dd>
                     </div>
                 </dl>
 
                 <p
-                    v-if="
-                        billingStore.bill.billStatus === 'PAID'
-                    "
+                    v-if="billingStore.bill.billStatus === 'PAID'"
                     class="billing-complete"
                 >
                     정산이 완료되었습니다. 출차해주세요.
@@ -231,9 +201,10 @@
                         "
                         type="button"
                         class="billing-primary-button"
-                        disabled
+                        :disabled="paymentLoading"
+                        @click="requestTossPayment"
                     >
-                        결제하기
+                        {{ paymentLoading ? '결제창 준비 중' : '결제하기' }}
                     </button>
 
                     <button
@@ -254,9 +225,16 @@
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBillingStore } from './billingStore'
+import { ANONYMOUS, loadTossPayments } from '@tosspayments/tosspayments-sdk'
 
 const route = useRoute()
 const billingStore = useBillingStore()
+
+// 환경변수에 저장한 토스페이먼츠 테스트 클라이언트 키
+const tossClientKey = import.meta.env.VITE_TOSS_CLIENT_KEY
+
+// 토스페이먼츠 결제창을 불러오는 동안 버튼의 중복 실행을 막는다
+const paymentLoading = ref(false)
 
 const lastFourDigits = ref('')
 const keypadNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -313,6 +291,58 @@ const selectCar = async (car) => {
         car,
         kioskNo
     )
+}
+
+// 현재 정산서 정보로 토스페이먼츠 카드·간편결제 통합결제창을 실행
+const requestTossPayment = async () => {
+    const bill = billingStore.bill
+
+    if (!tossClientKey) {
+        billingStore.errorMessage = '토스페이먼츠 클라이언트 키를 확인해주세요.'
+        return
+    }
+
+    if(!bill || !bill.paymentOrderId || Number(bill.billAmount) <= 0) {
+        billingStore.errorMessage = '결제할 정산정보를 확인할 수 없습니다.'
+        return
+    }
+
+    paymentLoading.value = true
+    billingStore.errorMessage = ''
+
+    try {
+        const tosspayments = await loadTossPayments(tossClientKey)
+
+        const payment = tosspayments.payment({
+            customerKey: ANONYMOUS
+        })
+
+        await payment.requestPayment({
+            method: 'CARD',
+            amount: {
+                currency: 'KRW',
+                value: Number(bill.billAmount)
+            },
+            orderId: bill.paymentOrderId,
+            orderName: `${bill.carNo} 주차요금`,
+            successUrl:
+                `${window.location.origin}/kiosk/payment/success?kioskNo=${kioskNo}`,
+            failUrl:
+                `${window.location.origin}/kiosk/payment/fail?kioskNo=${kioskNo}`,
+            card: {
+                flowMode: 'DEFAULT',
+                useEscrow: false,
+                useCardPoint: false,
+                useAppCardOnly: false
+            }
+        })
+    } catch (error) {
+        console.error('토스페이먼츠 결제창 실행 실패', error)
+
+        billingStore.errorMessage = error.message || '결제창을 실행하지 못했습니다.'
+
+        paymentLoading.value = false
+    }
 }
 
 // 차량 선택 화면에서 번호 입력 화면으로 이동한다.
