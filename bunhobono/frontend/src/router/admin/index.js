@@ -15,6 +15,7 @@ import boards from "./boards";
 import kiosk from "./kiosk";
 import inquiries from "./inquiries";
 import predictiveMaintenance from "./predictiveMaintenance";
+import parkingMap from "./parkingMap";
 
 export const adminRoutes = [
     {
@@ -42,6 +43,7 @@ export const adminRoutes = [
             ...kiosk,
             ...inquiries,
             ...predictiveMaintenance,
+            ...parkingMap,
         ]
     }
 ]
