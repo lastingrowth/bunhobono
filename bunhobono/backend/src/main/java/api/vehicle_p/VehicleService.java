@@ -210,6 +210,62 @@ public class VehicleService {
         return result;
     }
 
+    // 입차 전 방문차량의 예정 시작·종료시간만 수정
+    @Transactional
+    public int updateUnenteredVisitTime(
+            String loginId,
+            int vehicleCarNo,
+            VehicleDTO dto
+    ) {
+        validateResidentVisitDate(dto);
+
+        int result = vehicleMapper.updateUnenteredVisitTime(
+                loginId,
+                vehicleCarNo,
+                dto.getStartDate(),
+                dto.getEndDate()
+        );
+
+        if (result == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 입차했거나 수정할 수 없는 방문차량입니다."
+            );
+        }
+
+        return result;
+    }
+
+    // 로그인한 입주민 본인 일반차량의 만기일 연장
+    @Transactional
+    public int extendResidentNormalVehicle(
+            String loginId,
+            int vehicleCarNo,
+            LocalDateTime endDate
+    ) {
+        if (endDate == null || !endDate.isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "새 만기일을 현재 시간 이후로 선택해주세요."
+            );
+        }
+
+        int result = vehicleMapper.extendResidentNormalVehicle(
+                loginId,
+                vehicleCarNo,
+                endDate
+        );
+
+        if (result == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "본인 차량은 만기 전 14일 이내에서만 기간을 연장할 수 있습니다."
+            );
+        }
+
+        return result;
+    }
+
     // 차량 기본 정보 수정
     public int update(VehicleDTO dto) {
         normalizeCarNo(dto);

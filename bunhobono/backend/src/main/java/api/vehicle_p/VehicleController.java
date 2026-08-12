@@ -99,6 +99,34 @@ public class VehicleController {
         );
     }
 
+    // 입주민이 등록한 미입차 방문차량 방문시간 수정
+    @PatchMapping("/resident/visit/{vehicleCarNo}/time")
+    public int updateUnenteredVisitTime(
+            Authentication authentication,
+            @PathVariable int vehicleCarNo,
+            @RequestBody VehicleDTO dto
+    ) {
+        return vehicleService.updateUnenteredVisitTime(
+                authentication.getName(),
+                vehicleCarNo,
+                dto
+        );
+    }
+
+    // 입주민 본인 일반차량 등록기간 연장
+    @PatchMapping("/resident/normal/{vehicleCarNo}/end-date")
+    public int extendResidentNormalVehicle(
+            Authentication authentication,
+            @PathVariable int vehicleCarNo,
+            @RequestBody VehicleDTO dto
+    ) {
+        return vehicleService.extendResidentNormalVehicle(
+                authentication.getName(),
+                vehicleCarNo,
+                dto.getEndDate()
+        );
+    }
+
     // 차량 삭제
     @DeleteMapping("/{vehicleCarNo}/delete")
     public int deleteVehicle(@PathVariable int vehicleCarNo) {

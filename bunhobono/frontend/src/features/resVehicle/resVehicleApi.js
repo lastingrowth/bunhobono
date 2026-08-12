@@ -25,6 +25,18 @@ export const cancelResVisitVehicle = (vehicleCarNo) => {
     return api.delete(`/vehicles/resident/visit/${vehicleCarNo}`);
 };
 
+// 입차 전 방문차량 방문시간 수정
+export const updateResVisitVehicleTime = (vehicleCarNo, data) => {
+    return api.patch(`/vehicles/resident/visit/${vehicleCarNo}/time`, data);
+};
+
+// 본인 일반차량 등록기간 연장
+export const extendResNormalVehicle = (vehicleCarNo, endDate) => {
+    return api.patch(`/vehicles/resident/normal/${vehicleCarNo}/end-date`, {
+        endDate
+    });
+};
+
 // 로그인한 입주민의 차량 알림 목록
 export const getResVehicleNotifications = () => {
     return api.get("/vehicle-nt/resident");

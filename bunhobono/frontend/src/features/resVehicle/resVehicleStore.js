@@ -7,7 +7,9 @@ import {
     getResVehicleMemberInfo,
     getResVehicleNotifications,
     markResVehicleNotificationsRead,
-    deleteResVehicleNotification
+    deleteResVehicleNotification,
+    updateResVisitVehicleTime,
+    extendResNormalVehicle
 } from "./resVehicleApi";
 import { toVehicleView } from "../vehicle/vehicleFormat";
 
@@ -74,6 +76,16 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         await loadVehicleList();
     };
 
+    const updateVisitVehicleTime = async (vehicleCarNo, data) => {
+        await updateResVisitVehicleTime(vehicleCarNo, data);
+        await loadVehicleList();
+    };
+
+    const extendNormalVehicle = async (vehicleCarNo, endDate) => {
+        await extendResNormalVehicle(vehicleCarNo, endDate);
+        await loadVehicleList();
+    };
+
     const removeNotification = async (vehicleNtNo) => {
     await deleteResVehicleNotification(vehicleNtNo);
 
@@ -96,6 +108,8 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         loadNotifications,
         markAllNotificationsRead,
         addVisitVehicle,
+        updateVisitVehicleTime,
+        extendNormalVehicle,
         cancelVisitVehicle
     };
 });
