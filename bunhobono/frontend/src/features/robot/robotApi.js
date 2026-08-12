@@ -5,6 +5,16 @@ export const getRobotList = () => {
     return api.get("/robots");
 };
 
+// 주차로봇 등록
+export const signupRobot = (data) => {
+    return api.post("/robots/signUp", data);
+};
+
+// 주차로봇 삭제
+export const deleteRobot = (robotNo) => {
+    return api.delete(`/robots/${robotNo}/delete`);
+};
+
 // 로봇 상세 조회
 export const getRobotDetail = (robotNo) => {
     return api.get(`/robots/${robotNo}`);

@@ -656,4 +656,14 @@ public class RobotService {
                 (int) Math.max(days, 0)
         );
     }
+
+    // 주차로봇 등록
+    public int signUp(RobotDTO dto) {
+        return robotMapper.insert(dto);
+    }
+
+    // 주차로봇 삭제
+    public int delete(long robotNo) {
+        return robotMapper.delete(robotNo);
+    }
 }
