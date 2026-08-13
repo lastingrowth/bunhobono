@@ -308,7 +308,7 @@ const showPreparingMessage = () => {
 .choice-car-copy time { color: #8a9ca8; font-size: 12px; }
 .choice-arrow { position: absolute; right: 24px; top: 50%; color: #58a0ce; font-size: 38px; line-height: 1; transform: translateY(-50%); }
 .exit-header { display: flex; align-items: flex-start; gap: 18px; padding-bottom: 24px; border-bottom: 1px solid #e1ebf2; }
-.exit-header span { color: #2d82c7; font-size: 11px; font-weight: 900; letter-spacing: .18em; }
+.exit-header span { color: var(--resident-accent); font-size: 11px; font-weight: 900; letter-spacing: .18em; }
 .exit-header h1 { margin: 4px 0 6px; color: #20394d; font-size: 30px; }
 .exit-header p { margin: 0; color: #7890a2; }
 .back-button { width: 42px; height: 42px; border: 0; border-radius: 50%; color: #315f83; background: #e9f3fa; font-size: 20px; cursor: pointer; }
@@ -325,7 +325,7 @@ const showPreparingMessage = () => {
 .location-details div { padding: 17px; border: 1px solid #e0eaf1; border-radius: 14px; background: #f8fbfd; }
 .location-details dt { margin-bottom: 7px; color: #8093a2; font-size: 11px; font-weight: 800; }
 .location-details dd { margin: 0; color: #2b465a; font-size: 14px; font-weight: 800; }
-.location-details .space-code { color: #1676c3; font-size: 20px; }
+.location-details .space-code { color: var(--resident-accent); font-size: 20px; }
 .eligibility-message { margin: 18px 0 0; padding: 14px 16px; border-radius: 12px; color: #2e6e51; background: #ecf8f1; font-size: 13px; }
 .eligibility-message.error { color: #a34343; background: #fff0f0; }
 .request-actions { margin-top: 24px; display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }

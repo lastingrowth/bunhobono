@@ -33,6 +33,11 @@ textarea {
 }
 
 .resident-layout .content {
+  --resident-accent: #23a6d5;
+  --resident-accent-hover: #168fbe;
+  --text-color: #111111;
+  --text-muted: #111111;
+  color: #111111;
   min-height: calc(100vh - var(--header-height));
   padding: 0;
   background-image:
@@ -42,6 +47,29 @@ textarea {
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+/* 입주민 화면의 기본 문자는 검정으로 통일한다.
+ * 상태 배지·오류·경고·포인트 요소의 내부 span/strong 색은 각 컴포넌트 설정을 유지한다. */
+.resident-layout .content :is(h1, h2, h3, h4, h5, h6, p, dt, dd, label, th, td, legend) {
+  color: #111111;
+}
+
+.resident-layout .content :is(input, select, textarea) {
+  color: #111111;
+}
+
+.resident-layout .resident-floating-menu a:not(.active) {
+  color: #111111;
+}
+
+.resident-layout .resident-footer,
+.resident-layout .resident-footer :is(strong, span, small) {
+  color: #111111;
+}
+
+.resident-layout.resident-menu-visible .container {
+  padding-top: calc(var(--header-height) + 44px);
 }
 
 .resident-layout .header-left,

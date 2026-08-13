@@ -478,7 +478,7 @@ async function deleteNotification(vehicleNtNo) {
 
 .vehicle-management-section h3 {
   margin-bottom: 16px;
-  color: #287fd5;
+  color: var(--resident-accent);
 }
 
 .vehicle-management-visit-section {
@@ -486,7 +486,7 @@ async function deleteNotification(vehicleNtNo) {
 }
 
 .vehicle-management-visit-section h3 {
-  color: #2ca66a;
+  color: var(--resident-accent);
 }
 
 .vehicle-management-section-header {

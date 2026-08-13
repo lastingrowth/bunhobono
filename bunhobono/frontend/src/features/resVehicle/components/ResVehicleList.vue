@@ -256,7 +256,7 @@ const splitRemainingTime = (value) => {
 
 .empty-action-link {
   margin-left: 5px;
-  color: #287fd5;
+  color: var(--resident-accent);
   font-size: inherit;
   font-weight: 700;
   text-decoration: underline;
@@ -264,6 +264,6 @@ const splitRemainingTime = (value) => {
 }
 
 .empty-action-link:hover {
-  color: #175fa9;
+  color: var(--resident-accent-hover);
 }
 </style>
