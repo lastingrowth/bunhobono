@@ -2,8 +2,6 @@ package api.parking_space_p;
 
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 
 @Service
@@ -29,9 +27,13 @@ public class ParkingSpaceService {
     }
 
     // 비어 있고 작업에 배정되지 않은 주차면을 찾는다.
-    public ParkingSpaceDTO findEmptyParkingSpace(int parkingNo) {
+    public ParkingSpaceDTO findEmptyParkingSpace(
+            int parkingNo,
+            int entryGateNo
+    ) {
         return parkingSpaceMapper.findEmptyParkingSpace(
-                parkingNo
+                parkingNo,
+                entryGateNo
         );
     }
 
@@ -40,6 +42,11 @@ public class ParkingSpaceService {
         return parkingSpaceMapper.findByCarLogNo(
                 carLogNo
         );
+    }
+
+    // 출차대기면에서 10분이 지난 미출차 차량 조회
+    public List<Integer> findTimedOutExitWaitCarLogNos() {
+        return parkingSpaceMapper.findTimedOutExitWaitCarLogNos();
     }
 
     // 빈 공간에 차량을 배정한다.
@@ -62,36 +69,6 @@ public class ParkingSpaceService {
                 spaceNo,
                 carLogNo
         );
-    }
-
-    // 로봇 작업 완료 후 차량 위치를 이동한다.
-    @Transactional
-    public int moveCarLog(
-            int carLogNo,
-            long pickupSpaceNo,
-            long dropoffSpaceNo
-    ) {
-        int released =
-                parkingSpaceMapper.releaseCarLog(
-                        pickupSpaceNo,
-                        carLogNo
-                );
-
-        if (released != 1) {
-            return 0;
-        }
-
-        int assigned =
-                parkingSpaceMapper.assignCarLog(
-                        dropoffSpaceNo,
-                        carLogNo
-                );
-
-        if (assigned != 1) {
-            throw new IllegalStateException();
-        }
-
-        return released + assigned;
     }
 
     //내 차량 조회

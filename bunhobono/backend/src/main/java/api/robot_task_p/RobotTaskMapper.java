@@ -63,7 +63,7 @@ public interface RobotTaskMapper {
     // 실행 중인 작업을 우선순위 순으로 조회
     @Select("""
         SELECT *
-        FROM robot_task
+        FROM robot_task_detail
         WHERE task_status = 'RUNNING'
           AND set_no IS NOT NULL
         ORDER BY
@@ -121,6 +121,7 @@ public interface RobotTaskMapper {
         UPDATE robot_task
         SET task_status = 'RUNNING',
             task_phase = #{taskPhase},
+            phase_updated_at = CURRENT_TIMESTAMP,
             started_at = COALESCE(
                 started_at,
                 CURRENT_TIMESTAMP
@@ -142,6 +143,7 @@ public interface RobotTaskMapper {
         UPDATE robot_task
         SET task_status = 'COMPLETED',
             task_phase = 'COMPLETED',
+            phase_updated_at = CURRENT_TIMESTAMP,
             completed_at = CURRENT_TIMESTAMP
         WHERE task_no = #{taskNo}
           AND task_status = 'RUNNING'
@@ -155,6 +157,7 @@ public interface RobotTaskMapper {
         UPDATE robot_task
         SET task_status = 'FAILED',
             task_phase = 'FAILED',
+            phase_updated_at = CURRENT_TIMESTAMP,
             failure_reason = #{failureReason},
             completed_at = CURRENT_TIMESTAMP
         WHERE task_no = #{taskNo}

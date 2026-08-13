@@ -5,6 +5,7 @@ import api.robot_log_p.RobotLogDTO;
 import api.robot_log_p.RobotLogService;
 import api.robot_task_p.RobotTaskDTO;
 import api.robot_task_p.RobotTaskMapper;
+import api.robot_task_p.RobotTaskService;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -25,9 +28,21 @@ public class RobotService {
     // 동시에 이동 가능한 로봇 세트 수
     private static final int MAX_MOVING_SET_COUNT = 2;
 
-    // 충전 단계마다 증가할 배터리 잔량
+    // 1초마다 증가할 배터리 잔량
     private static final BigDecimal CHARGE_AMOUNT =
-            BigDecimal.valueOf(5);
+            BigDecimal.valueOf(0.5);
+
+    // 충전 시작 기준
+    private static final BigDecimal CHARGE_START_LEVEL =
+            BigDecimal.valueOf(70);
+
+    // 작업 제외 기준
+    private static final BigDecimal LOW_BATTERY_LEVEL =
+            BigDecimal.valueOf(30);
+
+    // 작업 복귀 기준
+    private static final BigDecimal RECOVERY_BATTERY_LEVEL =
+            BigDecimal.valueOf(50);
 
     // 충전 완료 기준
     private static final BigDecimal FULL_BATTERY_LEVEL =
@@ -38,6 +53,9 @@ public class RobotService {
 
     @Resource
     private RobotTaskMapper robotTaskMapper;
+
+    @Resource
+    private RobotTaskService robotTaskService;
 
     @Resource
     private ParkingSpaceService parkingSpaceService;
@@ -75,17 +93,15 @@ public class RobotService {
     }
 
     // 작업 가능한 로봇 세트 조회
-    public Integer findAvailableSetNo() {
-        return robotMapper.findAvailableSetNo();
+    public Integer findAvailableSetNo(int preferredSetNo) {
+        return robotMapper.findAvailableSetNo(
+                preferredSetNo
+        );
     }
 
     // 로봇 세트 작업 시작
     public int startSet(int setNo) {
-        return robotMapper.updateSetStatus(
-                setNo,
-                "STANDBY",
-                "WORKING"
-        );
+        return robotMapper.startSet(setNo);
     }
 
     // 로봇 세트 작업 종료 후 충전 시작
@@ -115,24 +131,48 @@ public class RobotService {
                             .add(CHARGE_AMOUNT)
                             .min(FULL_BATTERY_LEVEL);
 
+            boolean recoveringLowBattery =
+                    "LOW_BATTERY".equals(
+                            robot.getRobotStatus()
+                    )
+                            || currentLevel.compareTo(
+                            LOW_BATTERY_LEVEL
+                    ) < 0;
+
             RobotDTO currentState = new RobotDTO();
 
+            currentState.setRobotNo(robot.getRobotNo());
             currentState.setBatteryLevel(nextLevel);
-            currentState.setRobotStatus(
-                    nextLevel.compareTo(
-                            FULL_BATTERY_LEVEL
-                    ) >= 0
-                            ? "STANDBY"
-                            : "CHARGING"
-            );
+            currentState.setRobotStatus(chargeStatus(
+                    nextLevel,
+                    recoveringLowBattery
+            ));
 
-            updatedCount += updateState(
-                    robot.getRobotNo(),
+            updatedCount += robotMapper.updateChargingState(
                     currentState
             );
         }
 
         return updatedCount;
+    }
+
+    // 충전 잔량과 저전력 복구 여부에 따른 상태 결정
+    private String chargeStatus(
+            BigDecimal batteryLevel,
+            boolean recoveringLowBattery
+    ) {
+        if (recoveringLowBattery
+                && batteryLevel.compareTo(
+                RECOVERY_BATTERY_LEVEL
+        ) < 0) {
+            return "LOW_BATTERY";
+        }
+
+        return batteryLevel.compareTo(
+                FULL_BATTERY_LEVEL
+        ) >= 0
+                ? "STANDBY"
+                : "CHARGING";
     }
 
     // 로봇 현재 상태 갱신
@@ -162,7 +202,14 @@ public class RobotService {
                 break;
             }
 
-            Integer setNo = findAvailableSetNo();
+            RobotTaskDTO taskDetail =
+                    robotTaskMapper.detail(
+                            task.getTaskNo()
+                    );
+
+            Integer setNo = findAvailableSetNo(
+                    preferredSetNo(taskDetail)
+            );
 
             if (setNo == null) {
                 break;
@@ -188,8 +235,10 @@ public class RobotService {
             }
 
             String firstPhase =
-                    countMovingTasks()
-                            < MAX_MOVING_SET_COUNT
+                    canStartMoving(
+                            task,
+                            "MOVING_TO_PICKUP"
+                    )
                             ? "MOVING_TO_PICKUP"
                             : "TRAFFIC_WAIT_EMPTY";
 
@@ -216,13 +265,46 @@ public class RobotService {
         return dispatchCount;
     }
 
+    // 작업 출입구와 가장 가까운 로봇 세트를 정한다.
+    private int preferredSetNo(RobotTaskDTO task) {
+        String spaceCode =
+                "PARK_IN".equals(task.getTaskType())
+                        ? task.getPickupSpaceCode()
+                        : task.getDropoffSpaceCode();
+
+        if (spaceCode == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        if (spaceCode.contains("-IN1-")) {
+            return 1;
+        }
+
+        if (spaceCode.contains("-IN2-")) {
+            return 2;
+        }
+
+        if (spaceCode.contains("-OUT1-")) {
+            return 3;
+        }
+
+        if (spaceCode.contains("-OUT2-")) {
+            return 4;
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.CONFLICT
+        );
+    }
+
     // 실행 중인 로봇 작업을 다음 단계로 진행
     @Transactional
     public int processRunningTasks() {
         List<RobotTaskDTO> tasks =
                 robotTaskMapper.findRunningTasks();
 
-        int movingCount = countMovingTasks();
         int processCount = 0;
 
         for (RobotTaskDTO task : tasks) {
@@ -232,17 +314,20 @@ public class RobotService {
                 continue;
             }
 
+            if (!phaseDurationCompleted(task)) {
+                continue;
+            }
+
             switch (phase) {
                 case "TRAFFIC_WAIT_EMPTY" -> {
-                    if (movingCount
-                            < MAX_MOVING_SET_COUNT) {
+                    if (canStartMoving(
+                            task,
+                            "MOVING_TO_PICKUP"
+                    )) {
                         moveToPhase(
                                 task,
                                 "MOVING_TO_PICKUP"
                         );
-                        movingCount++;
-                    } else {
-                        saveSetLogs(task, phase);
                     }
 
                     processCount++;
@@ -253,9 +338,6 @@ public class RobotService {
                             task,
                             "PICKUP_POSITIONING"
                     );
-
-                    movingCount =
-                            Math.max(0, movingCount - 1);
 
                     processCount++;
                 }
@@ -270,13 +352,14 @@ public class RobotService {
                 }
 
                 case "LIFTING" -> {
-                    if (movingCount
-                            < MAX_MOVING_SET_COUNT) {
+                    if (canStartMoving(
+                            task,
+                            "MOVING_TO_DROPOFF"
+                    )) {
                         moveToPhase(
                                 task,
                                 "MOVING_TO_DROPOFF"
                         );
-                        movingCount++;
                     } else {
                         moveToPhase(
                                 task,
@@ -288,15 +371,14 @@ public class RobotService {
                 }
 
                 case "TRAFFIC_WAIT_LOADED" -> {
-                    if (movingCount
-                            < MAX_MOVING_SET_COUNT) {
+                    if (canStartMoving(
+                            task,
+                            "MOVING_TO_DROPOFF"
+                    )) {
                         moveToPhase(
                                 task,
                                 "MOVING_TO_DROPOFF"
                         );
-                        movingCount++;
-                    } else {
-                        saveSetLogs(task, phase);
                     }
 
                     processCount++;
@@ -307,9 +389,6 @@ public class RobotService {
                             task,
                             "DROPOFF_POSITIONING"
                     );
-
-                    movingCount =
-                            Math.max(0, movingCount - 1);
 
                     processCount++;
                 }
@@ -324,6 +403,36 @@ public class RobotService {
                 }
 
                 case "LOWERING" -> {
+                    assignDropoff(task);
+
+                    moveToPhase(
+                            task,
+                            canStartMoving(
+                                    task,
+                                    "RETURNING_HOME"
+                            )
+                                    ? "RETURNING_HOME"
+                                    : "TRAFFIC_WAIT_RETURN"
+                    );
+
+                    processCount++;
+                }
+
+                case "TRAFFIC_WAIT_RETURN" -> {
+                    if (canStartMoving(
+                            task,
+                            "RETURNING_HOME"
+                    )) {
+                        moveToPhase(
+                                task,
+                                "RETURNING_HOME"
+                        );
+                    }
+
+                    processCount++;
+                }
+
+                case "RETURNING_HOME" -> {
                     completeTask(task);
                     processCount++;
                 }
@@ -337,20 +446,168 @@ public class RobotService {
         return processCount;
     }
 
-    // 현재 이동 중인 로봇 작업 수
-    private int countMovingTasks() {
-        return (int) robotTaskMapper
-                .findRunningTasks()
-                .stream()
-                .filter(task ->
-                        "MOVING_TO_PICKUP".equals(
-                                task.getTaskPhase()
+    // 현재 단계의 예정 소요시간이 지났는지 확인
+    private boolean phaseDurationCompleted(
+            RobotTaskDTO task
+    ) {
+        int durationMs =
+                robotTaskService.phaseDurationMs(task);
+
+        if (durationMs == 0) {
+            return true;
+        }
+
+        OffsetDateTime phaseStartedAt =
+                task.getPhaseUpdatedAt() != null
+                        ? task.getPhaseUpdatedAt()
+                        : task.getStartedAt();
+
+        return phaseStartedAt == null
+                || !OffsetDateTime.now().isBefore(
+                        phaseStartedAt.plusNanos(
+                                durationMs * 1_000_000L
                         )
-                                || "MOVING_TO_DROPOFF".equals(
-                                task.getTaskPhase()
+                );
+    }
+
+    // 이동 수와 같은 통로를 사용하는 작업을 함께 확인한다.
+    private boolean canStartMoving(
+            RobotTaskDTO task,
+            String nextPhase
+    ) {
+        List<RobotTaskDTO> runningTasks =
+                robotTaskMapper.findRunningTasks();
+
+        long movingCount = runningTasks
+                .stream()
+                .filter(this::isMovingTask)
+                .count();
+
+        if (movingCount >= MAX_MOVING_SET_COUNT) {
+            return false;
+        }
+
+        Set<String> targetLanes = movementLanes(
+                task,
+                nextPhase
+        );
+
+        return runningTasks
+                .stream()
+                .filter(this::isMovingTask)
+                .filter(running ->
+                        !running.getTaskNo().equals(
+                                task.getTaskNo()
                         )
                 )
-                .count();
+                .noneMatch(running ->
+                        intersects(
+                                targetLanes,
+                                movementLanes(
+                                        running,
+                                        running.getTaskPhase()
+                                )
+                        )
+                );
+    }
+
+    // 실제 이동 단계 여부
+    private boolean isMovingTask(RobotTaskDTO task) {
+        return "MOVING_TO_PICKUP".equals(
+                task.getTaskPhase()
+        )
+                || "MOVING_TO_DROPOFF".equals(
+                task.getTaskPhase()
+        )
+                || "RETURNING_HOME".equals(
+                task.getTaskPhase()
+        );
+    }
+
+    // 이동 출발지와 목적지가 사용하는 가로 통로를 구한다.
+    private Set<String> movementLanes(
+            RobotTaskDTO task,
+            String phase
+    ) {
+        RobotTaskDTO detail = task;
+
+        if (task.getPickupSpaceCode() == null
+                || task.getDropoffSpaceCode() == null) {
+            detail = robotTaskMapper.detail(
+                    task.getTaskNo()
+            );
+        }
+
+        Set<String> lanes = new HashSet<>();
+
+        if ("MOVING_TO_PICKUP".equals(phase)) {
+            lanes.add(homeLane(detail.getSetNo()));
+            lanes.add(spaceLane(
+                    detail.getPickupSpaceCode()
+            ));
+        } else if ("MOVING_TO_DROPOFF".equals(phase)) {
+            lanes.add(spaceLane(
+                    detail.getPickupSpaceCode()
+            ));
+            lanes.add(spaceLane(
+                    detail.getDropoffSpaceCode()
+            ));
+        } else {
+            lanes.add(spaceLane(
+                    detail.getDropoffSpaceCode()
+            ));
+            lanes.add(homeLane(detail.getSetNo()));
+        }
+
+        if (lanes.contains("TOP")
+                && lanes.contains("BOTTOM")) {
+            lanes.add("MIDDLE");
+        }
+
+        return lanes;
+    }
+
+    // 같은 통로를 하나라도 공유하는지 확인한다.
+    private boolean intersects(
+            Set<String> first,
+            Set<String> second
+    ) {
+        return first.stream().anyMatch(second::contains);
+    }
+
+    // 로봇 세트 대기 위치가 연결된 통로
+    private String homeLane(Integer setNo) {
+        return setNo != null && setNo <= 2
+                ? "TOP"
+                : "BOTTOM";
+    }
+
+    // 공간 코드가 연결된 통로
+    private String spaceLane(String spaceCode) {
+
+        if (spaceCode.contains("-IN")) {
+            return "TOP";
+        }
+
+        if (spaceCode.contains("-OUT")) {
+            return "BOTTOM";
+        }
+
+        int parkingNumber = Integer.parseInt(
+                spaceCode.substring(
+                        spaceCode.lastIndexOf('P') + 1
+                )
+        );
+
+        if (parkingNumber <= 20) {
+            return "TOP";
+        }
+
+        if (parkingNumber <= 60) {
+            return "MIDDLE";
+        }
+
+        return "BOTTOM";
     }
 
     // 작업 단계 변경과 원시 상태값 저장
@@ -370,26 +627,43 @@ public class RobotService {
             );
         }
 
+        // 차량을 들어 올리고 출발하면 기존 공간을 비운다.
+        if ("MOVING_TO_DROPOFF".equals(nextPhase)) {
+            int released =
+                    parkingSpaceService.releaseCarLog(
+                            task.getPickupSpaceNo(),
+                            task.getCarLogNo()
+                    );
+
+            if (released != 1) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT
+                );
+            }
+        }
+
         task.setTaskPhase(nextPhase);
 
         saveSetLogs(task, nextPhase);
     }
 
-    // 작업 완료와 차량 위치 이동
-    private void completeTask(RobotTaskDTO task) {
-        int moved =
-                parkingSpaceService.moveCarLog(
-                        task.getCarLogNo(),
-                        task.getPickupSpaceNo(),
-                        task.getDropoffSpaceNo()
+    // 차량을 도착 공간에 내려놓는다.
+    private void assignDropoff(RobotTaskDTO task) {
+        int assigned =
+                parkingSpaceService.assignCarLog(
+                        task.getDropoffSpaceNo(),
+                        task.getCarLogNo()
                 );
 
-        if (moved != 2) {
+        if (assigned != 1) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT
             );
         }
+    }
 
+    // 복귀가 끝난 작업과 로봇 상태를 완료한다.
+    private void completeTask(RobotTaskDTO task) {
         int completed =
                 robotTaskMapper.complete(
                         task.getTaskNo()
@@ -463,12 +737,6 @@ public class RobotService {
         log.setRobotNo(robot.getRobotNo());
         log.setTaskNo(task.getTaskNo());
 
-        log.setRobotStatus(
-                "COMPLETED".equals(taskPhase)
-                        ? "CHARGING"
-                        : "WORKING"
-        );
-
         log.setTaskPhase(taskPhase);
         log.setPayloadState(
                 getPayloadState(taskPhase)
@@ -517,8 +785,14 @@ public class RobotService {
                 )
         );
 
-        log.setBatteryLevel(
-                getNextBatteryLevel(robot)
+        BigDecimal nextBatteryLevel =
+                getNextBatteryLevel(robot);
+
+        log.setBatteryLevel(nextBatteryLevel);
+        log.setRobotStatus(
+                "COMPLETED".equals(taskPhase)
+                        ? idleStatus(nextBatteryLevel)
+                        : "WORKING"
         );
 
         log.setObstacleDetected(false);
@@ -527,6 +801,23 @@ public class RobotService {
         log.setSampledAt(OffsetDateTime.now());
 
         return log;
+    }
+
+    // 작업 종료 후 잔량에 따른 대기·충전 상태 결정
+    private String idleStatus(BigDecimal batteryLevel) {
+        if (batteryLevel.compareTo(
+                LOW_BATTERY_LEVEL
+        ) < 0) {
+            return "LOW_BATTERY";
+        }
+
+        if (batteryLevel.compareTo(
+                CHARGE_START_LEVEL
+        ) < 0) {
+            return "CHARGING";
+        }
+
+        return "STANDBY";
     }
 
     // 작업 단계별 적재 상태
