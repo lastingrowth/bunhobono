@@ -57,14 +57,37 @@ public class CameraDataController {
         return cameraDataService.editCarNo(cameraDataNo, dto);
     }
 
-    // 관리자 수동 게이트 열기
-    // 긴급·작업 차량 방문등록과 게이트 개방
-    @PostMapping("/{cameraDataNo}/open-gate")
-    public int openGate(
+    // 관리자가 저신뢰 OCR 차량번호를 확인하거나 수정한 뒤
+    // 기존 승인 차량을 다시 조회하여 입출차 처리와 게이트 개방을 수행한다.
+    @PostMapping("/{cameraDataNo}/confirm-gate")
+    public CameraDataDTO confirmLowConfidenceGate(
+            @PathVariable int cameraDataNo,
+            @RequestBody CameraDataDTO dto
+    ) {
+        return cameraDataService.confirmLowConfidenceGate(cameraDataNo, dto);
+    }
+
+    // SITE 정문·후문에서 일반 미등록 차량을 관리실 방문차량으로 등록하고
+    // 촬영 데이터와 등록차량을 연결한 뒤 게이트를 연다.
+    @PostMapping("/{cameraDataNo}/open-visit-gate")
+    public int openVisitGate(
             Authentication authentication,
             @PathVariable int cameraDataNo
     ) {
-        return cameraDataService.openGateByCameraData(
+        return cameraDataService.openVisitGateByCameraData(
+                authentication.getName(),
+                cameraDataNo
+        );
+    }
+
+    // SITE 정문·후문에서 미등록 긴급차량을 관리실 방문차량으로 등록하고
+    // 72시간 등록기간을 설정한 뒤 게이트를 연다.
+    @PostMapping("/{cameraDataNo}/open-emergency-gate")
+    public int openEmergencyGate(
+            Authentication authentication,
+            @PathVariable int cameraDataNo
+    ) {
+        return cameraDataService.openEmergencyGateByCameraData(
                 authentication.getName(),
                 cameraDataNo
         );

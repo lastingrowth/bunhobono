@@ -21,7 +21,11 @@ public class RobotTaskDTO {
 
     private OffsetDateTime requestedAt;
     private OffsetDateTime startedAt;
+    private OffsetDateTime phaseUpdatedAt;
     private OffsetDateTime completedAt;
+
+    // 현재 작업 단계의 예정 소요시간
+    private Integer phaseDurationMs;
 
     private String failureReason;
 

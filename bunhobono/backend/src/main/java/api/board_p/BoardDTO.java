@@ -5,6 +5,8 @@ import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class BoardDTO {
@@ -39,4 +41,23 @@ public class BoardDTO {
     private String createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // ================================
+    // 댓글 정보
+    // ================================
+
+    // 댓글 정보
+    private Integer commentNo;
+    private Integer parentCommentNo;
+    private String commentContent;
+    private LocalDateTime commentCreatedAt;
+    private LocalDateTime commentUpdatedAt;
+
+    // 댓글 작성자와 화면 표시 정보
+    private String commentWriterName;
+    private String commentWriterRole;
+    private Integer commentWriterDong;
+    private Integer commentWriterHo;
+    private Boolean myComment;
+    private List<BoardDTO> replies = new ArrayList<>();
 }

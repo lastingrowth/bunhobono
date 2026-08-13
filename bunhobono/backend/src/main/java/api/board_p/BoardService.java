@@ -18,6 +18,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -174,11 +176,123 @@ public class BoardService {
     public void delete(int boardNo) {
         BoardDTO board = detail(boardNo, false);
 
+        // [댓글] 공지사항을 삭제하기 전에 연결된 댓글을 삭제한다.
+        mapper.deleteCommentsByBoardNo(boardNo);
+
         if (mapper.delete(boardNo) == 0) {
             throw error(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다.");
         }
 
         deleteImage(board.getImagePath());
+    }
+
+    // ================================
+    // 댓글
+    // ================================
+    // 댓글 목록을 3단계 부모·자식 구조로 만든다.
+    public List<BoardDTO> commentList(int boardNo, String loginId) {
+        detail(boardNo, false);
+        List<BoardDTO> comments = mapper.commentList(boardNo, loginId);
+        Map<Integer, BoardDTO> byCommentNo = new LinkedHashMap<>();
+        List<BoardDTO> roots = new ArrayList<>();
+
+        for (BoardDTO comment : comments) {
+            comment.setReplies(new ArrayList<>());
+            byCommentNo.put(comment.getCommentNo(), comment);
+        }
+
+        for (BoardDTO comment : comments) {
+            if (comment.getParentCommentNo() == null) {
+                roots.add(comment);
+                continue;
+            }
+
+            BoardDTO parent = byCommentNo.get(comment.getParentCommentNo());
+            if (parent != null) {
+                parent.getReplies().add(comment);
+            }
+        }
+
+        return roots;
+    }
+
+    // 댓글 입력창에 표시할 로그인 사용자의 이름을 반환한다.
+    public String commentWriterName(String loginId) {
+        String name = mapper.findCommentWriterName(loginId);
+        return name == null || name.isBlank() ? loginId : name;
+    }
+
+    // 로그인 사용자의 댓글 또는 대댓글을 등록한다.
+    @Transactional
+    public BoardDTO createComment(int boardNo, BoardDTO dto, String loginId) {
+        detail(boardNo, false);
+        normalizeComment(dto);
+
+        if (dto.getParentCommentNo() != null) {
+            BoardDTO parent = mapper.findComment(dto.getParentCommentNo());
+            if (parent == null || !Objects.equals(parent.getBoardNo(), boardNo)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            }
+
+            Integer parentDepth = mapper.findCommentDepth(dto.getParentCommentNo());
+            if (parentDepth == null || parentDepth >= 3) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        if (mapper.insertComment(boardNo, loginId, dto) == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        return mapper.findComment(dto.getCommentNo());
+    }
+
+    // 작성자 본인의 댓글 내용만 수정한다.
+    @Transactional
+    public BoardDTO updateComment(
+            int boardNo,
+            int commentNo,
+            BoardDTO dto,
+            String loginId
+    ) {
+        normalizeComment(dto);
+
+        if (mapper.updateComment(
+                boardNo,
+                commentNo,
+                loginId,
+                dto.getCommentContent()
+        ) == 0) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+
+        return mapper.findComment(commentNo);
+    }
+
+    // 작성자 본인의 댓글과 모든 하위 댓글을 아래 단계부터 삭제한다.
+    @Transactional
+    public void deleteComment(
+            int boardNo,
+            int commentNo,
+            String loginId,
+            boolean admin
+    ) {
+        if (mapper.deleteCommentTree(boardNo, commentNo, loginId, admin) == 0) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+    }
+
+    // [댓글] 저장할 댓글 내용의 공백만 정리한다.
+    private void normalizeComment(BoardDTO dto) {
+        if (dto == null || dto.getCommentContent() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        dto.setCommentContent(dto.getCommentContent().trim());
+        if (dto.getCommentContent().isEmpty()
+                || dto.getCommentContent().length() > 1000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     }
 
     // 공지 입력값과 게시기간을 검증하고 기본값을 적용한다.

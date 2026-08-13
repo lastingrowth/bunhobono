@@ -55,3 +55,22 @@ export const updateBoard = (boardNo, board, image) =>
 // 삭제
 export const deleteBoard = (boardNo) =>
   api.delete(`/boards/${boardNo}/delete`);
+
+// 댓글 목록 조회
+export const getBoardComments = (boardNo) =>
+  api.get(`/boards/${boardNo}/comments`);
+
+export const getCommentWriterName = () =>
+  api.get("/boards/comments/writer");
+
+// 댓글 또는 대댓글 등록
+export const createBoardComment = (boardNo, data) =>
+  api.post(`/boards/${boardNo}/comments`, data);
+
+// 댓글 수정
+export const updateBoardComment = (boardNo, commentNo, data) =>
+  api.put(`/boards/${boardNo}/comments/${commentNo}`, data);
+
+// 댓글과 하위 댓글 삭제
+export const deleteBoardComment = (boardNo, commentNo) =>
+  api.delete(`/boards/${boardNo}/comments/${commentNo}`);

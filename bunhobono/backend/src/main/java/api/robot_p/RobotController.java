@@ -46,4 +46,20 @@ public class RobotController {
     ) {
         return robotService.completeMaintenance(robotNo);
     }
+
+    // 주차로봇 등록
+    @PostMapping("/signUp")
+    public int signUp(
+            @RequestBody RobotDTO dto
+    ) {
+        return robotService.signUp(dto);
+    }
+
+    // 주차로봇 삭제
+    @DeleteMapping("/{robotNo}/delete")
+    public int delete(
+            @PathVariable long robotNo
+    ) {
+        return robotService.delete(robotNo);
+    }
 }

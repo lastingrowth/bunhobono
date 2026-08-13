@@ -1,9 +1,6 @@
 package api.robot_p;
 
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -37,11 +34,15 @@ public interface RobotMapper {
     """)
     List<RobotDTO> findBySetNo(int setNo);
 
-    // 두 대 모두 대기 중인 로봇 세트를 찾는다.
+    // 두 대 모두 작업 가능 상태인 로봇 세트를 찾는다.
     @Select("""
         SELECT robot.set_no
         FROM robot robot
-        WHERE robot.robot_status = 'STANDBY'
+        WHERE robot.robot_status IN (
+                  'STANDBY',
+                  'CHARGING'
+              )
+          AND robot.battery_level >= 30
 
           AND NOT EXISTS (
               SELECT 1
@@ -61,12 +62,36 @@ public interface RobotMapper {
            ) = 2
 
         ORDER BY
+            ABS(
+                MOD(robot.set_no - 1, 2)
+                - MOD(#{preferredSetNo} - 1, 2)
+            )
+            + ABS(
+                (robot.set_no - 1) / 2
+                - (#{preferredSetNo} - 1) / 2
+            ),
             MIN(robot.battery_level) DESC NULLS LAST,
             robot.set_no
 
         LIMIT 1
     """)
-    Integer findAvailableSetNo();
+    Integer findAvailableSetNo(
+            @Param("preferredSetNo") int preferredSetNo
+    );
+
+    // 대기 또는 충전 중인 로봇 세트의 작업 시작
+    @Update("""
+        UPDATE robot
+        SET robot_status = 'WORKING',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE set_no = #{setNo}
+          AND robot_status IN (
+              'STANDBY',
+              'CHARGING'
+          )
+          AND battery_level >= 30
+    """)
+    int startSet(@Param("setNo") int setNo);
 
     // 작업을 시작하거나 종료할 때 세트 상태를 변경한다.
     @Update("""
@@ -103,16 +128,39 @@ public interface RobotMapper {
     """)
     int updateState(RobotDTO dto);
 
-    // 충전 중인 로봇 조회
+    // 충전 시작 대상과 충전 중인 로봇 조회
     @Select("""
-    SELECT *
-    FROM robot
-    WHERE robot_status = 'CHARGING'
-    ORDER BY
-        set_no,
-        set_position
+        SELECT *
+        FROM robot
+        WHERE (
+                robot_status = 'STANDBY'
+                AND battery_level < 70
+              )
+           OR robot_status IN (
+                'CHARGING',
+                'LOW_BATTERY'
+              )
+        ORDER BY
+            set_no,
+            set_position
     """)
     List<RobotDTO> findChargingRobots();
+
+    // 작업이 없는 로봇의 충전 상태와 잔량 갱신
+    @Update("""
+        UPDATE robot
+        SET robot_status = #{robotStatus},
+            battery_level = #{batteryLevel},
+            last_heartbeat_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE robot_no = #{robotNo}
+          AND robot_status IN (
+              'STANDBY',
+              'CHARGING',
+              'LOW_BATTERY'
+          )
+    """)
+    int updateChargingState(RobotDTO dto);
 
     // 로봇 점검 완료 시각 갱신
     @Update("""
@@ -124,4 +172,19 @@ public interface RobotMapper {
     int completeMaintenance(
             @Param("robotNo") long robotNo
     );
+
+    // 주차로봇 등록
+    @Insert("INSERT INTO robot " +
+            "(robot_code, set_no, set_position, robot_status, battery_level, operating_hours) " +
+            "VALUES " +
+            "(#{robotCode}, #{setNo}, #{setPosition}, 'STANDBY', 100, 0)")
+    int insert(RobotDTO dto);
+
+    // 사용 이력이 없는 주차로봇 삭제
+    @Delete("DELETE FROM robot " +
+            "WHERE robot_no = #{robotNo} " +
+            "AND robot_status <> 'WORKING' " +
+            "AND NOT EXISTS " +
+            "(SELECT 1 FROM robot_log WHERE robot_no = #{robotNo})")
+    int delete(long robotNo);
 }

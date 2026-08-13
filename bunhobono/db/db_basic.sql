@@ -593,6 +593,34 @@ CREATE TABLE inquiry (
         FOREIGN KEY (answered_by)                             -- 답변 관리자를 member 테이블과 연결
         REFERENCES member(member_no)
 );
+
+CREATE TABLE board_comment (
+
+    comment_no SERIAL PRIMARY KEY,                     -- 댓글 고유번호
+    board_no INT NOT NULL,                             -- 댓글이 작성된 공지사항 번호
+    member_no INT NOT NULL,                            -- 댓글 작성 회원 번호
+    parent_comment_no INT,                             -- 부모 댓글 번호
+                                                       -- NULL이면 일반 댓글
+                                                       -- 값이 있으면 대댓글
+    content TEXT NOT NULL,                             -- 댓글 내용
+    created_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,                     -- 댓글 최초 작성 시각
+    updated_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,                     -- 댓글 마지막 수정 시각
+    
+    CONSTRAINT fk_board_comment_board                   -- 공지사항과 연결
+        FOREIGN KEY (board_no)
+        REFERENCES board(board_no),
+
+    CONSTRAINT fk_board_comment_member                  -- 작성 회원과 연결
+        FOREIGN KEY (member_no)
+        REFERENCES member(member_no),
+
+    CONSTRAINT fk_board_comment_parent                  -- 부모 댓글과 연결
+        FOREIGN KEY (parent_comment_no)
+        REFERENCES board_comment(comment_no)
+);
+
 COMMIT;
 
 -- 테이블을 모두 생성한 뒤 애플리케이션 계정에 권한을 부여한다.

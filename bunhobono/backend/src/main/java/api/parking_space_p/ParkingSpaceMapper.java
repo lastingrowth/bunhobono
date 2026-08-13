@@ -25,7 +25,8 @@ public interface ParkingSpaceMapper {
             parking.parking_code,
             gate.gate_code,
             car_log.car_no,
-            car_log.snapshot_car_kind AS car_kind
+            car_log.snapshot_car_kind AS car_kind,
+            car_log.in_time
         FROM parking_space space
 
         JOIN parking
@@ -74,7 +75,15 @@ public interface ParkingSpaceMapper {
                 )
           )
 
-        ORDER BY RANDOM()
+        ORDER BY
+            CASE
+                WHEN space.space_type = 'EXIT_WAIT'
+                    THEN SUBSTRING(
+                        space.space_code
+                        FROM '[0-9]+$'
+                    )::INT
+            END DESC,
+            RANDOM()
         LIMIT 1
         FOR UPDATE SKIP LOCKED
     """)
@@ -87,6 +96,10 @@ public interface ParkingSpaceMapper {
     @Select("""
         SELECT space.*
         FROM parking_space space
+
+        JOIN gate entry_gate
+            ON entry_gate.gate_no = #{entryGateNo}
+
         WHERE space.parking_no = #{parkingNo}
           AND space.space_type = 'PARKING'
           AND space.car_log_no IS NULL
@@ -102,12 +115,37 @@ public interface ParkingSpaceMapper {
                 )
           )
 
-        ORDER BY space.space_no
+        ORDER BY
+            CASE
+                WHEN RIGHT(entry_gate.gate_code, 1) = '1'
+                    THEN MOD(
+                        SUBSTRING(
+                            space.space_code
+                            FROM '[0-9]+$'
+                        )::INT - 1,
+                        20
+                    )
+                ELSE 19 - MOD(
+                    SUBSTRING(
+                        space.space_code
+                        FROM '[0-9]+$'
+                    )::INT - 1,
+                    20
+                )
+            END,
+            (
+                SUBSTRING(
+                    space.space_code
+                    FROM '[0-9]+$'
+                )::INT - 1
+            ) / 20,
+            space.space_code
         LIMIT 1
         FOR UPDATE SKIP LOCKED
     """)
     ParkingSpaceDTO findEmptyParkingSpace(
-            @Param("parkingNo") int parkingNo
+            @Param("parkingNo") int parkingNo,
+            @Param("entryGateNo") int entryGateNo
     );
 
     // 차량 입출차 기록으로 현재 위치 조회
@@ -136,6 +174,41 @@ public interface ParkingSpaceMapper {
             @Param("carLogNo") int carLogNo
     );
 
+    // 출차대기면 도착 후 10분이 지난 미출차 차량 조회
+    @Select("""
+        SELECT space.car_log_no
+        FROM parking_space space
+
+        JOIN car_log log
+            ON log.car_log_no = space.car_log_no
+
+        WHERE space.space_type = 'EXIT_WAIT'
+          AND space.car_log_no IS NOT NULL
+          AND space.updated_at <= CURRENT_TIMESTAMP - INTERVAL '10 minutes'
+          AND space.active = TRUE
+          AND log.out_time IS NULL
+
+          AND EXISTS (
+              SELECT 1
+              FROM robot_task park_out
+              WHERE park_out.car_log_no = space.car_log_no
+                AND park_out.task_type = 'PARK_OUT'
+                AND park_out.task_status = 'COMPLETED'
+                AND park_out.dropoff_space_no = space.space_no
+          )
+
+          AND NOT EXISTS (
+              SELECT 1
+              FROM robot_task park_in
+              WHERE park_in.car_log_no = space.car_log_no
+                AND park_in.task_type = 'PARK_IN'
+                AND park_in.task_status IN ('WAITING', 'RUNNING')
+          )
+
+        ORDER BY space.updated_at
+    """)
+    List<Integer> findTimedOutExitWaitCarLogNos();
+
     // 빈 공간에 차량 입출차 기록 배정
     @Update("""
         UPDATE parking_space
@@ -162,42 +235,6 @@ public interface ParkingSpaceMapper {
     int releaseCarLog(
             @Param("spaceNo") long spaceNo,
             @Param("carLogNo") int carLogNo
-    );
-
-    // 로봇 작업 완료 후 차량 위치 이동
-    @Update("""
-        UPDATE parking_space space
-        SET car_log_no =
-                CASE
-                    WHEN space.space_no = #{pickupSpaceNo}
-                        THEN NULL
-                    WHEN space.space_no = #{dropoffSpaceNo}
-                        THEN #{carLogNo}
-                END,
-            updated_at = CURRENT_TIMESTAMP
-
-        WHERE space.space_no IN (
-                #{pickupSpaceNo},
-                #{dropoffSpaceNo}
-            )
-          AND space.active = TRUE
-
-          AND EXISTS (
-              SELECT 1
-              FROM parking_space pickup
-              JOIN parking_space dropoff
-                  ON dropoff.space_no = #{dropoffSpaceNo}
-              WHERE pickup.space_no = #{pickupSpaceNo}
-                AND pickup.car_log_no = #{carLogNo}
-                AND dropoff.car_log_no IS NULL
-                AND pickup.active = TRUE
-                AND dropoff.active = TRUE
-          )
-    """)
-    int moveCarLog(
-            @Param("carLogNo") int carLogNo,
-            @Param("pickupSpaceNo") long pickupSpaceNo,
-            @Param("dropoffSpaceNo") long dropoffSpaceNo
     );
 
     //내 차량 조회

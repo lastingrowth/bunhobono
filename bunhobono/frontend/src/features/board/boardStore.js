@@ -7,6 +7,10 @@ import {
   getBoardImage,
   getBoards,
   updateBoard,
+  getBoardComments,
+  createBoardComment,
+  updateBoardComment,
+  deleteBoardComment,
 } from "./boardApi";
 
 export const useBoardStore = defineStore("board", () => {
@@ -16,6 +20,8 @@ export const useBoardStore = defineStore("board", () => {
   const saving = ref(false);
   const errorMessage = ref("");
   const imageUrls = reactive({});
+  const comments = ref([]);
+  const commentsLoading = ref(false);
 
   const message = (error, fallback) =>
     error?.response?.data?.message
@@ -121,6 +127,32 @@ export const useBoardStore = defineStore("board", () => {
     }
   };
 
+  const loadComments = async (boardNo) => {
+    commentsLoading.value = true;
+    try {
+      const response = await getBoardComments(boardNo);
+      comments.value = Array.isArray(response.data) ? response.data : [];
+      return comments.value;
+    } finally {
+      commentsLoading.value = false;
+    }
+  };
+
+  const addComment = async (boardNo, commentContent, parentCommentNo = null) => {
+    await createBoardComment(boardNo, { commentContent, parentCommentNo });
+    return loadComments(boardNo);
+  };
+
+  const editComment = async (boardNo, commentNo, commentContent) => {
+    await updateBoardComment(boardNo, commentNo, { commentContent });
+    return loadComments(boardNo);
+  };
+
+  const removeComment = async (boardNo, commentNo) => {
+    await deleteBoardComment(boardNo, commentNo);
+    return loadComments(boardNo);
+  };
+
   const revokeImage = (boardNo) => {
     if (imageUrls[boardNo]) {
       URL.revokeObjectURL(imageUrls[boardNo]);
@@ -135,11 +167,17 @@ export const useBoardStore = defineStore("board", () => {
     saving,
     errorMessage,
     imageUrls,
+    comments,
+    commentsLoading,
     loadList,
     loadDetail,
     loadImage,
     add,
     edit,
     remove,
+    loadComments,
+    addComment,
+    editComment,
+    removeComment,
   };
 });

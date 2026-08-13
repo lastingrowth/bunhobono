@@ -26,7 +26,6 @@ import api.vehicle_p.VehicleService;
 @Service
 public class CameraDataService {
 
-
     @Resource
     CameraDataMapper cameraDataMapper;
 
@@ -259,12 +258,13 @@ public class CameraDataService {
 
                 int processed = 0;
 
-                // B1·B2는 입출차 처리가 성공해야 게이트 개방
+                // B1·B2 입차는 등록된 승인 차량만 처리하고,
+                // 출차는 현재 주차 중인 입차 기록이 있는 차량만 처리한다.
                 if (isParkingGate) {
                     boolean canProcess =
                             (isEntryGate
-                                    && registered
-                                    && recognitionConfirmed)
+                                    && recognitionConfirmed
+                                    && registered)
                                     ||
                                     (isExitGate && parkedLog != null);
 
@@ -415,9 +415,205 @@ public class CameraDataService {
         return updated;
     }
 
-    // 긴급·작업 차량 방문등록과 게이트 개방
+    // 관리자가 저신뢰 OCR 차량번호를 확인하거나 수정한 뒤
+    // 기존 승인 차량을 다시 조회하여 입출차 처리와 게이트 개방을 수행한다.
+    // 기존 차량이 없으면 번호만 확정하고 미등록 상태로 반환한다.
     @Transactional
-    public int openGateByCameraData(
+    public CameraDataDTO confirmLowConfidenceGate(
+            int cameraDataNo,
+            CameraDataDTO request
+    ) {
+        // 기존 차량번호 수정 로직을 재사용하여 차량번호를 정규화하고,
+        // 해당 번호와 연결된 승인 차량을 다시 조회한다.
+        CameraDataDTO confirmed =
+                editCarNo(
+                        cameraDataNo,
+                        request
+                );
+
+        if (confirmed == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라 데이터가 존재하지 않습니다."
+            );
+        }
+
+        // 확인한 차량번호가 기존 승인 차량과 연결되지 않으면
+        // 게이트를 열지 않고 일반·긴급 등록 선택을 위해 미등록 상태를 반환한다.
+        if (confirmed.getVehicleCarNo() == null) {
+            confirmed.setRegistered(false);
+            confirmed.setGateOpened(false);
+            return confirmed;
+        }
+
+        GateDTO gate =
+                gateService.findByCameraNo(
+                        confirmed.getCameraNo()
+                );
+
+        if (gate == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라와 연결된 게이트가 없습니다."
+            );
+        }
+
+        boolean isSiteGate =
+                "SITE".equalsIgnoreCase(
+                        gate.getGateArea()
+                );
+
+        boolean isParkingGate =
+                "B1".equalsIgnoreCase(
+                        gate.getGateArea()
+                )
+                        || "B2".equalsIgnoreCase(
+                        gate.getGateArea()
+                );
+
+        boolean canOpenGate = false;
+
+        // 정문·후문에서는 기존 승인 차량이면 입출차 기록 없이 통과시킨다.
+        if (isSiteGate) {
+            canOpenGate = true;
+        }
+
+        // B1·B2에서는 입차 또는 출차 기록 처리가 성공한 경우에만 통과시킨다.
+        else if (isParkingGate) {
+            canOpenGate =
+                    carLogService.processCameraData(
+                            confirmed
+                    ) == 1;
+        }
+
+        if (!canOpenGate) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "차량의 입출차 조건을 확인할 수 없습니다."
+            );
+        }
+
+        if (gateService.open(gate.getGateNo()) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "게이트를 열지 못했습니다."
+            );
+        }
+
+        // 저신뢰 OCR 확인 후 게이트가 실제로 열린 사실을 촬영 기록에 저장한다.
+        if (cameraDataMapper.markGateOpened(cameraDataNo) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "게이트 개방 기록을 저장하지 못했습니다."
+            );
+        }
+
+        gateService.scheduleClose(gate.getGateNo());
+
+        confirmed.setRegistered(true);
+        confirmed.setGateOpened(true);
+        confirmed.setGateNo(gate.getGateNo());
+
+        return confirmed;
+    }
+
+
+    // SITE 정문·후문에서 일반 미등록 차량을 관리실 방문차량으로 등록하고
+    // 촬영 데이터와 등록차량을 연결한 뒤 게이트를 연다.
+    @Transactional
+    public int openVisitGateByCameraData(
+            String adminLoginId,
+            int cameraDataNo
+    ) {
+        CameraDataDTO dto =
+                cameraDataMapper.detail(cameraDataNo);
+
+        if (dto == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라 데이터가 존재하지 않습니다."
+            );
+        }
+
+        GateDTO gate =
+                gateService.findByCameraNo(dto.getCameraNo());
+
+        if (gate == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라와 연결된 게이트가 없습니다."
+            );
+        }
+
+        // 일반 미등록 차량 승인은 SITE 정문·후문 입구에서만 가능하다.
+        if (
+                !"SITE".equalsIgnoreCase(gate.getGateArea())
+                        || !"In".equalsIgnoreCase(gate.getGateType())
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "정문·후문 입구에서만 일반 차량을 승인할 수 있습니다."
+            );
+        }
+
+        // 이미 등록된 차량은 일반 미등록 차량 승인 대상이 아니다.
+        if (dto.getVehicleCarNo() != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 등록된 차량입니다."
+            );
+        }
+
+        // 보정된 차량번호를 우선 사용하고, 없으면 최초 OCR 번호를 사용한다.
+        String carNo = dto.getCarNo();
+
+        if (carNo == null || carNo.isBlank()) {
+            carNo = dto.getOcrCarNo();
+        }
+
+        carNo = carNo == null
+                ? ""
+                : carNo.replaceAll("\\s+", "");
+
+        if (carNo.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "차량번호를 확인할 수 없습니다."
+            );
+        }
+
+        // 일반 미등록 차량을 승인한 ADMIN 계정에 연결하여 관리실 차량으로 등록한다.
+        int vehicleCarNo =
+                vehicleService.registerAdminVisit(
+                        adminLoginId,
+                        carNo
+                );
+
+        // 현재 촬영 기록을 새로 등록한 관리실 방문차량과 연결한다.
+        CameraDataDTO matched = new CameraDataDTO();
+        matched.setCameraDataNo(cameraDataNo);
+        matched.setCarNo(carNo);
+        matched.setVehicleCarNo(vehicleCarNo);
+
+        cameraDataMapper.applyMatchedCarNo(matched);
+
+        if (gateService.open(gate.getGateNo()) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "게이트를 열지 못했습니다."
+            );
+        }
+
+        cameraDataMapper.markGateOpened(cameraDataNo);
+        gateService.scheduleClose(gate.getGateNo());
+
+        return 1;
+    }
+
+    // SITE 정문·후문에서 미등록 긴급차량을 관리실 방문차량으로 등록하고
+    // 72시간 등록기간을 설정하여 촬영 데이터와 연결한 뒤 게이트를 연다.
+    @Transactional
+    public int openEmergencyGateByCameraData(
             String adminLoginId,
             int cameraDataNo
     ) {
@@ -476,7 +672,7 @@ public class CameraDataService {
             );
         }
 
-        // 로그인 관리자의 24시간 방문차량으로 등록
+        // 미등록 긴급차량을 로그인한 ADMIN의 관리실 차량으로 72시간 등록한다.
         int vehicleCarNo =
                 vehicleService.registerEmergencyVisit(
                         adminLoginId,

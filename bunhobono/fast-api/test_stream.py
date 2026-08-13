@@ -31,13 +31,13 @@ SPRING_URL = os.getenv(
 # 영상과 실제 카메라 번호 연결
 TEST_STREAMS = [
     {
-        "videoName": "cctv1",
-        "source": str(VIDEO_DIR / "cctv1.mp4"),
+        "videoName": "cctv2",
+        "source": str(VIDEO_DIR / "cctv2.mp4"),
         "cameras": [{"cameraNo": 1, "name": "A-IN"}],
     },
     {
-        "videoName": "cctv2",
-        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "videoName": "cctv1",
+        "source": str(VIDEO_DIR / "cctv1.mp4"),
         "cameras": [{"cameraNo": 3, "name": "B-IN"}],
     },
     {
@@ -52,12 +52,12 @@ TEST_STREAMS = [
     },
     {
         "videoName": "cctv5",
-        "source": str(VIDEO_DIR / "cctv1.mp4"),
+        "source": str(VIDEO_DIR / "cctv2.mp4"),
         "cameras": [{"cameraNo": 2, "name": "A-OUT"}],
     },
     {
         "videoName": "cctv6",
-        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "source": str(VIDEO_DIR / "cctv1.mp4"),
         "cameras": [{"cameraNo": 4, "name": "B-OUT"}],
     },
     {

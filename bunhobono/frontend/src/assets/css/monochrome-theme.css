@@ -1692,10 +1692,22 @@ textarea:focus {
   line-height: 16px;
 }
 
-/* 대시보드 게이트 개방 버튼은 노란 배경과 진한 글자로 강조한다. */
+/* 일반·긴급 승인 버튼을 한 줄에 배치하고 같은 너비로 표시한다. */
+.admin-layout .content .admin-dashboard .approval-action-buttons {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+}
+
+.admin-layout .content .admin-dashboard .approval-action-buttons button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 대시보드 차량 승인 버튼은 노란 배경과 진한 글자로 강조한다. */
 .admin-layout .content .admin-dashboard :is(
-  .camera-gate-button,
-  .approval-wait-panel button
+  .approval-wait-panel > button,
+  .approval-action-buttons button
 ) {
   border-color: #d9aa1f !important;
   color: #171b1f !important;
@@ -1705,8 +1717,8 @@ textarea:focus {
 }
 
 .admin-layout .content .admin-dashboard :is(
-  .camera-gate-button,
-  .approval-wait-panel button
+  .approval-wait-panel > button,
+  .approval-action-buttons button
 ):hover:not(:disabled) {
   border-color: #f0c43c !important;
   color: #111417 !important;
@@ -1715,8 +1727,8 @@ textarea:focus {
 }
 
 .admin-layout .content .admin-dashboard :is(
-  .camera-gate-button,
-  .approval-wait-panel button
+  .approval-wait-panel > button,
+  .approval-action-buttons button
 ):disabled {
   color: #35300f !important;
   -webkit-text-fill-color: #35300f;

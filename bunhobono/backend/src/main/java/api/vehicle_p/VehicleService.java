@@ -104,7 +104,45 @@ public class VehicleService {
         return vehicleMapper.insert(null, dto);
     }
 
-    // 긴급·작업 차량 24시간 방문등록
+    // 관리자가 승인한 일반 미등록 차량을 관리실 방문차량으로 등록
+    public int registerAdminVisit(
+            String adminLoginId,
+            String carNo
+    ) {
+        VehicleDTO dto = new VehicleDTO();
+        dto.setCarNo(carNo);
+
+        normalizeCarNo(dto);
+
+        if (vehicleMapper.countActiveByCarNo(dto.getCarNo()) > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 등록되어 있거나 사용 중인 차량 번호입니다."
+            );
+        }
+
+        LocalDateTime startDate = LocalDateTime.now();
+
+        dto.setVehicleType("visit");
+        dto.setVehicleStatus("APPROVED");
+        dto.setStartDate(startDate);
+        dto.setEndDate(startDate.plusMinutes(30));
+
+        int inserted = vehicleMapper.insert(
+                adminLoginId,
+                dto
+        );
+
+        if (inserted != 1 || dto.getVehicleCarNo() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "일반 방문차량 등록에 실패했습니다."
+            );
+        }
+        return dto.getVehicleCarNo();
+    }
+
+    // 긴급·작업 차량 72시간 방문등록
     public int registerEmergencyVisit(
             String adminLoginId,
             String carNo
@@ -127,7 +165,7 @@ public class VehicleService {
         dto.setVehicleType("visit");
         dto.setVehicleStatus("APPROVED");
         dto.setStartDate(startDate);
-        dto.setEndDate(startDate.plusHours(24));
+        dto.setEndDate(startDate.plusHours(72));
 
         int inserted = vehicleMapper.insert(
                 adminLoginId,
