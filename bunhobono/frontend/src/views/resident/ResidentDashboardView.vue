@@ -69,7 +69,11 @@
                                 @click="openBoardDetail(board.boardNo)"
                             >
                                 <span class="dashboard-board-copy">
-                                    <strong>{{ board.title }}</strong>
+                                    <strong>
+                                        {{ board.title }}
+                                        <!-- [new] 등록 후 3일 이내인 공지사항에 NEW를 표시 -->
+                                        <span v-if="isNewBoard(board)" class="dashboard-board-new">NEW</span>
+                                    </strong>
                                     <small>{{ boardPeriodText(board) }}</small>
                                 </span>
                                 <span class="dashboard-board-status">{{ board.periodStatus }}</span>
@@ -285,7 +289,41 @@
                 />
             </section>
         </article>
-        
+
+        <!-- [공지 팝업] 로그인 후 최신 공지 포스터를 보여준다. -->
+        <dialog ref="boardPopupDialog" class="board-popup-dialog">
+            <article v-if="popupBoard" class="board-popup-card">
+                <button
+                    v-if="popupImageUrl"
+                    type="button"
+                    class="board-popup-poster-link"
+                    :aria-label="`${popupBoard.title} 상세보기`"
+                    @click="openPopupBoardDetail"
+                >
+                    <img
+                        :src="popupImageUrl"
+                        :alt="popupBoard.title"
+                        class="board-popup-poster"
+                    />
+                </button>
+                <div class="board-popup-content">
+                    <div class="board-popup-actions">
+                        <label class="board-popup-hide">
+                            <input
+                                v-model="hidePopupTodayChecked"
+                                type="checkbox"
+                                @change="changePopupTodayHidden"
+                            />
+                            <span>오늘 하루 보지 않기</span>
+                        </label>
+                        <button type="button" class="board-popup-detail" @click="closeBoardPopup">
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            </article>
+        </dialog>
+
          <dialog
             ref="unreadDialog"
             class="unread-notification-dialog"
@@ -346,6 +384,10 @@ let notificationTimer;
 let vehicleStatusTimer;
 let unreadAlertShown = false;
 const unreadDialog = ref(null);
+const boardPopupDialog = ref(null);
+const popupBoard = ref(null);
+const popupImageUrl = ref("");
+const hidePopupTodayChecked = ref(false);
 const vehicleStatusNow = ref(Date.now());
 
 const {
@@ -360,6 +402,17 @@ const {
 
 // 대시보드에서는 게시 중인 공지사항을 최대 3건만 표시한다.
 const dashboardBoards = computed(() => boardStore.list.slice(0, 3));
+
+// [new] 등록 후 3일이 지나지 않은 공지사항인지 확인한다.
+const isNewBoard = (board) => {
+    if (!board.createdAt) return false;
+
+    const createdAt = new Date(board.createdAt).getTime();
+    if (Number.isNaN(createdAt)) return false;
+
+    const elapsed = Date.now() - createdAt;
+    return elapsed >= 0 && elapsed < 3 * 24 * 60 * 60 * 1000;
+};
 
 const threeMonthsAgo = () => {
     const cutoff = new Date();
@@ -459,6 +512,55 @@ const goWelcome = () => router.push("/resident");
 const openBoards = () => router.push("/resident/boards");
 const openBoardDetail = (boardNo) => router.push(`/resident/boards/${boardNo}/detail`);
 
+// [공지 팝업] 오늘 날짜를 로컬 시간 기준으로 만든다.
+const todayKey = () => {
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
+const closeBoardPopup = () => boardPopupDialog.value?.close();
+
+// [공지 팝업] 포스터를 누르면 해당 공지사항 상세 화면으로 이동한다.
+const openPopupBoardDetail = () => {
+    const boardNo = popupBoard.value?.boardNo;
+    closeBoardPopup();
+    if (boardNo) openBoardDetail(boardNo);
+};
+
+// [공지 팝업] 현재 공지를 오늘 하루 동안 다시 표시하지 않는다.
+const changePopupTodayHidden = () => {
+    if (popupBoard.value && hidePopupTodayChecked.value) {
+        localStorage.setItem(
+            "residentBoardPopupHidden",
+            `${popupBoard.value.boardNo}|${todayKey()}`
+        );
+        closeBoardPopup();
+        return;
+    }
+
+    localStorage.removeItem("residentBoardPopupHidden");
+};
+
+// [공지 팝업] 이미지가 있는 최신 공지사항을 로그인 후 한 번 표시한다.
+const showLatestBoardPopup = async () => {
+    if (mode.value !== "dashboard") return;
+
+    const board = boardStore.list.find((item) => item.hasImage);
+    if (!board) return;
+
+    const hiddenValue = localStorage.getItem("residentBoardPopupHidden");
+    if (hiddenValue === `${board.boardNo}|${todayKey()}`) return;
+
+    const imageUrl = await boardStore.loadImage(board.boardNo);
+    if (!imageUrl) return;
+
+    popupBoard.value = board;
+    popupImageUrl.value = imageUrl;
+    hidePopupTodayChecked.value = false;
+    boardPopupDialog.value?.showModal();
+};
+
 const loadBoards = async () => {
     await boardStore.loadList();
 };
@@ -494,6 +596,8 @@ onMounted(async () => {
         loadBoards().catch(() => [])
     ]);
 
+    await showLatestBoardPopup();
+
    if (
     !unreadAlertShown
     && resVehicleStore.unreadNotificationCount > 0
@@ -519,6 +623,20 @@ onUnmounted(() => {
 .resident-board-page { min-height: calc(100vh - var(--header-height)); display: grid; place-items: start center; padding: 0; background-image: linear-gradient(180deg,rgba(248,252,255,.44) 0%,rgba(250,253,255,.63) 45%,rgba(255,255,255,.81) 75%,rgba(255,255,255,.91) 100%),url("@/assets/images/back.jpg"); background-position: center; background-size: cover; background-repeat: no-repeat; background-attachment: fixed; }
 .resident-board { width: min(1500px, 100%); padding: 18px 28px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .resident-board.resident-carlog-page { align-self: start; width: min(760px, calc(100% - 200px)); margin: 30px auto; padding: 24px; border: 0; border-radius: 0; background: rgba(255,255,255,.94); box-shadow: 0 14px 38px rgba(39,79,113,.14); }
+.board-popup-dialog { width: fit-content; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); padding: 0; overflow: hidden; border: 0; border-radius: 14px; background: #fff; box-shadow: 0 24px 70px rgba(15,35,52,.4); }
+.board-popup-dialog::backdrop { background: rgba(13,25,36,.58); }
+.board-popup-card { position: relative; display: flex; width: fit-content; max-width: 100%; flex-direction: column; margin: 0; overflow: hidden; background: #fff; }
+.board-popup-poster-link { display: block; width: fit-content; max-width: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; border: 0 !important; border-radius: 0 !important; outline: 0; background: transparent !important; box-shadow: none !important; line-height: 0; cursor: pointer; }
+.board-popup-poster-link:hover,
+.board-popup-poster-link:focus,
+.board-popup-poster-link:focus-visible { margin: 0 !important; padding: 0 !important; border: 0 !important; outline: 0 !important; background: transparent !important; box-shadow: none !important; }
+.board-popup-poster { display: block; width: auto; max-width: calc(100vw - 32px); height: auto; max-height: calc(100vh - 105px); margin: 0; padding: 0; object-fit: contain; background: transparent; }
+.board-popup-content { padding: 12px 14px 10px; }
+.board-popup-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.board-popup-actions button { padding: 10px 14px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+.board-popup-hide { display: inline-flex; align-items: center; gap: 8px; color: #5e7182; font-size: 14px; cursor: pointer; }
+.board-popup-hide input { width: 17px; height: 17px; margin: 0; accent-color: #2f83d5; cursor: pointer; }
+.board-popup-detail { border: 1px solid #2f83d5; color: #fff; background: #2f83d5; }
 .board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .board-navigation-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; margin-right: 10px; }
 .board-navigation-actions button { padding: 9px 14px; border: 1px solid transparent; border-radius: 9px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease; }
@@ -552,6 +670,8 @@ onUnmounted(() => {
 .dashboard-board-list button:hover { background: #eef6fc; }
 .dashboard-board-copy { display: grid; min-width: 0; gap: 3px; }
 .dashboard-board-copy strong { overflow: hidden; color: #29465f; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+/* [new] 공지사항 제목 옆 NEW 배지 모양 */
+.dashboard-board-new { display: inline-block; margin-left: 5px; padding: 1px 5px; border-radius: 999px; color: #fff; background: #ef4444; font-size: 9px; font-weight: 900; vertical-align: 1px; }
 .dashboard-board-copy small { color: #8294a4; font-size: 10px; }
 .dashboard-board-status { flex-shrink: 0; padding: 4px 8px; border-radius: 999px; color: #14783d; background: #e4f7eb; font-size: 10px; font-weight: 800; }
 .latest-board-empty { display: grid; place-items: center; min-height: 120px; margin: 0; border: 1px dashed #d5e1eb; border-radius: 11px; color: #8395a5; background: #f8fbfd; }

@@ -82,6 +82,11 @@
         </div>
       </article>
 
+      <BoardCommentList
+        v-if="store.board"
+        :board-no="store.board.boardNo"
+      />
+
       <Pagination
         v-if="store.board && store.list.length"
         :current-page="detailCurrentPage"
@@ -99,6 +104,7 @@ import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import Pagination from "@/shared/pagination/Pagination.vue";
 import { usePagination } from "@/shared/pagination/usePagination";
+import BoardCommentList from "./BoardCommentList.vue";
 import { useBoardStore } from "./boardStore";
 
 const route = useRoute();
