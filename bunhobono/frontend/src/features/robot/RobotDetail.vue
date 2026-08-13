@@ -225,6 +225,7 @@ const statusLabels = {
   STANDBY: "대기",
   WORKING: "작업 중",
   CHARGING: "충전 중",
+  LOW_BATTERY: "배터리 부족",
   WARNING: "주의",
   ERROR: "오류",
   OFFLINE: "연결 끊김"
@@ -619,6 +620,12 @@ onBeforeUnmount(() => {
   border-color: #d3a92e;
   color: #ffe9a6;
   background: #655525;
+}
+
+.robot-status.low_battery {
+  border-color: #d3a92e;
+  color: #f0cf6b;
+  background: #4b4329;
 }
 
 .robot-status.error {

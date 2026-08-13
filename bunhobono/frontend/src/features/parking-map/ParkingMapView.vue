@@ -1,19 +1,22 @@
 <template>
   <main class="parking-map-page">
+    <ManagementFeedbackToast :message="feedbackMessage" :type="feedbackType" />
+
     <header class="page-heading facility-list-heading">
       <div>
         <h1 class="management-list-title">B1 로봇 주차장 배치도</h1>
         <p>대기면에 차량을 맡기면 주차 로봇이 100개 주차면까지 자동으로 이송합니다.</p>
       </div>
       <div class="map-actions">
-        <span class="live"><i></i> 5초마다 갱신</span>
-        <button type="button" :disabled="loading" @click="loadSpaces">{{ loading ? '갱신 중' : '지금 갱신' }}</button>
+        <span class="live"><i></i> 작업 상태 빠른 갱신</span>
+        <button type="button" :disabled="loading" @click="refreshMap">{{ loading ? '갱신 중' : '지금 갱신' }}</button>
       </div>
     </header>
 
     <section class="map-summary">
       <div><span>로봇 주차면</span><strong>{{ parkingSpaces.length }}</strong></div>
       <div class="available"><span>빈자리</span><strong>{{ availableCount }}</strong></div>
+      <div class="reserved"><span>예약</span><strong>{{ reservedCount }}</strong></div>
       <div class="occupied"><span>주차 중</span><strong>{{ occupiedCount }}</strong></div>
       <div><span>사용률</span><strong>{{ usageRate }}%</strong></div>
     </section>
@@ -24,22 +27,41 @@
     <section v-else class="garage-shell">
       <div class="garage-title"><span>BONO APARTMENT</span><strong>BASEMENT 1 · ROBOT PARKING</strong><small>마지막 수신 {{ lastUpdatedText }}</small></div>
 
-      <div class="access-layout">
+      <div ref="simulationStage" class="access-layout">
+        <div class="robot-simulation-layer" aria-hidden="true">
+          <div
+            v-for="simulation in robotSimulations"
+            :key="`${simulation.setNo}-${simulation.taskNo}`"
+            class="moving-robot-pair"
+            :data-simulation-set="simulation.setNo"
+            :class="simulationClass(simulation)"
+            :style="simulationStyle(simulation)">
+            <span class="sim-robot">{{ simulation.setNo }}A</span>
+            <span v-if="simulation.loaded" class="sim-vehicle">{{ simulation.carNo || '차량' }}</span>
+            <span class="sim-robot">{{ simulation.setNo }}B</span>
+            <small>{{ phaseText(simulation.phase) }}</small>
+          </div>
+        </div>
+
         <aside class="side-entrance left-entrance">
           <strong class="entrance-title"><i class="camera-dot"></i>1번 출입구</strong>
           <span class="outside-label">외부 도로</span>
           <div class="gate-barrier"><i></i><span>입차</span></div>
           <div class="side-waiting">
-            <button v-for="space in leftEntrySpaces" :key="space.spaceNo" type="button" class="waiting-space entry" :class="{ occupied: space.carLogNo }" @click="selectedSpace = space">
-              <small>입차 대기</small><strong>{{ shortCode(space.spaceCode) }}</strong>
+            <button v-for="space in leftEntrySpaces" :key="space.spaceNo" type="button" class="waiting-space entry" :class="{ occupied: space.carLogNo }" :data-space-no="space.spaceNo" @click="selectedSpace = space">
+              <small>입차 대기</small>
+              <strong v-if="space.carNo" class="waiting-car"><i></i>{{ space.carNo }}</strong>
+              <strong v-else>{{ shortCode(space.spaceCode) }}</strong>
             </button>
           </div>
           <span class="flow-arrow">→</span>
           <div class="side-road"><span></span><b>로봇 인수·인계 통로</b><span></span></div>
           <span class="flow-arrow reverse">←</span>
           <div class="side-waiting">
-            <button v-for="space in leftExitSpaces" :key="space.spaceNo" type="button" class="waiting-space exit" :class="{ occupied: space.carLogNo }" @click="selectedSpace = space">
-              <small>출차 대기</small><strong>{{ shortCode(space.spaceCode) }}</strong>
+            <button v-for="space in leftExitSpaces" :key="space.spaceNo" type="button" class="waiting-space exit" :class="{ occupied: space.carLogNo }" :data-space-no="space.spaceNo" @click="selectedSpace = space">
+              <small>출차 대기</small>
+              <strong v-if="space.carNo" class="waiting-car"><i></i>{{ space.carNo }}</strong>
+              <strong v-else>{{ shortCode(space.spaceCode) }}</strong>
             </button>
           </div>
           <div class="gate-barrier exit-barrier"><i></i><span>출차</span></div>
@@ -49,10 +71,17 @@
         <section class="parking-zone floor-zone">
           <header><strong>B1 주차구역</strong><span>B1-P001 ~ B1-P100</span></header>
           <div class="robot-set-row top-sets">
-            <div v-for="setNo in [1, 2]" :key="setNo" class="robot-set">
+            <div v-for="setNo in [1, 2]" :key="setNo" class="robot-set" :class="{ simulating: activeSetNos.has(setNo) }" :data-set-no="setNo">
               <strong>ROBOT SET {{ setNo }}</strong>
               <div><span>{{ setNo }}A</span><i></i><span>{{ setNo }}B</span></div>
             </div>
+          </div>
+          <div class="top-transfer-aisle">
+            <span class="direction">←</span>
+            <span class="cross-line"></span>
+            <strong>ROBOT TRANSFER RAIL · 상부 이송 레일</strong>
+            <span class="cross-line"></span>
+            <span class="direction">→</span>
           </div>
           <div class="bank-label"><b>1·2열</b><span>B1-P001 ~ B1-P040</span></div>
           <div class="parking-bank north-bank">
@@ -99,7 +128,7 @@
             </template>
           </div>
           <div class="robot-set-row bottom-sets">
-            <div v-for="setNo in [3, 4]" :key="setNo" class="robot-set">
+            <div v-for="setNo in [3, 4]" :key="setNo" class="robot-set" :class="{ simulating: activeSetNos.has(setNo) }" :data-set-no="setNo">
               <strong>ROBOT SET {{ setNo }}</strong>
               <div><span>{{ setNo }}A</span><i></i><span>{{ setNo }}B</span></div>
             </div>
@@ -112,16 +141,20 @@
           <span class="outside-label">외부 도로</span>
           <div class="gate-barrier"><i></i><span>입차</span></div>
           <div class="side-waiting">
-            <button v-for="space in rightEntrySpaces" :key="space.spaceNo" type="button" class="waiting-space entry" :class="{ occupied: space.carLogNo }" @click="selectedSpace = space">
-              <small>입차 대기</small><strong>{{ shortCode(space.spaceCode) }}</strong>
+            <button v-for="space in rightEntrySpaces" :key="space.spaceNo" type="button" class="waiting-space entry" :class="{ occupied: space.carLogNo }" :data-space-no="space.spaceNo" @click="selectedSpace = space">
+              <small>입차 대기</small>
+              <strong v-if="space.carNo" class="waiting-car"><i></i>{{ space.carNo }}</strong>
+              <strong v-else>{{ shortCode(space.spaceCode) }}</strong>
             </button>
           </div>
           <span class="flow-arrow reverse">←</span>
           <div class="side-road"><span></span><b>로봇 인수·인계 통로</b><span></span></div>
           <span class="flow-arrow">→</span>
           <div class="side-waiting">
-            <button v-for="space in rightExitSpaces" :key="space.spaceNo" type="button" class="waiting-space exit" :class="{ occupied: space.carLogNo }" @click="selectedSpace = space">
-              <small>출차 대기</small><strong>{{ shortCode(space.spaceCode) }}</strong>
+            <button v-for="space in rightExitSpaces" :key="space.spaceNo" type="button" class="waiting-space exit" :class="{ occupied: space.carLogNo }" :data-space-no="space.spaceNo" @click="selectedSpace = space">
+              <small>출차 대기</small>
+              <strong v-if="space.carNo" class="waiting-car"><i></i>{{ space.carNo }}</strong>
+              <strong v-else>{{ shortCode(space.spaceCode) }}</strong>
             </button>
           </div>
           <div class="gate-barrier exit-barrier"><i></i><span>출차</span></div>
@@ -129,35 +162,129 @@
       </div>
 
       <footer class="map-legend">
-        <span><i class="empty"></i>빈자리</span><span><i class="used"></i>주차 중</span><span><i class="wait"></i>대기면</span><span><i class="robot-key"></i>로봇</span>
+        <span><i class="empty"></i>빈자리</span><span><i class="reserved"></i>예약</span><span><i class="used"></i>주차 중</span><span><i class="wait"></i>대기면</span><span><i class="robot-key"></i>로봇</span>
       </footer>
     </section>
 
-    <aside v-if="selectedSpace" class="space-detail">
+    <aside v-if="selectedSpace" ref="spaceDetailPanel" class="space-detail">
       <button type="button" aria-label="닫기" @click="selectedSpace = null">×</button>
       <span>{{ typeText(selectedSpace.spaceType) }}</span>
       <h2>{{ selectedSpace.spaceCode }}</h2>
       <dl>
-        <div><dt>현재 상태</dt><dd :class="{ active: selectedSpace.carLogNo || selectedSpace.carNo }">{{ selectedSpace.carLogNo || selectedSpace.carNo ? '주차 중' : '빈자리' }}</dd></div>
-        <div><dt>차량번호</dt><dd>{{ selectedSpace.carNo || '-' }}</dd></div>
+        <div><dt>현재 상태</dt><dd :class="{ active: selectedSpace.carLogNo || selectedSpace.carNo || selectedSpace.reservedTaskNo }">{{ spaceStatusText(selectedSpace) }}</dd></div>
+        <div><dt>차량번호</dt><dd>{{ selectedSpace.carNo || selectedSpace.reservedCarNo || '-' }}</dd></div>
+        <div v-if="selectedSpace.reservedTaskNo"><dt>예약 작업</dt><dd>#{{ selectedSpace.reservedTaskNo }}</dd></div>
         <div><dt>차량유형</dt><dd>{{ selectedSpace.carKind || '-' }}</dd></div>
         <div><dt>연결 게이트</dt><dd>{{ selectedSpace.gateCode || '-' }}</dd></div>
       </dl>
+      <div v-if="selectedSpace.spaceType === 'EXIT_WAIT' && selectedSpace.carLogNo" class="space-detail-action">
+        <button type="button" :disabled="!canReparkSelected || reparkRequesting" @click="requestRepark">
+          {{ reparkButtonText }}
+        </button>
+        <small v-if="selectedReparkTask">다시 입차 작업이 진행 중입니다.</small>
+        <small v-else>미출차 시 10분 후 자동으로 다시 입차합니다.</small>
+      </div>
     </aside>
 
   </main>
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue';
-import { getParkingSpaces } from './parkingSpaceApi';
+import { computed, defineComponent, h, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
+import { getParkingSpaces, getRobotTasks, reparkVehicle } from './parkingSpaceApi';
 
 const spaces = ref([]);
+const rawSpaces = ref([]);
 const loading = ref(false);
 const errorMessage = ref('');
 const lastUpdatedAt = ref(null);
 const selectedSpace = ref(null);
-let timer;
+const spaceDetailPanel = ref(null);
+const simulationStage = ref(null);
+const robotSimulations = ref([]);
+const tasks = ref([]);
+const parkingClock = ref(Date.now());
+const reparkRequesting = ref(false);
+const feedbackMessage = ref('');
+const feedbackType = ref('success');
+const setAnimations = new Map();
+let taskTimer;
+let spaceTimer;
+let parkingClockTimer;
+let taskRequesting = false;
+let spaceRequesting = false;
+let taskSignature = '';
+let spaceSignature = '';
+let reservationSignature = '';
+let feedbackTimer;
+
+const MOVE_DURATION = 15000;
+const POSITIONING_DURATION = 15000;
+const RETURN_DURATION = 15000;
+const COMPLETED_VISIBLE_DURATION = 16000;
+
+const loadedPhases = new Set([
+  'LIFTING',
+  'TRAFFIC_WAIT_LOADED',
+  'MOVING_TO_DROPOFF',
+  'DROPOFF_POSITIONING',
+  'LOWERING',
+]);
+
+const activeSetNos = computed(() => new Set(
+  robotSimulations.value.map((simulation) => Number(simulation.setNo))
+));
+
+const phaseLabels = {
+  WAITING: '작업 대기',
+  MOVING_TO_PICKUP: '차량 위치로 이동',
+  PICKUP_POSITIONING: '차량 인양 위치 조정',
+  LIFTING: '차량 리프팅',
+  TRAFFIC_WAIT_EMPTY: '통행 대기',
+  TRAFFIC_WAIT_LOADED: '차량 적재 통행 대기',
+  TRAFFIC_WAIT_RETURN: '복귀 통행 대기',
+  MOVING_TO_DROPOFF: '목적지로 이동',
+  DROPOFF_POSITIONING: '주차 위치 조정',
+  LOWERING: '차량 내려놓기',
+  RETURNING_HOME: '대기 위치로 복귀',
+  COMPLETED: '작업 완료',
+};
+
+const phaseText = (phase) => phaseLabels[phase] || phase || '-';
+
+// 입차 시각부터 현재까지의 주차 경과시간 표시
+const parkingElapsedText = (inTime) => {
+  const startedAt = Date.parse(inTime);
+
+  if (!Number.isFinite(startedAt)) return '';
+
+  const totalMinutes = Math.max(
+    0,
+    Math.floor((parkingClock.value - startedAt) / 60000)
+  );
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) return `${days}일 ${hours}시간`;
+  if (hours > 0) return `${hours}시간 ${minutes}분`;
+  return `${minutes}분`;
+};
+
+const simulationClass = (simulation) => ({
+  loaded: simulation.loaded,
+  lifting: simulation.phase === 'LIFTING',
+  lowering: simulation.phase === 'LOWERING',
+  positioning: ['PICKUP_POSITIONING', 'DROPOFF_POSITIONING'].includes(simulation.phase),
+  waiting: ['TRAFFIC_WAIT_EMPTY', 'TRAFFIC_WAIT_LOADED', 'TRAFFIC_WAIT_RETURN'].includes(simulation.phase),
+  returning: simulation.phase === 'RETURNING_HOME',
+});
+
+const simulationStyle = (simulation) => ({
+  transform: `translate3d(${simulation.x}px, ${simulation.y}px, 0)`,
+  opacity: simulation.visible ? 1 : 0,
+});
 
 const ParkingSpaceButton = defineComponent({
   props: { space: { type: Object, required: true } },
@@ -165,23 +292,36 @@ const ParkingSpaceButton = defineComponent({
   setup(props, { emit }) {
     return () => {
       const occupied = Boolean(props.space.carLogNo || props.space.carNo);
+      const reserved = Boolean(props.space.reservedTaskNo) && !occupied;
       return h('button', {
       type: 'button',
+      'data-space-no': props.space.spaceNo,
       class: [
         'parking-space',
         {
           occupied,
+          reserved,
           'has-car-number': props.space.carNo,
         },
       ],
-      title: `${props.space.spaceCode} · ${props.space.carNo || '빈자리'}`,
+      title: reserved
+        ? `${props.space.spaceCode} · ${props.space.reservedCarNo || ''} 주차 예약`
+        : `${props.space.spaceCode} · ${props.space.carNo || '빈자리'}`,
       onClick: () => emit('select', props.space),
     }, [
       props.space.carNo
         ? h('span', { class: 'car-number-lines' }, [
             h('b', props.space.carNo.slice(0, -4)),
             h('b', props.space.carNo.slice(-4)),
+            props.space.inTime
+              ? h('small', { class: 'parking-elapsed' }, parkingElapsedText(props.space.inTime))
+              : null,
           ])
+        : reserved
+          ? h('span', { class: 'reservation-label' }, [
+              h('b', '예약'),
+              h('small', props.space.spaceCode.replace('B1-P', '')),
+            ])
         : h('span', props.space.spaceCode.replace('B1-P', '')),
       occupied ? h('i', { class: 'occupancy-dot', title: '주차 중' }) : null,
     ]);
@@ -192,9 +332,73 @@ const ParkingSpaceButton = defineComponent({
 const parkingSpaces = computed(() => spaces.value.filter((space) => space.spaceType === 'PARKING'));
 const parkingRows = computed(() => Array.from({ length: 5 }, (_, index) => parkingSpaces.value.slice(index * 20, (index + 1) * 20)));
 const occupiedCount = computed(() => parkingSpaces.value.filter((space) => space.carLogNo || space.carNo).length);
-const availableCount = computed(() => parkingSpaces.value.length - occupiedCount.value);
+const reservedCount = computed(() => parkingSpaces.value.filter((space) => space.reservedTaskNo && !space.carLogNo && !space.carNo).length);
+const availableCount = computed(() => parkingSpaces.value.length - occupiedCount.value - reservedCount.value);
 const usageRate = computed(() => parkingSpaces.value.length ? Math.round(occupiedCount.value / parkingSpaces.value.length * 100) : 0);
 const lastUpdatedText = computed(() => lastUpdatedAt.value?.toLocaleTimeString('ko-KR', { hour12: false }) || '-');
+
+const selectedReparkTask = computed(() => {
+  if (!selectedSpace.value?.carLogNo) return null;
+
+  return tasks.value.find((task) => (
+    Number(task.carLogNo) === Number(selectedSpace.value.carLogNo)
+      && task.taskType === 'PARK_IN'
+      && ['WAITING', 'RUNNING'].includes(task.taskStatus)
+  )) || null;
+});
+
+const canReparkSelected = computed(() => Boolean(
+  selectedSpace.value?.spaceType === 'EXIT_WAIT'
+    && selectedSpace.value?.carLogNo
+    && !selectedReparkTask.value
+));
+
+const reparkButtonText = computed(() => {
+  if (reparkRequesting.value) return '처리 중';
+  if (selectedReparkTask.value) return '다시 입차 진행 중';
+  return '다시 입차';
+});
+
+const showFeedback = (message, type = 'success') => {
+  feedbackMessage.value = message;
+  feedbackType.value = type;
+  window.clearTimeout(feedbackTimer);
+  feedbackTimer = window.setTimeout(() => {
+    feedbackMessage.value = '';
+  }, 2500);
+};
+
+// 상세 박스 바깥을 클릭하면 선택을 해제한다.
+const closeSpaceDetailOnOutside = (event) => {
+  if (!selectedSpace.value) return;
+  if (spaceDetailPanel.value?.contains(event.target)) return;
+
+  selectedSpace.value = null;
+};
+
+// 출차대기 차량을 빈 주차면으로 다시 이동한다.
+const requestRepark = async () => {
+  if (!canReparkSelected.value || reparkRequesting.value) return;
+
+  reparkRequesting.value = true;
+
+  try {
+    await reparkVehicle(selectedSpace.value.carLogNo);
+    showFeedback('다시 입차 작업을 등록했습니다.');
+    await loadRobotTasks(false);
+    await loadParkingSpaces();
+  } catch (error) {
+    console.error('다시 입차 작업 등록 실패', error);
+    showFeedback(
+      error.response?.data?.message
+        || error.response?.data?.detail
+        || '다시 입차 작업을 등록하지 못했습니다.',
+      'error'
+    );
+  } finally {
+    reparkRequesting.value = false;
+  }
+};
 
 const groupedWaiting = (type) => {
   const map = new Map();
@@ -216,16 +420,665 @@ const rightExitSpaces = computed(() => waitingByGateNumber(exitGroups, 2));
 const shortCode = (code) => code.replace(/^B1-/, '');
 const isPassage = (index) => (index + 1) % 5 === 0 && index < 19;
 const typeText = (type) => ({ PARKING: '로봇 주차면', ENTRY_WAIT: '입차 대기면', EXIT_WAIT: '출차 대기면' }[type] || type);
+const spaceStatusText = (space) => {
+  if (space.carLogNo || space.carNo) return '주차 중';
+  if (space.reservedTaskNo) return '주차 예정';
+  return '빈자리';
+};
 
-const loadSpaces = async () => {
+const pointFromElement = (element) => {
+  const stage = simulationStage.value;
+
+  if (!stage || !element) return null;
+
+  const stageRect = stage.getBoundingClientRect();
+  const rect = element.getBoundingClientRect();
+
+  return {
+    x: rect.left - stageRect.left + rect.width / 2 - 38,
+    y: rect.top - stageRect.top + rect.height / 2 - 14,
+  };
+};
+
+const homePoint = (setNo) => pointFromElement(
+  simulationStage.value?.querySelector(`[data-set-no="${setNo}"]`)
+);
+
+const spacePoint = (spaceNo) => pointFromElement(
+  simulationStage.value?.querySelector(`[data-space-no="${spaceNo}"]`)
+);
+
+const laneY = (selector) => {
+  const stage = simulationStage.value;
+  const lane = stage?.querySelector(selector);
+
+  if (!stage || !lane) return 0;
+
+  const stageRect = stage.getBoundingClientRect();
+  const laneRect = lane.getBoundingClientRect();
+
+  return laneRect.top - stageRect.top + laneRect.height / 2 - 14;
+};
+
+const topLaneY = () => laneY('.top-transfer-aisle');
+const middleLaneY = () => laneY('.cross-aisle');
+const bottomLaneY = () => laneY('.drive-aisle');
+
+const verticalRoadXs = () => {
+  const stage = simulationStage.value;
+
+  if (!stage) return [];
+
+  const stageRect = stage.getBoundingClientRect();
+  const positions = [...stage.querySelectorAll('.robot-cross-road')]
+    .map((road) => {
+      const rect = road.getBoundingClientRect();
+      return Math.round(rect.left - stageRect.left + rect.width / 2 - 38);
+    });
+
+  return [...new Set(positions)].sort((a, b) => a - b);
+};
+
+const nearestRoadX = (x) => verticalRoadXs().reduce(
+  (nearest, roadX) => (
+    nearest === null || Math.abs(roadX - x) < Math.abs(nearest - x)
+      ? roadX
+      : nearest
+  ),
+  null
+);
+
+// 출발지와 목적지 사이에서 이동거리가 가장 짧은 세로 연결통로를 선택한다.
+const bestRoadX = (startX, targetX) => verticalRoadXs().reduce(
+  (best, roadX) => {
+    const distance = Math.abs(startX - roadX)
+      + Math.abs(targetX - roadX);
+
+    if (best === null || distance < best.distance) {
+      return { roadX, distance };
+    }
+
+    return best;
+  },
+  null
+)?.roadX ?? nearestRoadX(startX) ?? startX;
+
+const spaceTypeByNo = (spaceNo) => spaces.value.find(
+  (space) => Number(space.spaceNo) === Number(spaceNo)
+)?.spaceType;
+
+const spaceByNo = (spaceNo) => spaces.value.find(
+  (space) => Number(space.spaceNo) === Number(spaceNo)
+);
+
+// 주차면과 입·출차 대기면에 가장 가까운 가로 통로를 선택한다.
+const laneYForSpace = (spaceNo) => {
+  const space = spaceByNo(spaceNo);
+
+  if (!space) return middleLaneY();
+  if (space.spaceType === 'ENTRY_WAIT') return topLaneY();
+  if (space.spaceType === 'EXIT_WAIT') return bottomLaneY();
+
+  const parkingNumber = Number(space.spaceCode?.match(/P(\d+)$/)?.[1]);
+
+  if (parkingNumber <= 20) return topLaneY();
+  if (parkingNumber <= 60) return middleLaneY();
+  return bottomLaneY();
+};
+
+const homeLaneY = (setNo) => Number(setNo) <= 2
+  ? topLaneY()
+  : bottomLaneY();
+
+const simulationElement = (setNo) => simulationStage.value?.querySelector(
+  `[data-simulation-set="${Number(setNo)}"]`
+);
+
+// 브라우저가 실제로 그리고 있는 로봇의 현재 좌표를 구한다.
+const currentSimulationPoint = (simulation) => {
+  const stage = simulationStage.value;
+  const element = simulationElement(simulation.setNo);
+
+  if (!stage || !element) {
+    return {
+      x: simulation.x,
+      y: simulation.y,
+    };
+  }
+
+  const stageRect = stage.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+
+  return {
+    x: elementRect.left - stageRect.left,
+    y: elementRect.top - stageRect.top,
+  };
+};
+
+const cancelSetAnimation = (setNo) => {
+  const animation = setAnimations.get(Number(setNo));
+
+  if (animation) {
+    animation.cancel();
+    setAnimations.delete(Number(setNo));
+  }
+};
+
+// 대기 단계에서는 화면에 보이는 현재 위치에 로봇을 정지시킨다.
+const freezeSimulation = (simulation) => {
+  const current = currentSimulationPoint(simulation);
+
+  cancelSetAnimation(simulation.setNo);
+  simulation.x = current.x;
+  simulation.y = current.y;
+};
+
+const removeDuplicatePoints = (points) => points.filter((point, index) => (
+  index === 0
+    || point.x !== points[index - 1].x
+    || point.y !== points[index - 1].y
+));
+
+// 모든 구간을 X축 또는 Y축 한 방향으로만 이동시킨다.
+const orthogonalizePoints = (points) => {
+  const result = [];
+
+  points.forEach((point) => {
+    const previous = result[result.length - 1];
+
+    if (previous && previous.x !== point.x && previous.y !== point.y) {
+      result.push({ x: point.x, y: previous.y });
+    }
+
+    result.push(point);
+  });
+
+  return removeDuplicatePoints(result);
+};
+
+const routeBetween = (
+  start,
+  target,
+  {
+    fromSpaceNo = null,
+    toSpaceNo = null,
+    fromSetNo = null,
+    toSetNo = null,
+  } = {}
+) => {
+  if (!start || !target) return [];
+
+  const fromLaneY = fromSpaceNo == null
+    ? homeLaneY(fromSetNo)
+    : laneYForSpace(fromSpaceNo);
+  const toLaneY = toSpaceNo == null
+    ? homeLaneY(toSetNo)
+    : laneYForSpace(toSpaceNo);
+  const route = [
+    start,
+    // 로봇 위치 또는 주차면에서 가장 가까운 가로 통로로 진입한다.
+    { x: start.x, y: fromLaneY },
+  ];
+
+  // 다른 가로 통로로 이동할 때만 실제 세로 연결통로를 이용한다.
+  if (Math.abs(fromLaneY - toLaneY) > 1) {
+    const roadX = bestRoadX(start.x, target.x);
+
+    route.push(
+      { x: roadX, y: fromLaneY },
+      { x: roadX, y: toLaneY }
+    );
+  }
+
+  route.push(
+    // 목적지 앞 통로까지 이동한 뒤 목적지로 진입한다.
+    { x: target.x, y: toLaneY },
+    target
+  );
+
+  return orthogonalizePoints(route);
+};
+
+// 위치 조정 단계가 시작되는 통로 쪽 접근 지점이다.
+const approachPoint = (spaceNo) => {
+  const target = spacePoint(spaceNo);
+
+  if (!target) return null;
+
+  if (spaceTypeByNo(spaceNo) === 'PARKING') {
+    return {
+      x: target.x,
+      y: laneYForSpace(spaceNo),
+    };
+  }
+
+  return {
+    x: target.x,
+    y: laneYForSpace(spaceNo),
+  };
+};
+
+const phaseElapsedMs = (task) => {
+  const phaseTime = Date.parse(
+    task.phaseUpdatedAt
+      || task.startedAt
+      || task.requestedAt
+  );
+
+  return Number.isFinite(phaseTime)
+    ? Math.max(0, Date.now() - phaseTime)
+    : 0;
+};
+
+const taskPhaseDuration = (
+  task,
+  fallback
+) => {
+  const duration = Number(task.phaseDurationMs);
+
+  return Number.isFinite(duration) && duration > 0
+    ? duration
+    : fallback;
+};
+
+const animateSimulation = (
+  simulation,
+  points,
+  duration,
+  elapsed = 0
+) => {
+  cancelSetAnimation(simulation.setNo);
+
+  if (points.length < 2) return;
+
+  const safePoints = orthogonalizePoints(points);
+  const distances = safePoints.slice(1).map((point, index) => (
+    Math.abs(point.x - safePoints[index].x)
+    + Math.abs(point.y - safePoints[index].y)
+  ));
+  const totalDistance = distances.reduce((sum, distance) => sum + distance, 0) || 1;
+  const safeElapsed = Math.min(Math.max(elapsed, 0), duration);
+  let traveled = 0;
+  const keyframes = safePoints.map((point, index) => {
+    if (index > 0) traveled += distances[index - 1];
+
+    return {
+      transform: `translate3d(${point.x}px, ${point.y}px, 0)`,
+      offset: index === safePoints.length - 1
+        ? 1
+        : traveled / totalDistance,
+    };
+  });
+  const finalPoint = safePoints[safePoints.length - 1];
+
+  const startAnimation = () => {
+    const element = simulationElement(simulation.setNo);
+
+    if (!element) {
+      simulation.x = finalPoint.x;
+      simulation.y = finalPoint.y;
+      return;
+    }
+
+    const animation = element.animate(
+      keyframes,
+      {
+        duration,
+        easing: 'linear',
+        fill: 'forwards',
+      }
+    );
+
+    animation.currentTime = safeElapsed;
+    setAnimations.set(Number(simulation.setNo), animation);
+
+    animation.onfinish = () => {
+      if (setAnimations.get(Number(simulation.setNo)) !== animation) return;
+
+      simulation.x = finalPoint.x;
+      simulation.y = finalPoint.y;
+
+      nextTick(() => {
+        if (setAnimations.get(Number(simulation.setNo)) === animation) {
+          animation.cancel();
+          setAnimations.delete(Number(simulation.setNo));
+        }
+      });
+    };
+  };
+
+  if (safeElapsed >= duration) {
+    simulation.x = finalPoint.x;
+    simulation.y = finalPoint.y;
+    return;
+  }
+
+  if (simulationElement(simulation.setNo)) {
+    startAnimation();
+  } else {
+    nextTick(startAnimation);
+  }
+};
+
+const phaseStartPoint = (task) => {
+  if (task.taskPhase === 'PICKUP_POSITIONING') {
+    return approachPoint(task.pickupSpaceNo);
+  }
+
+  if (['LIFTING', 'TRAFFIC_WAIT_LOADED', 'MOVING_TO_DROPOFF'].includes(task.taskPhase)) {
+    return spacePoint(task.pickupSpaceNo);
+  }
+
+  if (task.taskPhase === 'DROPOFF_POSITIONING') {
+    return approachPoint(task.dropoffSpaceNo);
+  }
+
+  if (['LOWERING', 'TRAFFIC_WAIT_RETURN', 'RETURNING_HOME'].includes(task.taskPhase)) {
+    return spacePoint(task.dropoffSpaceNo);
+  }
+
+  if (task.taskPhase === 'COMPLETED') {
+    return homePoint(task.setNo);
+  }
+
+  return homePoint(task.setNo);
+};
+
+const moveSimulationForPhase = (
+  simulation,
+  task
+) => {
+  simulation.phase = task.taskPhase;
+  simulation.loaded = loadedPhases.has(task.taskPhase);
+  simulation.carNo = task.carNo;
+
+  const current = currentSimulationPoint(simulation);
+  const pickup = spacePoint(task.pickupSpaceNo);
+  const pickupApproach = approachPoint(task.pickupSpaceNo);
+  const dropoff = spacePoint(task.dropoffSpaceNo);
+  const dropoffApproach = approachPoint(task.dropoffSpaceNo);
+  const home = homePoint(task.setNo);
+  const elapsed = phaseElapsedMs(task);
+
+  const move = (points, duration) => {
+    animateSimulation(
+      simulation,
+      points,
+      duration,
+      elapsed
+    );
+  };
+
+  if (task.taskPhase === 'MOVING_TO_PICKUP' && pickupApproach) {
+    move(
+      routeBetween(current, pickupApproach, {
+        fromSetNo: task.setNo,
+        toSpaceNo: task.pickupSpaceNo,
+      }),
+      taskPhaseDuration(task, MOVE_DURATION)
+    );
+    return;
+  }
+
+  if (task.taskPhase === 'PICKUP_POSITIONING' && pickup) {
+    move(
+      orthogonalizePoints([
+        current,
+        pickupApproach,
+        pickup,
+      ]),
+      taskPhaseDuration(task, POSITIONING_DURATION)
+    );
+    return;
+  }
+
+  if (['LIFTING', 'TRAFFIC_WAIT_EMPTY', 'TRAFFIC_WAIT_LOADED', 'TRAFFIC_WAIT_RETURN', 'LOWERING'].includes(task.taskPhase)) {
+    freezeSimulation(simulation);
+    return;
+  }
+
+  if (task.taskPhase === 'MOVING_TO_DROPOFF' && dropoffApproach) {
+    move(
+      routeBetween(current, dropoffApproach, {
+        fromSpaceNo: task.pickupSpaceNo,
+        toSpaceNo: task.dropoffSpaceNo,
+      }),
+      taskPhaseDuration(task, MOVE_DURATION)
+    );
+    return;
+  }
+
+  if (task.taskPhase === 'DROPOFF_POSITIONING' && dropoff) {
+    move(
+      orthogonalizePoints([
+        current,
+        dropoffApproach,
+        dropoff,
+      ]),
+      taskPhaseDuration(task, POSITIONING_DURATION)
+    );
+    return;
+  }
+
+  if (task.taskPhase === 'RETURNING_HOME' && home) {
+    simulation.loaded = false;
+    move(
+      routeBetween(current, home, {
+        fromSpaceNo: task.dropoffSpaceNo,
+        toSetNo: task.setNo,
+      }),
+      taskPhaseDuration(task, RETURN_DURATION)
+    );
+    return;
+  }
+
+  if (task.taskPhase === 'COMPLETED' && home) {
+    cancelSetAnimation(simulation.setNo);
+    simulation.loaded = false;
+    simulation.x = home.x;
+    simulation.y = home.y;
+  }
+};
+
+const syncRobotSimulations = () => {
+  const now = Date.now();
+  const latestBySet = new Map();
+
+  tasks.value.forEach((task) => {
+    if (task.setNo == null) return;
+
+    const completedRecently = task.taskStatus === 'COMPLETED'
+      && task.completedAt
+      && now - new Date(task.completedAt).getTime() < COMPLETED_VISIBLE_DURATION;
+
+    if (task.taskStatus !== 'RUNNING' && !completedRecently) return;
+    if (!latestBySet.has(Number(task.setNo))) latestBySet.set(Number(task.setNo), task);
+  });
+
+  robotSimulations.value
+    .filter((simulation) => !latestBySet.has(Number(simulation.setNo)))
+    .forEach((simulation) => cancelSetAnimation(simulation.setNo));
+
+  robotSimulations.value = robotSimulations.value.filter(
+    (simulation) => latestBySet.has(Number(simulation.setNo))
+  );
+
+  latestBySet.forEach((task, setNo) => {
+    let simulation = robotSimulations.value.find(
+      (item) => Number(item.setNo) === setNo && Number(item.taskNo) === Number(task.taskNo)
+    );
+    if (!simulation) {
+      const start = phaseStartPoint(task);
+
+      if (!start) return;
+
+      simulation = {
+        setNo,
+        taskNo: task.taskNo,
+        phase: null,
+        carNo: task.carNo,
+        loaded: false,
+        visible: true,
+        x: start.x,
+        y: start.y,
+      };
+
+      robotSimulations.value.push(simulation);
+    }
+
+    if (simulation.phase !== task.taskPhase) {
+      moveSimulationForPhase(
+        simulation,
+        task
+      );
+    }
+  });
+};
+
+const taskStateSignature = (items) => JSON.stringify(
+  items.map((task) => [
+    task.taskNo,
+    task.setNo,
+    task.taskStatus,
+    task.taskPhase,
+    task.phaseUpdatedAt,
+    task.phaseDurationMs,
+    task.completedAt,
+  ])
+);
+
+const taskReservationSignature = (items) => JSON.stringify(
+  items
+    .filter((task) => task.taskType === 'PARK_IN'
+      && ['WAITING', 'RUNNING'].includes(task.taskStatus))
+    .map((task) => [
+      task.taskNo,
+      task.dropoffSpaceNo,
+      task.carNo,
+    ])
+);
+
+const parkingStateSignature = (items) => JSON.stringify(
+  items.map((space) => [
+    space.spaceNo,
+    space.carLogNo,
+    space.carNo,
+    space.active,
+  ])
+);
+
+// 주차면 원본에 현재 입차 작업의 예약 정보를 결합한다.
+const applySpaces = () => {
+  const activeParkInTasks = tasks.value
+    .filter((task) => task.taskType === 'PARK_IN'
+      && ['WAITING', 'RUNNING'].includes(task.taskStatus));
+
+  const reservationBySpaceNo = new Map(
+    activeParkInTasks.map((task) => [
+      Number(task.dropoffSpaceNo),
+      task,
+    ])
+  );
+
+  spaces.value = rawSpaces.value.map((space) => {
+    const task = reservationBySpaceNo.get(
+      Number(space.spaceNo)
+    );
+
+    return {
+      ...space,
+      reservedTaskNo: task?.taskNo ?? null,
+      reservedCarNo: task?.carNo ?? null,
+    };
+  });
+
+  if (selectedSpace.value) {
+    selectedSpace.value = spaces.value.find(
+      (space) => space.spaceNo === selectedSpace.value.spaceNo
+    ) || null;
+  }
+};
+
+// 주차면은 실제 값이 바뀌었을 때만 다시 그린다.
+const loadParkingSpaces = async () => {
+  if (spaceRequesting) return false;
+  spaceRequesting = true;
+
+  try {
+    const response = await getParkingSpaces('B1');
+    const nextSpaces = Array.isArray(response.data)
+      ? response.data
+      : [];
+    const nextSignature = parkingStateSignature(nextSpaces);
+
+    if (nextSignature === spaceSignature) {
+      return false;
+    }
+
+    rawSpaces.value = nextSpaces;
+    spaceSignature = nextSignature;
+    applySpaces();
+    lastUpdatedAt.value = new Date();
+
+    return true;
+  } finally {
+    spaceRequesting = false;
+  }
+};
+
+// 작업 상태는 짧은 간격으로 확인하고 변경 순간에만 화면에 반영한다.
+const loadRobotTasks = async (
+  reloadSpacesOnChange = true
+) => {
+  if (taskRequesting) return false;
+  taskRequesting = true;
+
+  try {
+    const response = await getRobotTasks();
+    const nextTasks = Array.isArray(response.data)
+      ? response.data
+      : [];
+    const nextSignature = taskStateSignature(nextTasks);
+
+    if (nextSignature === taskSignature) {
+      return false;
+    }
+
+    const nextReservationSignature =
+      taskReservationSignature(nextTasks);
+
+    tasks.value = nextTasks;
+    taskSignature = nextSignature;
+
+    if (nextReservationSignature !== reservationSignature) {
+      reservationSignature = nextReservationSignature;
+      applySpaces();
+    }
+
+    if (reloadSpacesOnChange) {
+      await loadParkingSpaces();
+    }
+
+    lastUpdatedAt.value = new Date();
+    await nextTick();
+    syncRobotSimulations();
+
+    return true;
+  } finally {
+    taskRequesting = false;
+  }
+};
+
+const refreshMap = async () => {
   if (loading.value) return;
   loading.value = true;
   errorMessage.value = '';
+
   try {
-    const response = await getParkingSpaces('B1');
-    spaces.value = Array.isArray(response.data) ? response.data : [];
-    lastUpdatedAt.value = new Date();
-    if (selectedSpace.value) selectedSpace.value = spaces.value.find((space) => space.spaceNo === selectedSpace.value.spaceNo) || null;
+    await loadRobotTasks(false);
+    await loadParkingSpaces();
+    await nextTick();
+    syncRobotSimulations();
   } catch (error) {
     console.error('주차장 배치도 조회 실패', error);
     errorMessage.value = '주차장 배치도를 불러오지 못했습니다.';
@@ -235,10 +1088,42 @@ const loadSpaces = async () => {
 };
 
 onMounted(async () => {
-  await loadSpaces();
-  timer = window.setInterval(loadSpaces, 5000);
+  await refreshMap();
+
+  taskTimer = window.setInterval(
+    () => loadRobotTasks().catch((error) => {
+      console.error('로봇 작업 상태 조회 실패', error);
+    }),
+    500
+  );
+
+  spaceTimer = window.setInterval(
+    () => loadParkingSpaces().catch((error) => {
+      console.error('주차면 상태 조회 실패', error);
+    }),
+    5000
+  );
+
+  parkingClockTimer = window.setInterval(
+    () => {
+      parkingClock.value = Date.now();
+    },
+    60000
+  );
+
+  window.addEventListener('resize', syncRobotSimulations);
+  document.addEventListener('pointerdown', closeSpaceDetailOnOutside);
 });
-onUnmounted(() => window.clearInterval(timer));
+onUnmounted(() => {
+  window.clearInterval(taskTimer);
+  window.clearInterval(spaceTimer);
+  window.clearInterval(parkingClockTimer);
+  window.clearTimeout(feedbackTimer);
+  window.removeEventListener('resize', syncRobotSimulations);
+  document.removeEventListener('pointerdown', closeSpaceDetailOnOutside);
+  setAnimations.forEach((animation) => animation.cancel());
+  setAnimations.clear();
+});
 </script>
 
 <style scoped>
@@ -269,4 +1154,10 @@ onUnmounted(() => window.clearInterval(timer));
 .parking-map-page .map-legend .used{border-color:#6f9588!important;background:#49675d!important}.parking-map-page .parking-bank .parking-space.occupied{border-color:#6f9588!important;background-color:#49675d!important}.parking-map-page .parking-bank .parking-space.occupied:hover,.parking-map-page .parking-bank .parking-space.occupied:focus,.parking-map-page .parking-bank .parking-space.occupied:active{border-color:#83aa9c!important;background-color:#557469!important}.parking-map-page :deep(.parking-space.has-car-number>span){color:#e3f1ec!important;font-weight:700!important;text-shadow:none!important}
 .parking-map-page :deep(.parking-space.has-car-number>span){width:calc(100% - 2px)!important;max-width:calc(100% - 2px)!important;padding:0!important;font-size:5px!important;letter-spacing:-.3px!important;white-space:nowrap!important;overflow:visible!important;transform:translate(-50%,-50%)!important}.parking-map-page :deep(.parking-space.medium-car-number>span){font-size:4.5px!important;letter-spacing:-.4px!important}.parking-map-page :deep(.parking-space.long-car-number>span){font-size:4px!important;letter-spacing:-.5px!important}
 .parking-map-page :deep(.parking-space.has-car-number>.car-number-lines){width:100%!important;height:100%!important;max-width:100%!important;position:absolute!important;inset:0!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 1px!important;box-sizing:border-box;font-size:inherit!important;letter-spacing:0!important;line-height:1!important;text-align:center;white-space:normal!important;transform:none!important}.parking-map-page :deep(.car-number-lines b){display:block;color:#e3f1ec;font-size:11px;font-weight:800;line-height:1;letter-spacing:-.35px;text-align:center;white-space:nowrap}
+.map-summary{grid-template-columns:repeat(5,minmax(0,1fr))}.map-summary .reserved strong{color:#8fc1e8}.map-legend .reserved{border-color:#7098b8!important;background:#38556c!important}.parking-map-page :deep(.parking-space.reserved){border-color:#7098b8!important;background-color:#38556c!important}.parking-map-page :deep(.parking-space.reserved:hover),.parking-map-page :deep(.parking-space.reserved:focus){border-color:#9fc9e8!important;background-color:#45677f!important}.parking-map-page :deep(.parking-space.reserved>.reservation-label){width:100%!important;height:100%!important;position:absolute!important;inset:0!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#e4f3ff!important;transform:none!important}.parking-map-page :deep(.reservation-label b){font-size:9px;line-height:1}.parking-map-page :deep(.reservation-label small){display:block!important;position:static!important;color:#b9d7eb!important;font-size:7px!important;line-height:1}
+@media(max-width:900px){.map-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.access-layout{position:relative}.robot-simulation-layer{position:absolute;z-index:30;inset:0;pointer-events:none;overflow:visible}.moving-robot-pair{width:76px;height:28px;position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;contain:layout style;backface-visibility:hidden;filter:drop-shadow(0 3px 4px rgba(0,0,0,.55));will-change:transform}.moving-robot-pair .sim-robot{width:27px;height:22px;display:grid;place-items:center;border:1px solid #e6bd34;color:#171b1f;background:#ffc928;font-size:8px;font-weight:900}.moving-robot-pair .sim-robot:first-child{border-radius:3px 0 0 3px}.moving-robot-pair .sim-robot:nth-last-child(2),.moving-robot-pair .sim-robot:last-of-type{border-radius:0 3px 3px 0}.moving-robot-pair>small{position:absolute;top:29px;left:50%;padding:2px 5px;border:1px solid #596168;color:#e0e4e7;background:#242a2f;font-size:7px;line-height:1;white-space:nowrap;transform:translateX(-50%)}.moving-robot-pair .sim-vehicle{min-width:38px;height:22px;display:grid;place-items:center;padding:0 3px;border-top:1px solid #f0a1a6;border-bottom:1px solid #f0a1a6;color:#fff4f4;background:#a64f56;font-size:6px;font-weight:900;white-space:nowrap}.moving-robot-pair.loaded .sim-robot{border-color:#e98990;color:#fff;background:#b85c64}.moving-robot-pair.lifting .sim-robot,.moving-robot-pair.lowering .sim-robot{animation:lift-pulse .75s ease-in-out infinite alternate}.moving-robot-pair.positioning{animation:positioning-pulse .65s ease-in-out infinite alternate}.moving-robot-pair.waiting>small{border-color:#d1aa38;color:#ffe08a}.robot-set.simulating>div{opacity:.18}.waiting-space .waiting-car{display:flex!important;align-items:center;justify-content:center;gap:3px;color:#fff0ae!important;font-size:7px!important;white-space:nowrap}.waiting-car i{width:8px;height:8px;flex:0 0 8px;border:1px solid #ffe178;background:#d6ae31}.waiting-space.occupied{box-shadow:inset 0 0 0 1px rgba(255,225,120,.25)}@keyframes lift-pulse{from{filter:brightness(1)}to{filter:brightness(1.35)}}@keyframes positioning-pulse{from{filter:drop-shadow(0 3px 4px rgba(0,0,0,.55))}to{filter:drop-shadow(0 0 7px #ffc928)}}
+.robot-set-row.top-sets{margin-bottom:0}.top-transfer-aisle{height:58px;position:relative;display:flex;align-items:center;justify-content:center;gap:12px;margin:4px 0 5px;padding:0 12%;border-right:2px solid #e8d36c;border-left:2px solid #e8d36c;background:#272d32;overflow:hidden}.top-transfer-aisle::before{content:"";position:absolute;right:0;left:0;top:50%;border-top:2px dashed #68727a}.top-transfer-aisle .direction{z-index:1;position:absolute;color:#d8c968;font-size:20px}.top-transfer-aisle .direction:first-child{left:22%}.top-transfer-aisle .direction:last-child{right:22%}.top-transfer-aisle .cross-line{display:none}.top-transfer-aisle strong{z-index:1;padding:5px 15px;color:#d8c45e;background:#272d32;font-size:8px;font-weight:900;letter-spacing:.12em;white-space:nowrap}
+.parking-map-page :deep(.parking-space.has-car-number>.car-number-lines){gap:2px}.parking-map-page :deep(.car-number-lines .parking-elapsed){display:block!important;color:#c8ded6!important;font-size:6px!important;font-weight:600!important;line-height:1!important;white-space:nowrap!important}
+.space-detail-action{margin-top:14px;padding-top:12px;border-top:1px solid #505960}.space-detail-action button{width:100%;padding:9px 10px;border:1px solid #d0aa37;color:#171b1f;background:#ffc928;font-size:11px;font-weight:900;cursor:pointer}.space-detail-action button:disabled{border-color:#596168;color:#8f999f;background:#2b3035;cursor:not-allowed}.space-detail-action small{display:block;margin-top:7px;color:#9da6ad;font-size:9px;line-height:1.4;text-align:center}
 </style>
