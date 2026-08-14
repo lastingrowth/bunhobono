@@ -54,10 +54,18 @@ PROJECT_ROOT = CURRENT_DIR.parent.parent
 CSV_PATH = (
     PROJECT_ROOT
     / "data"
+    / "robot"
     / "parking_robot_predictive_maintenance_10000.csv"
 )
 
-MODEL_DIR = PROJECT_ROOT / "model"
+TEST_DATA_PATH = (
+    PROJECT_ROOT
+    / "data"
+    / "robot"
+    / "robot_predictive_maintenance_test.csv"
+)
+
+MODEL_DIR = PROJECT_ROOT / "model" / "robot"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 MODEL_PATH = MODEL_DIR / "parking_robot_xgboost.json"
@@ -279,6 +287,16 @@ validation_df = pd.concat(
 test_df = pd.concat(
     test_parts,
     ignore_index=True
+)
+
+test_df.drop(columns=["target_id"]).to_csv(
+    TEST_DATA_PATH,
+    index=False,
+    encoding="utf-8-sig"
+)
+print(
+    f"테스트 데이터 저장: {TEST_DATA_PATH} "
+    f"({len(test_df)}건)"
 )
 
 X_train = train_df[FEATURE_COLS]

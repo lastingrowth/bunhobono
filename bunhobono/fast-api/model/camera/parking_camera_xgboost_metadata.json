@@ -1,0 +1,51 @@
+{
+  "model_type": "XGBoost",
+  "equipment_type": "camera",
+  "target_column": "risk_level",
+  "feature_columns": [
+    "temperature_c",
+    "voltage_v",
+    "success_rate",
+    "error_count",
+    "days_since_maintenance"
+  ],
+  "label_to_id": {
+    "위험": 0,
+    "정상": 1,
+    "주의": 2
+  },
+  "id_to_label": {
+    "0": "위험",
+    "1": "정상",
+    "2": "주의"
+  },
+  "danger_class_id": 0,
+  "danger_weight_multiplier": 3.5,
+  "best_tree_count": 665,
+  "data_split": {
+    "train": 0.7,
+    "validation": 0.1,
+    "test": 0.2,
+    "method": "계층 무작위 분리"
+  },
+  "validation_metrics": {
+    "accuracy": 0.99609375,
+    "precision_weighted": 0.9965186669042303,
+    "recall_weighted": 0.99609375,
+    "f1_weighted": 0.9962537420077808,
+    "macro_f1": 0.9114504481545865,
+    "danger_precision": 0.875,
+    "danger_recall": 1.0,
+    "danger_f1": 0.9333333333333333
+  },
+  "test_metrics": {
+    "accuracy": 0.9955150462962963,
+    "precision_weighted": 0.9965790376105917,
+    "recall_weighted": 0.9955150462962963,
+    "f1_weighted": 0.995831124145527,
+    "macro_f1": 0.8395189100993097,
+    "danger_precision": 0.8888888888888888,
+    "danger_recall": 0.6153846153846154,
+    "danger_f1": 0.7272727272727273
+  }
+}

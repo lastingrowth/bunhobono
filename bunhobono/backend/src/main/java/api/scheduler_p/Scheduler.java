@@ -10,6 +10,7 @@ import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import api.robot_p.RobotService;
+import api.gate_pdm_p.GatePdmService;
 
 @Component
 public class Scheduler {
@@ -34,6 +35,21 @@ public class Scheduler {
 
     @Resource
     private RobotTaskService robotTaskService;
+
+    @Resource
+    private GatePdmService gatePdmService;
+
+    // 10분마다 방문차량 상태를 확인하고 입주민 차량 알림을 생성한다.
+    @Scheduled(cron = "0 */10 * * * *", zone = "Asia/Seoul")
+    public void processVisitNotifications() {
+        vehicleNtService.processVisitNotifications();
+    }
+
+    // 매일 자정: 처리 완료 후 3개월이 지난 방문차량 알림을 삭제한다.
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    public void deleteOldCompletedVehicleNotifications() {
+        vehicleNtService.deleteOldCompletedNotifications();
+    }
 
     // 매일 자정: 촬영 후 3개월이 지난 카메라 데이터를 휴지통으로 이동한다.
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
@@ -98,5 +114,13 @@ public class Scheduler {
     }
 
 
+    // 5초마다 게이트 센서 데이터를 모델로 분석하고 저장 조건을 적용한다.
+    @Scheduled(
+            fixedDelay = 5000,
+            initialDelay = 5000
+    )
+    public void analyzeGatePredictiveMaintenance() {
+        gatePdmService.analyze();
+    }
 
 }
