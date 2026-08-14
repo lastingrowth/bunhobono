@@ -26,6 +26,7 @@ public class BillDTO {
     private LocalDateTime paidAt;
 
     // 정산 화면 표시용 입출차 정보
+    private Integer memberNo;
     private Integer cameraDataNo;
     private String carNo;
     private LocalDateTime inTime;
