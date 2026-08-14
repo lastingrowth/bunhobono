@@ -1,5 +1,7 @@
 <template>
-    <div class="ai-chat-widget">
+    <div v-if="!widgetHidden" ref="widget" class="ai-chat-widget" :style="widgetPosition">
+
+        <div v-if="chatOpen" class="ai-chat-backdrop" aria-hidden="true"></div>
 
         <!-- 챗봇 대화창 -->
         <section
@@ -114,30 +116,98 @@
         </section>
 
         <!-- 챗봇 열기 버튼 -->
-        <button
-            v-else
-            type="button"
-            class="ai-chat-toggle"
-            aria-label="AI 챗봇 열기"
-            @click="openChat"
-        >
-            <strong>AI</strong>
-            <span>챗봇</span>
-        </button>
+        <template v-else>
+            <button
+                type="button"
+                class="ai-chat-hide"
+                aria-label="AI 챗봇 숨기기"
+                @click.stop="widgetHidden = true"
+            >×</button>
+            <button
+                type="button"
+                class="ai-chat-toggle"
+                aria-label="AI 챗봇 열기"
+                @pointerdown="startDrag"
+                @pointermove="moveDrag"
+                @pointerup="endDrag"
+                @pointercancel="endDrag"
+                @click="handleToggleClick"
+            >
+                <span class="ai-sparkle ai-sparkle-main" aria-hidden="true">✦</span>
+                <span class="ai-sparkle ai-sparkle-left" aria-hidden="true">✦</span>
+                <span class="ai-sparkle ai-sparkle-right" aria-hidden="true">✦</span>
+            </button>
+        </template>
     </div>
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useAiChatStore } from "./aiChatStore";
 
 const store = useAiChatStore();
 
 const chatOpen = ref(false);
+const widgetHidden = ref(false);
 const question = ref("");
 
 const messageList = ref(null);
 const questionInput = ref(null);
+const widget = ref(null);
+const widgetPosition = ref({});
+let dragStart = null;
+let dragged = false;
+
+const startDrag = (event) => {
+    const rect = widget.value?.getBoundingClientRect();
+    if (!rect) return;
+
+    dragged = false;
+    dragStart = {
+        pointerX: event.clientX,
+        pointerY: event.clientY,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+};
+
+const moveDrag = (event) => {
+    if (!dragStart) return;
+
+    const deltaX = event.clientX - dragStart.pointerX;
+    const deltaY = event.clientY - dragStart.pointerY;
+    if (Math.abs(deltaX) + Math.abs(deltaY) > 6) dragged = true;
+
+    const left = Math.min(Math.max(8, dragStart.left + deltaX), window.innerWidth - dragStart.width - 8);
+    const top = Math.min(Math.max(8, dragStart.top + deltaY), window.innerHeight - dragStart.height - 8);
+    widgetPosition.value = { left: `${left}px`, top: `${top}px`, right: "auto", bottom: "auto" };
+};
+
+const endDrag = (event) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragStart = null;
+};
+
+const handleToggleClick = () => {
+    if (dragged) {
+        dragged = false;
+        return;
+    }
+    openChat();
+};
+
+const openFromMenu = () => {
+    widgetHidden.value = false;
+    openChat();
+};
+
+onMounted(() => window.addEventListener("open-ai-chat", openFromMenu));
+onUnmounted(() => window.removeEventListener("open-ai-chat", openFromMenu));
 
 // 챗봇 대화창 열기
 const openChat = async () => {
@@ -145,7 +215,10 @@ const openChat = async () => {
 
     await nextTick();
 
-    questionInput.value?.focus();
+    // 모바일에서는 창 전체를 먼저 보여주고, 입력창을 누를 때만 키보드를 연다.
+    if (!window.matchMedia("(max-width: 600px)").matches) {
+        questionInput.value?.focus();
+    }
     scrollToBottom();
 };
 
@@ -207,35 +280,106 @@ watch(
 }
 
 .ai-chat-toggle {
-    width: 68px;
-    height: 68px;
+    position: relative;
+    width: 72px;
+    height: 72px;
     padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    gap: 1px;
-    border: none;
+    display: grid;
+    place-items: center;
+    border: 3px solid transparent;
     border-radius: 50%;
     cursor: pointer;
+    color: #23a6d5;
+    background:
+        linear-gradient(#fff, #fff) padding-box,
+        linear-gradient(145deg, #63cbea, #23a6d5) border-box;
+    box-shadow: 0 10px 28px rgba(35, 166, 213, 0.26);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+    touch-action: none;
+    user-select: none;
+}
+
+.ai-chat-hide {
+    position: absolute;
+    z-index: 2;
+    top: -7px;
+    right: -7px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
     color: #ffffff;
-    background: #315c86;
-    box-shadow: 0 10px 28px rgba(31, 68, 103, .32);
+    background: #263746;
+    box-shadow: 0 3px 9px rgba(22, 43, 62, 0.28);
+    font-size: 17px;
+    font-weight: 900;
+    line-height: 20px;
+    cursor: pointer;
 }
 
 .ai-chat-toggle:hover {
-    background: #24496d;
     transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(35, 166, 213, .36);
 }
 
-.ai-chat-toggle strong {
-    font-size: 19px;
+.ai-sparkle {
+    position: absolute;
+    display: block;
+    color: #23a6d5;
     line-height: 1;
+    filter: drop-shadow(0 2px 3px rgba(35, 166, 213, .2));
 }
 
-.ai-chat-toggle span {
-    font-size: 11px;
-    font-weight: 700;
+.ai-sparkle-main {
+    top: 15px;
+    left: 24px;
+    font-size: 33px;
+    line-height: 1;
+    animation: sparkle-float-main 2.8s ease-in-out infinite;
+}
+
+.ai-sparkle-left {
+    bottom: 16px;
+    left: 14px;
+    color: #54c1e4;
+    font-size: 18px;
+    animation: sparkle-float-left 2.2s ease-in-out infinite .25s;
+}
+
+.ai-sparkle-right {
+    right: 13px;
+    bottom: 14px;
+    color: #8bd8ed;
+    font-size: 13px;
+    animation: sparkle-float-right 2.5s ease-in-out infinite .5s;
+}
+
+.ai-chat-toggle:hover .ai-sparkle {
+    animation-duration: 1.5s;
+}
+
+@keyframes sparkle-float-main {
+    0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    50% { transform: translate(2px, -4px) rotate(7deg) scale(1.06); }
+}
+
+@keyframes sparkle-float-left {
+    0%, 100% { transform: translate(0, 0) rotate(0deg) scale(.94); }
+    50% { transform: translate(-2px, -3px) rotate(-10deg) scale(1.08); }
+}
+
+@keyframes sparkle-float-right {
+    0%, 100% { transform: translate(0, 0) rotate(0deg) scale(.9); }
+    50% { transform: translate(2px, 3px) rotate(12deg) scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-sparkle {
+        animation: none;
+    }
 }
 
 .ai-chat-panel {
@@ -258,7 +402,7 @@ watch(
     align-items: center;
     gap: 12px;
     color: #ffffff;
-    background: #315c86;
+    background: #23a6d5;
 }
 
 .ai-chat-header > div:first-child {
@@ -353,14 +497,14 @@ watch(
 .ai-chat-message-user p {
     border-top-right-radius: 4px;
     color: #ffffff;
-    background: #315c86;
+    background: #23a6d5;
 }
 
 .ai-chat-sender {
     padding-left: 3px;
     font-size: 11px;
     font-weight: 800;
-    color: #5c7891;
+    color: #23a6d5;
 }
 
 .ai-chat-fallback {
@@ -379,7 +523,7 @@ watch(
     border-bottom: 1px solid #e2ebf2;
     text-align: center;
     text-decoration: none;
-    color: #315c86;
+    color: #23a6d5;
     background: #ffffff;
     font-size: 12px;
     font-weight: 700;
@@ -410,8 +554,8 @@ watch(
 }
 
 .ai-chat-form input:focus {
-    border-color: #315c86;
-    box-shadow: 0 0 0 3px rgba(49, 92, 134, .12);
+    border-color: #23a6d5;
+    box-shadow: 0 0 0 3px rgba(35, 166, 213, .14);
 }
 
 .ai-chat-form button {
@@ -422,13 +566,13 @@ watch(
     border-radius: 10px;
     cursor: pointer;
     color: #ffffff;
-    background: #315c86;
+    background: #23a6d5;
     font-size: 12px;
     font-weight: 800;
 }
 
 .ai-chat-form button:hover {
-    background: #24496d;
+    background: #168fbe;
 }
 
 .ai-chat-form button:disabled,
@@ -438,9 +582,18 @@ watch(
 }
 
 @media (max-width: 600px) {
+    .ai-chat-backdrop {
+        position: fixed;
+        z-index: 1290;
+        inset: 0;
+        background: rgba(25, 42, 58, .18);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+    }
+
     .ai-chat-widget {
         right: 12px;
-        bottom: 12px;
+        bottom: 76px;
     }
 
     .ai-chat-toggle {
@@ -448,9 +601,33 @@ watch(
         height: 60px;
     }
 
+    .ai-sparkle-main { top: 11px; left: 20px; font-size: 29px; }
+    .ai-sparkle-left { bottom: 13px; left: 11px; font-size: 16px; }
+    .ai-sparkle-right { right: 10px; bottom: 12px; font-size: 12px; }
+
     .ai-chat-panel {
-        width: calc(100vw - 24px);
-        height: min(600px, calc(100vh - 84px));
+        position: fixed;
+        z-index: 1300;
+        top: auto;
+        right: 12px;
+        bottom: calc(100px + env(safe-area-inset-bottom));
+        left: 12px;
+        width: auto;
+        height: min(430px, calc(100dvh - 220px));
+        max-height: 430px;
+        border-radius: 16px;
     }
+
+    .ai-chat-header { min-height: 50px; padding: 7px 11px; }
+    .ai-chat-header strong { font-size: 16px; }
+    .ai-chat-header span { font-size: 11px; }
+    .ai-chat-messages { min-height: 0; padding: 9px 11px; overscroll-behavior: contain; }
+    .ai-chat-message { max-width: 88%; }
+    .ai-chat-message p { padding: 9px 11px; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+    .ai-chat-inquiry-link { padding: 6px 10px; font-size: 11px; }
+    .ai-chat-form { flex-shrink: 0; margin: 7px; padding: 3px; gap: 4px; border: 1px solid #9eb8cc; border-radius: 13px; background:#fff; box-shadow:none; }
+    .ai-chat-form input { height: 40px; padding:0 9px; border:0!important; border-radius:10px; outline:0; font-size:16px; box-shadow:none!important; }
+    .ai-chat-form input:focus { border:0!important; outline:0; box-shadow:none!important; }
+    .ai-chat-form button { min-width:58px; height:40px; padding:0 9px; border-radius:9px; }
 }
 </style>

@@ -57,7 +57,7 @@ export const useCameraStore =  defineStore("camera", () => {
 
         return { success: true };
       } else {
-        return { success: false, message: "카메라 삭제에 실패했습니다." };
+        return { success: false, message: "카메라 데이터가 연결되어 있어 삭제할 수 없습니다." };
       }
     } catch (e) {
       console.error(e);

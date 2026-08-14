@@ -6,7 +6,7 @@ import {
     getResVehicleList,
     getResVehicleMemberInfo,
     getResVehicleNotifications,
-    markResVehicleNotificationsRead,
+    markResVehicleNotificationRead,
     deleteResVehicleNotification,
     updateResVisitVehicleTime,
     extendResNormalVehicle
@@ -42,14 +42,14 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         }).length;
     });
 
-    // 알림함을 열었을 때 읽지 않은 알림 전체 읽음 처리
-    const markAllNotificationsRead = async () => {
-        if (unreadNotificationCount.value === 0) {
+    // 입주민이 선택한 알림 한 건만 읽음 처리
+    const readNotification = async (notification) => {
+        if (!notification || notification.readAt != null) {
             return;
         }
 
-        await markResVehicleNotificationsRead();
-        await loadNotifications();
+        await markResVehicleNotificationRead(notification.memNoticeNo);
+        notification.readAt = new Date().toISOString();
     };
 
     const normalVehicles = computed(() => {
@@ -86,13 +86,13 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         await loadVehicleList();
     };
 
-    const removeNotification = async (vehicleNtNo) => {
-    await deleteResVehicleNotification(vehicleNtNo);
+    const removeNotification = async (memNoticeNo) => {
+        await deleteResVehicleNotification(memNoticeNo);
 
-    notifications.value = notifications.value.filter((item) => {
-        return Number(item.vehicleNtNo) !== Number(vehicleNtNo);
-    });
-};
+        notifications.value = notifications.value.filter((item) => {
+            return Number(item.memNoticeNo) !== Number(memNoticeNo);
+        });
+    };
 
     return {
         member,
@@ -103,10 +103,10 @@ export const useResVehicleStore = defineStore("resVehicle", () => {
         visitVehicles,
         unreadNotificationCount,
         removeNotification,
+        readNotification,
         loadMyInfo,
         loadVehicleList,
         loadNotifications,
-        markAllNotificationsRead,
         addVisitVehicle,
         updateVisitVehicleTime,
         extendNormalVehicle,

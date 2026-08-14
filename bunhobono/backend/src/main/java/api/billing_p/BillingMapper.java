@@ -127,6 +127,17 @@ public interface BillingMapper {
             " WHERE b.car_log_no = #{carLogNo}")
     BillDTO findByCarLogNo(int carLogNo);
 
+    // 정산 대상이 입주민이 등록한 방문차량이면 등록자와 차량번호 조회
+    @Select("SELECT vc.member_no, " +
+            " COALESCE(cl.snapshot_car_no, vc.car_no) AS car_no " +
+            " FROM car_log cl " +
+            " JOIN vehicle_car vc " +
+            " ON vc.vehicle_car_no = cl.vehicle_car_no " +
+            " WHERE cl.car_log_no = #{carLogNo} " +
+            " AND vc.vehicle_type = 'visit' " +
+            " AND vc.member_no IS NOT NULL")
+    BillDTO findVisitRegistrantByCarLogNo(int carLogNo);
+
     // 정산서 등록
     @Insert("INSERT INTO bill (" +
             " car_log_no, fee_rule_no, kiosk_no, " +

@@ -15,9 +15,11 @@ import {
   restoreWithdrawnMembers,
   searchMember,
   sendSignupPhoneCode,
+  sendSignupEmailCode,
   signupMember,
   updateMember,
   verifySignupPhoneCode,
+  verifySignupEmailCode,
   verifyResidentWithdrawal,
 } from "./memApi";
 
@@ -113,6 +115,10 @@ export const useMemStore =  defineStore("member", () => {
     return verifySignupPhoneCode(phone, code);
   };
 
+  // [회원가입 email 인증] 이메일 인증 API를 회원가입 화면에 제공한다.
+  const sendEmailCode = async (email) => sendSignupEmailCode(email);
+  const verifyEmailCode = async (email, code) => verifySignupEmailCode(email, code);
+
   const loadAvailableSignupUnits = async () => {
     const res = await getAvailableSignupUnits();
     availableSignupUnits.value = res.data || [];
@@ -172,6 +178,8 @@ export const useMemStore =  defineStore("member", () => {
     signup,
     sendPhoneCode,
     verifyPhoneCode,
+    sendEmailCode,
+    verifyEmailCode,
     loadAvailableSignupUnits,
 
     loadMypage,

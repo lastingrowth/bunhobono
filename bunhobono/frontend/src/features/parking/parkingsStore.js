@@ -26,7 +26,15 @@ export const useParkingsStore = defineStore("parkings", () => {
   // 삭제
   const remove = async (parkingNo) => {
     try {
-      await deleteParking(parkingNo);
+      const res = await deleteParking(parkingNo);
+
+      if (res.data !== 1) {
+        return {
+          success: false,
+          message: "연결된 게이트·주차면 또는 키오스크가 있어 삭제할 수 없습니다.",
+        };
+      }
+
       list.value = list.value.filter((p) => p.parkingNo !== parkingNo);
       return { success: true };
     } catch (error) {

@@ -30,10 +30,10 @@ public class MemberDTO {
     private Boolean archived;   // 전출 이력이 보관되었는지 표시한다.
 
     // =====================================================
-    // [sms인증] 2. 전화번호 인증번호 발송과 확인 요청값을 전달한다.
+    // 2. 전화번호 또는 이메일 인증번호 발송과 확인 요청값을 전달한다.
     // =====================================================
-    public record PhoneCodeRequest(
-            String phone,
+    public record VerificationCodeRequest(
+            String contact,
             String code
     ) {}
 

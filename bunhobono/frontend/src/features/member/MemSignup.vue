@@ -94,12 +94,12 @@
                 </label>
             </div>
 
-            <div class="form-row">
+            <div class="form-row unit-row">
                 <label class="form-field">
                     <span>동</span>
                     <!-- 서버가 확인한 가입 가능 세대의 동만 표시한다. -->
                     <select v-model.number="member.dong" :disabled="props.adminMode && member.role === 'ADMIN' || !hasAvailableUnits" required @change="member.ho = ''">
-                        <option disabled value="">동을 선택하세요</option>
+                        <option disabled value="">동</option>
                         <option v-if="props.adminMode && member.role === 'ADMIN'" :value="null">관리실</option>
                         <option v-for="dong in availableDongs" v-else :key="dong" :value="dong">{{ dong }}동</option>
                     </select>
@@ -108,7 +108,7 @@
                 <label class="form-field">
                     <span>호수</span>
                     <select v-model.number="member.ho" :disabled="props.adminMode && member.role === 'ADMIN' || !member.dong" required>
-                        <option disabled value="">호수를 선택하세요</option>
+                        <option disabled value="">호</option>
                         <option v-if="props.adminMode && member.role === 'ADMIN'" :value="null">-</option>
                         <optgroup v-else label="1·2라인">
                             <option v-for="ho in line12HoOptions" :key="ho" :value="ho">{{ ho }}호</option>
@@ -162,23 +162,34 @@
 
             <div class="form-field email-field">
                 <span>이메일</span>
-                <div class="email-fields">
-                    <input
-                        v-model.trim="emailParts.id"
-                        type="text"
-                        maxlength="64"
-                        placeholder="이메일 아이디"
-                        required>
-                    <span class="email-at">@</span>
-                    <select v-model="emailParts.domain" required>
-                        <option disabled value="">이메일 선택</option>
-                        <option value="naver.com">naver.com</option>
-                        <option value="gmail.com">gmail.com</option>
-                        <option value="nate.com">nate.com</option>
-                        <option value="hanmail.net">hanmail.net</option>
-                        <option value="yahoo.co.kr">yahoo.co.kr</option>
-                        <option value="kakao.com">kakao.com</option>
-                    </select>
+                <!-- [회원가입 email 인증] PC에서는 발송 버튼을 옆에, 모바일에서는 아래에 표시한다. -->
+                <div class="email-input-action">
+                    <div class="email-fields">
+                        <input v-model.trim="emailParts.id" type="text" maxlength="64" placeholder="이메일 아이디" required @input="resetEmailVerification">
+                        <span class="email-at">@</span>
+                        <select v-model="emailParts.domain" required @change="resetEmailVerification">
+                            <option disabled value="">이메일 선택</option>
+                            <option value="naver.com">naver.com</option>
+                            <option value="gmail.com">gmail.com</option>
+                            <option value="nate.com">nate.com</option>
+                            <option value="hanmail.net">hanmail.net</option>
+                            <option value="yahoo.co.kr">yahoo.co.kr</option>
+                            <option value="kakao.com">kakao.com</option>
+                        </select>
+                    </div>
+                    <button type="button" class="email-auth-button" :disabled="emailSending || emailVerified" @click="sendEmailAuthCode">
+                        {{ emailSending ? '발송 중' : emailVerified ? '인증 완료' : emailCodeSent ? '인증번호 재발송' : '인증번호 발송' }}
+                    </button>
+                </div>
+                <span v-if="emailVerified" class="phone-auth-success">이메일 인증이 완료되었습니다.</span>
+                <div v-if="emailCodeSent && !emailVerified" class="input-action email-code-row">
+                    <div class="phone-code-input-wrap">
+                        <input v-model="emailAuthCode" type="text" inputmode="numeric" maxlength="6" placeholder="인증번호 6자리" @input="handleEmailCodeInput">
+                        <span class="phone-auth-timer" :class="{ 'is-expired': emailAuthRemainingSeconds === 0 }">{{ emailAuthTimerText }}</span>
+                    </div>
+                    <button type="button" :disabled="emailVerifying || emailAuthRemainingSeconds === 0" @click="verifyEmailAuthCode">
+                        {{ emailVerifying ? '확인 중' : '인증 확인' }}
+                    </button>
                 </div>
             </div>
 
@@ -237,6 +248,14 @@ const phoneSending = ref(false);
 const phoneVerifying = ref(false);
 const phoneAuthRemainingSeconds = ref(0);
 let phoneAuthTimerId = null;
+// [회원가입 email 인증] 이메일 인증 진행 상태와 남은 시간을 관리한다.
+const emailAuthCode = ref("");
+const emailCodeSent = ref(false);
+const emailVerified = ref(false);
+const emailSending = ref(false);
+const emailVerifying = ref(false);
+const emailAuthRemainingSeconds = ref(0);
+let emailAuthTimerId = null;
 
 const needsAvailableUnit = computed(() => !props.adminMode || member.value.role === "RESIDENT");
 const dialogTheme = computed(() => props.adminMode ? "admin" : "resident");
@@ -244,6 +263,12 @@ const passwordsMatch = computed(() => member.value.loginPwd === passwordConfirm.
 const phoneAuthTimerText = computed(() => {
     const minutes = Math.floor(phoneAuthRemainingSeconds.value / 60);
     const seconds = phoneAuthRemainingSeconds.value % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+});
+// [회원가입 email 인증] 이메일 인증 제한시간을 화면에 표시한다.
+const emailAuthTimerText = computed(() => {
+    const minutes = Math.floor(emailAuthRemainingSeconds.value / 60);
+    const seconds = emailAuthRemainingSeconds.value % 60;
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 });
 
@@ -271,7 +296,24 @@ const startPhoneAuthTimer = () => {
     }, 1000);
 };
 
-onBeforeUnmount(stopPhoneAuthTimer);
+const stopEmailAuthTimer = () => {
+    if (emailAuthTimerId !== null) clearInterval(emailAuthTimerId);
+    emailAuthTimerId = null;
+};
+const startEmailAuthTimer = () => {
+    stopEmailAuthTimer();
+    const expiresAt = Date.now() + 3 * 60 * 1000;
+    emailAuthRemainingSeconds.value = 180;
+    emailAuthTimerId = window.setInterval(() => {
+        emailAuthRemainingSeconds.value = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+        if (emailAuthRemainingSeconds.value === 0) stopEmailAuthTimer();
+    }, 1000);
+};
+
+onBeforeUnmount(() => {
+    stopPhoneAuthTimer();
+    stopEmailAuthTimer();
+});
 
 const statusOptions = computed(() => {
     if (member.value.role === 'ADMIN') {
@@ -425,6 +467,17 @@ const validateSignupFields = async () => {
         return false;
     }
 
+    // [회원가입 email 인증] 일반 입주민의 이메일 인증 완료 여부를 확인한다.
+    if (member.value.role === "RESIDENT" && !emailVerified.value) {
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "warning",
+            title: "이메일 인증 확인",
+            message: "이메일 인증을 완료해 주세요."
+        });
+        return false;
+    }
+
     return true;
 };
 
@@ -519,6 +572,55 @@ const verifyPhoneAuthCode = async () => {
     }
 };
 
+// [회원가입 email 인증] 이메일 변경, 발송 및 인증 확인을 처리한다.
+const getEmail = () => `${emailParts.id}@${emailParts.domain}`;
+const resetEmailVerification = () => {
+    emailAuthCode.value = "";
+    emailCodeSent.value = false;
+    emailVerified.value = false;
+    emailAuthRemainingSeconds.value = 0;
+    stopEmailAuthTimer();
+};
+const handleEmailCodeInput = (event) => {
+    emailAuthCode.value = event.target.value.replace(/\D/g, "").slice(0, 6);
+    event.target.value = emailAuthCode.value;
+};
+const sendEmailAuthCode = async () => {
+    if (!emailIdPattern.test(emailParts.id) || !emailParts.domain) {
+        await alertDialog({ theme: dialogTheme.value, type: "warning", title: "이메일 형식 확인", message: "이메일 주소를 정확히 입력하세요." });
+        return;
+    }
+    emailSending.value = true;
+    try {
+        await store.sendEmailCode(getEmail());
+        emailCodeSent.value = true;
+        emailAuthCode.value = "";
+        startEmailAuthTimer();
+        await alertDialog({ theme: dialogTheme.value, type: "success", title: "인증번호 발송", message: "이메일로 인증번호를 발송했습니다." });
+    } catch (error) {
+        await alertDialog({ theme: dialogTheme.value, type: "error", title: "인증번호 발송 실패", message: error.response?.data?.message || "이메일 인증번호를 발송하지 못했습니다." });
+    } finally {
+        emailSending.value = false;
+    }
+};
+const verifyEmailAuthCode = async () => {
+    if (!/^\d{6}$/.test(emailAuthCode.value)) {
+        await alertDialog({ theme: dialogTheme.value, type: "warning", title: "인증번호 확인", message: "인증번호 6자리를 입력해 주세요." });
+        return;
+    }
+    emailVerifying.value = true;
+    try {
+        await store.verifyEmailCode(getEmail(), emailAuthCode.value);
+        emailVerified.value = true;
+        stopEmailAuthTimer();
+        await alertDialog({ theme: dialogTheme.value, type: "success", title: "이메일 인증 완료", message: "이메일이 인증되었습니다." });
+    } catch (error) {
+        await alertDialog({ theme: dialogTheme.value, type: "error", title: "인증번호 확인 실패", message: error.response?.data?.message || "인증번호를 확인하지 못했습니다." });
+    } finally {
+        emailVerifying.value = false;
+    }
+};
+
 // 비밀번호에는 허용된 영문, 숫자, 특수문자만 입력한다.
 const sanitizePassword = (event) => {
     const passwordValue = event.target.value.replace(/[^A-Za-z\d!@#$%^&*]/g, "").slice(0, 20);
@@ -584,8 +686,10 @@ const signupGo = async () => {
         await alertDialog({
             theme: dialogTheme.value,
             type: "success",
-            title: props.adminMode ? "회원 추가 완료" : "회원가입 완료",
-            message: props.adminMode ? "회원이 추가되었습니다." : "회원등록 성공"
+            title: props.adminMode ? "회원 추가 완료" : "가입 승인 대기",
+            message: props.adminMode
+                ? "회원이 추가되었습니다."
+                : "회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다."
         });
         await router.push(props.adminMode ? "/admin/members" : "/login");
     } catch (e) {
@@ -696,6 +800,7 @@ const signupGo = async () => {
 
 :global(.admin-layout .admin-signup-card .back-button),
 :global(.admin-layout .admin-signup-card .phone-auth-button),
+:global(.admin-layout .admin-signup-card .email-auth-button),
 :global(.admin-layout .admin-signup-card .input-action button),
 :global(.admin-layout .admin-signup-card .login-submit) {
     font-size: 15px !important;
@@ -913,7 +1018,16 @@ const signupGo = async () => {
     gap: 8px;
 }
 
-.phone-auth-button {
+/* [회원가입 email 인증] PC 이메일 입력칸과 발송 버튼 배치 */
+.email-input-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px;
+    align-items: center;
+    gap: 8px;
+}
+
+.phone-auth-button,
+.email-auth-button {
     width: 140px;
     height: 46px;
     min-height: 46px;
@@ -929,13 +1043,15 @@ const signupGo = async () => {
     transition: transform 0.18s ease, color 0.18s ease, background-color 0.18s ease;
 }
 
-.phone-auth-button:not(:disabled):hover {
+.phone-auth-button:not(:disabled):hover,
+.email-auth-button:not(:disabled):hover {
     color: var(--text-white);
     background: var(--primary);
     transform: translateY(-1px);
 }
 
-.phone-auth-button:disabled {
+.phone-auth-button:disabled,
+.email-auth-button:disabled {
     cursor: default;
     opacity: 0.65;
 }
@@ -948,6 +1064,10 @@ const signupGo = async () => {
 }
 
 .phone-code-row {
+    margin-top: 8px;
+}
+
+.email-code-row {
     margin-top: 8px;
 }
 
@@ -1081,28 +1201,29 @@ const signupGo = async () => {
 }
 
 @media (max-width: 700px) {
-    .signup-card {
+    .signup-card:not(.admin-signup-card) {
         padding: 28px 24px;
     }
 
-    .admin-signup-card .signup-form {
+    .signup-card:not(.admin-signup-card) .form-row {
         grid-template-columns: 1fr;
     }
 
-    .admin-signup-card .signup-form > .password-row {
+    .signup-card:not(.admin-signup-card) .unit-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    /* [회원가입 email 인증] 모바일에서는 발송 버튼을 입력칸 아래에 표시한다. */
+    .signup-card:not(.admin-signup-card) .phone-input-action,
+    .signup-card:not(.admin-signup-card) .email-input-action {
         grid-template-columns: 1fr;
     }
 
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-
-    .phone-input-action {
-        grid-template-columns: 1fr;
-    }
-
-    .phone-auth-button {
-        width: auto;
+    .signup-card:not(.admin-signup-card) .phone-auth-button,
+    .signup-card:not(.admin-signup-card) .email-auth-button {
+        width: 100%;
+        justify-self: stretch;
     }
 
     .email-fields {
@@ -1114,5 +1235,83 @@ const signupGo = async () => {
         grid-template-columns: minmax(0, 1fr) auto;
     }
 
+}
+
+/* 입주민 회원가입의 인증·중복확인 버튼 색상을 통일한다. */
+.signup-card:not(.admin-signup-card) .phone-auth-button,
+.signup-card:not(.admin-signup-card) .email-auth-button,
+.signup-card:not(.admin-signup-card) .input-action button {
+    border-color: #2f83d5;
+    color: #2f83d5;
+    background: #ffffff;
+}
+
+.signup-card:not(.admin-signup-card) .phone-auth-button:not(:disabled):hover,
+.signup-card:not(.admin-signup-card) .email-auth-button:not(:disabled):hover,
+.signup-card:not(.admin-signup-card) .input-action button:not(:disabled):hover {
+    border-color: #246fb8;
+    color: #246fb8;
+    background: #eef6fd;
+}
+
+/* 입주민 회원가입 완료 버튼만 파란색으로 표시한다. */
+.signup-card:not(.admin-signup-card) > .signup-form > .login-submit {
+    height: 54px;
+    margin-top: 12px;
+    border: 1px solid #2f83d5 !important;
+    color: #ffffff !important;
+    background: #2f83d5 !important;
+    box-shadow: 0 8px 18px rgba(47, 131, 213, 0.3) !important;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.signup-card:not(.admin-signup-card) > .signup-form > .login-submit:hover:not(:disabled) {
+    border-color: #246fb8 !important;
+    background: #246fb8 !important;
+    box-shadow: 0 10px 22px rgba(36, 111, 184, 0.35) !important;
+}
+
+@media (max-width: 560px) {
+    .signup-card:not(.admin-signup-card) {
+        padding: 26px 18px;
+        border-radius: 16px;
+    }
+
+    .signup-card:not(.admin-signup-card) .login-brand {
+        margin-bottom: 18px;
+    }
+
+    .signup-card:not(.admin-signup-card) .login-brand h1 {
+        font-size: 24px;
+    }
+
+    .signup-card:not(.admin-signup-card) .login-brand p {
+        font-size: 10px;
+        letter-spacing: 3px;
+    }
+
+    .signup-card:not(.admin-signup-card) .login-title {
+        margin-bottom: 16px;
+        font-size: 20px;
+    }
+
+    .signup-card:not(.admin-signup-card) .signup-form {
+        gap: 14px;
+    }
+
+    /* 모바일 회원가입 항목을 기능별 그룹으로 구분한다. */
+    .signup-card:not(.admin-signup-card) .password-row,
+    .signup-card:not(.admin-signup-card) .unit-row,
+    .signup-card:not(.admin-signup-card) .contact-field,
+    .signup-card:not(.admin-signup-card) .email-field,
+    .signup-card:not(.admin-signup-card) > .signup-form > .login-submit {
+        margin-top: 10px;
+    }
+
+    .signup-card:not(.admin-signup-card) .form-field input,
+    .signup-card:not(.admin-signup-card) .form-field select {
+        font-size: 16px;
+    }
 }
 </style>

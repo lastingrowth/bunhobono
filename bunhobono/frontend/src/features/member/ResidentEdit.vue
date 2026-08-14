@@ -372,13 +372,23 @@ onBeforeUnmount(stopChallengeTimer);
 .captcha-timer.expired { color: #dc2626; font-weight: 700; }
 
 @media (max-width: 760px) {
-    .resident-edit-page { padding: 20px 14px; }
-    .edit-card { padding: 20px; grid-template-columns: 1fr; gap: 24px; }
-    .edit-page-actions { display: flex; justify-content: flex-end; gap: 8px; }
-    .edit-page-actions button,.edit-page-actions .save-button { min-height: 40px; }
-    .edit-form-area th { width: 115px; }
-    .edit-form-area th,.edit-form-area td { padding: 8px 10px; font-size: 14px; }
-    .phone-fields { flex-wrap: nowrap; }
-    .phone-fields input { width: min(72px,23%); }
+    .resident-edit-page { width: 100%; padding: 18px 12px; }
+    .edit-page-title { margin-bottom: 16px; }
+    .edit-page-title h2 { font-size: 25px; }
+    .edit-card { padding: 18px 12px; grid-template-columns: 1fr; gap: 20px; border-radius: 14px; }
+    .edit-form-area h3 { margin-bottom: 14px; font-size: 21px; }
+    .edit-form-area table { table-layout: fixed; }
+    .edit-form-area th { width: 88px; }
+    .edit-form-area th,.edit-form-area td { padding: 9px 8px; font-size: 14px; overflow-wrap: anywhere; }
+    .edit-page-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 0; }
+    .edit-page-actions button,.edit-page-actions .save-button { width: 100%; min-height: 44px; margin: 0; }
+    .edit-page-actions .back-button { grid-column: 1 / -1; }
+    .phone-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.25fr) auto minmax(0, 1.25fr); gap: 4px; }
+    .phone-fields input { width: 100%; min-width: 0; min-height: 44px; padding: 0 4px; font-size: 16px; }
+    .password-change-fields { width: 100%; margin-top: 6px; gap: 10px; }
+    .password-change-fields input { min-height: 46px; font-size: 16px; }
+    .captcha-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+    .captcha-box img { width: 100%; max-width: 180px; }
+    .captcha-box button { min-height: 44px; }
 }
 </style>

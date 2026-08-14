@@ -48,12 +48,21 @@ export const signupMember = (member) => {
 
 // [sms인증] 회원가입 전화번호로 인증번호를 발송한다.
 export const sendSignupPhoneCode = (phone) => {
-    return api.post("/signup/phone/send-code", { phone });
+    return api.post("/signup/phone/send-code", { contact: phone });
 };
 
 // [sms인증] 사용자가 입력한 전화번호 인증번호를 확인한다.
 export const verifySignupPhoneCode = (phone, code) => {
-    return api.post("/signup/phone/verify-code", { phone, code });
+    return api.post("/signup/phone/verify-code", { contact: phone, code });
+};
+
+// 이메일 인증번호 발송과 확인 API
+export const sendSignupEmailCode = (email) => {
+    return api.post("/signup/email/send-code", { contact: email });
+};
+
+export const verifySignupEmailCode = (email, code) => {
+    return api.post("/signup/email/verify-code", { contact: email, code });
 };
 
 // 아이디·비밀번호 찾기에 사용할 보안문자를 발송한다.

@@ -5,7 +5,14 @@
       :type="feedbackType"
     />
 
-    <div v-if="mode !== 'form'" class="resident-vehicle-header">
+    <div
+      v-if="mode !== 'form'"
+      class="resident-vehicle-header"
+      :class="{
+        'notification-mode': mode === 'notification',
+        'list-mode': mode === 'list'
+      }"
+    >
       <h2>차량관리</h2>
 
       <div class="resident-vehicle-header-actions">
@@ -18,7 +25,7 @@
         </button>
 
         <button
-          v-if="mode === 'notification'"
+          v-if="mode === 'notification' || mode === 'notification-detail'"
           type="button"
           @click="openList"
         >
@@ -87,9 +94,21 @@
       v-else-if="mode === 'notification'"
       class="vehicle-management-section"
     >
-      <ResVehicleNt
+      <ResMemNotice
         :notifications="resVehicleStore.notifications"
+        @open-detail="openNotificationDetail"
         @delete="deleteNotification"
+      />
+    </section>
+
+    <section
+      v-else-if="mode === 'notification-detail'"
+      class="vehicle-management-section"
+    >
+      <ResMemNoticeDetail
+        :notification="selectedNotification"
+        @back="openNotifications"
+        @delete="deleteDetailNotification"
       />
     </section>
 
@@ -150,7 +169,8 @@ import { useResVehicleStore } from "./resVehicleStore";
 import { getMonthlyVisitRegistration } from "./resVehicleApi";
 import ResVehicleForm from "./components/ResVehicleForm.vue";
 import ResVehicleList from "./components/ResVehicleList.vue";
-import ResVehicleNt from "./components/ResVehicleNt.vue";
+import ResMemNotice from "./components/ResMemNotice.vue";
+import ResMemNoticeDetail from "./components/ResMemNoticeDetail.vue";
 import ResNormalVehicleExtendForm from "./components/ResNormalVehicleExtendForm.vue";
 import ManagementConfirm from "@/shared/components/ManagementConfirm.vue";
 import ManagementFeedbackToast from "@/shared/components/ManagementFeedbackToast.vue";
@@ -184,6 +204,10 @@ const mode = computed(() => {
 
   if (route.query.mode === "notification") {
     return "notification";
+  }
+
+  if (route.query.mode === "notification-detail") {
+    return "notification-detail";
   }
 
   return "list";
@@ -229,6 +253,13 @@ const extendingNormalVehicle = computed(() => {
   }) || null;
 });
 
+const selectedNotification = computed(() => {
+  if (mode.value !== "notification-detail") return null;
+  return resVehicleStore.notifications.find((item) => {
+    return Number(item.memNoticeNo) === Number(route.query.memNoticeNo);
+  }) || null;
+});
+
 onMounted(async () => {
   await resVehicleStore.loadMyInfo();
   await refreshData();
@@ -247,7 +278,6 @@ onBeforeUnmount(() => {
 watch(mode, async (newMode) => {
   if (newMode === "notification") {
     await resVehicleStore.loadNotifications();
-    await resVehicleStore.markAllNotificationsRead();
   }
 });
 
@@ -257,9 +287,6 @@ async function refreshData() {
     resVehicleStore.loadNotifications()
   ]);
 
-  if (mode.value === "notification") {
-    await resVehicleStore.markAllNotificationsRead();
-  }
 }
 
 function openList() {
@@ -427,8 +454,28 @@ async function confirmCancelVisit() {
   }
 }
 
-async function deleteNotification(vehicleNtNo) {
-  await resVehicleStore.removeNotification(vehicleNtNo)
+async function readNotification(notification) {
+  await resVehicleStore.readNotification(notification)
+}
+
+async function openNotificationDetail(notification) {
+  await readNotification(notification);
+  router.replace({
+    path: "/resident/vehicles",
+    query: {
+      mode: "notification-detail",
+      memNoticeNo: notification.memNoticeNo
+    }
+  });
+}
+
+async function deleteNotification(memNoticeNo) {
+  await resVehicleStore.removeNotification(memNoticeNo)
+}
+
+async function deleteDetailNotification(memNoticeNo) {
+  await deleteNotification(memNoticeNo);
+  openNotifications();
 }
 </script>
 
@@ -478,7 +525,7 @@ async function deleteNotification(vehicleNtNo) {
 
 .vehicle-management-section h3 {
   margin-bottom: 16px;
-  color: #287fd5;
+  color: var(--resident-accent);
 }
 
 .vehicle-management-visit-section {
@@ -486,7 +533,7 @@ async function deleteNotification(vehicleNtNo) {
 }
 
 .vehicle-management-visit-section h3 {
-  color: #2ca66a;
+  color: var(--resident-accent);
 }
 
 .vehicle-management-section-header {
@@ -538,11 +585,14 @@ async function deleteNotification(vehicleNtNo) {
 
 @media (max-width: 600px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
-    width: calc(100% - 12px);
+    width: calc(100% - 24px);
   }
 
+  .resident-vehicle-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .resident-vehicle-header-actions { display: none; }
+
   .vehicle-management-section {
-    padding: 18px;
+    padding: 16px 12px;
   }
 
   .vehicle-management-section-header {
@@ -550,12 +600,19 @@ async function deleteNotification(vehicleNtNo) {
     flex-direction: column;
   }
 
-  .visit-application-actions { align-items: flex-end; flex-direction: column-reverse; }
+  .visit-application-actions { width: 100%; align-items: stretch; flex-direction: column-reverse; }
+  .visit-application-actions button { width: 100%; min-height: 44px; }
 }
 
 .resident-vehicle-header-actions { display: flex; align-items: center; gap: 8px; }
 
-@media (min-width: 601px) and (max-width: 900px) {
+@media (max-width: 760px) {
+  .resident-vehicle-header-actions { display: none !important; }
+  .resident-vehicle-header:is(.notification-mode,.list-mode) { display: none; }
+  .resident-vehicle-member { display: none; }
+}
+
+@media (min-width: 761px) and (max-width: 900px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
     width: calc(100% - 36px);
   }

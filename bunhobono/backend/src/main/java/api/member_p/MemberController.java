@@ -61,17 +61,29 @@ public class MemberController {
 
     // [sms인증] 회원가입 전화번호로 인증번호를 발송한다.
     @PostMapping("/signup/phone/send-code")
-    public void sendPhoneCode(@RequestBody MemberDTO.PhoneCodeRequest request) {
-        verificationService.sendSignupPhoneCode(request.phone());
+    public void sendPhoneCode(@RequestBody MemberDTO.VerificationCodeRequest request) {
+        verificationService.sendSignupPhoneCode(request.contact());
     }
 
     // [sms인증] 사용자가 입력한 전화번호 인증번호를 확인한다.
     @PostMapping("/signup/phone/verify-code")
-    public void verifyPhoneCode(@RequestBody MemberDTO.PhoneCodeRequest request) {
-        verificationService.verifySignupPhoneCode(request.phone(), request.code());
+    public void verifyPhoneCode(@RequestBody MemberDTO.VerificationCodeRequest request) {
+        verificationService.verifySignupPhoneCode(request.contact(), request.code());
     }
 
-    // [email인증] 아이디·비밀번호 찾기에 사용할 보안문자를 문자 또는 이메일로 발송한다.
+    // 회원가입 이메일로 인증번호를 발송한다.
+    @PostMapping("/signup/email/send-code")
+    public void sendEmailCode(@RequestBody MemberDTO.VerificationCodeRequest request) {
+        verificationService.sendSignupEmailCode(request.contact());
+    }
+
+    // 회원가입 이메일 인증번호를 확인한다.
+    @PostMapping("/signup/email/verify-code")
+    public void verifyEmailCode(@RequestBody MemberDTO.VerificationCodeRequest request) {
+        verificationService.verifySignupEmailCode(request.contact(), request.code());
+    }
+
+    // 아이디·비밀번호 찾기에 사용할 보안문자를 문자 또는 이메일로 발송한다.
     @PostMapping("/account/recovery/send-code")
     public void sendAccountRecoveryCode(@RequestBody MemberDTO.AccountRecoveryRequest request) {
         service.sendAccountRecoveryCode(request);

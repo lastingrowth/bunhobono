@@ -66,6 +66,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         //ip와 port 허용
         configuration.addAllowedOrigin("http://localhost:5173");
+        configuration.addAllowedOrigin("http://192.168.219.48:5173");
         //method 허용
         configuration.addAllowedMethod("*");
         //header 허용

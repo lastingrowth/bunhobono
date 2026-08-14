@@ -1,7 +1,6 @@
 <template>
     <nav
         class="resident-floating-menu"
-        :style="{ top: `${menuTop}px` }"
     >
         <RouterLink to="/resident/dashboard"
             :class="{
@@ -61,16 +60,12 @@
             1:1 문의
         </RouterLink>
 
-        <div class="resident-menu-divider" aria-hidden="true"></div>
-
         <RouterLink to="/resident/mypage"
             :class="{
                 active: route.path.startsWith('/resident/mypage')
             }">
             마이페이지
         </RouterLink>
-
-        <div class="resident-menu-divider" aria-hidden="true"></div>
 
         <section class="resident-menu-weather" aria-label="부산 현재 날씨">
             <div class="resident-menu-weather-heading">
@@ -100,7 +95,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useResVehicleStore } from '@/features/resVehicle/resVehicleStore';
@@ -110,7 +105,6 @@ const route = useRoute()
 const resVehicleStore = useResVehicleStore()
 const dashboardStore = useResidentDashboardStore()
 const { weather, weatherLoading, weatherErrorMessage } = storeToRefs(dashboardStore)
-const menuTop = ref(0)
 
 const weatherIcon = computed(() => {
     const state = weather.value.precipitation || ''
@@ -120,118 +114,45 @@ const weatherIcon = computed(() => {
     return '☀️'
 })
 
-let currentTop = 0
-let animationFrame = 0
-
-function getTargetTop() {
-    const header = document.querySelector('.resident-layout .header')
-    const headerBottom = header?.getBoundingClientRect().bottom ?? 60
-
-    return window.scrollY + headerBottom + 36
-}
-
-function followScroll() {
-    const targetTop = getTargetTop()
-    const distance = targetTop - currentTop
-
-    currentTop += distance * 0.16
-    // 빠르게 아래로 스크롤해도 메뉴가 헤더 영역으로 올라가지 않도록
-    // 현재 화면에서 허용되는 최소 위치보다 항상 아래에 표시합니다.
-    menuTop.value = Math.max(currentTop, targetTop)
-
-    if (Math.abs(distance) < 0.5) {
-        currentTop = targetTop
-        menuTop.value = targetTop
-        animationFrame = 0
-        return
-    }
-
-    animationFrame = window.requestAnimationFrame(followScroll)
-}
-
-function startFollowing() {
-    if (animationFrame) return
-    animationFrame = window.requestAnimationFrame(followScroll)
-}
-
-function resetMenuPosition() {
-    window.cancelAnimationFrame(animationFrame)
-    animationFrame = 0
-    currentTop = getTargetTop()
-    menuTop.value = currentTop
-}
-
-watch(
-    () => route.fullPath,
-    async () => {
-        await nextTick()
-        window.requestAnimationFrame(resetMenuPosition)
-    }
-)
-
 onMounted(() => {
-    resetMenuPosition()
-    window.addEventListener('scroll', startFollowing, { passive: true })
-    window.addEventListener('resize', resetMenuPosition)
     resVehicleStore.loadNotifications().catch(() => {})
     dashboardStore.loadWeather().catch(() => {})
-})
-
-onUnmounted(() => {
-    window.cancelAnimationFrame(animationFrame)
-    window.removeEventListener('scroll', startFollowing)
-    window.removeEventListener('resize', resetMenuPosition)
 })
 
 </script>
 
 <style scoped>
-
-/* 메뉴 위치 */
 .resident-floating-menu {
-    /*
-     * 페이지별 콘텐츠 크기나 렌더링 시점과 무관하게 같은 좌측 좌표를 사용합니다.
-     * top은 현재 스크롤 위치를 부드럽게 따라가도록 스크립트에서 갱신합니다.
-     */
-    position: absolute;
-    left: clamp(12px, 4vw, 60px);
-    will-change: top;
-
+    position: fixed;
+    z-index: 999;
+    top: var(--header-height);
+    right: 0;
+    left: 0;
+    min-height: 44px;
+    padding: 0 16px;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-
-    padding: 12px;
-
-    border-radius: 16px;
-    background: rgba(255,255,255,.95);
-    border: 1px solid #dce8f2;
-    box-shadow: 0 10px 25px rgba(40,80,120,.15);
-
-    z-index: 1000;
+    align-items: center;
+    gap: 4px;
+    border-bottom: 1px solid #dce8f2;
+    background: rgba(255,255,255,.97);
+    box-shadow: 0 4px 15px rgba(40,80,120,.08);
+    backdrop-filter: blur(8px);
 }
 
-/* 메뉴 */
 .resident-floating-menu a {
-    width: 100px;
-
-    padding: 14px 10px;
-
+    min-height: 44px;
+    padding: 0 13px;
     display: flex;
     justify-content: center;
     align-items: center;
-
-    border-radius: 12px;
-
+    border-bottom: 3px solid transparent;
     color: #38536d;
-    background: #f7fbff;
-
+    background: transparent;
     text-decoration: none;
-
     font-size: 14px;
     font-weight: 700;
-
-    transition: .2s;
+    white-space: nowrap;
+    transition: color .2s, border-color .2s, background .2s;
 }
 
 .resident-menu-badge {
@@ -248,27 +169,26 @@ onUnmounted(() => {
     font-weight: 900;
 }
 
-.resident-menu-divider {
-    height: 1px;
-    margin: 2px 4px;
-    background: #dce8f2;
-}
-
 .resident-menu-weather {
-    width: 100px;
-    padding: 10px;
-    border: 1px solid #dce8f2;
-    border-radius: 12px;
+    margin-left: auto;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border-left: 1px solid #dce8f2;
     color: #38536d;
-    background: linear-gradient(135deg, #f4faff, #eaf5fd);
+    background: transparent;
 }
 
 .resident-menu-weather-heading {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 700;
+}
+
+.resident-menu-weather-heading > span {
+    display: none;
 }
 
 .resident-menu-weather-heading button {
@@ -276,7 +196,7 @@ onUnmounted(() => {
     height: 22px;
     padding: 0;
     border: 0;
-    color: #557993;
+    color: var(--resident-accent);
     background: transparent;
     cursor: pointer;
 }
@@ -284,61 +204,58 @@ onUnmounted(() => {
 .resident-menu-weather-main {
     display: flex;
     align-items: center;
-    gap: 7px;
-    margin: 7px 0 5px;
+    gap: 4px;
+    margin: 0;
 }
 
 .resident-menu-weather-main span {
-    font-size: 20px;
+    font-size: 15px;
 }
 
 .resident-menu-weather-main strong {
-    font-size: 19px;
+    font-size: 14px;
 }
 
 .resident-menu-weather p {
     margin: 0;
-    color: #71879a;
-    font-size: 9px;
-    line-height: 1.45;
+    color: #5f768a;
+    font-size: 11px;
+    line-height: 1;
     white-space: nowrap;
 }
 
-/* 현재 페이지 */
 .resident-floating-menu a.active {
-    color: #1768bd;
-    background: #eaf4ff;
+    color: var(--resident-accent);
+    border-bottom-color: var(--resident-accent);
+    background: #f3fbfe;
 }
 
-/* hover */
 .resident-floating-menu a:hover {
+    color: var(--resident-accent);
     background: #eaf4ff;
-    transform: translateX(-3px);
 }
 
-@media(max-width:900px) {
-
+@media (max-width: 1050px) {
     .resident-floating-menu {
-        left: 12px;
+        padding: 0 10px;
+        overflow-x: auto;
     }
 
     .resident-floating-menu a {
-        width: 85px;
-        padding: 12px 5px;
+        min-height: 44px;
+        padding: 0 10px;
         font-size: 12px;
     }
 
     .resident-menu-weather {
-        width: 85px;
-        padding: 8px 6px;
+        display: none;
     }
+}
 
-    .resident-menu-weather-main {
-        gap: 4px;
-    }
-
-    .resident-menu-weather-main strong {
-        font-size: 16px;
+/* [모바일] 상단 메뉴를 사용하므로 왼쪽 플로팅 메뉴는 숨긴다. */
+@media(max-width:760px) {
+    .resident-floating-menu {
+        display: none;
     }
 }
 

@@ -36,5 +36,13 @@ public class RobotTaskController {
         );
     }
 
+    // 출차대기 차량 다시 입차
+    @PostMapping("/repark")
+    public RobotTaskDTO createReparkTask(
+            @RequestParam int carLogNo
+    ) {
+        return robotTaskService.createReparkTask(carLogNo);
+    }
+
 
 }

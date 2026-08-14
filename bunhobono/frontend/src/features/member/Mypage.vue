@@ -282,11 +282,26 @@ onBeforeUnmount(stopChallengeTimer);
 .security-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 @media (max-width: 760px) {
-    .resident-mypage { padding: 20px 14px; }
-    .mypage-card { padding: 20px; grid-template-columns: 1fr; gap: 24px; }
-    .mypage-actions { display: flex; justify-content: flex-end; gap: 8px; }
-    .mypage-actions button,.mypage-actions .modify-button { min-height: 40px; }
-    .mypage-info th { width: 115px; }
-    .mypage-info th,.mypage-info td { height: 54px; padding: 7px 10px; font-size: 15px; }
+    .resident-mypage { width: 100%; min-width: 0; max-width: 100%; margin: 0; padding: 8px 8px 76px; overflow: hidden; }
+    .mypage-title { margin-bottom: 7px; text-align: left; }
+    .mypage-title h2 { font-size: 21px; }
+    .mypage-card { min-width: 0; max-width: 100%; padding: 10px; grid-template-columns: 1fr; gap: 10px; overflow: hidden; border-radius: 13px; }
+    .mypage-info { min-width: 0; max-width: 100%; }
+    .mypage-info h3 { margin-bottom: 7px; font-size: 17px; }
+    .mypage-info table,.mypage-info tbody { display: block; width: 100%; border: 0; background: transparent; }
+    .mypage-info tr { display: grid; width: 100%; grid-template-columns: 78px minmax(0,1fr); overflow: hidden; margin-bottom: 4px; border: 1px solid #d5e2ec; border-radius: 8px; background: #fff; }
+    .mypage-info th,.mypage-info td { display: flex; width: auto; min-width: 0; height: auto; min-height: 37px; align-items: center; padding: 5px 8px; border: 0; font-size: 12px; overflow-wrap: anywhere; }
+    .mypage-info th { width: auto; justify-content: center; border-right: 1px solid #dbe5ed; }
+    .mypage-actions { display: grid; min-width: 0; grid-template-columns:repeat(3,minmax(0,1fr)); gap: 5px; padding-top: 0; }
+    .mypage-actions button,.mypage-actions .modify-button { width: 100%; min-width: 0; min-height: 40px; margin: 0; padding: 5px 3px; font-size: 12px; white-space: nowrap; }
+    .mypage-actions .home-button { grid-column: auto; gap: 3px; }
+    .mypage-actions .home-icon { display: none; }
+    .security-modal { padding: 12px; align-items: center; overflow-y: auto; }
+    .security-dialog { width: 100%; max-height: calc(100dvh - 24px); padding: 18px 14px; overflow-y: auto; }
+    .security-dialog input { width: 100%; min-height: 46px; font-size: 16px; }
+    .captcha-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+    .captcha-box img { width: 100%; max-width: 180px; }
+    .security-actions { display: grid; grid-template-columns: 1fr 1fr; }
+    .security-actions button { width: 100%; min-height: 44px; }
 }
 </style>

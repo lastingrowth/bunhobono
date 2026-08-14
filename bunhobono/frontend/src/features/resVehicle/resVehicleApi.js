@@ -37,16 +37,16 @@ export const extendResNormalVehicle = (vehicleCarNo, endDate) => {
     });
 };
 
-// 로그인한 입주민의 차량 알림 목록
+// 로그인한 입주민의 알림 목록
 export const getResVehicleNotifications = () => {
-    return api.get("/vehicle-nt/resident");
+    return api.get("/mem-notices/resident");
 };
 
-// 로그인한 입주민의 읽지 않은 차량 알림 전체 읽음 처리
-export const markResVehicleNotificationsRead = () => {
-    return api.patch("/vehicle-nt/resident/read");
+// 선택한 알림 한 건 읽음 처리
+export const markResVehicleNotificationRead = (memNoticeNo) => {
+    return api.patch(`/mem-notices/resident/${memNoticeNo}/read`);
 };
 
-export const deleteResVehicleNotification = (vehicleNtNo) => {
-    return api.delete(`/vehicle-nt/resident/${vehicleNtNo}`);
+export const deleteResVehicleNotification = (memNoticeNo) => {
+    return api.delete(`/mem-notices/resident/${memNoticeNo}`);
 };

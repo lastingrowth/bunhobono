@@ -650,7 +650,7 @@ onUnmounted(() => {
 .board-welcome h1 { margin: 0; color: #203c58; font-size: 27px; }
 .welcome-actions { display: flex; align-items: center; gap: 7px; margin-left: 10px; }
 .welcome-actions button { padding: 8px 12px; border: 1px solid #c9dcef; border-radius: 9px; color: #315c86; background: #f5faff; font-size: 12px; font-weight: 700; cursor: pointer; }
-.welcome-actions button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
+.welcome-actions button:hover { border-color: #76a9dd; color: var(--resident-accent); background: #eaf4ff; }
 .board-date-time { display: flex; align-items: center; gap: 14px; padding: 9px 15px; border-radius: 13px; color: #38536d; background: #f4f8fc; font-size: 16px; font-weight: 700; }
 .board-date-time i { width: 1px; height: 16px; background: #d7e1eb; }
 .board-info-grid { display: grid; grid-template-columns: 32% 1fr; gap: 18px; }
@@ -661,9 +661,8 @@ onUnmounted(() => {
 .summary-card-header h2 { margin: 0; color: #263f59; font-size: 18px; }
 .visit-registration-remaining { color: #66798c; font-size: 12px; font-weight: 500; white-space: nowrap; }
 .summary-card-header button { padding: 6px 10px; border: 1px solid #c9dcef; border-radius: 8px; color: #315c86; background: #f5faff; font-size: 11px; font-weight: 700; cursor: pointer; }
-.summary-card-header button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
-.summary-card-header h2,.recent-log-card h2,.parking-card h2 { display: flex; align-items: center; gap: 7px; }
-.summary-card-header h2::before,.recent-log-card h2::before,.parking-card h2::before { width: 4px; height: 15px; border-radius: 999px; background: #4b91d6; content: ""; }
+.summary-card-header button:hover { border-color: #76a9dd; color: var(--resident-accent); background: #eaf4ff; }
+.summary-card-header h2,.recent-log-card h2,.parking-card h2 { margin-left: 0; }
 .dashboard-board-list { display: grid; overflow: hidden; margin: 0; padding: 0; border: 0; border-radius: 0; list-style: none; background: #fff; }
 .dashboard-board-list li + li { border-top: 1px solid #e1eaf1; }
 .dashboard-board-list button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 8px 4px; border: 0; color: inherit; background: transparent; text-align: left; cursor: pointer; }
@@ -680,9 +679,9 @@ onUnmounted(() => {
 .member-summary-list div + div { border-top: 0; }
 .member-summary-list dt { color: #8495a5; font-size: 13px; font-weight: 600; }
 .member-summary-list dd { overflow: hidden; margin: 0; color: #455d72; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.member-summary-list div:nth-child(1) dd { color: #287fd5; font-weight: 800; }
-.member-summary-list div:nth-child(2) dd { color: #23a6d5; font-weight: 800; }
-.member-summary-list div:nth-child(3) dd { color: #6478cf; font-weight: 700; }
+.member-summary-list div:nth-child(1) dd { color: var(--resident-accent); font-weight: 800; }
+.member-summary-list div:nth-child(2) dd { color: var(--resident-accent); font-weight: 800; }
+.member-summary-list div:nth-child(3) dd { color: var(--resident-accent); font-weight: 700; }
 .member-status-badge { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 10px; border-radius: 999px; color: #287a4a; background: #e9f7ee; font-size: 13px; font-weight: 700; }
 .vehicle-status-groups { overflow: hidden; border: 0; border-radius: 11px; }
 .vehicle-status-group { display: grid; grid-template-columns: 110px 1fr; align-items: center; min-height: 52px; padding: 7px 11px; background: #f7faff; }
@@ -690,8 +689,8 @@ onUnmounted(() => {
 .vehicle-status-group.visit-group { background: #f8fbf8; }
 .vehicle-group-title { display: grid; gap: 2px; padding-right: 11px; }
 .vehicle-group-title strong { color: #294761; font-size: 14px; }
-.vehicle-group-title span { color: #1768bd; font-size: 12px; font-weight: 800; }
-.visit-group .vehicle-group-title span { color: #26844a; }
+.vehicle-group-title span { color: var(--resident-accent); font-size: 12px; font-weight: 800; }
+.visit-group .vehicle-group-title span { color: var(--resident-accent); }
 .vehicle-slots { display: grid; grid-template-columns: 1fr; align-items: center; gap: 6px; min-width: 0; }
 .vehicle-summary-row { display: grid; grid-template-columns: minmax(120px,.8fr) minmax(0,1.6fr) minmax(90px,.7fr); align-items: center; gap: 12px; min-width: 0; padding: 8px 10px; border: 0; border-radius: 9px; background: #fff; box-shadow: none; }
 .vehicle-info-section { display: grid; gap: 4px; min-width: 0; color: #405a70; font-size: 13px; font-weight: 650; line-height: 1.4; word-break: keep-all; }
@@ -704,10 +703,10 @@ onUnmounted(() => {
 .vehicle-parking-state.completed { color: #55758f; }
 .vehicle-period-label-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .vehicle-expiry-badge { flex: 0 0 auto; padding: 3px 7px; border: 1px solid #f1a43c; border-radius: 999px; color: #c96d00; background: #fff4df; font-size: 10px; font-weight: 900; line-height: 1.2; white-space: nowrap; }
-.vehicle-status-group:not(.visit-group) .vehicle-number-section strong { color: #287fd5 !important; }
-.vehicle-status-group.visit-group .vehicle-number-section strong { color: #2ca66a !important; }
-.vehicle-status-group:not(.visit-group) .vehicle-info-section:last-child span { color: #287fd5; font-weight: 800; }
-.vehicle-status-group.visit-group .vehicle-info-section:last-child span { color: #2ca66a; font-weight: 800; }
+.vehicle-status-group:not(.visit-group) .vehicle-number-section strong { color: var(--resident-accent) !important; }
+.vehicle-status-group.visit-group .vehicle-number-section strong { color: var(--resident-accent) !important; }
+.vehicle-status-group:not(.visit-group) .vehicle-info-section:last-child span { color: var(--resident-accent); font-weight: 800; }
+.vehicle-status-group.visit-group .vehicle-info-section:last-child span { color: var(--resident-accent); font-weight: 800; }
 .vehicle-slots p { margin: 0; color: #8799aa; font-size: 12px; }
 .board-top-grid { display: grid; grid-template-columns: 29% 34% 1fr; gap: 14px; height: 256px; }
 .board-top-grid > * { min-width: 0; min-height: 0; }
@@ -769,7 +768,7 @@ onUnmounted(() => {
 .exit-request-button { min-width: 70px; height: 28px; padding: 0 10px; border: 1px solid #b9d2e9; border-radius: 7px; color: #5f7f9d; background: #edf5fc; font-size: 10px; font-weight: 800; }
 .exit-request-button:disabled { cursor: not-allowed; opacity: .72; }
 .recent-log-car { display: grid; gap: 2px; min-width: 0; }
-.recent-log-car strong { overflow: hidden; color: #287fd5; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.recent-log-car strong { overflow: hidden; color: var(--resident-accent); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
 .recent-log-car small { overflow: hidden; color: #7b8fa1; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .recent-log-times { display: grid; gap: 5px; color: #536b80; font-size: 12px; }
 .recent-log-times span { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -780,6 +779,10 @@ onUnmounted(() => {
     .recent-log-summary-item { grid-template-columns: 1fr auto; gap: 8px; }
     .recent-log-times { grid-column: 1 / -1; }
     .recent-log-actions { grid-row: 1; grid-column: 2; flex-direction: column; align-items: flex-end; gap: 5px; }
+}
+
+@media (max-width:760px) {
+    .resident-carlog-header .detail-actions { display:none!important; }
 }
 .parking-zones { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
 .parking-zone { position: relative; display: grid; justify-items: center; gap: 4px; padding: 8px 6px 7px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
@@ -825,7 +828,7 @@ onUnmounted(() => {
     .parking-zone{gap:2px}
 }
 @media (max-width:900px){.resident-board.resident-carlog-page{width:calc(100% - 36px)}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
-@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{width:calc(100% - 12px);margin:6px auto;padding:14px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%}.resident-carlog-section{min-height:0}}
+@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{width:calc(100% - 24px);margin:12px auto;padding:16px 12px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column;gap:14px}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%;min-height:44px}.resident-carlog-section{min-height:0}.resident-carlog-table-wrap{overflow:visible;padding:0}.resident-carlog-table,.resident-carlog-table tbody,.resident-carlog-table tr,.resident-carlog-table td{display:block;width:100%}.resident-carlog-table{min-width:0;border:0;box-shadow:none;background:transparent}.resident-carlog-table thead{display:none}.resident-carlog-table tbody{display:grid;gap:12px}.resident-carlog-table tbody tr{padding:14px;border:1px solid #d9e5ee;border-radius:12px;background:#fff}.resident-carlog-table tbody td{padding:7px 0;border:0;text-align:left;white-space:normal;overflow-wrap:anywhere}.resident-carlog-table tbody td::before{display:inline-block;min-width:70px;margin-right:8px;color:#71879a;font-size:12px;font-weight:800}.resident-carlog-table tbody td:nth-child(1)::before{content:"차량번호"}.resident-carlog-table tbody td:nth-child(2)::before{content:"주차장"}.resident-carlog-table tbody td:nth-child(3)::before{content:"입차시간"}.resident-carlog-table tbody td:nth-child(4)::before{content:"출차시간"}.resident-carlog-table tbody td:nth-child(5)::before{content:"상태"}.resident-carlog-table .resident-carlog-empty{padding:36px 10px!important;text-align:center}.resident-carlog-table .resident-carlog-empty::before{display:none}}
 .welcome-title-row { display: flex; align-items: center; gap: 10px; }
 
 @media (max-width: 900px) {
@@ -848,7 +851,7 @@ onUnmounted(() => {
     border-radius: 9px;
     background: #f5faff;
     cursor: pointer;
-}.notification-button:hover { border-color: #76a9dd; color: #1768bd; background: #eaf4ff; }
+}.notification-button:hover { border-color: #76a9dd; color: var(--resident-accent); background: #eaf4ff; }
 .notification-envelope {
     width: 22px;
     height: 22px;
@@ -934,10 +937,9 @@ onUnmounted(() => {
 .resident-board:not(.resident-carlog-page) .vehicle-summary-card,
 .resident-board:not(.resident-carlog-page) .recent-log-card,
 .resident-board:not(.resident-carlog-page) .parking-card {
-    min-height: 220px;
+    min-height: 0;
     padding: 24px 26px;
     border: 0;
-    border-top: 1px solid #dfe9f2;
     background: transparent;
 }
 .resident-board:not(.resident-carlog-page) .member-summary-card {
@@ -947,12 +949,42 @@ onUnmounted(() => {
 .resident-board:not(.resident-carlog-page) .board-summary-card {
     padding-top: 12px;
     border-top: 0;
-    background: #fff;
+    background: transparent;
 }
 .resident-board:not(.resident-carlog-page) .vehicle-summary-card {
     grid-column: 1 / -1;
 }
 .resident-board:not(.resident-carlog-page) .parking-card { padding-bottom: 8px; }
+
+/* 대시보드 내부를 카드로 나누지 않고 하나의 바탕으로 표시한다. */
+.resident-board:not(.resident-carlog-page) .board-info-grid,
+.resident-board:not(.resident-carlog-page) .board-bottom-grid {
+    gap: 0;
+}
+
+.resident-board:not(.resident-carlog-page) :is(
+    .member-summary-list,
+    .dashboard-board-list,
+    .vehicle-status-groups,
+    .vehicle-status-group,
+    .vehicle-summary-row,
+    .alert-card,
+    .recent-log-summary-item,
+    .latest-board-empty
+) {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.resident-board:not(.resident-carlog-page) :is(
+    .dashboard-board-list li + li,
+    .alert-card li,
+    .recent-log-item
+) {
+    border-color: transparent;
+}
 @media (max-width:600px) {
     .resident-board:not(.resident-carlog-page) .member-summary-card,
     .resident-board:not(.resident-carlog-page) .board-summary-card,
@@ -981,4 +1013,55 @@ onUnmounted(() => {
 .unread-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .unread-dialog-actions button { min-width: 86px; height: 38px; border: 1px solid #cad7e3; border-radius: 6px; background: #fff; cursor: pointer; }
 .unread-dialog-actions .unread-dialog-primary { border-color: #2387d9; color: #fff; background: #2387d9; }
+
+/* 입주민 대시보드의 일반 문자는 검정으로 통일한다. */
+.resident-board :is(h1, h2, h3, h4, p, dt, dd, small, th, td) {
+    color: #111 !important;
+}
+
+.dashboard-board-copy strong,
+.vehicle-group-title strong,
+.vehicle-info-section,
+.vehicle-info-section small,
+.alert-copy strong,
+.alert-copy small,
+.recent-log-item b,
+.recent-log-item > span:not(.log-label),
+.recent-log-car small,
+.recent-log-times,
+.zone-heading > span,
+.zone-space-count,
+.visit-registration-remaining {
+    color: #111 !important;
+}
+
+/* 하늘색 포인트 문자는 유지한다. */
+.member-summary-list div:nth-child(1) dd,
+.member-summary-list div:nth-child(2) dd,
+.member-summary-list div:nth-child(3) dd,
+.vehicle-group-title > span,
+.vehicle-number-section strong,
+.vehicle-status-group .vehicle-info-section:last-child span,
+.recent-log-car strong {
+    color: var(--resident-accent) !important;
+}
+
+/* 상태와 경고 색은 의미를 유지한다. */
+.member-status-badge,
+.dashboard-board-status,
+.vehicle-parking-state.parking,
+.log-out,
+.log-direction.out,
+.carlog-state.parking {
+    color: #198754 !important;
+}
+
+.vehicle-expiry-badge {
+    color: #c96d00 !important;
+}
+
+.recent-log-item small.parking-movement-text,
+.board-error {
+    color: #b83e3e !important;
+}
 </style>

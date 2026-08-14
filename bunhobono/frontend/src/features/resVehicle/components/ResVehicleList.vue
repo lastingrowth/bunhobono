@@ -256,7 +256,7 @@ const splitRemainingTime = (value) => {
 
 .empty-action-link {
   margin-left: 5px;
-  color: #287fd5;
+  color: var(--resident-accent);
   font-size: inherit;
   font-weight: 700;
   text-decoration: underline;
@@ -264,6 +264,50 @@ const splitRemainingTime = (value) => {
 }
 
 .empty-action-link:hover {
-  color: #175fa9;
+  color: var(--resident-accent-hover);
+}
+
+@media (max-width: 600px) {
+  .resident-vehicle-table-wrap { overflow: visible; }
+  .resident-vehicle-table,
+  .resident-vehicle-table tbody,
+  .resident-vehicle-table tr,
+  .resident-vehicle-table td { display: block; width: 100%; }
+  .resident-vehicle-table { border: 0; box-shadow: none; background: transparent; }
+  .resident-vehicle-table colgroup,
+  .resident-vehicle-table thead { display: none; }
+  .resident-vehicle-table tbody { display: grid; gap: 12px; }
+  .resident-vehicle-table .vehicle-data-row {
+    height: auto;
+    padding: 14px;
+    border: 1px solid #d9e5ee;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .resident-vehicle-table .vehicle-data-row td {
+    height: auto;
+    padding: 7px 0;
+    border: 0;
+    text-align: left;
+  }
+  .resident-vehicle-table .vehicle-data-row td::before {
+    display: inline-block;
+    min-width: 72px;
+    margin-right: 8px;
+    color: #71879a;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(1)::before { content: "차량번호"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(2)::before { content: "구분"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(3)::before { content: "상태"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(4)::before { content: "신청일"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(5)::before { content: "기간"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(6)::before { content: "만료일"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(7)::before { content: "남은기간"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(8)::before { content: "관리"; }
+  .vehicle-cell-one-line,
+  .vehicle-cell-lines { min-height: 0; display: inline-flex; white-space: normal; vertical-align: top; }
+  .resident-vehicle-table .vehicle-data-row td:last-child button { width: 100%; min-height: 42px; margin-top: 5px; }
 }
 </style>
