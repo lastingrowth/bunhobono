@@ -253,6 +253,24 @@ th:nth-child(6) { width: 66px; }
 .delete-dialog-actions .delete-confirm-button:hover { background: #c83d3d; }
 
 @media (max-width: 700px) {
-  table { min-width: 680px; }
+  .notification-header { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .notification-table-wrap { overflow: visible; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  table { min-width: 0; border: 0; box-shadow: none; background: transparent; }
+  thead { display: none; }
+  tbody { display: grid; gap: 12px; }
+  tbody tr { padding: 14px; border: 1px solid #d9e5ee; border-radius: 12px; background: #fff; }
+  tbody td { padding: 7px 0; border: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+  tbody td::before { display: inline-block; min-width: 64px; margin-right: 8px; color: #71879a; font-size: 12px; font-weight: 800; }
+  tbody td:nth-child(1)::before { content: "구분"; }
+  tbody td:nth-child(2)::before { content: "차량"; }
+  tbody td:nth-child(3)::before { content: "발신자"; }
+  tbody td:nth-child(4)::before { content: "내용"; }
+  tbody td:nth-child(5)::before { content: "일시"; }
+  tbody td:nth-child(6)::before { content: "관리"; }
+  .notification-message { line-height: 1.55; }
+  .notification-manage button { width: 100%; margin-top: 4px; }
+  .empty-message::before { display: none; }
+  .delete-dialog { width: calc(100vw - 24px); }
 }
 </style>

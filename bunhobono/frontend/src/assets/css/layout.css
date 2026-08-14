@@ -53,7 +53,7 @@ textarea {
 }
 
 /* 전체 배경 페이지를 제외한 입주민 콘텐츠 폭을 대시보드와 통일한다. */
-.resident-layout .content > :not(.resident-board-page):not(.resident-welcome) {
+.resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard) {
   width: min(760px, calc(100% - 200px));
   max-width: 760px;
   min-height: 0;
@@ -67,7 +67,7 @@ textarea {
 }
 
 @media (max-width: 900px) {
-  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome) {
+  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard) {
     width: calc(100% - 36px);
     padding-right: 22px;
     padding-left: 22px;
@@ -75,10 +75,54 @@ textarea {
 }
 
 @media (max-width: 600px) {
-  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome) {
-    width: calc(100% - 12px);
-    margin: 6px auto;
-    padding: 14px;
+  .resident-layout:not(.resident-welcome-layout) .content {
+    padding-bottom: calc(94px + env(safe-area-inset-bottom));
+  }
+
+  /* 모바일 대시보드는 고정 하단 메뉴를 사용하므로 PC용 푸터를 표시하지 않는다. */
+  .resident-layout:has(.mobile-dashboard) .resident-footer {
+    display: none;
+  }
+
+  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard) {
+    width: calc(100% - 24px);
+    margin: 12px auto;
+    padding: 18px 14px;
+  }
+}
+
+/* [모바일] 입주민 공통 레이아웃 - 관리자 화면에는 적용하지 않는다. */
+@media (max-width: 760px) {
+  .resident-layout .content {
+    overflow-x: hidden;
+    background-attachment: scroll;
+  }
+
+  .resident-layout .container,
+  .resident-layout .content,
+  .resident-layout .content > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .resident-layout .content img,
+  .resident-layout .content video,
+  .resident-layout .content canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .resident-layout .content input,
+  .resident-layout .content select,
+  .resident-layout .content textarea {
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .resident-layout dialog,
+  .resident-layout .modal,
+  .resident-layout .dialog {
+    max-width: calc(100vw - 24px);
   }
 }
 
@@ -722,6 +766,30 @@ textarea {
   background:
     linear-gradient(180deg, rgba(248, 252, 255, 0.44) 0%, rgba(250, 253, 255, 0.63) 45%, rgba(255, 255, 255, 0.81) 75%, rgba(255, 255, 255, 0.91) 100%),
     url('../images/back.jpg') center center / cover fixed no-repeat;
+}
+
+/* [모바일] 로그인 전 인증 화면의 공통 바깥 틀 */
+@media (max-width: 560px) {
+  .auth-layout.auth-layout--mobile-ready {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 20px 18px;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background-attachment: scroll;
+  }
+
+  .auth-layout.auth-layout--mobile-ready > * {
+    margin-top: auto;
+    margin-bottom: auto;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 .login-card {

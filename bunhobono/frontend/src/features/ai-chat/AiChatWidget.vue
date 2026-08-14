@@ -1,5 +1,7 @@
 <template>
-    <div class="ai-chat-widget">
+    <div v-if="!widgetHidden" ref="widget" class="ai-chat-widget" :style="widgetPosition">
+
+        <div v-if="chatOpen" class="ai-chat-backdrop" aria-hidden="true"></div>
 
         <!-- 챗봇 대화창 -->
         <section
@@ -114,30 +116,97 @@
         </section>
 
         <!-- 챗봇 열기 버튼 -->
-        <button
-            v-else
-            type="button"
-            class="ai-chat-toggle"
-            aria-label="AI 챗봇 열기"
-            @click="openChat"
-        >
-            <strong>AI</strong>
-            <span>챗봇</span>
-        </button>
+        <template v-else>
+            <button
+                type="button"
+                class="ai-chat-hide"
+                aria-label="AI 챗봇 숨기기"
+                @click.stop="widgetHidden = true"
+            >×</button>
+            <button
+                type="button"
+                class="ai-chat-toggle"
+                aria-label="AI 챗봇 열기"
+                @pointerdown="startDrag"
+                @pointermove="moveDrag"
+                @pointerup="endDrag"
+                @pointercancel="endDrag"
+                @click="handleToggleClick"
+            >
+                <strong>AI</strong>
+                <span>챗봇</span>
+            </button>
+        </template>
     </div>
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useAiChatStore } from "./aiChatStore";
 
 const store = useAiChatStore();
 
 const chatOpen = ref(false);
+const widgetHidden = ref(false);
 const question = ref("");
 
 const messageList = ref(null);
 const questionInput = ref(null);
+const widget = ref(null);
+const widgetPosition = ref({});
+let dragStart = null;
+let dragged = false;
+
+const startDrag = (event) => {
+    const rect = widget.value?.getBoundingClientRect();
+    if (!rect) return;
+
+    dragged = false;
+    dragStart = {
+        pointerX: event.clientX,
+        pointerY: event.clientY,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+};
+
+const moveDrag = (event) => {
+    if (!dragStart) return;
+
+    const deltaX = event.clientX - dragStart.pointerX;
+    const deltaY = event.clientY - dragStart.pointerY;
+    if (Math.abs(deltaX) + Math.abs(deltaY) > 6) dragged = true;
+
+    const left = Math.min(Math.max(8, dragStart.left + deltaX), window.innerWidth - dragStart.width - 8);
+    const top = Math.min(Math.max(8, dragStart.top + deltaY), window.innerHeight - dragStart.height - 8);
+    widgetPosition.value = { left: `${left}px`, top: `${top}px`, right: "auto", bottom: "auto" };
+};
+
+const endDrag = (event) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragStart = null;
+};
+
+const handleToggleClick = () => {
+    if (dragged) {
+        dragged = false;
+        return;
+    }
+    openChat();
+};
+
+const openFromMenu = () => {
+    widgetHidden.value = false;
+    openChat();
+};
+
+onMounted(() => window.addEventListener("open-ai-chat", openFromMenu));
+onUnmounted(() => window.removeEventListener("open-ai-chat", openFromMenu));
 
 // 챗봇 대화창 열기
 const openChat = async () => {
@@ -145,7 +214,10 @@ const openChat = async () => {
 
     await nextTick();
 
-    questionInput.value?.focus();
+    // 모바일에서는 창 전체를 먼저 보여주고, 입력창을 누를 때만 키보드를 연다.
+    if (!window.matchMedia("(max-width: 600px)").matches) {
+        questionInput.value?.focus();
+    }
     scrollToBottom();
 };
 
@@ -221,6 +293,27 @@ watch(
     color: #ffffff;
     background: #315c86;
     box-shadow: 0 10px 28px rgba(31, 68, 103, .32);
+    touch-action: none;
+    user-select: none;
+}
+
+.ai-chat-hide {
+    position: absolute;
+    z-index: 2;
+    top: -7px;
+    right: -7px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 900;
+    line-height: 20px;
+    cursor: pointer;
+    background: #263746;
+    box-shadow: 0 3px 9px rgba(22, 43, 62, .28);
 }
 
 .ai-chat-toggle:hover {
@@ -438,9 +531,18 @@ watch(
 }
 
 @media (max-width: 600px) {
+    .ai-chat-backdrop {
+        position: fixed;
+        z-index: 1290;
+        inset: 0;
+        background: rgba(25, 42, 58, .18);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+    }
+
     .ai-chat-widget {
         right: 12px;
-        bottom: 12px;
+        bottom: 76px;
     }
 
     .ai-chat-toggle {
@@ -449,8 +551,28 @@ watch(
     }
 
     .ai-chat-panel {
-        width: calc(100vw - 24px);
-        height: min(600px, calc(100vh - 84px));
+        position: fixed;
+        z-index: 1300;
+        top: auto;
+        right: 12px;
+        bottom: calc(100px + env(safe-area-inset-bottom));
+        left: 12px;
+        width: auto;
+        height: min(430px, calc(100dvh - 220px));
+        max-height: 430px;
+        border-radius: 16px;
     }
+
+    .ai-chat-header { min-height: 50px; padding: 7px 11px; }
+    .ai-chat-header strong { font-size: 16px; }
+    .ai-chat-header span { font-size: 11px; }
+    .ai-chat-messages { min-height: 0; padding: 9px 11px; overscroll-behavior: contain; }
+    .ai-chat-message { max-width: 88%; }
+    .ai-chat-message p { padding: 9px 11px; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+    .ai-chat-inquiry-link { padding: 6px 10px; font-size: 11px; }
+    .ai-chat-form { flex-shrink: 0; margin: 7px; padding: 3px; gap: 4px; border: 1px solid #9eb8cc; border-radius: 13px; background:#fff; box-shadow:none; }
+    .ai-chat-form input { height: 40px; padding:0 9px; border:0!important; border-radius:10px; outline:0; font-size:16px; box-shadow:none!important; }
+    .ai-chat-form input:focus { border:0!important; outline:0; box-shadow:none!important; }
+    .ai-chat-form button { min-width:58px; height:40px; padding:0 9px; border-radius:9px; }
 }
 </style>
