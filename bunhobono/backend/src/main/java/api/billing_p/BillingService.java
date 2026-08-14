@@ -1,5 +1,8 @@
 package api.billing_p;
 
+import api.kiosk_p.KioskDTO;
+import api.kiosk_p.KioskService;
+import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -27,8 +30,17 @@ public class BillingService {
     // 일일 최대요금 계산에 사용하는 24시간의 분 단위 값
     private static final int MINUTES_PER_DAY = 1440;
 
+    // 비입주민 차량의 결제 완료 후 출차 허용시간
+    private static final int EXIT_ALLOWED_MINUTES = 30;
+
     @Resource
     private BillingMapper billingMapper;
+
+    @Resource
+    private KioskService kioskService;
+
+    @Resource
+    private TrashService trashService;
 
     // 로컬 설정파일에 저장한 토스페이먼츠 시크릿 키
     @Value("${toss.secret-key}")
@@ -40,8 +52,12 @@ public class BillingService {
                     .baseUrl("https://api.tosspayments.com")
                     .build();
 
-    // 차량번호 뒤 4자리로 현재 주차 중인 차량 목록 조회
-    public List<BillDTO> findParkingCars(String lastFourDigits) {
+    // 출차 유형, 차량번호 뒤 4자리, 키오스크 번호로 현재 주차 차량 목록을 조회한다.
+    public List<BillDTO> findParkingCars(
+            String lastFourDigits,
+            String exitType,
+            Integer kioskNo
+    ) {
         String digits = lastFourDigits == null
                 ? ""
                 : lastFourDigits.trim();
@@ -53,15 +69,68 @@ public class BillingService {
             );
         }
 
-        List<BillDTO> parkingCars = billingMapper.findOpenCarLogsByLastFourDigits(digits);
+        // 화면에서 전달된 출차 유형을 대문자로 통일해 검증한다.
+        String normalizedExitType = exitType == null
+                ? ""
+                : exitType.trim().toUpperCase();
+
+        if (
+                !"RESIDENT".equals(normalizedExitType)
+                        && !"NON_RESIDENT".equals(normalizedExitType)
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "올바른 출차 유형을 선택해주세요."
+            );
+        }
+
+        // 키오스크 위치와 차량의 주차 층을 비교하려면 유효한 키오스크 번호가 필요하다.
+        if (kioskNo == null || kioskNo <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "키오스크 정보를 확인할 수 없습니다."
+            );
+        }
+
+        // 전달받은 키오스크 번호로 실제 설치된 키오스크와 주차장 정보를 조회한다.
+        KioskDTO kiosk = kioskService.findByKioskNo(kioskNo);
+
+        if (kiosk == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "키오스크 정보를 확인할 수 없습니다."
+            );
+        }
+
+        List<BillDTO> parkingCars =
+                billingMapper.findOpenCarLogsByLastFourDigits(digits, normalizedExitType);
 
         if (parkingCars.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "일치하는 주차 차량을 찾을 수 없습니다."
+                    "출차 유형과 차량번호가 일치하는 주차 차량을 찾을 수 없습니다."
             );
         }
-        return parkingCars;
+        // 현재 키오스크와 같은 층에 주차된 차량만 목록에 표시한다.
+        List<BillDTO> sameFloorCars = parkingCars.stream()
+                .filter(car -> car.getParkingNo() == kiosk.getParkingNo())
+                .toList();
+
+        // 차량은 존재하지만 다른 층에 있으면 해당 층의 키오스크를 안내한다.
+        if (sameFloorCars.isEmpty()) {
+            String parkingCode = parkingCars.get(0).getParkingCode();
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "해당 차량은 "
+                            + parkingCode
+                            + " 주차장에 있습니다. "
+                            + parkingCode
+                            + " 키오스크를 이용해주세요."
+            );
+        }
+
+        return sameFloorCars;
     }
 
     // 차량번호로 현재 주차 기록을 찾아 정산서를 생성하거나 갱신
@@ -70,6 +139,24 @@ public class BillingService {
             String carNo,
             Integer kioskNo
     ) {
+        // 유효한 키오스크 번호인지 확인한다.
+        if (kioskNo == null || kioskNo <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "키오스크 정보를 확인할 수 없습니다."
+            );
+        }
+
+        // 키오스크가 설치된 주차장 정보를 조회한다.
+        KioskDTO kiosk = kioskService.findByKioskNo(kioskNo);
+
+        if (kiosk == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "키오스크 정보를 확인할 수 없습니다."
+            );
+        }
+
         // 사용자가 입력한 차량번호의 공백을 제거하고 형식을 확인한다.
         String normalizedCarNo = normalizeCarNo(carNo);
 
@@ -84,6 +171,18 @@ public class BillingService {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
                     "현재 주차 중인 차량을 찾을 수 없습니다."
+            );
+        }
+
+        // 차량과 키오스크의 주차 층이 다르면 해당 층의 키오스크를 안내한다.
+        if (!parkingLog.getParkingNo().equals(kiosk.getParkingNo())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "해당 차량은 "
+                            + parkingLog.getParkingCode()
+                            + " 주차장에 있습니다. "
+                            + parkingLog.getParkingCode()
+                            + " 키오스크를 이용해주세요."
             );
         }
 
@@ -298,6 +397,214 @@ public class BillingService {
         }
 
         return approvedPayment;
+    }
+
+    // 현재 주차 중인 비입주민 차량의 정산 목록과 출차 가능 여부를 조회한다.
+    public List<BillDTO> findAdminBillingList() {
+        List<BillDTO> billingList =
+                billingMapper.findAdminBillingList();
+
+        for (BillDTO billing : billingList) {
+            setExitAllowed(billing);
+        }
+
+        return billingList;
+    }
+
+    // 입출차 기록 번호로 관리자 정산 상세정보를 조회한다.
+    public BillDTO findAdminBillingDetail(int carLogNo) {
+        if (carLogNo <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "입출차 기록 번호를 확인해 주세요."
+            );
+        }
+
+        BillDTO billing =
+                billingMapper.findAdminBillingDetail(carLogNo);
+
+        if (billing == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "정산 상세정보를 찾을 수 없습니다."
+            );
+        }
+
+        setExitAllowed(billing);
+
+        return billing;
+    }
+
+    // 미정산·미결제 차량의 무료시간을 수정하고 필요한 경우 정산금액을 다시 계산한다.
+    @Transactional
+    public BillDTO updateAdminBilling(
+            int carLogNo,
+            Integer freeTime
+    ) {
+        if (carLogNo <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "입출차 기록 번호를 확인해 주세요."
+            );
+        }
+
+        if (freeTime == null || freeTime < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "무료시간은 0분 이상이어야 합니다."
+            );
+        }
+
+        // 차량·정산서·적용 요금 규칙을 함께 조회한다.
+        BillDTO billing =
+                billingMapper.findAdminBillingDetail(carLogNo);
+
+        if (billing == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "정산 상세정보를 찾을 수 없습니다."
+            );
+        }
+
+        // 정산이 완료된 차량의 무료시간은 변경하지 않는다.
+        if ("PAID".equalsIgnoreCase(billing.getBillStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "정산완료 차량은 수정할 수 없습니다."
+            );
+        }
+
+        BillDTO updateDto = new BillDTO();
+        updateDto.setCarLogNo(carLogNo);
+        updateDto.setFreeTime(freeTime);
+
+        // 정산완료 전 입출차 기록의 무료시간을 변경한다.
+        if (billingMapper.updateAdminFreeTime(updateDto) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "무료시간을 수정하지 못했습니다."
+            );
+        }
+
+        // 정산서가 아직 없으면 무료시간만 저장하고 상세정보를 다시 조회한다.
+        if (billing.getBillNo() == null) {
+            return findAdminBillingDetail(carLogNo);
+        }
+
+        // 기존 정산서에 저장된 요금 규칙으로 다시 계산할 수 있는지 확인한다.
+        if (billing.getInTime() == null
+                || billing.getUnitMinutes() == null
+                || billing.getUnitMinutes() <= 0
+                || billing.getUnitFee() == null
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "정산금액을 다시 계산할 수 없습니다."
+            );
+        }
+
+        // 새 무료시간과 기존 요금 규칙을 사용해 과금시간과 금액을 다시 계산한다.
+        calculateBill(
+                billing,
+                billing.getInTime(),
+                freeTime,
+                billing.getUnitMinutes(),
+                billing.getUnitFee(),
+                billing.getDailyMaxFee()
+        );
+
+        if (billingMapper.updateUnpaidAmount(billing) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "정산금액을 갱신하지 못했습니다."
+            );
+        }
+
+        // 재계산 결과가 0원이면 별도 결제 없이 정산완료로 처리한다.
+        if (billing.getBillAmount().compareTo(BigDecimal.ZERO) == 0
+                && billingMapper.markZeroAmountPaid(billing.getBillNo()) != 1
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "무료 정산을 완료하지 못했습니다."
+            );
+        }
+
+        return findAdminBillingDetail(carLogNo);
+    }
+
+    // 관리자가 출차 완료된 정산서를 지난 기록으로 직접 이동한다.
+    public void moveAdminBillingToTrash(int billNo) {
+        if (billNo <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "정산서 번호를 확인해 주세요."
+            );
+        }
+
+        try {
+            trashService.moveBill(billNo,"MANUAL");
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    e.getMessage()
+            );
+        }
+    }
+
+    // 출차 완료 후 3개월이 지난 완료 정산서를 지난 기록으로 자동 이동한다.
+    public void moveOldPaidBillsToTrash() {
+        List<Integer> billNos =
+                billingMapper.findOldPaidBillNosForTrash();
+
+        for (Integer billNo : billNos) {
+            try {
+                trashService.moveBill(billNo, "SCHEDULED");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // 결제상태·출차여부·결제 완료시각을 기준으로 출차 가능정보를 설정한다.
+    private void setExitAllowed(BillDTO billing) {
+        LocalDateTime paidAt = billing.getPaidAt();
+
+        LocalDateTime exitAllowedUntil =
+                paidAt == null
+                        ? null
+                        : paidAt.plusMinutes(EXIT_ALLOWED_MINUTES);
+
+        billing.setExitAllowedUntil(exitAllowedUntil);
+
+        billing.setExitAllowed(
+                billing.getOutTime() == null
+                        && "PAID".equalsIgnoreCase(billing.getBillStatus())
+                        && exitAllowedUntil != null
+                        && !LocalDateTime.now().isAfter(exitAllowedUntil)
+        );
+    }
+
+    // 차량이 입차한 주차장과 같은 층의 활성 출차 게이트 번호를 조회한다.
+    public int findExitGateNo(int carLogNo) {
+        if (carLogNo <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "입출차 기록 번호를 확인해 주세요."
+            );
+        }
+
+        Integer exitGateNo =
+                billingMapper.findExitGateNoByCarLogNo(carLogNo);
+
+        if (exitGateNo == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "같은 층에서 이용할 수 있는 출차 게이트를 찾을 수 없습니다."
+            );
+        }
+
+        return exitGateNo;
     }
 
     // 입차시각부터 현재까지의 주차시간에서 무료시간을 제외하고 요금을 계산

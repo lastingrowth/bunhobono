@@ -29,6 +29,4 @@ CameraDTO {
 
     /** 카메라 사용 여부 */
     private boolean active;
-    /** 카메라 현재 상태: NORMAL, FAULT, MAINTENANCE */
-    private String cameraStatus;
 }

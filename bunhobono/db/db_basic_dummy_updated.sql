@@ -776,54 +776,6 @@ FROM demo_event e
          LEFT JOIN demo_capture_link cout ON cout.capture_key = e.event_key || '-OUT';
 
 -- =====================================================
--- B1 로봇 주차장 현재 주차 차량 배정
--- 기존 입주민 등록차량 중 미출차 차량 29대를 일반 주차면에 배정한다.
--- 아래 res1 차량 1대를 포함하면 B1에는 총 30대가 주차 중으로 표시된다.
--- 주차면 번호를 단순 오름차순으로 채우지 않고 B1 전체에 고르게 분산한다.
--- =====================================================
-WITH parked_resident AS (
-    SELECT
-        car_log_no,
-        ROW_NUMBER() OVER (
-            ORDER BY in_time DESC, car_log_no DESC
-        ) AS row_no
-    FROM car_log
-    WHERE snapshot_car_kind = 'REGISTERED'
-      AND out_time IS NULL
-      AND snapshot_car_no <> '99보9999'
-      AND snapshot_car_no NOT IN (
-          '143모8849',
-          '91어6511',
-          '40거2054',
-          '48나8278'
-      )
-    LIMIT 29
-), empty_space AS (
-    SELECT
-        space_no,
-        ROW_NUMBER() OVER (
-            ORDER BY
-                MOD(RIGHT(space_code, 3)::INT * 37, 100),
-                space_code
-        ) AS row_no
-    FROM parking_space
-    WHERE space_type = 'PARKING'
-      AND space_code <> 'B1-P023'
-      AND car_log_no IS NULL
-    ORDER BY
-        MOD(RIGHT(space_code, 3)::INT * 37, 100),
-        space_code
-    LIMIT 29
-)
-UPDATE parking_space space
-SET car_log_no = parked.car_log_no,
-    updated_at = CURRENT_TIMESTAMP
-FROM parked_resident parked
-JOIN empty_space empty
-    ON empty.row_no = parked.row_no
-WHERE space.space_no = empty.space_no;
-
--- =====================================================
 -- res1 현재 주차 위치 확인용
 -- 만료 임박 차량 99보9999를 B1-P023 주차면에 배정한다.
 -- =====================================================
@@ -1657,6 +1609,19 @@ VALUES
     ('ETC', '자주하는 질문에서 해결하지 못한 내용은 어떻게 문의하나요?', '1:1 문의 화면에서 문의하기 버튼을 선택해 문의를 등록해 주세요. 등록한 문의와 관리자 답변은 내 문의에서 확인할 수 있습니다.');
 
 
+INSERT INTO board_comment
+    (comment_no, board_no, member_no, parent_comment_no, content)
+VALUES
+    (1,  1, 7,  NULL, '점검 시간에는 엘리베이터를 전혀 이용할 수 없나요?'),                                 -- 게시글 1의 최상위 댓글(1단계)
+    (2,  1, 9,  1,    '저도 출근 시간과 겹치는지 확인해야겠네요.'),                                        -- 게시글 1의 1번 댓글에 대한 답글(2단계)
+    (3,  1, 10, NULL, '고층에 사시는 분들은 옥상을 통해 옆 동으로 이동해서 엘리베이터를 이용할 수도 있어요.'),   -- 게시글 1의 최상위 댓글(1단계)
 
+    (4,  2, 10, NULL, '단수 시간에 급하게 물을 사용해야 할 경우 이용할 수 있는 시설이 따로 있나요?'),          -- 게시글 2의 최상위 댓글(1단계)
+    (5,  2, 5,  4,    '혹시 모르니 미리 사용할 물을 받아두는 게 좋을 것 같아요.'),                          -- 게시글 2의 4번 댓글에 대한 답글(2단계)
+    (6,  2, 6,  5,    '지난번 단수 때는 관리동 화장실을 이용할 수 있었어요.'),                              -- 게시글 2의 5번 댓글에 대한 답글(3단계)
 
+    (7,  3, 5,  NULL, '나눔 장터에 판매자로 참여하려면 따로 신청해야 하나요?'),                             -- 게시글 3의 최상위 댓글(1단계)
+    (8,  3, 1,  7,    '관리실에서 신청서를 작성하실 수 있습니다.'),                                       -- 게시글 3의 7번 댓글에 대한 답글(2단계)
+    (9,  3, 5,  8,    '빠른 답변 감사드립니다.'),                                                      -- 게시글 3의 8번 댓글에 대한 답글(3단계)
+    (10, 3, 9,  NULL, '아이들과 함께 참여해도 괜찮은가요?');                                             -- 게시글 3의 최상위 댓글(1단계)
 COMMIT;

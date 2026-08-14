@@ -30,11 +30,14 @@ public class Jwtfilter extends OncePerRequestFilter {
         System.out.println("👉 URI: " + request.getRequestURI());
         System.out.println("👉 Method: " + request.getMethod());
 
-        // 로그인 화면은 JWT 검사 제외
+        // 로그인·회원가입·키오스크 정산 요청은 JWT 검사에서 제외한다.
         String uri = request.getRequestURI();
 
-        if (uri.startsWith("/api/login") || uri.startsWith("/api/joinus")) {
-            System.out.println("👉 LOGIN 요청 감지 → JWT 검사 스킵");
+        if (uri.startsWith("/api/login")
+                || uri.startsWith("/api/joinus")
+                || uri.startsWith("/api/billing")
+                || uri.equals("/api/robot-tasks/park-out") ) {
+            System.out.println("👉 공개 API 요청 감지 → JWT 검사 스킵");
             filterChain.doFilter(request,response);
             return;
         }

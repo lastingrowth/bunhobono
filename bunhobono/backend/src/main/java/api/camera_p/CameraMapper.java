@@ -25,7 +25,6 @@ public interface CameraMapper {
                     "c.camera_type, " +
                     "c.install_date, " +
                     "c.active, " +
-                    "c.camera_status, " +
                     "p.parking_name " +
                     "FROM camera c " +
                     "LEFT JOIN gate g ON c.gate_no = g.gate_no " +
@@ -54,10 +53,15 @@ public interface CameraMapper {
      */
     // 카메라 비활성화
     @Update("""
-    UPDATE camera
+    UPDATE camera c
     SET active = FALSE
-    WHERE camera_no = #{cameraNo}
-      AND active = TRUE
+    WHERE c.camera_no = #{cameraNo}
+      AND c.active = TRUE
+      AND NOT EXISTS (
+          SELECT 1
+          FROM camera_data cd
+          WHERE cd.camera_no = c.camera_no
+      )
     """)
     int delete(int cameraNo);
 
