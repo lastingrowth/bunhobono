@@ -90,10 +90,25 @@ public interface ParkingMapper {
 
     // 주차장을 비활성화한다.
     @Update("""
-        UPDATE parking
+        UPDATE parking p
         SET active = FALSE
-        WHERE parking_no = #{parkingNo}
-          AND active = TRUE
+        WHERE p.parking_no = #{parkingNo}
+          AND p.active = TRUE
+          AND NOT EXISTS (
+              SELECT 1
+              FROM gate g
+              WHERE g.parking_no = p.parking_no
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM parking_space ps
+              WHERE ps.parking_no = p.parking_no
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM kiosk k
+              WHERE k.parking_no = p.parking_no
+          )
     """)
     int delete(int parkingNo);
 

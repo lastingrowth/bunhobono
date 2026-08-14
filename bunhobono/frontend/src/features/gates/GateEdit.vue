@@ -18,6 +18,11 @@
       </div>
 
       <div class="form-group">
+        <label for="gateCode">게이트 코드</label>
+        <input id="gateCode" v-model="gate.gateCode" type="text" required />
+      </div>
+
+      <div class="form-group">
         <label for="gateName">게이트 이름</label>
         <input id="gateName" v-model="gate.gateName" type="text" required />
       </div>
@@ -27,8 +32,12 @@
         <select id="gateType" v-model="gate.gateType">
           <option value="In">In</option>
           <option value="Out">Out</option>
-          <option value="Both">Both</option>
         </select>
+      </div>
+
+      <div class="form-group">
+        <label for="gateArea">게이트 구역</label>
+        <input id="gateArea" v-model="gate.gateArea" type="text" required />
       </div>
 
       <div class="form-actions">
@@ -52,8 +61,10 @@ const pStore = useParkingsStore();
 
 const gate = ref({
   gateNo: route.params.gateNo,
+  gateCode: "",
   gateName: "",
   gateType: "In",
+  gateArea: "",
   parkingNo: "",
 });
 
@@ -73,8 +84,10 @@ onMounted(async () => {
 
   gate.value = {
     gateNo: selectedGate.gateNo,
+    gateCode: selectedGate.gateCode,
     gateName: selectedGate.gateName,
     gateType: selectedGate.gateType,
+    gateArea: selectedGate.gateArea,
     parkingNo: selectedGate.parkingNo,
   };
 });
