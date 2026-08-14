@@ -5,7 +5,14 @@
       :type="feedbackType"
     />
 
-    <div v-if="mode !== 'form'" class="resident-vehicle-header">
+    <div
+      v-if="mode !== 'form'"
+      class="resident-vehicle-header"
+      :class="{
+        'notification-mode': mode === 'notification',
+        'list-mode': mode === 'list'
+      }"
+    >
       <h2>차량관리</h2>
 
       <div class="resident-vehicle-header-actions">
@@ -578,11 +585,14 @@ async function deleteDetailNotification(memNoticeNo) {
 
 @media (max-width: 600px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
-    width: calc(100% - 12px);
+    width: calc(100% - 24px);
   }
 
+  .resident-vehicle-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .resident-vehicle-header-actions { display: none; }
+
   .vehicle-management-section {
-    padding: 18px;
+    padding: 16px 12px;
   }
 
   .vehicle-management-section-header {
@@ -590,12 +600,19 @@ async function deleteDetailNotification(memNoticeNo) {
     flex-direction: column;
   }
 
-  .visit-application-actions { align-items: flex-end; flex-direction: column-reverse; }
+  .visit-application-actions { width: 100%; align-items: stretch; flex-direction: column-reverse; }
+  .visit-application-actions button { width: 100%; min-height: 44px; }
 }
 
 .resident-vehicle-header-actions { display: flex; align-items: center; gap: 8px; }
 
-@media (min-width: 601px) and (max-width: 900px) {
+@media (max-width: 760px) {
+  .resident-vehicle-header-actions { display: none !important; }
+  .resident-vehicle-header:is(.notification-mode,.list-mode) { display: none; }
+  .resident-vehicle-member { display: none; }
+}
+
+@media (min-width: 761px) and (max-width: 900px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
     width: calc(100% - 36px);
   }

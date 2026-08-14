@@ -150,4 +150,70 @@ async function loginGo() {
     bottom: 16px;
   }
 }
+
+/* 모바일 로그인 화면 */
+@media (max-width: 560px) {
+  .login-card {
+    padding: 28px 22px;
+  }
+
+  .login-brand {
+    margin-bottom: 20px;
+  }
+
+  .brand-symbol {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 12px;
+    font-size: 29px;
+  }
+
+  .login-brand h1 {
+    margin-bottom: 6px;
+    font-size: 24px;
+    line-height: 1.3;
+  }
+
+  .login-brand p {
+    font-size: 10px;
+    letter-spacing: 3px;
+  }
+
+  .login-title {
+    margin-bottom: 18px;
+    font-size: 20px;
+  }
+
+  .login-form {
+    gap: 16px;
+  }
+
+  .form-field {
+    gap: 7px;
+  }
+
+  .form-field input {
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .account-actions {
+    margin-top: 18px;
+    gap: 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .login-card {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .account-actions {
+    gap: 6px;
+    font-size: 12px;
+  }
+}
 </style>

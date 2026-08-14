@@ -5,7 +5,7 @@
         <div>
           <h2>공지사항</h2>
         </div>
-        <button type="button" @click="goDashboard">대시보드로 돌아가기</button>
+        <button type="button" class="dashboard-return-button" @click="goDashboard">대시보드로 돌아가기</button>
       </header>
 
       <p v-if="store.loading" class="page-state">공지사항을 불러오는 중입니다.</p>
@@ -455,8 +455,13 @@ watch(currentPage, () => {
 
   .detail-navigation {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
+
+  .dashboard-return-button,
+  .detail-navigation .home-button { display: none; }
+
+  .detail-navigation button { width: 100%; min-height: 44px; }
 
   .board-card-list {
     grid-template-columns: 1fr;
@@ -465,5 +470,12 @@ watch(currentPage, () => {
   .board-card {
     min-height: 0;
   }
+
+  .card-heading { align-items: flex-start; gap: 10px; }
+  .card-copy { padding: 16px; }
+  .board-detail { min-width: 0; }
+  .detail-content { min-height: 0; padding: 16px 14px; overflow-wrap: anywhere; }
+  .detail-image img { width: 100%; height: auto; object-fit: contain; }
+  .detail-period { align-items: flex-start; flex-direction: column; gap: 8px; }
 }
 </style>

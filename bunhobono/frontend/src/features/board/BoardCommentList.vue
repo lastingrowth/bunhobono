@@ -316,5 +316,16 @@ button:disabled { cursor: default; opacity: .55; }
 .comment-section:not(.admin-comments) .comment-content :deep(.comment-meta strong) { color: #263746; }
 .comment-section:not(.admin-comments) .comment-content :deep(.comment-meta .edited) { color: #557188; }
 .comment-section:not(.admin-comments) .comment-content :deep(.delete) { color: #111; }
-@media (max-width: 600px) { .depth-2,.depth-3,.reply-form { margin-left: 12px; } }
+@media (max-width: 600px) {
+  .comment-section { min-width: 0; padding: 14px 0; }
+  .write-form { padding: 14px; }
+  .write-form textarea { min-height: 76px; font-size: 16px; }
+  .write-footer { align-items: center; }
+  .write-footer button { min-height: 44px; }
+  .comment { padding: 14px 12px; }
+  .depth-2,.depth-3,.reply-form { margin-left: 10px; }
+  .comment-header { align-items: flex-start; flex-wrap: wrap; gap: 6px; }
+  .comment-actions { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+  .comment-actions button { min-height: 40px; }
+}
 </style>

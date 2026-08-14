@@ -26,13 +26,20 @@
             <th>방문 시작</th>
             <td>
               <div class="visit-date-fields">
-                <input
-                  v-model="form.visitDate"
-                  type="date"
-                  :min="minimumVisitDate"
-                  required
-                  @change="clearInvalidTime"
-                >
+                <label class="visit-date-control">
+                  <span class="visit-date-guide">방문 시작일을 선택하세요</span>
+                  <span class="visit-date-display">
+                    {{ form.visitDate ? form.visitDate.replaceAll('-', '. ') + '.' : '날짜 선택' }}
+                  </span>
+                  <input
+                    v-model="form.visitDate"
+                    type="date"
+                    :min="minimumVisitDate"
+                    aria-label="방문 시작일 선택"
+                    required
+                    @change="clearInvalidTime"
+                  >
+                </label>
 
                 <select
                   v-model="form.visitHour"
@@ -401,6 +408,14 @@ function pad(value) {
   margin-bottom: 6px;
 }
 
+.visit-date-guide {
+  display: none;
+}
+
+.visit-date-display {
+  display: none;
+}
+
 .visit-form-action-buttons {
   display: flex;
   justify-content: flex-end;
@@ -422,8 +437,60 @@ function pad(value) {
 }
 
 @media (max-width: 600px) {
+  table, tbody, tr, th, td { display: block; width: 100%; }
+  table { min-width: 0; }
+  tr { padding: 10px 0; }
+  th, td { padding: 6px 0; border: 0; }
   .visit-date-fields {
     grid-template-columns: 1fr;
   }
+  .visit-date-control {
+    position: relative;
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    gap: 7px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #c8d8e5;
+    border-radius: 10px;
+    background: #f4f8fb;
+    overflow: hidden;
+  }
+  .visit-date-guide {
+    display: block;
+    color: #315d7d;
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .visit-date-display {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #aebfcd;
+    border-radius: 8px;
+    color: #273f52;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .visit-date-control input[type="date"] {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  input, select { width: 100%; min-height: 46px; font-size: 16px; }
+  .visit-form-action-buttons { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .visit-form-action-buttons button { width: 100%; min-height: 46px; }
 }
 </style>

@@ -579,15 +579,33 @@ button:disabled {
 @media (max-width: 760px) {
   .resident-inquiry-page {
     width: calc(100% - 24px);
-    padding: 18px;
+    margin: 12px auto;
+    padding: 18px 14px;
   }
 
+  .page-header { align-items: stretch; flex-direction: column; gap: 12px; }
+  .header-actions { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .header-actions button { width: 100%; min-height: 44px; }
+
   .inquiry-row {
-    grid-template-columns: 70px 1fr;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px 10px;
+    padding: 14px 12px;
   }
 
   .inquiry-row time {
     grid-column: 2;
   }
+  .inquiry-row .title { white-space: normal; overflow-wrap: anywhere; }
+  .inquiry-form { padding: 16px 12px; }
+  .inquiry-form input,
+  .inquiry-form select,
+  .inquiry-form textarea { width: 100%; font-size: 16px; }
+  .inquiry-form textarea { min-height: 150px; }
+  .form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .form-actions button { width: 100%; min-height: 46px; }
+  .detail-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .content-box, .answer-box, .waiting-box { padding: 16px 14px; overflow-wrap: anywhere; }
+  .delete-button { width: 100%; min-height: 44px; }
 }
 </style>
