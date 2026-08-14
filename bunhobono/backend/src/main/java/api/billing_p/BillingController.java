@@ -49,6 +49,44 @@ public class BillingController {
         return billingService.findAdminBillingList();
     }
 
+    // 등록된 요금 규칙 목록 조회
+    @GetMapping("/admin/fee-rules")
+    public List<FeeRuleDTO> feeRuleList() {
+        return billingService.findFeeRuleList();
+    }
+
+    // 새로운 요금 규칙 등록
+    @PostMapping("/admin/fee-rules")
+    public FeeRuleDTO createFeeRule(
+            @RequestBody FeeRuleDTO dto
+    ) {
+        return billingService.createFeeRule(dto);
+    }
+
+    // 요금 규칙의 적용 종료일시 수정
+    @PatchMapping("/admin/fee-rules/{feeRuleNo}/effective-to")
+    public FeeRuleDTO updateFeeRuleEffectiveTo(
+            @PathVariable int feeRuleNo,
+            @RequestBody FeeRuleDTO dto
+    ) {
+        return billingService.updateFeeRuleEffectiveTo(
+                feeRuleNo,
+                dto.getEffectiveTo()
+        );
+    }
+
+    // 예약 상태의 요금 규칙 전체 수정
+    @PatchMapping("/admin/fee-rules/{feeRuleNo}")
+    public FeeRuleDTO updateScheduledFeeRule(
+            @PathVariable int feeRuleNo,
+            @RequestBody FeeRuleDTO dto
+    ) {
+        return billingService.updateScheduledFeeRule(
+                feeRuleNo,
+                dto
+        );
+    }
+
     // 입출차 기록 번호로 관리자 정산 상세정보 조회
     @GetMapping("/admin/{carLogNo}")
     public BillDTO adminDetail(

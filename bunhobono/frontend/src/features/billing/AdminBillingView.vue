@@ -2,6 +2,14 @@
   <section class="management-list-page billing-admin-page">
     <header class="management-list-header billing-admin-header">
       <h2 class="management-list-title">정산 목록</h2>
+
+      <button
+        type="button"
+        class="fee-rule-button"
+        @click="goFeeRules"
+      >
+        요금 규칙 관리
+      </button>
     </header>
 
     <p v-if="billingStore.loading" class="page-state">
@@ -189,6 +197,13 @@ const amountText = (amount) => {
   return `${Number(amount).toLocaleString('ko-KR')}원`
 }
 
+// 요금 규칙 관리 화면으로 이동한다.
+const goFeeRules = () => {
+  router.push({
+    name: 'AdminFeeRuleList'
+  })
+}
+
 // 선택한 입출차 기록의 정산 상세 화면으로 이동한다.
 const goDetail = (carLogNo) => {
   router.push({
@@ -268,6 +283,18 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.fee-rule-button {
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid #d4b83f;
+  border-radius: 0;
+  color: #1f2428;
+  background: #d4b83f;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .billing-admin-page table {

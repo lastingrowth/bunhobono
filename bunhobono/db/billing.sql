@@ -8,8 +8,8 @@ DROP TABLE IF EXISTS fee_rule;
 -- 방문차량의 무료시간 종료 후와 미등록차량의 입차 직후부터 적용할
 -- 주차요금 계산 규칙을 관리한다.
 -- 요금 계산과 값 검증은 백엔드에서 처리한다.
--- 사용 중인 규칙은 직접 수정하지 않고 비활성화한 뒤
--- 새로운 규칙을 등록하여 기존 정산 기록의 계산 기준을 보존한다.
+-- 적용 시작·종료시각으로 요금 규칙의 사용 기간을 관리하고
+-- 기존 정산 기록은 당시 연결된 요금 규칙을 계속 참조한다.
 -- =====================================================
 CREATE TABLE fee_rule (
 
@@ -23,13 +23,13 @@ CREATE TABLE fee_rule (
 
     daily_max_fee NUMERIC(12, 0),                           -- 과금 24시간당 부과할 수 있는 최대요금
                                                              -- 최대요금 제한이 없으면 NULL
-
-    active BOOLEAN NOT NULL DEFAULT TRUE,                   -- 현재 요금 규칙 사용 여부
-
     created_at TIMESTAMP NOT NULL
         DEFAULT CURRENT_TIMESTAMP,                           -- 요금 규칙 등록 시각
 
-	effective_from TIMESTAMP NOT NULL                     	-- 요금 규칙 적용 시작시각
+	effective_from TIMESTAMP NOT NULL,                     	-- 요금 규칙 적용 시작시각
+
+	effective_to TIMESTAMP                                  -- 요금 규칙 적용 종료시각
+                                                             -- 종료 예정이 없으면 NULL
 );
 
 

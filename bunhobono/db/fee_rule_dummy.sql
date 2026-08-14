@@ -21,18 +21,18 @@ INSERT INTO fee_rule (
     unit_minutes,             -- 요금이 한 번 부과되는 시간 단위(분)
     unit_fee,                 -- 시간 단위마다 부과되는 금액
     daily_max_fee,            -- 과금 24시간당 최대요금
-    active,                   -- 현재 요금 규칙 사용 여부
     created_at,               -- 요금 규칙 등록 시각
-	effective_from            -- 요금 규칙 적용 시작시각
+	effective_from,           -- 요금 규칙 적용 시작시각
+	effective_to			  -- 요금 규칙 적용 종료시각
 )
 VALUES (
     '일반 시간당 주차요금',
     30,                       -- 30분 단위
     1000,                     -- 30분당 1,000원
     15000,                    -- 과금 24시간당 최대 15,000원
-    TRUE,
     CURRENT_TIMESTAMP,
-	CURRENT_TIMESTAMP
+	CURRENT_TIMESTAMP,
+	NULL
 );
 
 
