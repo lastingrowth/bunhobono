@@ -387,44 +387,38 @@ CREATE TABLE robot_pdm (
 );
 
 -- =====================================================
--- VEHICLE NOTIFICATION
--- 입주민 차량 관련 알림과 읽음 상태를 보관한다.
+-- MEMBER NOTICE
+-- 입주민에게 전달하는 통합 알림과 읽음 상태를 보관한다.
 -- =====================================================
-CREATE TABLE vehicle_nt (
+CREATE TABLE mem_notice (
 
-    vehicle_nt_no SERIAL PRIMARY KEY,                         -- 차량 알림 고유번호
+    mem_notice_no SERIAL PRIMARY KEY,                         -- 입주민 알림 고유번호
 
-    recipient_member_no INT NOT NULL                          -- 알림을 받는 회원 고유번호
+    recipient_member_no INT NOT NULL                          -- 알림을 받는 입주민 회원 고유번호
         REFERENCES member(member_no)
         ON DELETE CASCADE,                                    -- 수신 회원 삭제 시 해당 회원의 알림도 삭제
-    sender_member_no INT                                      -- 알림을 보낸 관리자·회원 고유번호
-        REFERENCES member(member_no)
-        ON DELETE SET NULL,                                   -- 발신 회원 삭제 후에도 알림은 유지
-    vehicle_car_no INT                                        -- 알림과 관련된 등록·방문 차량 고유번호
-        REFERENCES vehicle_car(vehicle_car_no)
-        ON DELETE SET NULL,                                   -- 차량정보 삭제 후에도 알림은 유지
-    car_log_no INT                                            -- 알림과 관련된 입출차 기록 고유번호
-        REFERENCES car_log(car_log_no)
-        ON DELETE SET NULL,                                   -- 입출차 기록 삭제 후에도 알림은 유지
-		
-    snapshot_car_no VARCHAR(20) NOT NULL,                     -- 관련 차량이 삭제되어도 유지되는 차량번호 스냅숏
-    notification_type VARCHAR(30) NOT NULL                    -- 차량 알림 종류
-        CHECK (
-            notification_type IN (
-                'ADMIN_APPROVED',                             -- 관리자가 차량 등록을 승인한 알림
-                'ADMIN_REJECTED',                             -- 관리자가 차량 등록을 거절한 알림
-                'APPROVAL_TIMEOUT',                           -- 승인 대기시간이 초과된 알림
-                'NO_ENTRY_EXPIRED',                           -- 방문차량이 예정시간 내 입차하지 않아 만료된 알림
-                'VISIT_OVERDUE',                              -- 방문차량이 허용시간을 초과해 주차 중인 알림
-                'VISIT_OVERDUE_EXIT'                          -- 주차시간을 초과한 방문차량이 출차한 알림
-            )
-        ),
-    message VARCHAR(500) NOT NULL,                            -- 사용자에게 표시할 알림 내용
-    overdue_minutes INT                                       -- 방문차량의 허용시간 초과 분
-        CHECK (overdue_minutes >= 0),
+
+    reference_table VARCHAR(50) NOT NULL,                     -- 알림을 발생시킨 원본 테이블 이름
+    reference_no INT NOT NULL,                                -- 원본 테이블 데이터의 고유번호
+
+    notice_type VARCHAR(40) NOT NULL,                         -- 알림 종류
+    title VARCHAR(100) NOT NULL,                              -- 알림 제목
+    message VARCHAR(500) NOT NULL,                            -- 알림 내용
+
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- 알림 생성 시각
-    read_at TIMESTAMP                                         -- 회원이 알림을 읽은 시각
+    read_at TIMESTAMP,                                        -- 알림 확인 시각, NULL이면 읽지 않음
+
+    CONSTRAINT uq_mem_notice_reference UNIQUE (               -- 동일한 원본의 같은 알림 중복 방지
+        recipient_member_no,
+        reference_table,
+        reference_no,
+        notice_type
+    )
 );
+
+-- 입주민별 알림을 최신순으로 조회할 때 사용한다.
+CREATE INDEX idx_mem_notice_recipient_created
+    ON mem_notice(recipient_member_no, created_at DESC);
 
 -- =====================================================
 -- NOTICE

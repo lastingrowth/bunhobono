@@ -117,7 +117,7 @@ onMounted(async () => {
 .vehicle-list-text-link {
     display: inline-block;
     margin-top: 8px;
-    color: #287fd5;
+    color: var(--resident-accent);
     font-size: 14px;
     font-weight: 700;
     text-decoration: underline;

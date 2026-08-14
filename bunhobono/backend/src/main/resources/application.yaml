@@ -50,3 +50,7 @@ gemini:
     # GEMINI_API_KEY
     api-key: ${GEMINI_API_KEY:}
     model: gemini-3.1-flash-lite
+
+toss:
+  # 실제 결제 승인 테스트 시 환경변수 TOSS_SECRET_KEY를 설정한다.
+  secret-key: ${TOSS_SECRET_KEY:}

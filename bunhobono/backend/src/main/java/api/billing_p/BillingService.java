@@ -3,6 +3,8 @@ package api.billing_p;
 import api.kiosk_p.KioskDTO;
 import api.kiosk_p.KioskService;
 import api.trash_p.TrashService;
+import api.mem_notice_p.MemNoticeDTO;
+import api.mem_notice_p.MemNoticeService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -17,10 +19,12 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,6 +45,7 @@ public class BillingService {
 
     @Resource
     private TrashService trashService;
+    private MemNoticeService memNoticeService;
 
     // 로컬 설정파일에 저장한 토스페이먼츠 시크릿 키
     @Value("${toss.secret-key}")
@@ -223,6 +228,12 @@ public class BillingService {
                         "정산서를 생성하지 못했습니다."
                 );
             }
+
+            // 입주민이 등록한 방문차량에 유료 정산서가 최초 생성되면
+            // 해당 방문차량을 등록한 입주민에게 고지 알림을 생성한다.
+            if (bill.getBillAmount().compareTo(BigDecimal.ZERO) > 0) {
+                createVisitParkingFeeNotification(bill);
+            }
         } else {
             // 기존 미결제 정산서는 처음 적용한 요금 규칙을 유지한다.
             bill.setKioskNo(kioskNo);
@@ -279,6 +290,45 @@ public class BillingService {
         return billingMapper.findByCarLogNo(
                 parkingLog.getCarLogNo()
         );
+    }
+
+    // 등록 방문차량의 주차요금 고지 알림 생성
+    private void createVisitParkingFeeNotification(BillDTO bill) {
+        BillDTO visitRegistrant =
+                billingMapper.findVisitRegistrantByCarLogNo(
+                        bill.getCarLogNo()
+                );
+
+        // 일반차량 또는 입주민이 등록하지 않은 차량은 알림 대상이 아니다.
+        if (visitRegistrant == null) {
+            return;
+        }
+
+        String formattedAmount =
+                NumberFormat.getNumberInstance(Locale.KOREA)
+                        .format(bill.getBillAmount());
+
+        MemNoticeDTO notice = new MemNoticeDTO();
+        notice.setRecipientMemberNo(
+                visitRegistrant.getMemberNo()
+        );
+        notice.setReferenceTable("bill");
+        notice.setReferenceNo(bill.getBillNo());
+        notice.setNoticeType(
+                "VISIT_PARKING_FEE_ISSUED"
+        );
+        notice.setTitle(
+                "방문차량 주차요금 발생"
+        );
+        notice.setMessage(
+                "등록하신 방문차량 "
+                        + visitRegistrant.getCarNo()
+                        + "에 주차요금 "
+                        + formattedAmount
+                        + "원이 부과되었습니다."
+        );
+
+        memNoticeService.createNotification(notice);
     }
 
     // 토스페이먼츠 결제를 승인하고 정산서를 결제완료 상태로 변경한다

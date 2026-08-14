@@ -3,6 +3,7 @@
     :class="{
         'admin-layout': route.path.startsWith('/admin'),
         'resident-layout': isResidentRoute,
+        'resident-menu-visible': showResidentFloatingMenu,
     }">
         <Header
             :show-sidebar-toggle="!isResidentRoute"

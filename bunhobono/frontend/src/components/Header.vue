@@ -11,48 +11,6 @@
 
         <!-- 입주민 헤더 -->
         <div v-if="isResidentDashboard" class="resident-header-actions">
-            <div class="resident-menu-wrap">
-                <button
-                    type="button"
-                    class="resident-menu-button"
-                    :aria-expanded="residentMenuOpen"
-                    @click="residentMenuOpen = !residentMenuOpen"
-                >
-                    메뉴 <span aria-hidden="true">▾</span>
-                </button>
-                <nav v-if="residentMenuOpen" class="resident-dropdown-menu" aria-label="입주민 메뉴">
-                    <RouterLink
-                        to="/resident/mypage"
-                        :class="{ 'menu-active': route.path.startsWith('/resident/mypage') }"
-                        @click="closeResidentMenu"
-                    >내 정보 상세보기</RouterLink>
-                    <RouterLink
-                        to="/resident/vehicles"
-                        :class="{ 'menu-active': route.path === '/resident/vehicles' && route.query.mode !== 'notification' }"
-                        @click="closeResidentMenu"
-                    >차량 관리</RouterLink>
-                    <RouterLink
-                        to="/resident/carlogs"
-                        :class="{ 'menu-active': route.path === '/resident/carlogs' }"
-                        @click="closeResidentMenu"
-                    >입출차 내역</RouterLink>
-                    <RouterLink
-                        to="/resident/boards"
-                        :class="{ 'menu-active': route.path.startsWith('/resident/boards') }"
-                        @click="closeResidentMenu"
-                    >공지사항</RouterLink>
-                    <RouterLink
-                        to="/resident/inquiries"
-                        :class="{ 'menu-active': route.path.startsWith('/resident/inquiries') }"
-                        @click="closeResidentMenu"
-                    >1:1 문의</RouterLink>
-                    <RouterLink
-                        :to="{ path: '/resident/vehicles', query: { mode: 'notification' } }"
-                        :class="{ 'menu-active': route.path === '/resident/vehicles' && route.query.mode === 'notification' }"
-                        @click="closeResidentMenu"
-                    >차량 알림</RouterLink>
-                </nav>
-            </div>
             <div class="resident-header-clock">
                 <span>▣&nbsp; {{ formattedDate }}</span>
                 <i></i>
