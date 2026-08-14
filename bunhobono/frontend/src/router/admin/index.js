@@ -17,6 +17,7 @@ import kiosk from "./kiosk";
 import inquiries from "./inquiries";
 import predictiveMaintenance from "./predictiveMaintenance";
 import parkingMap from "./parkingMap";
+import billing from "./billing";
 
 
 export const adminRoutes = [
@@ -44,6 +45,7 @@ export const adminRoutes = [
             ...statistics,
             ...boards,
             ...kiosk,
+            ...billing,
             ...inquiries,
             ...predictiveMaintenance,
             ...parkingMap,

@@ -12,12 +12,20 @@ public class BillingController {
     @Resource
     private BillingService billingService;
 
-    // 차량번호 뒤 4자리로 현재 주차 중인 차량 목록 조회
+    // 출차 유형, 차량번호 뒤 4자리, 키오스크 번호로 현재 주차 차량 목록을 조회한다.
     @GetMapping("/cars")
     public List<BillDTO> cars(
-            @RequestParam String lastFourDigits
+            @RequestParam String lastFourDigits,
+            @RequestParam String exitType,
+            @RequestParam Integer kioskNo
     ) {
-        return billingService.findParkingCars(lastFourDigits);
+        return billingService.findParkingCars(lastFourDigits, exitType, kioskNo);
+    }
+
+    // 차량이 입차한 주차장과 같은 층의 활성 출차 게이트 번호를 조회한다.
+    @GetMapping("/cars/{carLogNo}/exit-gate")
+    public int exitGate(@PathVariable int carLogNo) {
+        return billingService.findExitGateNo(carLogNo);
     }
 
     // 차량번호로 현재 주차요금 조회
@@ -33,5 +41,40 @@ public class BillingController {
     @PostMapping("/confirm")
     public TossPaymentDTO confirm(@RequestBody TossPaymentDTO dto) {
         return billingService.confirmPayment(dto);
+    }
+
+    // 현재 주차 중인 비입주민 차량의 관리자 정산 목록 조회
+    @GetMapping("/admin")
+    public List<BillDTO> adminList() {
+        return billingService.findAdminBillingList();
+    }
+
+    // 입출차 기록 번호로 관리자 정산 상세정보 조회
+    @GetMapping("/admin/{carLogNo}")
+    public BillDTO adminDetail(
+            @PathVariable int carLogNo
+    ) {
+        return billingService.findAdminBillingDetail(carLogNo);
+    }
+
+    // 미결제 정산의 무료시간 수정 및 정산금액 재계산
+    @PatchMapping("/admin/{carLogNo}")
+    public BillDTO updateAdminBilling(
+            @PathVariable int carLogNo,
+            @RequestBody BillDTO dto
+    ) {
+        return billingService.updateAdminBilling(
+                carLogNo,
+                dto.getFreeTime()
+        );
+    }
+
+    // 관리자가 완료 정산서를 지난 기록으로 직접 이동한다.
+    @DeleteMapping("/admin/{billNo}/archive")
+    public int archiveAdminBilling(
+            @PathVariable int billNo
+    ) {
+        billingService.moveAdminBillingToTrash(billNo);
+        return 1;
     }
 }

@@ -1,5 +1,6 @@
 package api.trash_p;
 
+import api.billing_p.BillingMapper;
 import api.cameradata_p.CameraDataMapper;
 import api.carlog_p.CarLogMapper;
 import api.inquiry_p.InquiryMapper;
@@ -19,6 +20,7 @@ public class TrashService {
     private final CarLogMapper carLogMapper;
     private final NoticeMapper noticeMapper;
     private final InquiryMapper inquiryMapper;
+    private final BillingMapper billingMapper;
 
     public List<TrashDTO> list(String dataType) {
         return trashMapper.list(dataType);
@@ -40,6 +42,7 @@ public class TrashService {
             case "CAR_LOG" -> trashMapper.restoreCarLog(trashNo);
             case "NOTICE" -> trashMapper.restoreNotice(trashNo);
             case "INQUIRY" -> trashMapper.restoreInquiry(trashNo);
+            case "BILL" -> trashMapper.restoreBill(trashNo);
             default -> throw new IllegalArgumentException("복원할 수 없는 데이터 유형입니다: " + trash.getDataType());
         };
 
@@ -115,6 +118,29 @@ public class TrashService {
 
         if (deleted != 1) {
             throw new IllegalStateException("문의사항 삭제에 실패했습니다.");
+        }
+    }
+
+    // 출차가 끝난 완료 정산서를 지난 기록으로 이동
+    @Transactional
+    public void moveBill(int billNo, String deleteType) {
+        int saved = trashMapper.saveBill(
+                billNo,
+                deleteType
+        );
+
+        if (saved != 1) {
+            throw new IllegalArgumentException(
+                    "출차 완료된 정산 내역만 지난 기록으로 이동할 수 있습니다."
+            );
+        }
+
+        int deleted = billingMapper.deletePaidBill(billNo);
+
+        if (deleted != 1) {
+            throw new IllegalStateException(
+                    "완료 정산서 삭제에 실패했습니다."
+            );
         }
     }
     

@@ -16,6 +16,11 @@ public class KioskService {
         return kioskMapper.list();
     }
 
+    // 키오스크 번호로 키오스크가 설치된 주차장 정보를 조회
+    public KioskDTO findByKioskNo(int kioskNo) {
+        return kioskMapper.findByKioskNo(kioskNo);
+    }
+
     // 키오스크 삭제
     public int delete(int kioskNo) {
         return kioskMapper.delete(kioskNo);
