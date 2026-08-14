@@ -21,5 +21,4 @@ public class GateDTO {
 
     // 0: 닫힘, 1: 열림
     private int gateStatus;
-    private String operatingStatus;
 }

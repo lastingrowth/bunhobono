@@ -87,6 +87,39 @@ public interface TrashMapper {
             @Param("deleteType") String deleteType
     );
 
+    // 완료 정산서와 조회에 필요한 차량·입출차·요금 규칙 정보를 함께 저장
+    @Insert("INSERT INTO trash_bin " +
+            "(data_type, original_no, data_json, delete_type) " +
+            "SELECT 'BILL', b.bill_no, " +
+            "to_jsonb(b) || jsonb_build_object(" +
+            "'snapshot_car_no', cl.snapshot_car_no, " +
+            "'snapshot_car_kind', cl.snapshot_car_kind, " +
+            "'in_time', cl.in_time, " +
+            "'out_time', cl.out_time, " +
+            "'free_time', COALESCE(cl.free_time, 0), " +
+            "'parking_code', p.parking_code, " +
+            "'rule_name', fr.rule_name, " +
+            "'unit_minutes', fr.unit_minutes, " +
+            "'unit_fee', fr.unit_fee, " +
+            "'daily_max_fee', fr.daily_max_fee), " +
+            "#{deleteType} " +
+            "FROM bill b " +
+            "JOIN car_log cl " +
+            "ON cl.car_log_no = b.car_log_no " +
+            "JOIN gate in_gate " +
+            "ON in_gate.gate_no = cl.in_gate_no " +
+            "JOIN parking p " +
+            "ON p.parking_no = in_gate.parking_no " +
+            "JOIN fee_rule fr " +
+            "ON fr.fee_rule_no = b.fee_rule_no " +
+            "WHERE b.bill_no = #{billNo} " +
+            "AND b.bill_status = 'PAID' " +
+            "AND cl.out_time IS NOT NULL")
+    int saveBill(
+            @Param("billNo") int billNo,
+            @Param("deleteType") String deleteType
+    );
+
     // 복원 완료 또는 영구 삭제 시 휴지통 행 제거
     @Delete("DELETE FROM trash_bin " +
             "WHERE trash_no = #{trashNo}")
@@ -438,6 +471,74 @@ public interface TrashMapper {
           AND tb.data_type = 'INQUIRY'
         """)
     int restoreInquiry(int trashNo);
+
+    // 휴지통에 보관된 완료 정산서 복원
+    @Insert("""
+    INSERT INTO bill (
+        bill_no,
+        car_log_no,
+        fee_rule_no,
+        kiosk_no,
+        charge_minutes,
+        bill_amount,
+        bill_status,
+        payment_order_id,
+        payment_key,
+        payment_method,
+        issued_at,
+        paid_at
+    )
+    SELECT
+        (tb.data_json ->> 'bill_no')::INT,
+        (tb.data_json ->> 'car_log_no')::INT,
+        (tb.data_json ->> 'fee_rule_no')::INT,
+
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM kiosk k
+                WHERE k.kiosk_no =
+                    NULLIF(
+                        tb.data_json ->> 'kiosk_no',
+                        ''
+                    )::INT
+            )
+            THEN NULLIF(
+                tb.data_json ->> 'kiosk_no',
+                ''
+            )::INT
+            ELSE NULL
+        END,
+
+        (tb.data_json ->> 'charge_minutes')::INT,
+        (tb.data_json ->> 'bill_amount')::NUMERIC,
+        tb.data_json ->> 'bill_status',
+        tb.data_json ->> 'payment_order_id',
+        tb.data_json ->> 'payment_key',
+        tb.data_json ->> 'payment_method',
+        (tb.data_json ->> 'issued_at')::TIMESTAMP,
+        NULLIF(
+            tb.data_json ->> 'paid_at',
+            ''
+        )::TIMESTAMP
+
+    FROM trash_bin tb
+    WHERE tb.trash_no = #{trashNo}
+      AND tb.data_type = 'BILL'
+      AND EXISTS (
+          SELECT 1
+          FROM car_log cl
+          WHERE cl.car_log_no =
+              (tb.data_json ->> 'car_log_no')::INT
+      )
+      AND EXISTS (
+          SELECT 1
+          FROM fee_rule fr
+          WHERE fr.fee_rule_no =
+              (tb.data_json ->> 'fee_rule_no')::INT
+      )
+    """)
+    int restoreBill(int trashNo);
 
     //검색
     @Select("SELECT trash_no, data_type, original_no, " +

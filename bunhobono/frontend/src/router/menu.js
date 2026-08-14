@@ -24,6 +24,10 @@ export const adminMenu = [
     path: '/admin/carlogs'
   },
   {
+    title: '정산 관리',
+    path: '/admin/billing'
+  },
+  {
     title: '알림 관리',
     path: '/admin/notice'
   },

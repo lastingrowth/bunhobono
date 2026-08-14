@@ -97,13 +97,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         }).length;
     });
 
-    const waitingVisitVehicleCount = computed(() => {
-        return vehicleStore.vehicleList.filter((vehicle) => {
-            return vehicle.vehicleType === "visit"
-                && vehicle.vehicleStatus === "WAITING";
-        }).length;
-    });
-
     const waitingMemberCount = computed(() => {
         return memberStore.memberList.filter((member) => {
             return member.role === "RESIDENT"
@@ -118,12 +111,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 title: "알림",
                 count: longParkingNoticeCount.value,
                 path: "/admin/notice",
-            },
-            {
-                key: "visit-approve",
-                title: "방문승인",
-                count: waitingVisitVehicleCount.value,
-                path: "/admin/vehicles?mode=approve",
             },
             {
                 key: "member-approve",
@@ -248,7 +235,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
     // 카메라 승인 대기 차량은 approvalType에 따라
     // 일반 관리실 차량 또는 긴급차량 등록 API를 호출한다.
-    // cameraDataNo가 없는 단순 수동 개방은 기존 게이트 API를 사용한다.
     const openManualGate = async (
         gate,
         cameraDataNo = null,
@@ -281,7 +267,8 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
 
             opened = response.data === 1;
         } else {
-            opened = await gateStore.open(gate.gateNo);
+            alert("차량 촬영 기록을 선택해 주세요.");
+            return false;
         }
 
         if (!opened) {

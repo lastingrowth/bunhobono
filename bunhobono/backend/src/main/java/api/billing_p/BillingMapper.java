@@ -7,23 +7,29 @@ import java.util.List;
 @Mapper
 public interface BillingMapper {
 
-    // 현재 적용할 활성 요금 규칙 조회
+    // 현재시각에 적용 가능한 최신 요금 규칙 조회
     @Select("SELECT fee_rule_no, rule_name, unit_minutes, unit_fee, " +
-            " daily_max_fee, active, created_at " +
+            " daily_max_fee, active, created_at, effective_from " +
             " FROM fee_rule " +
             " WHERE active = TRUE " +
-            " ORDER BY fee_rule_no DESC " +
+            " AND effective_from <= CURRENT_TIMESTAMP " +
+            " ORDER BY effective_from DESC, fee_rule_no DESC " +
             " LIMIT 1")
     FeeRuleDTO findActiveFeeRule();
 
-    // 차량번호로 현재 주차 중인 입출차 기록 조회
+    // 차량번호로 현재 주차 중인 입출차 기록과 입차 주차장을 조회
     @Select("SELECT cl.car_log_no, " +
             " COALESCE(cl.snapshot_car_no, vc.car_no) AS car_no, " +
             " cl.in_time, cl.out_time, " +
-            " COALESCE(cl.free_time, 0) AS free_time " +
+            " COALESCE(cl.free_time, 0) AS free_time, " +
+            " p.parking_no, p.parking_code " +
             " FROM car_log cl " +
             " LEFT JOIN vehicle_car vc " +
             " ON cl.vehicle_car_no = vc.vehicle_car_no " +
+            " JOIN gate in_gate " +
+            " ON in_gate.gate_no = cl.in_gate_no " +
+            " JOIN parking p " +
+            " ON p.parking_no = in_gate.parking_no " +
             " WHERE cl.out_time IS NULL " +
             " AND (cl.snapshot_car_no = #{carNo} " +
             " OR vc.car_no = #{carNo}) " +
@@ -31,18 +37,31 @@ public interface BillingMapper {
             " LIMIT 1")
     BillDTO findOpenCarLogByCarNo(String carNo);
 
-    // 차량번호 뒤 4자리로 현재 주차 중인 차량 목록 조회
+    // 출차 유형과 차량번호 뒤 4자리로 현재 주차 중인 차량과 입차 주차장을 조회
     @Select("SELECT cl.car_log_no, cl.camera_data_no, " +
             " COALESCE(cl.snapshot_car_no, vc.car_no) AS car_no, " +
             " cl.in_time, cl.out_time, " +
-            " COALESCE(cl.free_time, 0) AS free_time " +
+            " COALESCE(cl.free_time, 0) AS free_time, " +
+            " p.parking_no, p.parking_code " +
             " FROM car_log cl " +
             " LEFT JOIN vehicle_car vc " +
             " ON cl.vehicle_car_no = vc.vehicle_car_no " +
+            " JOIN gate in_gate " +
+            " ON in_gate.gate_no = cl.in_gate_no " +
+            " JOIN parking p " +
+            " ON p.parking_no = in_gate.parking_no " +
             " WHERE cl.out_time IS NULL " +
-            " AND RIGHT(COALESCE(cl.snapshot_car_no, vc.car_no), 4) = #{lastFourDigits} " +
+            " AND RIGHT(COALESCE(cl.snapshot_car_no, vc.car_no), 4) " +
+            " = #{lastFourDigits} " +
+            " AND ((#{exitType} = 'RESIDENT' " +
+            " AND cl.snapshot_car_kind = 'REGISTERED') " +
+            " OR (#{exitType} = 'NON_RESIDENT' " +
+            " AND cl.snapshot_car_kind IN ('VISIT', 'UNKNOWN'))) " +
             " ORDER BY cl.in_time DESC")
-    List<BillDTO> findOpenCarLogsByLastFourDigits(String lastFourDigits);
+    List<BillDTO> findOpenCarLogsByLastFourDigits(
+            @Param("lastFourDigits") String lastFourDigits,
+            @Param("exitType") String exitType
+    );
 
     // 입출차 기록에 연결된 정산서 조회
     @Select("SELECT b.bill_no, b.car_log_no, b.fee_rule_no, " +
@@ -114,6 +133,22 @@ public interface BillingMapper {
             " WHERE payment_order_id = #{paymentOrderId}")
     BillDTO findByPaymentOrderId(String paymentOrderId);
 
+    // 로그인한 입주민이 등록한 방문차량의 정산서 한 건 조회
+    @Select("SELECT b.bill_no, b.car_log_no, b.fee_rule_no, " +
+            " b.charge_minutes, b.bill_amount, b.bill_status, " +
+            " b.payment_order_id, b.payment_method, " +
+            " b.issued_at, b.paid_at, " +
+            " COALESCE(cl.snapshot_car_no, vc.car_no) AS car_no, " +
+            " cl.in_time, cl.out_time " +
+            " FROM bill b " +
+            " JOIN car_log cl ON cl.car_log_no = b.car_log_no " +
+            " JOIN vehicle_car vc ON vc.vehicle_car_no = cl.vehicle_car_no " +
+            " JOIN member registrant ON registrant.member_no = vc.member_no " +
+            " WHERE b.bill_no = #{billNo} " +
+            " AND registrant.login_id = #{loginId} " +
+            " AND vc.vehicle_type = 'visit'")
+    BillDTO findResidentBill(BillDTO dto);
+
     // 토스페이먼츠 결제 승인 결과 저장
     @Update("UPDATE bill " +
             " SET bill_status = 'PAID', " +
@@ -133,4 +168,100 @@ public interface BillingMapper {
             " AND bill_amount = 0")
     int markZeroAmountPaid(int billNo);
 
+    // 지난 기록으로 이동하지 않은 비입주민 차량의 정산 목록 조회
+    @Select("SELECT cl.car_log_no, " +
+            " COALESCE(cl.snapshot_car_no, vc.car_no) AS car_no, " +
+            " cl.snapshot_car_kind AS car_kind, " +
+            " cl.in_time, cl.out_time, " +
+            " COALESCE(cl.free_time, 0) AS free_time, " +
+            " p.parking_code, " +
+            " b.bill_no, b.kiosk_no, b.charge_minutes, " +
+            " b.bill_amount, b.bill_status, b.payment_method, " +
+            " b.issued_at, b.paid_at " +
+            " FROM car_log cl " +
+            " LEFT JOIN vehicle_car vc " +
+            " ON cl.vehicle_car_no = vc.vehicle_car_no " +
+            " JOIN gate in_gate " +
+            " ON in_gate.gate_no = cl.in_gate_no " +
+            " JOIN parking p " +
+            " ON p.parking_no = in_gate.parking_no " +
+            " LEFT JOIN bill b " +
+            " ON b.car_log_no = cl.car_log_no " +
+            " WHERE cl.snapshot_car_kind IN ('VISIT', 'UNKNOWN') " +
+//            " AND p.parking_code = 'B2' " +
+            " AND (cl.out_time IS NULL " +
+            " OR b.bill_status = 'PAID') " +
+            " ORDER BY cl.in_time DESC")
+    List<BillDTO> findAdminBillingList();
+
+    // 입출차 기록 번호로 관리자 정산 상세정보 조회
+    @Select("SELECT cl.car_log_no, cl.camera_data_no, " +
+            " COALESCE(cl.snapshot_car_no, vc.car_no) AS car_no, " +
+            " cl.snapshot_car_kind AS car_kind, " +
+            " cl.in_time, cl.out_time, " +
+            " COALESCE(cl.free_time, 0) AS free_time, " +
+            " p.parking_no, p.parking_code, " +
+            " b.bill_no, b.fee_rule_no, b.kiosk_no, " +
+            " b.charge_minutes, b.bill_amount, b.bill_status, " +
+            " b.payment_order_id, b.payment_key, " +
+            " b.payment_method, b.issued_at, b.paid_at, " +
+            " fr.rule_name, fr.unit_minutes, " +
+            " fr.unit_fee, fr.daily_max_fee " +
+            " FROM car_log cl " +
+            " LEFT JOIN vehicle_car vc " +
+            " ON cl.vehicle_car_no = vc.vehicle_car_no " +
+            " JOIN gate in_gate " +
+            " ON in_gate.gate_no = cl.in_gate_no " +
+            " JOIN parking p " +
+            " ON p.parking_no = in_gate.parking_no " +
+            " LEFT JOIN bill b " +
+            " ON b.car_log_no = cl.car_log_no " +
+            " LEFT JOIN fee_rule fr " +
+            " ON fr.fee_rule_no = b.fee_rule_no " +
+            " WHERE cl.car_log_no = #{carLogNo} " +
+            " AND cl.snapshot_car_kind IN ('VISIT', 'UNKNOWN')")
+    BillDTO findAdminBillingDetail(int carLogNo);
+
+    // 정산완료 전 입출차 기록에 적용된 무료시간 수정
+    @Update("UPDATE car_log " +
+            " SET free_time = #{freeTime} " +
+            " WHERE car_log_no = #{carLogNo} " +
+            " AND NOT EXISTS (" +
+            " SELECT 1 " +
+            " FROM bill " +
+            " WHERE bill.car_log_no = car_log.car_log_no " +
+            " AND bill.bill_status = 'PAID'" +
+            " )")
+    int updateAdminFreeTime(BillDTO dto);
+
+    // 차량이 입차한 주차장과 같은 층의 활성 출차 게이트 번호 조회
+    @Select("SELECT out_gate.gate_no " +
+            " FROM car_log " +
+            " JOIN gate in_gate " +
+            " ON car_log.in_gate_no = in_gate.gate_no " +
+            " JOIN gate out_gate " +
+            " ON out_gate.parking_no = in_gate.parking_no " +
+            " WHERE car_log.car_log_no = #{carLogNo} " +
+            " AND car_log.out_time IS NULL " +
+            " AND out_gate.gate_type = 'Out' " +
+            " AND out_gate.active = TRUE " +
+            " ORDER BY out_gate.gate_no " +
+            " LIMIT 1")
+    Integer findExitGateNoByCarLogNo(int carLogNo);
+
+    // 출차 완료 후 3개월이 지난 완료 정산서 번호 조회
+    @Select("SELECT b.bill_no " +
+            " FROM bill b " +
+            " JOIN car_log cl " +
+            " ON cl.car_log_no = b.car_log_no " +
+            " WHERE b.bill_status = 'PAID' " +
+            " AND cl.out_time IS NOT NULL " +
+            " AND cl.out_time < CURRENT_TIMESTAMP - INTERVAL '3 months'")
+    List<Integer> findOldPaidBillNosForTrash();
+
+    // 휴지통 저장이 끝난 완료 정산서 삭제
+    @Delete("DELETE FROM bill " +
+            "WHERE bill_no = #{billNo} " +
+            "AND bill_status = 'PAID'")
+    int deletePaidBill(int billNo);
 }

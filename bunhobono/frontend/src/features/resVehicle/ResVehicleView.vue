@@ -6,7 +6,7 @@
     />
 
     <div v-if="mode !== 'form'" class="resident-vehicle-header">
-      <h2>차량관리</h2>
+      <h2>알림</h2>
 
       <div class="resident-vehicle-header-actions">
         <button
@@ -17,13 +17,6 @@
           차량 알림
         </button>
 
-        <button
-          v-if="mode === 'notification' || mode === 'notification-detail'"
-          type="button"
-          @click="openList"
-        >
-          차량 목록
-        </button>
 
         <button
           type="button"
@@ -102,6 +95,7 @@
         :notification="selectedNotification"
         @back="openNotifications"
         @delete="deleteDetailNotification"
+        @pay="openResidentBillPayment"
       />
     </section>
 
@@ -469,6 +463,13 @@ async function deleteNotification(memNoticeNo) {
 async function deleteDetailNotification(memNoticeNo) {
   await deleteNotification(memNoticeNo);
   openNotifications();
+}
+
+function openResidentBillPayment(billNo) {
+  router.push({
+    name: "ResidentBillPay",
+    params: { billNo }
+  });
 }
 </script>
 

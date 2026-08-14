@@ -7,6 +7,7 @@ import mypage from "./mypage";
 import carlogs from "./carlogs";
 import boards from "./boards";
 import inquiries from "./inquiries";
+import billing from "./billing";
 
 export const residentRoutes = [
     {
@@ -25,6 +26,7 @@ export const residentRoutes = [
             ...carlogs,
             ...boards,
             ...inquiries,
+            ...billing,
         ]
     }
 ]

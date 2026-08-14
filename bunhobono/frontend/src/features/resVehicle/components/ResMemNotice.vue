@@ -36,7 +36,7 @@
             </td>
             <td>
               <span class="notification-type">
-                {{ notificationTypeText(notification.noticeType) }}
+                {{ notification.referenceTable || "-" }}
               </span>
             </td>
             <td class="notification-title">
@@ -92,14 +92,6 @@ defineProps({
 const emit = defineEmits(["open-detail", "delete"]);
 const deleteDialog = ref(null);
 const selectedMemNoticeNo = ref(null);
-
-const notificationTypeText = (type) => {
-  const typeNames = {
-    VISIT_PARKING_FEE_ISSUED: "주차요금"
-  };
-
-  return typeNames[type] || type || "-";
-};
 
 const openDeleteDialog = (notification) => {
   selectedMemNoticeNo.value = notification.memNoticeNo;

@@ -2,10 +2,13 @@ package api.inquiry_p;
 
 import api.a_security_config.AuthService;
 import api.a_security_config.LoginDTO;
+import api.mem_notice_p.MemNoticeDTO;
+import api.mem_notice_p.MemNoticeService;
 import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -31,6 +34,9 @@ public class InquiryService {
 
     @Resource
     private TrashService trashService;
+
+    @Resource
+    private MemNoticeService memNoticeService;
 
 
     // 입주민 문의 등록
@@ -104,6 +110,7 @@ public class InquiryService {
     }
 
     // 관리자 답변 등록
+    @Transactional
     public int answer(int inquiryNo, InquiryDTO dto, String loginId) {
         LoginDTO admin = admin(loginId);
 
@@ -142,7 +149,29 @@ public class InquiryService {
                     "답변을 등록할 수 없습니다."
             );
         }
+
+        createInquiryAnsweredNotification(inquiry);
+
         return answered;
+    }
+
+    // 문의를 작성한 입주민에게 관리자 답변 등록 알림 생성
+    private void createInquiryAnsweredNotification(
+            InquiryDTO inquiry
+    ) {
+        MemNoticeDTO notice = new MemNoticeDTO();
+        notice.setRecipientMemberNo(inquiry.getMemberNo());
+        notice.setReferenceTable("inquiry");
+        notice.setReferenceNo(inquiry.getInquiryNo());
+        notice.setNoticeType("INQUIRY_ANSWERED");
+        notice.setTitle("1:1 문의 답변 등록");
+        notice.setMessage(
+                "문의하신 ‘"
+                        + inquiry.getTitle()
+                        + "’에 답변이 등록되었습니다."
+        );
+
+        memNoticeService.createNotification(notice);
     }
 
     // 입주민 재문의 등록

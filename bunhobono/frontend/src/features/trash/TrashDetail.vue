@@ -158,6 +158,7 @@ const detailTitle = computed(() => {
     CAMERA_DATA: "카메라 데이터",
     CAR_LOG: "입출차 기록",
     NOTICE: "알림 정보",
+    BILL: "정산 내역",
   };
 
   return title[dataType] ?? "원본 데이터";
@@ -217,6 +218,25 @@ const getGateName = (gateNo) => {
   });
 
   return gate?.gateName ?? gate?.gate_name ?? `게이트 ${gateNo}`;
+};
+
+// 정산금액을 원 단위로 표시한다.
+const formatAmount = (value) => {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  return `${Number(value).toLocaleString("ko-KR")}원`;
+};
+
+// 정산상태를 한글로 표시한다.
+const getBillStatusText = (value) => {
+  const statusText = {
+    UNPAID: "미정산",
+    PAID: "정산완료",
+  };
+
+  return statusText[String(value ?? "").toUpperCase()] ?? showValue(value);
 };
 
 const detailRows = computed(() => {
@@ -353,6 +373,83 @@ const detailRows = computed(() => {
       {
         label: "처리 일시",
         value: formatDate(data.handled_at),
+      },
+    ];
+  }
+
+  if (dataType === "BILL") {
+    return [
+      {
+        label: "정산서 번호",
+        value: showValue(data.bill_no),
+      },
+      {
+        label: "카로그 번호",
+        value: showValue(data.car_log_no),
+      },
+      {
+        label: "차량번호",
+        value: showValue(data.snapshot_car_no),
+      },
+      {
+        label: "차량 구분",
+        value: getCarKindText(data.snapshot_car_kind),
+      },
+      {
+        label: "주차장",
+        value: showValue(data.parking_code),
+      },
+      {
+        label: "입차 일시",
+        value: formatDate(data.in_time),
+      },
+      {
+        label: "출차 일시",
+        value: formatDate(data.out_time),
+      },
+      {
+        label: "무료시간",
+        value: `${showValue(data.free_time)}분`,
+      },
+      {
+        label: "과금시간",
+        value: `${showValue(data.charge_minutes)}분`,
+      },
+      {
+        label: "정산금액",
+        value: formatAmount(data.bill_amount),
+      },
+      {
+        label: "정산상태",
+        value: getBillStatusText(data.bill_status),
+      },
+      {
+        label: "결제수단",
+        value: showValue(data.payment_method),
+      },
+      {
+        label: "정산서 발행 일시",
+        value: formatDate(data.issued_at),
+      },
+      {
+        label: "결제 일시",
+        value: formatDate(data.paid_at),
+      },
+      {
+        label: "적용 요금 규칙",
+        value: showValue(data.rule_name),
+      },
+      {
+        label: "요금 단위시간",
+        value: `${showValue(data.unit_minutes)}분`,
+      },
+      {
+        label: "단위요금",
+        value: formatAmount(data.unit_fee),
+      },
+      {
+        label: "일일 최대요금",
+        value: formatAmount(data.daily_max_fee),
       },
     ];
   }

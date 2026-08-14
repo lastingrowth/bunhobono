@@ -31,6 +31,14 @@
     <div class="detail-actions">
       <button type="button" class="delete" @click="$emit('delete', notification.memNoticeNo)">삭제</button>
       <button type="button" @click="$emit('back')">알림 목록</button>
+      <button
+        v-if="canPay"
+        type="button"
+        class="payment"
+        @click="$emit('pay', notification.referenceNo)"
+      >
+        결제하기
+      </button>
     </div>
   </article>
 
@@ -41,7 +49,13 @@
 import { computed } from "vue";
 
 const props = defineProps({ notification: { type: Object, default: null } });
-defineEmits(["back", "delete"]);
+defineEmits(["back", "delete", "pay"]);
+
+const canPay = computed(() => {
+  return props.notification?.referenceTable === "bill"
+    && props.notification?.noticeType === "VISIT_PARKING_FEE_ISSUED"
+    && Number(props.notification?.referenceNo) > 0;
+});
 
 const typeText = computed(() => {
   if (props.notification?.noticeType === "VISIT_PARKING_FEE_ISSUED") return "주차요금";
@@ -72,6 +86,7 @@ const formatDateTime = (value) => {
 .detail-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .detail-actions button { min-width: 100px; height: 42px; }
 .detail-actions .delete { border-color: #db4b4b; color: #db4b4b; background: #fff; }
+.detail-actions .payment { border-color: #23a6d5; color: #fff; background: #23a6d5; }
 .missing-notice { padding: 80px 20px; color: #555; text-align: center; }
 @media(max-width:700px){.mem-notice-detail dl{grid-template-columns:1fr}.mem-notice-detail header{flex-direction:column}.detail-actions button{flex:1}}
 </style>

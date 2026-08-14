@@ -896,11 +896,21 @@ const syncRobotSimulations = () => {
   });
 
   robotSimulations.value
-    .filter((simulation) => !latestBySet.has(Number(simulation.setNo)))
+    .filter((simulation) => {
+      const latestTask = latestBySet.get(Number(simulation.setNo));
+
+      return !latestTask
+        || Number(simulation.taskNo) !== Number(latestTask.taskNo);
+    })
     .forEach((simulation) => cancelSetAnimation(simulation.setNo));
 
   robotSimulations.value = robotSimulations.value.filter(
-    (simulation) => latestBySet.has(Number(simulation.setNo))
+    (simulation) => {
+      const latestTask = latestBySet.get(Number(simulation.setNo));
+
+      return latestTask
+        && Number(simulation.taskNo) === Number(latestTask.taskNo);
+    }
   );
 
   latestBySet.forEach((task, setNo) => {

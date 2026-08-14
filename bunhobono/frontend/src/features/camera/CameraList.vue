@@ -28,7 +28,6 @@
             <th>카메라 이름</th>
             <th>카메라 종류</th>
             <th>설치 날짜</th>
-            <th>현재 상태</th>
             <th>관리</th>
           </tr>
         </thead>
@@ -40,15 +39,10 @@
             <td>{{ c.cameraName }}</td>
             <td>{{ c.cameraType }}</td>
             <td>{{ formatInstallDate(c.installDate) }}</td>
-            <td>
-              <span class="camera-status" :class="statusClass(c.cameraStatus)">
-                {{ statusText(c.cameraStatus) }}
-              </span>
-            </td>
             <td><button class="delete-button" type="button" @click="requestDelete(c)">삭제</button></td>
           </tr>
           <tr v-if="cStore.list.length === 0">
-            <td class="empty-row" colspan="8">등록된 카메라가 없습니다.</td>
+            <td class="empty-row" colspan="7">등록된 카메라가 없습니다.</td>
           </tr>
         </tbody>
       </table>
@@ -207,18 +201,6 @@ const formatInstallDate = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? String(value).split('T')[0] : date.toLocaleDateString('ko-KR');
 };
-
-const statusText = (status) => ({
-  NORMAL: '정상',
-  FAULT: '고장',
-  MAINTENANCE: '점검 중',
-}[status] ?? '-');
-
-const statusClass = (status) => ({
-  NORMAL: 'normal',
-  FAULT: 'fault',
-  MAINTENANCE: 'maintenance',
-}[status] ?? 'unknown');
 
 // 선택한 주차장에 포함된 게이트만 표시
 const filteredGates = computed(() =>
@@ -389,36 +371,6 @@ button:hover {
   padding: 7px 12px;
   color: #d33f49;
   background: #fff0f0;
-}
-
-.camera-status {
-  display: inline-flex;
-  min-width: 54px;
-  padding: 3px 9px;
-  justify-content: center;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.camera-status.normal {
-  color: #18794e;
-  background: #e8f7ef;
-}
-
-.camera-status.fault {
-  color: #c33c46;
-  background: #fff0f1;
-}
-
-.camera-status.maintenance {
-  color: #a8640d;
-  background: #fff6df;
-}
-
-.camera-status.unknown {
-  color: #667085;
-  background: #f0f2f5;
 }
 
 /* 카메라 등록 다이얼로그 */
