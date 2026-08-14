@@ -20,7 +20,6 @@ public interface GateMapper {
             g.gate_type,
             g.gate_area,
             g.gate_status,
-            g.operating_status,
             p.parking_name,
             p.parking_location
         FROM gate g
@@ -56,10 +55,26 @@ public interface GateMapper {
 
     // 게이트 소프트 삭제
     @Update("""
-        UPDATE gate
+        UPDATE gate g
         SET active = FALSE
-        WHERE gate_no = #{gateNo}
-          AND active = TRUE
+        WHERE g.gate_no = #{gateNo}
+          AND g.active = TRUE
+          AND NOT EXISTS (
+              SELECT 1
+              FROM camera c
+              WHERE c.gate_no = g.gate_no
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM car_log cl
+              WHERE cl.in_gate_no = g.gate_no
+                 OR cl.out_gate_no = g.gate_no
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM parking_space ps
+              WHERE ps.gate_no = g.gate_no
+          )
     """)
     int delete(int gateNo);
 
