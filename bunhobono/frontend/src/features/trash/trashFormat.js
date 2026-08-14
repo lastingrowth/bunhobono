@@ -3,6 +3,7 @@ export const getDataTypeText = (dataType) => {
         CAMERA_DATA: "카메라 데이터",
         CAR_LOG: "입출차 기록",
         NOTICE: "알림",
+        BILL: "정산 내역",
     };
 
     return dataTypeText[dataType] ?? dataType;

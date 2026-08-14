@@ -27,7 +27,9 @@ CREATE TABLE fee_rule (
     active BOOLEAN NOT NULL DEFAULT TRUE,                   -- 현재 요금 규칙 사용 여부
 
     created_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP                           -- 요금 규칙 등록 시각
+        DEFAULT CURRENT_TIMESTAMP,                           -- 요금 규칙 등록 시각
+
+	effective_from TIMESTAMP NOT NULL                     	-- 요금 규칙 적용 시작시각
 );
 
 

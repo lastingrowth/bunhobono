@@ -5,130 +5,365 @@
             <h1>주차요금 정산</h1>
         </header>
 
-        <!-- 1단계: 차량번호 뒤 4자리 입력 -->
+        <!-- 0단계: 출차 유형 선택 -->
         <div
-            v-if="
-                billingStore.parkingCars.length === 0
-                && !billingStore.selectedCar
-            "
-            class="billing-step billing-search-step"
+            v-if="!exitType"
+            class="billing-step billing-type-step"
         >
-            <h2>차량번호 뒤 4자리 입력</h2>
+            <h2>출차 유형을 선택해주세요</h2>
 
-            <div class="billing-number-display">
-                {{ lastFourDigits.padEnd(4, '_') }}
-            </div>
-
-            <div class="billing-keypad">
+            <div class="billing-type-actions">
                 <button
-                    v-for="number in keypadNumbers"
-                    :key="number"
                     type="button"
-                    @click="appendNumber(number)"
+                    class="billing-type-button billing-type-resident"
+                    @click="exitType = 'RESIDENT'"
                 >
-                    {{ number }}
+                    <strong>입주민 출차</strong>
+                    <span>차량을 선택하고 바로 출차합니다</span>
                 </button>
 
                 <button
                     type="button"
-                    @click="clearNumber"
+                    class="billing-type-button billing-type-non-resident"
+                    @click="exitType = 'NON_RESIDENT'"
                 >
-                    초기화
-                </button>
-
-                <button
-                    type="button"
-                    @click="appendNumber(0)"
-                >
-                    0
-                </button>
-
-                <button
-                    type="button"
-                    @click="deleteNumber"
-                >
-                    삭제
+                    <strong>비입주민 출차</strong>
+                    <span>차량을 선택하고 주차요금을 정산합니다</span>
                 </button>
             </div>
-
-            <p
-                v-if="billingStore.errorMessage"
-                class="billing-error"
-            >
-                {{ billingStore.errorMessage }}
-            </p>
-
-            <button
-                type="button"
-                class="billing-primary-button"
-                :disabled="
-                    lastFourDigits.length !== 4
-                    || billingStore.loading
-                "
-                @click="searchCars"
-            >
-                {{ billingStore.loading ? '조회 중' : '차량 조회' }}
-            </button>
         </div>
 
-        <!-- 2단계: 뒤 4자리가 일치하는 차량 선택 -->
+        <!-- 1단계: 차량번호 뒤 4자리 입력 -->
         <div
             v-else-if="
-                billingStore.parkingCars.length > 0
+                exitType
                 && !billingStore.selectedCar
             "
-            class="billing-step billing-car-list-step"
+            class="billing-step billing-lookup-step"
         >
-            <h2>내 차량을 선택해주세요</h2>
-
-            <p>
-                검색된 차량
-                {{ billingStore.parkingCars.length }}대
-            </p>
-
-            <div class="billing-car-list">
-                <article
-                    v-for="car in billingStore.parkingCars"
-                    :key="car.carLogNo"
-                    class="billing-car-card"
+            <!-- 뒤로가기 버튼과 현재 출차 유형 제목을 화면 상단에 표시한다. -->
+            <div class="billing-lookup-header">
+                <button
+                    type="button"
+                    class="billing-lookup-back"
+                    @click="backToExitType"
                 >
-                    <img
-                        :src="getCarImageUrl(car.cameraDataNo)"
-                        :alt="`${car.carNo} 입차 차량 이미지`"
-                    />
+                    ← 뒤로가기
+                </button>
 
-                    <div class="billing-car-info">
-                        <strong>{{ car.carNo }}</strong>
-                        <span>
-                            입차시각
-                            {{ formatDateTime(car.inTime) }}
-                        </span>
-                    </div>
+                <h2>
+                    {{
+                        exitType === 'RESIDENT'
+                            ? '입주민 차량 선택'
+                            : '비입주민 차량 선택'
+                    }}
+                </h2>
+            </div>
+
+            <!-- 차량번호 입력과 조회 버튼을 왼쪽 영역에 배치한다. -->
+            <div class="billing-lookup-search">
+                <h2>차량번호 뒤 4자리 입력</h2>
+
+                <div class="billing-number-display">
+                    {{ lastFourDigits.padEnd(4, '_') }}
+                </div>
+
+                <div class="billing-keypad">
+                    <button
+                        v-for="number in keypadNumbers"
+                        :key="number"
+                        type="button"
+                        @click="appendNumber(number)"
+                    >
+                        {{ number }}
+                    </button>
 
                     <button
                         type="button"
-                        :disabled="billingStore.loading"
-                        @click="selectCar(car)"
+                        @click="clearNumber"
                     >
-                        선택
+                        초기화
                     </button>
-                </article>
+
+                    <button
+                        type="button"
+                        @click="appendNumber(0)"
+                    >
+                        0
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="deleteNumber"
+                    >
+                        삭제
+                    </button>
+                </div>
+
+                <p
+                    v-if="billingStore.errorMessage"
+                    class="billing-error"
+                >
+                    {{ billingStore.errorMessage }}
+                </p>
+
+                <button
+                    type="button"
+                    class="billing-primary-button"
+                    :disabled="
+                        lastFourDigits.length !== 4
+                        || billingStore.loading
+                    "
+                    @click="searchCars"
+                >
+                    {{ billingStore.loading ? '조회 중' : '차량 조회' }}
+                </button>
             </div>
 
-            <p
-                v-if="billingStore.errorMessage"
-                class="billing-error"
-            >
-                {{ billingStore.errorMessage }}
-            </p>
+            <!-- 차량번호 조회 전 안내와 조회 결과를 오른쪽 영역에 표시한다. -->
+            <div class="billing-lookup-result">
+                <h2>조회된 차량</h2>
 
-            <button
-                type="button"
-                class="billing-secondary-button"
-                @click="backToSearch"
-            >
-                이전
-            </button>
+                <!-- 차량을 조회하기 전에는 사용 방법을 안내한다. -->
+                <div
+                    v-if="billingStore.parkingCars.length === 0"
+                    class="billing-lookup-empty"
+                >
+                    <p>
+                        차량번호 뒤 4자리를 입력한 후<br />
+                        차량 조회 버튼을 눌러주세요.
+                    </p>
+                </div>
+
+                <!-- 조회된 차량이 있으면 같은 화면 오른쪽에 목록을 표시한다. -->
+                <div
+                    v-else
+                    class="billing-car-list"
+                >
+                    <article
+                        v-for="car in billingStore.parkingCars"
+                        :key="car.carLogNo"
+                        class="billing-car-card"
+                    >
+                        <img
+                            :src="getCarImageUrl(car.cameraDataNo)"
+                            :alt="`${car.carNo} 입차 차량 이미지`"
+                        />
+
+                        <div class="billing-car-info">
+                            <strong>{{ car.carNo }}</strong>
+                            <span>
+                                입차시각
+                                {{ formatDateTime(car.inTime) }}
+                            </span>
+                        </div>
+
+                        <button
+                            type="button"
+                            :disabled="billingStore.loading"
+                            @click="selectCar(car)"
+                        >
+                            선택
+                        </button>
+                    </article>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3단계: 선택한 입주민 차량정보와 출차 여부를 확인한다. -->
+        <div
+            v-else-if="
+                exitType === 'RESIDENT'
+                && billingStore.selectedCar
+            "
+            class="billing-step billing-detail-step"
+        >
+            <!-- 선택한 입주민 차량의 입차 이미지를 표시한다. -->
+            <div class="billing-selected-image">
+                <img
+                    :src="getCarImageUrl(billingStore.selectedCar.cameraDataNo)"
+                    :alt="
+                        `${billingStore.selectedCar.carNo}
+                        선택 차량 이미지`
+                    "
+                />
+            </div>
+
+            <!-- 선택한 입주민 차량정보와 출차 버튼을 표시한다. -->
+            <div class="billing-detail">
+                <h2>입주민 차량 확인</h2>
+
+                <dl>
+                    <div>
+                        <dt>차량번호</dt>
+                        <dd>{{ billingStore.selectedCar.carNo }}</dd>
+                    </div>
+
+                    <div>
+                        <dt>입차시각</dt>
+                        <dd>{{ formatDateTime(billingStore.selectedCar.inTime) }}</dd>
+                    </div>
+
+                                        <div>
+                        <dt>현재 상태</dt>
+                        <dd
+                            v-if="
+                                billingStore.residentExitTask?.taskStatus
+                                === 'COMPLETED'
+                            "
+                        >
+                            출차존 도착
+                        </dd>
+                        <dd
+                            v-else-if="
+                                billingStore.residentExitTask?.taskStatus
+                                === 'FAILED'
+                            "
+                        >
+                            이동 실패
+                        </dd>
+                        <dd v-else-if="residentExitRequested">
+                            {{ residentExitStatusText() }}
+                        </dd>
+                        <dd v-else>
+                            주차 중
+                        </dd>
+                    </div>
+                </dl>
+
+                <!-- 출차 요청 전 확인 문구 -->
+                <p
+                    v-if="!residentExitRequested"
+                    class="billing-exit-confirm"
+                >
+                    선택한 차량을 출차하시겠습니까?
+                </p>
+
+                <!-- 로봇 작업 대기 또는 진행 중 안내 -->
+                <p
+                    v-else-if="
+                        billingStore.residentExitTask?.taskStatus
+                        !== 'COMPLETED'
+                        && billingStore.residentExitTask?.taskStatus
+                        !== 'FAILED'
+                    "
+                    class="billing-complete"
+                >
+                    차량을 출차존으로 이동하고 있습니다.
+                </p>
+
+                <!-- 차량 위치 이동까지 완료된 경우 -->
+                <p
+                    v-else-if="
+                        billingStore.residentExitTask?.taskStatus
+                        === 'COMPLETED'
+                    "
+                    class="billing-complete"
+                >
+                    차량이 출차존에 도착했습니다.
+                </p>
+
+                <!-- 출차존 도착 후 첫 화면 자동 복귀까지 남은 시간을 표시한다. -->
+                <div
+                    v-if="
+                        billingStore.residentExitTask?.taskStatus
+                        === 'COMPLETED'
+                    "
+                    class="billing-exit-countdown"
+                >
+                    <strong>
+                        {{ residentExitResetSeconds }}
+                    </strong>
+
+                    <span>
+                        초 후 자동으로 처음 화면으로 이동합니다
+                    </span>
+                </div>
+
+                <!-- 로봇 출차 작업이 실패한 경우 -->
+                <p
+                    v-if="
+                        billingStore.residentExitTask?.taskStatus
+                        === 'FAILED'
+                    "
+                    class="billing-error"
+                >
+                    {{
+                        billingStore.residentExitTask?.failureReason
+                        || '차량 이동에 실패했습니다.'
+                    }}
+                </p>
+
+                <p
+                    v-if="billingStore.errorMessage"
+                    class="billing-error"
+                >
+                    {{ billingStore.errorMessage }}
+                </p>
+
+                <!-- 출차 요청 전 차량 선택과 출차 실행 버튼 -->
+                <div
+                    v-if="!residentExitRequested"
+                    class="billing-detail-actions"
+                >
+                    <button
+                        type="button"
+                        class="billing-secondary-button"
+                        @click="billingStore.backToCarList"
+                    >
+                        다른 차량 선택
+                    </button>
+
+                    <button
+                        type="button"
+                        class="billing-primary-button"
+                        :disabled="billingStore.loading"
+                        @click="requestResidentExit"
+                    >
+                        바로 출차하기
+                    </button>
+                </div>
+
+                <!-- 이동 중이거나 이동을 완료한 뒤 첫 화면으로 돌아가는 버튼 -->
+                <div
+                    v-else-if="
+                        billingStore.residentExitTask?.taskStatus
+                        !== 'FAILED'
+                    "
+                    class="billing-detail-actions"
+                >
+                    <button
+                        type="button"
+                        class="billing-primary-button"
+                        @click="resetBilling"
+                    >
+                        처음으로
+                    </button>
+                </div>
+
+                <!-- 이동 실패 후 재시도하거나 첫 화면으로 돌아가는 버튼 -->
+                <div
+                    v-else
+                    class="billing-detail-actions"
+                >
+                    <button
+                        type="button"
+                        class="billing-secondary-button"
+                        @click="resetBilling"
+                    >
+                        처음으로
+                    </button>
+
+                    <button
+                        type="button"
+                        class="billing-primary-button"
+                        :disabled="billingStore.loading"
+                        @click="requestResidentExit"
+                    >
+                        다시 시도
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- 3단계: 선택한 차량과 정산금액 확인 -->
@@ -222,7 +457,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBillingStore } from './billingStore'
 import { ANONYMOUS, loadTossPayments } from '@tosspayments/tosspayments-sdk'
@@ -235,6 +470,20 @@ const tossClientKey = import.meta.env.VITE_TOSS_CLIENT_KEY
 
 // 토스페이먼츠 결제창을 불러오는 동안 버튼의 중복 실행을 막는다
 const paymentLoading = ref(false)
+
+// 입주민 차량의 로봇 출차 요청 완료 여부
+const residentExitRequested = ref(false)
+
+// 출차존 도착 후 첫 화면으로 돌아가기까지 남은 시간
+const residentExitResetSeconds = ref(10)
+
+// 로봇 출차 작업 상태를 5초마다 확인하는 타이머
+let residentExitPollTimer = null
+
+// 출차 완료 화면을 보여준 뒤 첫 화면으로 돌아가는 타이머
+let residentExitResetTimer = null
+
+const exitType = ref(null)
 
 const lastFourDigits = ref('')
 const keypadNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -266,21 +515,40 @@ const clearNumber = () => {
     billingStore.errorMessage = ''
 }
 
-// 차량번호 뒤 4자리로 현재 주차 차량을 조회한다.
+// 현재 키오스크에서 차량번호 뒤 4자리와 출차 유형으로 주차 차량을 조회한다.
 const searchCars = async () => {
+    if (!exitType.value) {
+        billingStore.errorMessage =
+            '출차 유형을 먼저 선택해주세요.'
+        return
+    }
+
     if (lastFourDigits.value.length !== 4) {
         billingStore.errorMessage =
             '차량번호 뒤 4자리를 입력해주세요.'
         return
     }
 
+    // 키오스크 번호가 없으면 차량의 주차 층을 비교할 수 없으므로 조회하지 않는다.
+    if (!Number.isInteger(kioskNo) || kioskNo <= 0) {
+        billingStore.errorMessage =
+            '키오스크 정보를 확인할 수 없습니다.'
+        return
+    }
+
     await billingStore.searchCars(
-        lastFourDigits.value
+        lastFourDigits.value,
+        exitType.value,
+        kioskNo
     )
 }
 
-// 후보 목록에서 선택한 차량의 정산금액을 조회한다.
+// 출차 유형에 따라 차량만 선택하거나 정산금액까지 조회한다.
 const selectCar = async (car) => {
+
+    // 새 차량을 선택하면 이전 입주민 출차 완료 상태를 초기화한다.
+    residentExitRequested.value = false
+
     if (!Number.isInteger(kioskNo) || kioskNo <= 0) {
         billingStore.errorMessage =
             '키오스크 정보를 확인할 수 없습니다.'
@@ -289,8 +557,86 @@ const selectCar = async (car) => {
 
     await billingStore.selectCar(
         car,
-        kioskNo
+        kioskNo,
+        exitType.value
     )
+}
+
+// 입주민 출차 상태 조회와 자동 초기화 타이머를 중지한다.
+const stopResidentExitTimers = () => {
+    if (residentExitPollTimer !== null) {
+        window.clearInterval(residentExitPollTimer)
+        residentExitPollTimer = null
+    }
+
+    if (residentExitResetTimer !== null) {
+        window.clearInterval(residentExitResetTimer)
+        residentExitResetTimer = null
+    }
+}
+
+// 로봇 출차 작업의 최신 상태를 조회한다.
+const checkResidentExitTask = async () => {
+    const result = await billingStore.loadResidentExitTask()
+
+    if (!result.success) {
+        return
+    }
+
+    const taskStatus = result.task?.taskStatus
+
+    // 차량 위치 이동까지 완료되면 10초 카운트다운을 시작한다.
+    if (taskStatus === 'COMPLETED') {
+        stopResidentExitTimers()
+        residentExitResetSeconds.value = 10
+
+        residentExitResetTimer = window.setInterval(() => {
+            residentExitResetSeconds.value -= 1
+
+            if (residentExitResetSeconds.value <= 0) {
+                resetBilling()
+            }
+        }, 1000)
+
+        return
+    }
+
+    // 로봇 작업이 실패하면 반복 조회를 중단하고 실패 화면을 유지한다.
+    if (taskStatus === 'FAILED') {
+        stopResidentExitTimers()
+    }
+}
+
+// 선택한 입주민 차량의 로봇 출차 작업을 요청한다.
+const requestResidentExit = async () => {
+    stopResidentExitTimers()
+
+    const result = await billingStore.requestResidentExit()
+
+    if (!result.success) {
+        return
+    }
+
+    residentExitRequested.value = true
+
+    // 생성 직후 현재 작업 상태를 한 번 확인한다.
+    await checkResidentExitTask()
+
+    const taskStatus =
+        billingStore.residentExitTask?.taskStatus
+
+    // 첫 조회에서 이미 종료된 작업이면 반복 조회를 시작하지 않는다.
+    if (
+        taskStatus === 'COMPLETED'
+        || taskStatus === 'FAILED'
+    ) {
+        return
+    }
+
+    // 작업이 끝날 때까지 5초마다 최신 상태를 확인한다.
+    residentExitPollTimer = window.setInterval(() => {
+        checkResidentExitTask()
+    }, 5000)
 }
 
 // 현재 정산서 정보로 토스페이먼츠 카드·간편결제 통합결제창을 실행
@@ -345,15 +691,29 @@ const requestTossPayment = async () => {
     }
 }
 
+// 출차 유형 선택 화면으로 돌아가면서 진행 중인 타이머를 정리한다.
+const backToExitType = () => {
+    stopResidentExitTimers()
+
+    exitType.value = null
+    lastFourDigits.value = ''
+    residentExitRequested.value = false
+    billingStore.reset()
+}
+
 // 차량 선택 화면에서 번호 입력 화면으로 이동한다.
 const backToSearch = () => {
     lastFourDigits.value = ''
     billingStore.backToSearch()
 }
 
-// 정산 상태를 초기화하고 첫 화면으로 이동한다.
+// 타이머와 출차 상태를 초기화하고 첫 화면으로 이동한다.
 const resetBilling = () => {
+    stopResidentExitTimers()
+
+    exitType.value = null
     lastFourDigits.value = ''
+    residentExitRequested.value = false
     billingStore.reset()
 }
 
@@ -366,14 +726,36 @@ const getCarImageUrl = (cameraDataNo) => {
     return `${import.meta.env.VITE_API_URL}/camera-data/${cameraDataNo}/image`
 }
 
+// 로봇 출차 작업 단계를 키오스크 안내 문구로 변환한다.
+const residentExitStatusText = () => {
+    const taskPhase =
+        billingStore.residentExitTask?.taskPhase
+
+    return {
+        WAITING: '로봇 배정 중',
+        TRAFFIC_WAIT_EMPTY: '이동 경로 대기 중',
+        MOVING_TO_PICKUP: '차량 위치로 이동 중',
+        PICKUP_POSITIONING: '차량 위치로 이동 중',
+        LIFTING: '차량을 들어 올리는 중',
+        TRAFFIC_WAIT_LOADED: '출차 이동 경로 대기 중',
+        MOVING_TO_DROPOFF: '출차존으로 이동 중',
+        DROPOFF_POSITIONING: '출차존으로 이동 중',
+        LOWERING: '차량을 내려놓는 중'
+    }[taskPhase] || '출차 작업을 준비하고 있습니다.'
+}
+
 // 날짜와 시간을 화면 표시 형식으로 변환한다.
 const formatDateTime = (value) => {
     if (!value) {
         return '-'
     }
-
     return new Date(value).toLocaleString('ko-KR')
 }
+
+// 키오스크 화면을 벗어나면 남아 있는 반복 조회와 자동 초기화 타이머를 제거한다.
+onUnmounted(() => {
+    stopResidentExitTimers()
+})
 
 // 입차시각부터 현재까지의 전체 주차시간을 계산한다.
 const formatParkingTime = (inTime) => {
@@ -484,11 +866,159 @@ const formatAmount = (value) => {
     font-size: 18px;
 }
 
-.billing-search-step {
-    max-width: 760px;
+/* 첫 화면에서 입주민·비입주민 출차 유형을 선택하는 영역 */
+.billing-type-step {
+    max-width: 920px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+/* 두 출차 유형 버튼을 세로로 배치한다. */
+.billing-type-actions {
+    width: 100%;
+    margin-top: 32px;
+    display: grid;
+    gap: 24px;
+}
+
+/* 출차 유형 버튼의 공통 크기와 내부 문구 배치를 설정한다. */
+.billing-type-button {
+    min-height: 190px;
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+/* 출차 유형 이름을 크게 표시한다. */
+.billing-type-button strong {
+    font-size: clamp(32px, 4vw, 50px);
+    letter-spacing: -0.04em;
+}
+
+/* 출차 유형별 안내 문구를 표시한다. */
+.billing-type-button span {
+    font-size: clamp(17px, 2vw, 22px);
+}
+
+/* 입주민 출차 버튼은 청록색 계열로 구분한다. */
+.billing-type-resident {
+    border-color: #14b8a6;
+    background:
+        linear-gradient(
+            135deg,
+            #0f766e,
+            #0d9488
+        );
+}
+
+/* 비입주민 출차 버튼은 주황색 계열로 구분한다. */
+.billing-type-non-resident {
+    border-color: #f97316;
+    background:
+        linear-gradient(
+            135deg,
+            #c2410c,
+            #ea580c
+        );
+}
+
+/* 터치하거나 마우스를 올렸을 때 선택 가능한 버튼임을 강조한다. */
+.billing-type-button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+}
+
+/* 키보드로 버튼을 선택할 때 포커스 위치를 표시한다. */
+.billing-type-button:focus-visible {
+    outline: 4px solid #f8fafc;
+    outline-offset: 4px;
+}
+
+/* 차량번호 입력 영역과 조회 결과를 좌우로 배치한다. */
+.billing-lookup-step {
+    display: grid;
+    grid-template-columns: minmax(320px, 0.8fr) minmax(520px, 1.2fr);
+    gap: 28px;
+    align-items: stretch;
+}
+
+/* 뒤로가기 버튼과 현재 출차 유형 제목을 통합 조회 화면 상단 전체에 배치한다. */
+.billing-lookup-header {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 180px 1fr 180px;
+    align-items: center;
+    gap: 20px;
+}
+
+/* 현재 출차 유형 제목을 화면 중앙에 표시한다. */
+.billing-lookup-header h2 {
+    grid-column: 2;
+    margin: 0;
+    text-align: center;
+}
+
+/* 출차 유형 선택 화면으로 돌아가는 버튼을 헤더 왼쪽에 배치한다. */
+.billing-lookup-back {
+    grid-column: 1;
+    justify-self: stretch;
+    min-width: 160px;
+    min-height: 52px;
+    padding: 10px 22px;
+    border: 1px solid #64748b;
+    border-radius: 12px;
+    color: #f8fafc;
+    background: #233a5d;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+/* 뒤로가기 버튼에 마우스를 올리거나 키보드로 선택한 상태를 표시한다. */
+.billing-lookup-back:hover {
+    background: #304d77;
+}
+
+.billing-lookup-back:focus-visible {
+    outline: 3px solid #f8fafc;
+    outline-offset: 3px;
+}
+
+/* 왼쪽 차량번호 입력 영역을 세로로 배치한다. */
+.billing-lookup-search {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 오른쪽 차량 조회 결과 영역을 구분한다. */
+.billing-lookup-result {
+    min-width: 0;
+    padding: 24px;
+    border: 1px solid #3e587d;
+    border-radius: 16px;
+    background: rgba(2, 10, 25, 0.45);
+}
+
+/* 조회 전 안내 문구를 결과 영역 중앙에 표시한다. */
+.billing-lookup-empty {
+    min-height: 420px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #cbd5e1;
+    text-align: center;
+    font-size: 22px;
+    line-height: 1.7;
 }
 
 .billing-number-display {
@@ -571,11 +1101,6 @@ const formatAmount = (value) => {
     font-weight: 700;
 }
 
-.billing-car-list-step {
-    display: flex;
-    flex-direction: column;
-}
-
 .billing-car-list {
     display: grid;
     gap: 14px;
@@ -616,12 +1141,6 @@ const formatAmount = (value) => {
 .billing-car-info span {
     color: #cbd5e1;
     font-size: 18px;
-}
-
-.billing-car-list-step > .billing-secondary-button {
-    align-self: flex-start;
-    min-width: 180px;
-    margin-top: auto;
 }
 
 .billing-detail-step {
@@ -706,6 +1225,39 @@ const formatAmount = (value) => {
     background: rgba(22, 101, 52, 0.3);
 }
 
+/* 출차존 도착 후 자동으로 첫 화면으로 돌아가기까지 남은 시간을 표시한다. */
+.billing-exit-countdown {
+    margin: 22px 0 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    color: #cbd5e1;
+}
+
+/* 남은 초를 원형 테두리 안에 크게 표시한다. */
+.billing-exit-countdown strong {
+    width: 92px;
+    height: 92px;
+    flex: 0 0 92px;
+    display: grid;
+    place-items: center;
+    border: 6px solid #fbbf24;
+    border-radius: 50%;
+    color: #f8fafc;
+    background: rgba(2, 10, 25, 0.55);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.18);
+    font-size: 40px;
+    line-height: 1;
+}
+
+/* 자동 복귀 안내 문구를 카운트다운 숫자 옆에 표시한다. */
+.billing-exit-countdown span {
+    max-width: 250px;
+    font-size: 18px;
+    line-height: 1.5;
+}
+
 .billing-payment-wait {
     color: #fde68a;
     background: rgba(146, 64, 14, 0.3);
@@ -716,6 +1268,12 @@ const formatAmount = (value) => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
+}
+
+/* 버튼이 하나인 이동 중·완료 화면에서는 처음으로 버튼을 가운데 배치한다. */
+.billing-detail-actions:has(> button:only-child) {
+    grid-template-columns: minmax(260px, 380px);
+    justify-content: center;
 }
 
 .billing-detail-actions .billing-primary-button {
@@ -756,6 +1314,12 @@ const formatAmount = (value) => {
     .billing-selected-image img {
         min-height: 280px;
         max-height: 360px;
+    }
+
+    .billing-exit-countdown {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
     }
 }
 

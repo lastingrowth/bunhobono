@@ -1,5 +1,6 @@
 package api.scheduler_p;
 
+import api.billing_p.BillingService;
 import api.cameradata_p.CameraDataService;
 import api.carlog_p.CarLogService;
 import api.inquiry_p.InquiryService;
@@ -15,6 +16,9 @@ public class Scheduler {
 
     @Resource
     private CameraDataService cameraDataService;
+
+    @Resource
+    private BillingService billingService;
 
     @Resource
     private CarLogService carLogService;
@@ -49,9 +53,10 @@ public class Scheduler {
         cameraDataService.autoDelete();
     }
 
-    // 매일 자정: 출차 후 3개월이 지난 입출차 기록을 휴지통으로 이동한다.
+    // 매일 자정: 출차 후 3개월이 지난 정산서와 입출차 기록을 휴지통으로 이동한다.
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void moveOldCarLogsToTrash() {
+        billingService.moveOldPaidBillsToTrash();
         carLogService.moveOldCarLogsToTrash();
     }
 

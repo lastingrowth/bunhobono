@@ -22,4 +22,5 @@ public class FeeRuleDTO {
 
     private LocalDateTime createdAt;
 
+    private LocalDateTime effectiveFrom;
 }
