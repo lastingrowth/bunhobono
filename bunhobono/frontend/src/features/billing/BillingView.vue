@@ -611,7 +611,7 @@ const checkResidentExitTask = async () => {
 const requestResidentExit = async () => {
     stopResidentExitTimers()
 
-    const result = await billingStore.requestResidentExit()
+    const result = await billingStore.requestResidentExit(kioskNo)
 
     if (!result.success) {
         return

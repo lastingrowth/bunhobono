@@ -377,99 +377,22 @@ onMounted(() => memberStore.loadMypage());
   .footer-button-copy strong { font-size: 19px; }
   .welcome-mode-card .kiosk-return-button:not(.vehicle-register-button) { min-height:36px;margin-top:4px;font-size:17px; }
 }
-<<<<<<< HEAD
-
 .resident-welcome {
     min-height: calc(100vh - var(--header-height));
     display: grid;
     place-items: center;
     padding: 24px;
     background:
-        linear-gradient(180deg, rgba(248, 252, 255, 0.44) 0%, rgba(250, 253, 255, 0.63) 45%, rgba(255, 255, 255, 0.81) 75%, rgba(255, 255, 255, 0.91) 100%),
-        url('@/assets/images/back.jpg') center center / cover fixed no-repeat;
+        linear-gradient(
+            180deg,
+            rgba(248, 252, 255, 0.44) 0%,
+            rgba(250, 253, 255, 0.63) 45%,
+            rgba(255, 255, 255, 0.81) 75%,
+            rgba(255, 255, 255, 0.91) 100%
+        ),
+        url('@/assets/images/back.jpg')
+            center center / cover fixed no-repeat;
 }
-
-.welcome-card {
-    position: relative;
-    width: min(760px, 100%);
-    padding: 64px 44px;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.68);
-    box-shadow: 0 22px 50px rgba(9, 31, 52, 0.28);
-    text-align: center;
-    backdrop-filter: blur(6px);
-}
-
-.welcome-content h2 {
-    margin: 0 0 10px;
-    color: #173b63;
-    font-size: clamp(28px, 3vw, 38px);
-}
-
-.welcome-content p {
-    margin: 0 0 34px;
-    color: #486581;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.welcome-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-
-.welcome-actions button {
-    min-height: 62px;
-    border: 1px solid #1f6fd1;
-    border-radius: 14px;
-    color: #fff;
-    background: #2f7ddd;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.welcome-actions button:hover {
-    background: #1e63bd;
-}
-
-.visit-registration-message {
-    margin: 18px 0 0 !important;
-    color: #d13b45 !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
-}
-
-.vehicle-list-text-link {
-    display: inline-block;
-    margin-top: 8px;
-    color: var(--resident-accent);
-    font-size: 14px;
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-    cursor: pointer;
-}
-
-.vehicle-list-text-link:hover {
-    color: #175fa9;
-}
-
-@media (max-width: 560px) {
-    .resident-welcome {
-        padding: 16px;
-    }
-
-    .welcome-card {
-        padding: 50px 24px 40px;
-    }
-
-    .welcome-actions {
-        grid-template-columns: 1fr;
-    }
-=======
 @media (max-width: 600px) {
   .exit-request-page { padding: 20px 12px 50px; }
   .exit-kiosk-card { padding: 28px 18px 22px; border-radius: 24px; }
@@ -500,6 +423,5 @@ onMounted(() => memberStore.loadMypage());
   .welcome-mode-card .vehicle-register-button { width: 100%; min-height: 52px; margin: 0 auto; padding: 0 40px; border-radius: 10px; }
   .welcome-mode-card .vehicle-register-button .footer-button-copy strong { font-size: 18px; }
   .welcome-mode-card .vehicle-register-button > b { right: 15px; font-size: 18px; }
->>>>>>> origin/psh
 }
 </style>

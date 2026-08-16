@@ -363,7 +363,7 @@
 
 .parking-monitor-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
   padding: 0;
   background: #899097;
@@ -805,6 +805,37 @@
 
 .cctv-overlay-top { top: 12px; }
 .cctv-overlay-bottom { bottom: 11px; }
+
+.parking-monitor-card .cctv-overlay {
+  padding: 10px;
+  font-size: 10px;
+}
+
+.parking-monitor-card .cctv-overlay-top,
+.parking-monitor-card .cctv-overlay-bottom {
+  right: 10px;
+  left: 10px;
+}
+
+.parking-monitor-card .cctv-overlay-top {
+  top: 9px;
+}
+
+.parking-monitor-card .cctv-overlay-bottom {
+  bottom: 8px;
+  gap: 8px;
+}
+
+.parking-monitor-card .cctv-overlay-bottom span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parking-monitor-card .cctv-overlay-bottom time {
+  flex: 0 0 auto;
+}
 
 .cctv-live {
   display: inline-flex;
@@ -1722,6 +1753,10 @@
     padding: 0 0 14px;
   }
 
+  .parking-monitor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .selected-log-content,
   .selected-log-info {
     grid-template-columns: minmax(0, 1fr);
@@ -1745,6 +1780,12 @@
 
   .selected-log-info > div {
     grid-template-columns: 82px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 460px) {
+  .parking-monitor-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

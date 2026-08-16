@@ -48,9 +48,13 @@ export const archiveAdminBilling = (billNo) => {
     return api.delete(`/billing/admin/${billNo}/archive`)
 }
 
-// 차량이 입차한 주차장과 같은 층의 활성 출차 게이트 번호 조회
-export const getExitGateNo = (carLogNo) => {
-    return api.get(`/billing/cars/${carLogNo}/exit-gate`)
+// 차량과 현재 키오스크에 맞는 활성 출차 게이트 번호 조회
+export const getExitGateNo = (carLogNo, kioskNo) => {
+    return api.get(`/billing/cars/${carLogNo}/exit-gate`, {
+        params: {
+            kioskNo
+        }
+    })
 }
 
 // 입주민 차량을 지정한 B1 출차 게이트의 대기면으로 이동하도록 요청
