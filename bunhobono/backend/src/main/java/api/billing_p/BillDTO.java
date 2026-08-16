@@ -8,6 +8,9 @@ import java.time.LocalDateTime;
 @Data
 public class BillDTO {
 
+    // 로그인한 입주민의 본인 고지서 조회 조건으로만 사용한다.
+    private String loginId;
+
     // bill 테이블
     private Integer billNo;
     private Integer carLogNo;

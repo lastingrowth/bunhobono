@@ -1,7 +1,10 @@
 package api.billing_p;
 
 import jakarta.annotation.Resource;
+import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,6 +47,25 @@ public class BillingController {
     @PostMapping("/confirm")
     public TossPaymentDTO confirm(@RequestBody TossPaymentDTO dto) {
         return billingService.confirmPayment(dto);
+    }
+
+    // 로그인한 입주민이 등록한 방문차량의 주차요금 고지서 조회
+    @GetMapping("/resident/{billNo}")
+    public BillDTO residentBill(
+            Authentication authentication,
+            @PathVariable int billNo
+    ) {
+        if (authentication == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "로그인이 필요합니다."
+            );
+        }
+
+        return billingService.findResidentBill(
+                billNo,
+                authentication.getName()
+        );
     }
 
     // 현재 주차 중인 비입주민 차량의 관리자 정산 목록 조회

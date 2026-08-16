@@ -35,7 +35,8 @@ public class Jwtfilter extends OncePerRequestFilter {
 
         if (uri.startsWith("/api/login")
                 || uri.startsWith("/api/joinus")
-                || uri.startsWith("/api/billing")
+                || (uri.startsWith("/api/billing")
+                    && !uri.startsWith("/api/billing/resident"))
                 || uri.equals("/api/robot-tasks/park-out") ) {
             System.out.println("👉 공개 API 요청 감지 → JWT 검사 스킵");
             filterChain.doFilter(request,response);

@@ -179,6 +179,22 @@ public interface BillingMapper {
             " WHERE payment_order_id = #{paymentOrderId}")
     BillDTO findByPaymentOrderId(String paymentOrderId);
 
+    // 로그인한 입주민이 등록한 방문차량의 정산서 한 건 조회
+    @Select("SELECT b.bill_no, b.car_log_no, b.fee_rule_no, " +
+            " b.charge_minutes, b.bill_amount, b.bill_status, " +
+            " b.payment_order_id, b.payment_method, " +
+            " b.issued_at, b.paid_at, " +
+            " COALESCE(cl.snapshot_car_no, vc.car_no) AS car_no, " +
+            " cl.in_time, cl.out_time " +
+            " FROM bill b " +
+            " JOIN car_log cl ON cl.car_log_no = b.car_log_no " +
+            " JOIN vehicle_car vc ON vc.vehicle_car_no = cl.vehicle_car_no " +
+            " JOIN member registrant ON registrant.member_no = vc.member_no " +
+            " WHERE b.bill_no = #{billNo} " +
+            " AND registrant.login_id = #{loginId} " +
+            " AND vc.vehicle_type = 'visit'")
+    BillDTO findResidentBill(BillDTO dto);
+
     // 토스페이먼츠 결제 승인 결과 저장
     @Update("UPDATE bill " +
             " SET bill_status = 'PAID', " +

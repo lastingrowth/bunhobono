@@ -1,10 +1,10 @@
 package api.billing_p;
 
+import api.mem_notice_p.MemNoticeDTO;
+import api.mem_notice_p.MemNoticeService;
 import api.kiosk_p.KioskDTO;
 import api.kiosk_p.KioskService;
 import api.trash_p.TrashService;
-import api.mem_notice_p.MemNoticeDTO;
-import api.mem_notice_p.MemNoticeService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
@@ -42,11 +42,14 @@ public class BillingService {
     private BillingMapper billingMapper;
 
     @Resource
+    private MemNoticeService memNoticeService;
+
+    @Resource
     private KioskService kioskService;
 
     @Resource
-    private TrashService trashService;
     private MemNoticeService memNoticeService;
+
 
     // 로컬 설정파일에 저장한 토스페이먼츠 시크릿 키
     @Value("${toss.secret-key}")
@@ -327,6 +330,31 @@ public class BillingService {
         );
 
         memNoticeService.createNotification(notice);
+    }
+
+    // 로그인한 입주민이 등록한 방문차량의 주차요금 고지서 조회
+    public BillDTO findResidentBill(int billNo, String loginId) {
+        if (billNo <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "고지서 번호를 확인해 주세요."
+            );
+        }
+
+        BillDTO condition = new BillDTO();
+        condition.setBillNo(billNo);
+        condition.setLoginId(loginId);
+
+        BillDTO bill = billingMapper.findResidentBill(condition);
+
+        if (bill == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "결제할 수 있는 고지서를 찾을 수 없습니다."
+            );
+        }
+
+        return bill;
     }
 
     // 토스페이먼츠 결제를 승인하고 정산서를 결제완료 상태로 변경한다

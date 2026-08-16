@@ -33,6 +33,27 @@ WHERE car_log_no IN (
     )
 );
 
+DELETE FROM mem_notice
+WHERE reference_table = 'bill'
+  AND reference_no IN (
+    SELECT bill_no
+    FROM bill
+    WHERE car_log_no IN (
+        SELECT car_log_no
+        FROM car_log
+        WHERE snapshot_car_no IN (
+            '299가1101',
+            '299가1102',
+            '299가1103',
+            '299가1201',
+            '299가1202',
+            '299가1203',
+            '299가1204',
+            '299가1205'
+        )
+    )
+);
+
 DELETE FROM bill
 WHERE car_log_no IN (
     SELECT car_log_no
@@ -72,6 +93,31 @@ WHERE cam_note IN (
     'B2-BILLING-TEST-UNKNOWN-1',
     'B2-BILLING-TRASH-TEST-1'
 );
+
+-- 1203 차량은 res1이 등록한 방문차량으로 생성하여
+-- 정산서 발행 시 res1에게 mem_notice가 생성되도록 연결한다.
+DELETE FROM vehicle_car
+WHERE car_no = '299가1203';
+
+INSERT INTO vehicle_car (
+    vehicle_type,
+    car_no,
+    vehicle_status,
+    start_date,
+    end_date,
+    member_no,
+    approved_at
+)
+SELECT
+    'visit',
+    '299가1203',
+    'APPROVED',
+    CURRENT_TIMESTAMP - INTERVAL '30 hours',
+    CURRENT_TIMESTAMP + INTERVAL '6 hours',
+    member.member_no,
+    CURRENT_TIMESTAMP - INTERVAL '30 hours'
+FROM member
+WHERE member.login_id = 'res1';
 
 
 -- B1 입주민 차량 3대를 현재 주차 중인 서로 다른 일반 주차면에 배정한다.
@@ -260,7 +306,13 @@ WITH test_car (
     )
     SELECT
         camera.camera_no,
-        NULL,
+        (
+            SELECT vehicle_car.vehicle_car_no
+            FROM vehicle_car
+            WHERE vehicle_car.car_no = test_car.car_no
+              AND vehicle_car.vehicle_type = 'visit'
+            LIMIT 1
+        ),
         test_car.car_no,
         test_car.car_no,
         test_car.in_time,
@@ -275,6 +327,7 @@ WITH test_car (
     JOIN camera
         ON camera.gate_no = gate.gate_no
        AND camera.camera_type = 'In'
+<<<<<<< HEAD
     RETURNING camera_data_no, car_no, capture_time, cam_note
 ), inserted_log AS (
     INSERT INTO car_log (
@@ -310,6 +363,9 @@ WITH test_car (
       )
     ORDER BY effective_from DESC, fee_rule_no DESC
     LIMIT 1
+=======
+    RETURNING camera_data_no, vehicle_car_no, car_no, capture_time, cam_note
+>>>>>>> origin/so
 )
 INSERT INTO bill (
     car_log_no,
@@ -320,6 +376,7 @@ INSERT INTO bill (
     bill_status
 )
 SELECT
+<<<<<<< HEAD
     inserted_log.car_log_no,
     selected_rule.fee_rule_no,
     NULL,
@@ -328,6 +385,95 @@ SELECT
     'UNPAID'
 FROM inserted_log
 CROSS JOIN selected_rule;
+=======
+    inserted_camera.vehicle_car_no,
+    inserted_camera.camera_data_no,
+    gate.gate_no,
+    inserted_camera.capture_time,
+    test_car.free_time,
+    test_car.car_no,
+    test_car.car_kind
+FROM inserted_camera
+JOIN test_car
+    ON test_car.cam_note = inserted_camera.cam_note
+JOIN gate
+    ON gate.gate_code = test_car.gate_code;
+>>>>>>> origin/so
+
+
+-- 1203 방문차량의 미결제 고지서를 미리 생성한다.
+-- 더미 실행 직후 res1 알림 화면과 입주민 결제 페이지를 확인할 수 있다.
+WITH target_log AS (
+    SELECT car_log_no
+    FROM car_log
+    WHERE snapshot_car_no = '299가1203'
+    ORDER BY car_log_no DESC
+    LIMIT 1
+), selected_rule AS (
+    SELECT fee_rule_no, unit_minutes, unit_fee, daily_max_fee
+    FROM fee_rule
+    WHERE active = TRUE
+      AND effective_from <= CURRENT_TIMESTAMP
+    ORDER BY effective_from DESC, fee_rule_no DESC
+    LIMIT 1
+)
+INSERT INTO bill (
+    car_log_no,
+    fee_rule_no,
+    kiosk_no,
+    charge_minutes,
+    bill_amount,
+    bill_status,
+    payment_order_id
+)
+SELECT
+    target_log.car_log_no,
+    selected_rule.fee_rule_no,
+    NULL,
+    120,
+    CASE
+        WHEN selected_rule.daily_max_fee IS NULL THEN
+            CEIL(120.0 / selected_rule.unit_minutes) * selected_rule.unit_fee
+        ELSE LEAST(
+            CEIL(120.0 / selected_rule.unit_minutes) * selected_rule.unit_fee,
+            selected_rule.daily_max_fee
+        )
+    END,
+    'UNPAID',
+    'BILL-DUMMY-' || MD5(
+        RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT
+    )
+FROM target_log
+CROSS JOIN selected_rule;
+
+INSERT INTO mem_notice (
+    recipient_member_no,
+    reference_table,
+    reference_no,
+    notice_type,
+    title,
+    message
+)
+SELECT
+    member.member_no,
+    'bill',
+    bill.bill_no,
+    'VISIT_PARKING_FEE_ISSUED',
+    '방문차량 주차요금 발생',
+    '등록하신 방문차량 299가1203에 주차요금 '
+        || TO_CHAR(bill.bill_amount, 'FM999,999,999,990')
+        || '원이 부과되었습니다.'
+FROM bill
+JOIN car_log
+    ON car_log.car_log_no = bill.car_log_no
+JOIN vehicle_car
+    ON vehicle_car.vehicle_car_no = car_log.vehicle_car_no
+JOIN member
+    ON member.member_no = vehicle_car.member_no
+WHERE car_log.snapshot_car_no = '299가1203'
+  AND member.login_id = 'res1'
+ON CONFLICT ON CONSTRAINT uq_mem_notice_reference
+DO NOTHING;
 
 
 -- 관리자 정산 목록에서 직접 지난 기록 이동을 확인할 수 있도록

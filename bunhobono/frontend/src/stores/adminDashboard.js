@@ -99,13 +99,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         }).length;
     });
 
-    const waitingVisitVehicleCount = computed(() => {
-        return vehicleStore.vehicleList.filter((vehicle) => {
-            return vehicle.vehicleType === "visit"
-                && vehicle.vehicleStatus === "WAITING";
-        }).length;
-    });
-
     const waitingMemberCount = computed(() => {
         return memberStore.memberList.filter((member) => {
             return member.role === "RESIDENT"
@@ -120,12 +113,6 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
                 title: "알림",
                 count: longParkingNoticeCount.value,
                 path: "/admin/notice",
-            },
-            {
-                key: "visit-approve",
-                title: "방문승인",
-                count: waitingVisitVehicleCount.value,
-                path: "/admin/vehicles?mode=approve",
             },
             {
                 key: "member-approve",

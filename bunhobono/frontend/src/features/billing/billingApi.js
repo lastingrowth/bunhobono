@@ -28,6 +28,11 @@ export const confirmPayment = (paymentKey, orderId, amount) => {
     })
 }
 
+// 로그인한 입주민이 등록한 방문차량의 주차요금 고지서 조회
+export const getResidentBill = (billNo) => {
+    return api.get(`/billing/resident/${billNo}`)
+}
+
 // 현재 주차 중인 비입주민 차량의 관리자 정산 목록 조회
 export const getAdminBillingList = () => {
     return api.get('/billing/admin')
