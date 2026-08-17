@@ -36,9 +36,28 @@ public class CameraPdmController {
         return cameraPdmService.savePrediction(dto);
     }
 
-    // FastAPI 카메라 모델 수동 실행
+    // FastAPI 카메라 모델 단건 수동 실행
     @PostMapping("/analyze")
-    public PredictiveMaintenanceResponseDTO analyze() {
-        return cameraPdmService.analyzeAndSave();
+    public PredictiveMaintenanceResponseDTO analyzeOne() {
+        return cameraPdmService.analyzeOne();
+    }
+
+    // 카메라 1~12의 최신 예측 결과 조회
+    @GetMapping("/latest")
+    public List<CameraPdmDTO> latest() {
+        return cameraPdmService.getLatestPredictions();
+    }
+
+    // FastAPI 카메라 1~12 모델 일괄 수동 실행
+    @GetMapping("/recent/{cameraNo}")
+    public List<CameraPdmDTO> recent(
+            @PathVariable int cameraNo
+    ) {
+        return cameraPdmService.getRecentPredictions(cameraNo);
+    }
+
+    @PostMapping("/analyze-all")
+    public List<PredictiveMaintenanceResponseDTO> analyzeAll() {
+        return cameraPdmService.analyzeAll();
     }
 }

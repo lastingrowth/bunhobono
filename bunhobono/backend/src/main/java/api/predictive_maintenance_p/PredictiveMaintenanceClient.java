@@ -3,6 +3,8 @@ package api.predictive_maintenance_p;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.core.ParameterizedTypeReference;
+import java.util.List;
 
 @Service
 public class PredictiveMaintenanceClient {
@@ -30,6 +32,20 @@ public class PredictiveMaintenanceClient {
                 );
     }
 
+    // FastAPI에서 게이트 1~10의 다음 예측 결과를 한 묶음으로 받는다.
+    public List<PredictiveMaintenanceResponseDTO> predictNextGates() {
+        return restClient.post()
+                .uri(
+                        "/demo/predictive-maintenance/gate/next-all"
+                )
+                .retrieve()
+                .body(
+                        new ParameterizedTypeReference<
+                                List<PredictiveMaintenanceResponseDTO>
+                                >() {}
+                );
+    }
+
     // 카메라 테스트 CSV의 다음 행을 예측한다.
     public PredictiveMaintenanceResponseDTO predictNextCamera() {
         return restClient.post()
@@ -51,6 +67,20 @@ public class PredictiveMaintenanceClient {
                 .retrieve()
                 .body(
                         PredictiveMaintenanceResponseDTO.class
+                );
+    }
+
+    // FastAPI에서 카메라 1~12의 다음 예측 결과를 한 묶음으로 받는다.
+    public List<PredictiveMaintenanceResponseDTO> predictNextCameras() {
+        return restClient.post()
+                .uri(
+                        "/demo/predictive-maintenance/camera/next-all"
+                )
+                .retrieve()
+                .body(
+                        new ParameterizedTypeReference<
+                                List<PredictiveMaintenanceResponseDTO>
+                                >() {}
                 );
     }
 }

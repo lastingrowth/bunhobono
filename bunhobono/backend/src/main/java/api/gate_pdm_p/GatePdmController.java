@@ -36,15 +36,29 @@ public class GatePdmController {
         return gatePdmService.savePrediction(dto);
     }
 
-    // FastAPI 게이트 모델 수동 실행
+    // FastAPI 게이트 모델 단건 수동 실행
     @PostMapping("/analyze")
-    public GatePdmDTO analyze() {
-        return gatePdmService.analyzeAndSave();
+    public PredictiveMaintenanceResponseDTO analyzeOne() {
+        return gatePdmService.analyzeOne();
     }
 
-    // 게이트별 최신 예지보전 상태 조회
-    @GetMapping("/current")
-    public List<GatePdmDTO> current() {
+    // 게이트 1~10의 최신 예측 결과 조회
+    @GetMapping("/latest")
+    public List<GatePdmDTO> latest() {
         return gatePdmService.getLatestPredictions();
+    }
+
+    // 특정 게이트의 최근 실시간 분석 결과 조회
+    @GetMapping("/recent/{gateNo}")
+    public List<GatePdmDTO> recent(
+            @PathVariable int gateNo
+    ) {
+        return gatePdmService.getRecentPredictions(gateNo);
+    }
+
+    // FastAPI 게이트 1~10 모델 일괄 수동 실행
+    @PostMapping("/analyze-all")
+    public List<PredictiveMaintenanceResponseDTO> analyzeAll() {
+        return gatePdmService.analyzeAll();
     }
 }
