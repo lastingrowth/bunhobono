@@ -61,6 +61,20 @@ class PredictiveMaintenanceReplayService:
         if missing:
             raise RuntimeError(f"{equipment_type} 필수 컬럼이 없습니다: {missing}")
 
+        equipment_ids = sorted(
+            self.test_data[equipment_id_column].unique(),
+            key=str,
+        )
+        self._equipment_row_indexes = {
+            equipment_id: self.test_data.index[
+                self.test_data[equipment_id_column] == equipment_id
+            ].tolist()
+            for equipment_id in equipment_ids
+        }
+        self._equipment_positions = {
+            equipment_id: 0 for equipment_id in equipment_ids
+        }
+
     def _next_row(self) -> tuple[int, pd.Series]:
         with self._lock:
             index = self._current_index
@@ -77,6 +91,22 @@ class PredictiveMaintenanceReplayService:
 
     def predict_next(self) -> dict:
         row_index, row = self._next_row()
+        return self._predict_row(row_index, row)
+
+    def predict_next_all(self) -> list[dict]:
+        rows = []
+        with self._lock:
+            for equipment_id, row_indexes in self._equipment_row_indexes.items():
+                position = self._equipment_positions[equipment_id]
+                row_index = row_indexes[position]
+                self._equipment_positions[equipment_id] = (
+                    position + 1
+                ) % len(row_indexes)
+                rows.append((row_index, self.test_data.iloc[row_index].copy()))
+
+        return [self._predict_row(row_index, row) for row_index, row in rows]
+
+    def _predict_row(self, row_index: int, row: pd.Series) -> dict:
         features = self.metadata["feature_columns"]
         input_data = pd.DataFrame(
             [{column: row[column] for column in features}], columns=features
@@ -90,7 +120,7 @@ class PredictiveMaintenanceReplayService:
         return {
             "equipment_type": self.equipment_type,
             "equipment_no": str(row[self.equipment_id_column]),
-            "row_index": row_index,
+            "row_index": int(row_index),
             "risk_level": risk_level,
             "risk_probability": float(probability_values[class_id]),
             "probabilities": {

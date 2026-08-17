@@ -57,10 +57,6 @@ export const adminMenu = [
     path: '/admin/parkings'
   },
   {
-    title: '로봇 관리',
-    path: '/admin/robots'
-  },
-  {
     title: '게이트',
     path: '/admin/gates'
   },

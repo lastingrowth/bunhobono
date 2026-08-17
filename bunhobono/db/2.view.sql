@@ -310,4 +310,36 @@ WHERE cl.out_time IS NULL
       )
   );
 
+
+CREATE OR REPLACE VIEW robot_task_detail AS
+SELECT
+    task.task_no,
+    task.car_log_no,
+    task.pickup_space_no,
+    pickup.space_code AS pickup_space_code,
+    task.dropoff_space_no,
+    dropoff.space_code AS dropoff_space_code,
+    task.set_no,
+    task.task_type,
+    task.task_phase,
+    task.task_status,
+    task.priority,
+    task.requested_at,
+    task.started_at,
+    task.completed_at,
+    task.failure_reason,
+    log.car_no,
+    log.snapshot_car_kind AS car_kind,
+    log.parking_code,
+    log.parking_name,
+    task.phase_updated_at
+FROM robot_task task
+JOIN car_log_detail log
+    ON task.car_log_no = log.car_log_no
+JOIN parking_space pickup
+    ON task.pickup_space_no = pickup.space_no
+JOIN parking_space dropoff
+    ON task.dropoff_space_no = dropoff.space_no;
+
+
   COMMIT;

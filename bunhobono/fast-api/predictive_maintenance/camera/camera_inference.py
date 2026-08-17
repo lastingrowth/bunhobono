@@ -15,6 +15,14 @@ service = PredictiveMaintenanceReplayService(
 )
 
 
+@router.post("/next-all")
+def predict_next_all_cameras():
+    try:
+        return service.predict_next_all()
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"카메라 일괄 예측 실패: {error}") from error
+
+
 @router.post("/next")
 def predict_next_camera():
     try:
