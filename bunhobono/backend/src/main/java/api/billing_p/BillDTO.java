@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 public class BillDTO {
@@ -38,6 +39,9 @@ public class BillDTO {
     private Integer freeTime;
     private Integer parkingNo;
     private String parkingCode;
+    private String spaceCode;
+    private String spaceType;
+    private OffsetDateTime spaceUpdatedAt;
 
     // 적용 요금 규칙
     private String ruleName;

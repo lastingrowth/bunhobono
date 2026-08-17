@@ -107,7 +107,7 @@
                                     <!-- 정상 신뢰도 미등록차량 또는 저신뢰 확인 후 미등록차량은
                                         일반·긴급 등록 유형을 관리자가 선택한다. -->
                                     <div
-                                        v-else
+                                        v-else-if="isUnregisteredApprovalWaiting(panel)"
                                         class="approval-action-buttons">
                                         <button
                                             type="button"
@@ -1201,6 +1201,14 @@ const isApprovalWaiting = (cameraNo) => {
     return status?.pauseReason === 'WAITING_FOR_BACKEND'
 }
 
+// OCR 결과를 Spring에 전달했지만 아직 응답을 받지 않은 상태인지 확인한다.
+const isBackendProcessing = (panel) => {
+    const status = getCameraStatus(panel.cameraNo)
+
+    return status?.pauseReason === 'WAITING_FOR_BACKEND'
+        && !status?.pendingCameraDataNo
+}
+
 const getPendingCameraData = (cameraNo) => {
     const cameraDataNo = getPendingCameraDataNo(cameraNo)
     return recentCameraData.value.find((item) => {
@@ -1215,6 +1223,14 @@ const isLowConfidenceWaiting = (panel) => {
         && cameraData.carNo !== '미인식'
 }
 
+// Spring 처리가 끝난 촬영 데이터에서 등록차량이 확인되지 않은 상태인지 확인한다.
+const isUnregisteredApprovalWaiting = (panel) => {
+    const cameraData = getPendingCameraData(panel.cameraNo)
+
+    return Boolean(cameraData)
+        && !cameraData.vehicleCarNo
+}
+
 // 저신뢰 차량번호 확인 결과 기존 등록차량이 아니었던 카메라인지 확인한다.
 // 이 상태에서는 차량번호 확인 버튼 대신 일반·긴급 승인 버튼을 표시한다.
 const isConfirmedUnregistered = (panel) => {
@@ -1224,17 +1240,42 @@ const isConfirmedUnregistered = (panel) => {
 }
 
 const approvalWaitTitle = (panel) => {
-    return isLowConfidenceWaiting(panel)
-        ? `${panel.modeText} OCR 확인 필요`
+    if (isBackendProcessing(panel)) {
+        return `${panel.modeText} 차량 확인 중`
+    }
+
+    if (isLowConfidenceWaiting(panel)) {
+        return `${panel.modeText} OCR 확인 필요`
+    }
+
+    const cameraData = getPendingCameraData(panel.cameraNo)
+
+    return cameraData?.vehicleCarNo
+        ? `${panel.modeText} 처리 확인 필요`
         : `${panel.modeText} 승인 대기`
 }
 
 const approvalWaitMessage = (panel) => {
+    if (isBackendProcessing(panel)) {
+        return '차량 등록 여부와 게이트 통과 가능 상태를 확인하고 있습니다.'
+    }
+
     if (isLowConfidenceWaiting(panel)) {
         const score = formatConfidence(
             getPendingCameraData(panel.cameraNo)?.confidenceScore,
         )
+
         return `OCR 인식 신뢰도가 ${score}입니다. 차량번호를 확인한 뒤 통과를 승인해 주세요.`
+    }
+
+    const cameraData = getPendingCameraData(panel.cameraNo)
+
+    if (!cameraData) {
+        return '차량 처리 결과를 불러오고 있습니다.'
+    }
+
+    if (cameraData.vehicleCarNo) {
+        return '등록 차량으로 확인되었지만 게이트가 열리지 않았습니다. 입출차 상태를 확인해 주세요.'
     }
 
     return '미등록 차량입니다. 관리자 게이트 개방을 기다리고 있습니다.'

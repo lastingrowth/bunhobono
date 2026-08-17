@@ -88,7 +88,9 @@ public interface BillingMapper {
             " COALESCE(cl.snapshot_car_no, vc.car_no) AS car_no, " +
             " cl.in_time, cl.out_time, " +
             " COALESCE(cl.free_time, 0) AS free_time, " +
-            " p.parking_no, p.parking_code " +
+            " p.parking_no, p.parking_code, " +
+            " ps.space_code, ps.space_type, " +
+            " ps.updated_at AS space_updated_at " +
             " FROM car_log cl " +
             " LEFT JOIN vehicle_car vc " +
             " ON cl.vehicle_car_no = vc.vehicle_car_no " +
@@ -96,9 +98,11 @@ public interface BillingMapper {
             " ON in_gate.gate_no = cl.in_gate_no " +
             " JOIN parking p " +
             " ON p.parking_no = in_gate.parking_no " +
+            " LEFT JOIN parking_space ps " +
+            " ON ps.car_log_no = cl.car_log_no " +
+            " AND ps.active = TRUE " +
             " WHERE cl.out_time IS NULL " +
-            " AND RIGHT(COALESCE(cl.snapshot_car_no, vc.car_no), 4) " +
-            " = #{lastFourDigits} " +
+            " AND RIGHT(COALESCE(cl.snapshot_car_no, vc.car_no), 4) = #{lastFourDigits} " +
             " AND ((#{exitType} = 'RESIDENT' " +
             " AND cl.snapshot_car_kind = 'REGISTERED') " +
             " OR (#{exitType} = 'NON_RESIDENT' " +

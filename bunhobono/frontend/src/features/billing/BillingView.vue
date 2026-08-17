@@ -204,16 +204,28 @@
                         <dd>{{ formatDateTime(billingStore.selectedCar.inTime) }}</dd>
                     </div>
 
-                                        <div>
+                   <div>
                         <dt>현재 상태</dt>
+
                         <dd
                             v-if="
+                                billingStore.selectedCar.spaceType
+                                === 'EXIT_WAIT'
+                            "
+                        >
+                            {{ billingStore.selectedCar.spaceCode }}
+                            출차 대기 중
+                        </dd>
+
+                        <dd
+                            v-else-if="
                                 billingStore.residentExitTask?.taskStatus
                                 === 'COMPLETED'
                             "
                         >
                             출차존 도착
                         </dd>
+
                         <dd
                             v-else-if="
                                 billingStore.residentExitTask?.taskStatus
@@ -222,21 +234,54 @@
                         >
                             이동 실패
                         </dd>
+
                         <dd v-else-if="residentExitRequested">
                             {{ residentExitStatusText() }}
                         </dd>
+
                         <dd v-else>
                             주차 중
+                        </dd>
+                    </div>
+
+                    <div
+                        v-if="
+                            billingStore.selectedCar.spaceType
+                            === 'EXIT_WAIT'
+                        "
+                    >
+                        <dt>자동 재주차</dt>
+                        <dd>
+                            {{
+                                formatReparkRemainingTime(
+                                    billingStore.selectedCar.spaceUpdatedAt
+                                )
+                            }}
                         </dd>
                     </div>
                 </dl>
 
                 <!-- 출차 요청 전 확인 문구 -->
                 <p
-                    v-if="!residentExitRequested"
+                    v-if="
+                        !residentExitRequested
+                        && billingStore.selectedCar.spaceType
+                        !== 'EXIT_WAIT'
+                    "
                     class="billing-exit-confirm"
                 >
                     선택한 차량을 출차하시겠습니까?
+                </p>
+
+                <p
+                    v-else-if="
+                        !residentExitRequested
+                        && billingStore.selectedCar.spaceType
+                        === 'EXIT_WAIT'
+                    "
+                    class="billing-complete"
+                >
+                    차량이 출차대기존에 있습니다.
                 </p>
 
                 <!-- 로봇 작업 대기 또는 진행 중 안내 -->
@@ -315,6 +360,7 @@
                     </button>
 
                     <button
+                        v-if="billingStore.selectedCar.spaceType !== 'EXIT_WAIT'"
                         type="button"
                         class="billing-primary-button"
                         :disabled="billingStore.loading"
@@ -482,6 +528,13 @@ let residentExitPollTimer = null
 
 // 출차 완료 화면을 보여준 뒤 첫 화면으로 돌아가는 타이머
 let residentExitResetTimer = null
+
+// 출차대기 차량의 자동 재주차 남은 시간을 갱신한다.
+const reparkCountdownNow = ref(Date.now())
+
+const reparkCountdownTimer = setInterval(() => {
+    reparkCountdownNow.value = Date.now()
+}, 1000)
 
 const exitType = ref(null)
 
@@ -755,6 +808,7 @@ const formatDateTime = (value) => {
 // 키오스크 화면을 벗어나면 남아 있는 반복 조회와 자동 초기화 타이머를 제거한다.
 onUnmounted(() => {
     stopResidentExitTimers()
+    clearInterval(reparkCountdownTimer)
 })
 
 // 입차시각부터 현재까지의 전체 주차시간을 계산한다.
@@ -790,6 +844,31 @@ const formatMinutes = (value) => {
     }
 
     return `${hours}시간 ${remainingMinutes}분`
+}
+
+// 출차대기면에 도착한 시점부터 자동 재주차까지 남은 시간을 표시한다.
+const formatReparkRemainingTime = (spaceUpdatedAt) => {
+    const currentTime = reparkCountdownNow.value
+
+    if (!spaceUpdatedAt) {
+        return '자동 재주차 시간을 확인할 수 없습니다.'
+    }
+
+    const reparkTime =
+        new Date(spaceUpdatedAt).getTime()
+        + (10 * 60 * 1000)
+
+    const remainingMilliseconds =
+        reparkTime - currentTime
+
+    if (remainingMilliseconds <= 0) {
+        return '곧 자동으로 다시 주차됩니다.'
+    }
+
+    const remainingMinutes =
+        Math.ceil(remainingMilliseconds / 60000)
+
+    return `${remainingMinutes}분 후 자동으로 다시 주차됩니다.`
 }
 
 // 정산금액을 원화 형식으로 표시한다.

@@ -48,8 +48,7 @@ public class BillingService {
     private KioskService kioskService;
 
     @Resource
-    private MemNoticeService memNoticeService;
-
+    private TrashService trashService;
 
     // 로컬 설정파일에 저장한 토스페이먼츠 시크릿 키
     @Value("${toss.secret-key}")
