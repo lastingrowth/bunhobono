@@ -333,11 +333,11 @@
             <div class="unread-dialog-body">
                 <div class="unread-dialog-heading">
                     <span class="unread-dialog-indicator"></span>
-                    <h2 id="unread-notification-title">차량 알림</h2>
+                    <h2 id="unread-notification-title">새 알림</h2>
                 </div>
 
                 <p>
-                    확인하지 않은 차량 알림이
+                    확인하지 않은 새 알림이
                     <strong>{{ resVehicleStore.unreadNotificationCount }}건</strong>
                     있습니다.
                 </p>

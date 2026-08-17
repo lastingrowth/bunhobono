@@ -68,6 +68,58 @@ CREATE TABLE member_archive (
 
 
 -- =====================================================
+-- MEMBER PURCHASE
+-- 입주민의 방문차량 추가 등록 횟수 구매 이력을 보관한다.
+-- 회원이 삭제되어도 구매 당시 회원 정보와 결제 이력은 유지한다.
+-- =====================================================
+CREATE TABLE mem_purchase (
+
+    mem_purchase_no SERIAL PRIMARY KEY,                    -- 구매 주문 고유번호
+
+    member_no INT,                                         -- 구매한 회원 고유번호
+
+    snapshot_login_id VARCHAR(30) NOT NULL,                -- 구매 당시 로그인 아이디
+    snapshot_member_name VARCHAR(30) NOT NULL,              -- 구매 당시 회원 이름
+    snapshot_dong INT,                                      -- 구매 당시 거주 동
+    snapshot_ho INT,                                        -- 구매 당시 거주 호수
+
+    purchase_type VARCHAR(40) NOT NULL
+        DEFAULT 'VISIT_REGISTRATION_COUNT',                 -- 구매 상품 종류
+
+    purchase_quantity INT NOT NULL
+        CHECK (purchase_quantity > 0),                      -- 구매한 추가 등록 횟수
+
+    purchase_amount NUMERIC(12, 0) NOT NULL
+        CHECK (purchase_amount > 0),                        -- 최종 결제 금액
+
+    purchase_status VARCHAR(20) NOT NULL
+        DEFAULT 'UNPAID'
+        CHECK (
+            purchase_status IN (
+                'UNPAID',
+                'PAID',
+                'CANCELED',
+                'REFUNDED'
+            )
+        ),                                                  -- 주문 및 결제 상태
+
+    payment_order_id VARCHAR(64) UNIQUE,                    -- 토스페이먼츠 주문번호
+    payment_key VARCHAR(200) UNIQUE,                        -- 토스페이먼츠 결제키
+    payment_method VARCHAR(30),                             -- 결제수단
+
+    created_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,                          -- 구매 주문 생성 시각
+
+    paid_at TIMESTAMP,                                      -- 결제 완료 시각
+
+    CONSTRAINT fk_mem_purchase_member
+        FOREIGN KEY (member_no)
+        REFERENCES member(member_no)
+        ON DELETE SET NULL                                  -- 회원 삭제 후에도 구매 이력 유지
+);
+
+
+-- =====================================================
 -- PARKING
 -- =====================================================
 CREATE TABLE parking (

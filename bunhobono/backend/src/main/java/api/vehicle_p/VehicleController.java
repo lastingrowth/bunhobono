@@ -63,10 +63,18 @@ public class VehicleController {
                         authentication.getName()
                 );
 
+        int limitCount =
+                vehicleService.getMonthlyVisitLimitCount(
+                        authentication.getName()
+                );
+
         return Map.of(
-                "limitCount", 10,
+                "limitCount", limitCount,
                 "registeredCount", registeredCount,
-                "remainingCount", Math.max(0, 10 - registeredCount)
+                "remainingCount", Math.max(
+                        0,
+                        limitCount - registeredCount
+                )
         );
     }
 

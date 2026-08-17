@@ -13,7 +13,7 @@
         'list-mode': mode === 'list'
       }"
     >
-      <h2>차량관리</h2>
+      <h2>{{ mode.startsWith('notification') ? '알림' : '차량관리' }}</h2>
 
       <div class="resident-vehicle-header-actions">
         <button
@@ -137,7 +137,7 @@
       :open="paymentRequiredOpen"
       icon="₩"
       title="방문차량 추가 등록"
-      message="이번 달 무료 등록 10대를 모두 사용했습니다. 추가 등록을 위해 횟수를 충전해 주세요."
+      message="이번 달 사용 가능한 방문차량 등록 횟수를 모두 사용했습니다. 추가 등록을 위해 횟수를 충전해 주세요."
       caution="결제가 완료되면 결제한 수량만큼 추가 등록할 수 있습니다."
       cancel-text="닫기"
       confirm-text="횟수 충전"
@@ -398,7 +398,7 @@ function closePaymentRequired() {
 
 function openVisitCreditCharge() {
   paymentRequiredOpen.value = false;
-  showFeedback("방문차량 횟수 충전 기능을 준비 중입니다.");
+  router.push({ name: "MemPurchase" });
 }
 
 function cancelVisitVehicle(vehicle) {

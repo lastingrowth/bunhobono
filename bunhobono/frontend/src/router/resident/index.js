@@ -8,6 +8,7 @@ import carlogs from "./carlogs";
 import boards from "./boards";
 import inquiries from "./inquiries";
 import billing from "./billing";
+import memPurchase from "./memPurchase";
 
 export const residentRoutes = [
     {
@@ -27,6 +28,7 @@ export const residentRoutes = [
             ...boards,
             ...inquiries,
             ...billing,
+            ...memPurchase,
         ]
     }
 ]

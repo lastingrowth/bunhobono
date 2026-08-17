@@ -245,7 +245,7 @@ public class GatePdmService {
             lastNormalSavedAt.put(dto.getGateNo(), now);
         }
     }
-    
+
     private final Map<Integer, GatePdmDTO> latestPredictions =
             new ConcurrentHashMap<>();
 
