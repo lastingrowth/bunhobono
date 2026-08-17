@@ -1,5 +1,4 @@
 # plate_ocr.py
-
 from pathlib import Path
 import os
 import re

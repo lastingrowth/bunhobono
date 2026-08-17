@@ -25,10 +25,13 @@ public class BillingController {
         return billingService.findParkingCars(lastFourDigits, exitType, kioskNo);
     }
 
-    // 차량이 입차한 주차장과 같은 층의 활성 출차 게이트 번호를 조회한다.
+    // 차량과 현재 키오스크에 맞는 활성 출차 게이트 번호를 조회한다.
     @GetMapping("/cars/{carLogNo}/exit-gate")
-    public int exitGate(@PathVariable int carLogNo) {
-        return billingService.findExitGateNo(carLogNo);
+    public int exitGate(
+            @PathVariable int carLogNo,
+            @RequestParam(required = false) Integer kioskNo
+    ) {
+        return billingService.findExitGateNo(carLogNo, kioskNo);
     }
 
     // 차량번호로 현재 주차요금 조회

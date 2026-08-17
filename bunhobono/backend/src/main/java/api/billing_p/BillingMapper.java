@@ -295,6 +295,24 @@ public interface BillingMapper {
             " LIMIT 1")
     Integer findExitGateNoByCarLogNo(int carLogNo);
 
+    // 차량과 같은 주차장의 지정된 출차 게이트 번호 조회
+    @Select("SELECT out_gate.gate_no " +
+            " FROM car_log " +
+            " JOIN gate in_gate " +
+            " ON car_log.in_gate_no = in_gate.gate_no " +
+            " JOIN gate out_gate " +
+            " ON out_gate.parking_no = in_gate.parking_no " +
+            " WHERE car_log.car_log_no = #{carLogNo} " +
+            " AND car_log.out_time IS NULL " +
+            " AND out_gate.gate_code = #{gateCode} " +
+            " AND out_gate.gate_type = 'Out' " +
+            " AND out_gate.active = TRUE " +
+            " LIMIT 1")
+    Integer findExitGateNoByCarLogNoAndGateCode(
+            @Param("carLogNo") int carLogNo,
+            @Param("gateCode") String gateCode
+    );
+
     // 출차 완료 후 3개월이 지난 완료 정산서 번호 조회
     @Select("SELECT b.bill_no " +
             " FROM bill b " +

@@ -31,44 +31,64 @@ SPRING_URL = os.getenv(
 # 영상과 실제 카메라 번호 연결
 TEST_STREAMS = [
     {
-        "videoName": "cctv2",
+        "videoName": "cctv1",
         "source": str(VIDEO_DIR / "cctv2.mp4"),
-        "cameras": [{"cameraNo": 1, "name": "A-IN"}],
+        "cameras": [{"cameraNo": 1, "name": "MAIN-IN"}],
     },
     {
-        "videoName": "cctv1",
-        "source": str(VIDEO_DIR / "cctv1.mp4"),
-        "cameras": [{"cameraNo": 3, "name": "B-IN"}],
+        "videoName": "cctv2",
+        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "cameras": [{"cameraNo": 2, "name": "MAIN-OUT"}],
     },
     {
         "videoName": "cctv3",
-        "source": str(VIDEO_DIR / "cctv3.mp4"),
-        "cameras": [{"cameraNo": 5, "name": "A-IN"}],
+        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "cameras": [{"cameraNo": 3, "name": "REAR-IN"}],
     },
     {
         "videoName": "cctv4",
         "source": str(VIDEO_DIR / "cctv4.mp4"),
-        "cameras": [{"cameraNo": 7, "name": "B-IN"}],
+        "cameras": [{"cameraNo": 4, "name": "REAR-OUT"}],
     },
     {
         "videoName": "cctv5",
         "source": str(VIDEO_DIR / "cctv2.mp4"),
-        "cameras": [{"cameraNo": 2, "name": "A-OUT"}],
+        "cameras": [{"cameraNo": 5, "name": "B1-IN-1"}],
     },
     {
         "videoName": "cctv6",
-        "source": str(VIDEO_DIR / "cctv1.mp4"),
-        "cameras": [{"cameraNo": 4, "name": "B-OUT"}],
+        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "cameras": [{"cameraNo": 6, "name": "B1-OUT-1"}],
     },
     {
         "videoName": "cctv7",
-        "source": str(VIDEO_DIR / "cctv3.mp4"),
-        "cameras": [{"cameraNo": 6, "name": "A-OUT"}],
+        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "cameras": [{"cameraNo": 7, "name": "B1-IN-2"}],
     },
     {
         "videoName": "cctv8",
+        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "cameras": [{"cameraNo": 8, "name": "B1-OUT-2"}],
+    },
+    {
+        "videoName": "cctv9",
         "source": str(VIDEO_DIR / "cctv4.mp4"),
-        "cameras": [{"cameraNo": 8, "name": "B-OUT"}],
+        "cameras": [{"cameraNo": 9, "name": "B2-IN-1"}],
+    },
+    {
+        "videoName": "cctv10",
+        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "cameras": [{"cameraNo": 10, "name": "B2-OUT-1"}],
+    },
+    {
+        "videoName": "cctv11",
+        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "cameras": [{"cameraNo": 11, "name": "B2-IN-2"}],
+    },
+    {
+        "videoName": "cctv12",
+        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "cameras": [{"cameraNo": 12, "name": "B2-OUT-2"}],
     },
 ]
 
@@ -82,11 +102,11 @@ MIN_OCR_SCORE = 0.5
 SEND_COOLDOWN_SECONDS = 10
 DETECTION_DISPLAY_SECONDS = 2
 OCR_DEVICE = "cpu"
-LOW_LIGHT_CAMERA_NOS = {5, 6}
-LOW_LIGHT_BRIGHTNESS = 0.40
-SUNNY_CAMERA_NOS = {7, 8}
-SUNNY_CONTRAST = 1.20
-SUNNY_BRIGHTNESS = 18
+LOW_LIGHT_CAMERA_NOS = set()
+LOW_LIGHT_BRIGHTNESS = 1.0
+SUNNY_CAMERA_NOS = set()
+SUNNY_CONTRAST = 1.0
+SUNNY_BRIGHTNESS = 0
 TOP_PADDED_CAMERA_NOS = {5, 6, 7, 8}
 DISPLAY_TOP_CROP_RATIO = 0.08
 

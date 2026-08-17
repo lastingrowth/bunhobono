@@ -1,4 +1,6 @@
 # pandas == 데이터 분석 라이브러리
+from pathlib import Path
+
 import pandas as pd
 
 # 학습용 데이터와 테스트용 데이터 분리
@@ -23,7 +25,8 @@ from sklearn.metrics import (
 # ============================
 # CSV 불러오기
 # ============================
-df = pd.read_csv("data/predictive_maintenance_timeseries_synthetic.csv")
+CSV_PATH = Path(__file__).resolve().parents[2] / "data" / "camera" / "predictive_maintenance_timeseries_synthetic.csv"
+df = pd.read_csv(CSV_PATH)
 
 # ============================
 # 학습에 사용할 입력 변수(X)

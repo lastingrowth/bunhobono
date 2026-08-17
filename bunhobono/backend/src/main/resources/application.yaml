@@ -54,3 +54,6 @@ gemini:
 toss:
   # 실제 결제 승인 테스트 시 환경변수 TOSS_SECRET_KEY를 설정한다.
   secret-key: ${TOSS_SECRET_KEY:}
+
+fast-api:
+   base-url: ${FAST_API_BASE_URL:http://localhost:8000}

@@ -76,10 +76,12 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
     };
 
     const parkingCameraModes = ref({
-        "A 주차장": "IN",
-        "B 주차장": "IN",
-        "C 주차장": "IN",
-        "D 주차장": "IN",
+        "SURFACE-MAIN": "IN",
+        "SURFACE-REAR": "IN",
+        "B1-1": "IN",
+        "B1-2": "IN",
+        "B2-1": "IN",
+        "B2-2": "IN",
     });
 
     const selectedParkingPanel = ref(null);
@@ -121,30 +123,101 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         ];
     });
 
-    const findGateByParking = (parkingName, gateType) => {
-        return gateStore.list.find((gate) => {
-            return gate.parkingName === parkingName
-                && String(gate.gateType).toUpperCase() === gateType;
-        });
-    };
+    const monitorPanelDefinitions = [
+        {
+            panelKey: "SURFACE-MAIN",
+            parkingCode: "SURFACE",
+            panelName: "정문",
+            inGateCode: "MAIN-IN",
+            outGateCode: "MAIN-OUT",
+            inCameraNo: 1,
+            outCameraNo: 2,
+        },
+        {
+            panelKey: "SURFACE-REAR",
+            parkingCode: "SURFACE",
+            panelName: "후문",
+            inGateCode: "REAR-IN",
+            outGateCode: "REAR-OUT",
+            inCameraNo: 3,
+            outCameraNo: 4,
+        },
+        {
+            panelKey: "B1-1",
+            parkingCode: "B1",
+            panelName: "B1 1번 출입구",
+            inGateCode: "B1-IN-1",
+            outGateCode: "B1-OUT-1",
+            inCameraNo: 5,
+            outCameraNo: 6,
+        },
+        {
+            panelKey: "B1-2",
+            parkingCode: "B1",
+            panelName: "B1 2번 출입구",
+            inGateCode: "B1-IN-2",
+            outGateCode: "B1-OUT-2",
+            inCameraNo: 7,
+            outCameraNo: 8,
+        },
+        {
+            panelKey: "B2-1",
+            parkingCode: "B2",
+            panelName: "B2 1번 출입구",
+            inGateCode: "B2-IN-1",
+            outGateCode: "B2-OUT-1",
+            inCameraNo: 9,
+            outCameraNo: 10,
+        },
+        {
+            panelKey: "B2-2",
+            parkingCode: "B2",
+            panelName: "B2 2번 출입구",
+            inGateCode: "B2-IN-2",
+            outGateCode: "B2-OUT-2",
+            inCameraNo: 11,
+            outCameraNo: 12,
+        },
+    ];
 
     const parkingMonitorPanels = computed(() => {
-        return parkingStore.list.slice(0, 4).map((parking, index) => {
-            const mode = parkingCameraModes.value[parking.parkingName] ?? "IN";
-            const gate = findGateByParking(parking.parkingName, mode);
-            const cameraNo = (index * 2) + (mode === "IN" ? 1 : 2);
+        return monitorPanelDefinitions
+            .map((definition) => {
+                const parking = parkingStore.list.find((item) => {
+                    return item.parkingCode === definition.parkingCode;
+                });
 
-            return {
-                parkingNo: parking.parkingNo,
-                parkingName: parking.parkingName,
-                parkingLocation: parking.parkingLocation,
-                mode,
-                modeText: mode === "IN" ? "입차" : "출차",
-                modeClass: mode === "IN" ? "in" : "out",
-                cameraNo,
-                gate,
-            };
-        });
+                if (!parking) {
+                    return null;
+                }
+
+                const mode =
+                    parkingCameraModes.value[definition.panelKey] ?? "IN";
+
+                const gateCode = mode === "IN"
+                    ? definition.inGateCode
+                    : definition.outGateCode;
+
+                const gate = gateStore.list.find((item) => {
+                    return item.gateCode === gateCode;
+                });
+
+                const cameraNo = mode === "IN"
+                    ? definition.inCameraNo
+                    : definition.outCameraNo;
+
+                return {
+                    ...parking,
+                    panelKey: definition.panelKey,
+                    panelName: definition.panelName,
+                    mode,
+                    modeText: mode === "IN" ? "입차" : "출차",
+                    modeClass: mode === "IN" ? "in" : "out",
+                    cameraNo,
+                    gate,
+                };
+            })
+            .filter(Boolean);
     });
 
     const refreshSelectedParkingPanel = () => {
@@ -153,7 +226,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         }
 
         const latestPanel = parkingMonitorPanels.value.find((panel) => {
-            return Number(panel.parkingNo) === Number(selectedParkingPanel.value.parkingNo);
+            return panel.panelKey === selectedParkingPanel.value.panelKey;
         });
 
         selectedParkingPanel.value = latestPanel ?? selectedParkingPanel.value;
@@ -178,12 +251,12 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         return cameraDataLogs.value.slice(0, 10);
     });
 
-    const toggleParkingCamera = (parkingName) => {
-        const currentMode = parkingCameraModes.value[parkingName] ?? "IN";
+    const toggleParkingCamera = (panelKey) => {
+        const currentMode = parkingCameraModes.value[panelKey] ?? "IN";
 
         parkingCameraModes.value = {
             ...parkingCameraModes.value,
-            [parkingName]: currentMode === "IN" ? "OUT" : "IN",
+            [panelKey]: currentMode === "IN" ? "OUT" : "IN",
         };
 
         refreshSelectedParkingPanel();
@@ -304,7 +377,7 @@ export const useAdminDashboardStore = defineStore("adminDashboard", () => {
         if (member.role === "ADMIN") {
             return `관리실 / ${member.memName}`;
         }
-        return `${dongText(member.dong)} ${hoText(member.ho)} / ${member.memName}`;
+        return `${dongText(member.memDong)} ${hoText(member.memHo)} / ${member.memName}`;
     };
 
     const resetQuickVehicle = () => {

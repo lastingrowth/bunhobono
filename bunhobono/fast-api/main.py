@@ -13,6 +13,9 @@ from fastapi.responses import StreamingResponse
 
 from plate_ocr import PlateOCR
 from plate_preprocess_standard_v2 import make_candidates
+from predictive_maintenance.camera.camera_inference import router as camera_pdm_router
+from predictive_maintenance.gate.gate_inference import router as gate_pdm_router
+from predictive_maintenance.robot.robot_inference import router as robot_pdm_router
 from ocr_selector import select_best_ocr
 from test_stream import TEST_STREAMS, TestStreamWorker
 from yolo_detect import PlateDetector
@@ -80,6 +83,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Parking API", lifespan=lifespan)
+
+app.include_router(gate_pdm_router)
+app.include_router(camera_pdm_router)
+app.include_router(robot_pdm_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -631,4 +638,7 @@ async def ocr(
 # C:\ProgramData\anaconda3\envs\bono_gpu\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # C:\Users\503-30\miniconda3\condabin\conda.bat activate bono
+# python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# call C:\Users\dayst\miniconda3\condabin\conda.bat activate bono
 # python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000

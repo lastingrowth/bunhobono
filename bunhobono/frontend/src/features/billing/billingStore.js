@@ -267,7 +267,7 @@ export const useBillingStore = defineStore('billing', () => {
     }
 
     // 입주민 차량과 같은 층의 출차 게이트를 찾아 로봇 출차를 요청한다.
-    const requestResidentExit = async () => {
+    const requestResidentExit = async (kioskNo) => {
         if (!selectedCar.value) {
             errorMessage.value = '출차할 차량정보를 확인할 수 없습니다.'
             return {
@@ -282,7 +282,8 @@ export const useBillingStore = defineStore('billing', () => {
         try {
             // 백엔드에서 차량과 같은 층의 출차 게이트 번호를 조회한다.
             const gateResponse = await getExitGateNo(
-                selectedCar.value.carLogNo
+                selectedCar.value.carLogNo,
+                kioskNo
             )
 
             // 조회된 출차 게이트로 입주민 차량의 로봇 출차를 요청한다.

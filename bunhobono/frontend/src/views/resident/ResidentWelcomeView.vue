@@ -377,6 +377,22 @@ onMounted(() => memberStore.loadMypage());
   .footer-button-copy strong { font-size: 19px; }
   .welcome-mode-card .kiosk-return-button:not(.vehicle-register-button) { min-height:36px;margin-top:4px;font-size:17px; }
 }
+.resident-welcome {
+    min-height: calc(100vh - var(--header-height));
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(248, 252, 255, 0.44) 0%,
+            rgba(250, 253, 255, 0.63) 45%,
+            rgba(255, 255, 255, 0.81) 75%,
+            rgba(255, 255, 255, 0.91) 100%
+        ),
+        url('@/assets/images/back.jpg')
+            center center / cover fixed no-repeat;
+}
 @media (max-width: 600px) {
   .exit-request-page { padding: 20px 12px 50px; }
   .exit-kiosk-card { padding: 28px 18px 22px; border-radius: 24px; }

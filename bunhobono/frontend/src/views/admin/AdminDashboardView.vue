@@ -24,7 +24,7 @@
                 <div class="parking-monitor-grid">
                     <section
                         v-for="panel in parkingMonitorPanels"
-                        :key="panel.parkingNo"
+                        :key="panel.panelKey"
                         class="parking-monitor-card"
                         @click="openParkingDialog(panel)">
 
@@ -33,7 +33,7 @@
                                 v-if="hasStreamSession(panel.cameraNo) && !isCameraFinished(panel.cameraNo)"
                                 class="parking-stream"
                                 :src="getStreamUrl(panel.cameraNo)"
-                                :alt="`${panel.parkingName} ${panel.modeText} CCTV`" />
+                                :alt="`${panel.panelName} ${panel.modeText} CCTV`" />
 
                             <div v-else class="parking-video-placeholder">
                                 <strong v-if="isCameraFinished(panel.cameraNo)">영상 재생이 끝났습니다</strong>
@@ -71,7 +71,7 @@
                                     </div>
                                 </div>
                                 <div class="cctv-overlay-bottom">
-                                    <span>{{ panel.parkingName }} · {{ panel.modeText }}</span>
+                                    <span>{{ panel.panelName }} · {{ panel.modeText }}</span>
                                     <time>{{ cctvDateTime }}</time>
                                 </div>
                                 <i class="cctv-corner top-left"></i>
@@ -582,7 +582,7 @@
                         v-if="isCameraPlaying(selectedParkingPanel.cameraNo)"
                         class="parking-stream"
                         :src="getStreamUrl(selectedParkingPanel.cameraNo)"
-                        :alt="`${selectedParkingPanel.parkingName} ${selectedParkingPanel.modeText} CCTV`" />
+                        :alt="`${selectedParkingPanel.panelName} ${selectedParkingPanel.modeText} CCTV`" />
 
                     <div v-else class="parking-video-placeholder">
                         <strong>
@@ -615,7 +615,7 @@
                             <span>CAM {{ String(selectedParkingPanel.cameraNo).padStart(2, '0') }}</span>
                         </div>
                         <div class="cctv-overlay-bottom">
-                            <span>{{ selectedParkingPanel.parkingName }} · {{ selectedParkingPanel.modeText }}</span>
+                            <span>{{ selectedParkingPanel.panelName }} · {{ selectedParkingPanel.modeText }}</span>
                             <time>{{ cctvDateTime }}</time>
                         </div>
                         <i class="cctv-corner top-left"></i>
@@ -1289,7 +1289,7 @@ const changeCameraMode = async (panel) => {
         await toggleStream(panel)
     }
 
-    toggleParkingCamera(panel.parkingName)
+    toggleParkingCamera(panel.panelKey)
 }
 
 // 차량 승인과 게이트 개방이 완료된 후 CCTV를 다시 재생하고

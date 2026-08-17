@@ -896,8 +896,11 @@ public class BillingService {
         );
     }
 
-    // 차량이 입차한 주차장과 같은 층의 활성 출차 게이트 번호를 조회한다.
-    public int findExitGateNo(int carLogNo) {
+    // 키오스크 위치에 맞는 활성 출차 게이트 번호를 조회한다.
+    public int findExitGateNo(
+            int carLogNo,
+            Integer kioskNo
+    ) {
         if (carLogNo <= 0) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -905,13 +908,38 @@ public class BillingService {
             );
         }
 
-        Integer exitGateNo =
-                billingMapper.findExitGateNoByCarLogNo(carLogNo);
+        Integer exitGateNo;
+
+        // B1 키오스크 1은 왼쪽 출차 게이트를 사용한다.
+        if (Integer.valueOf(1).equals(kioskNo)) {
+            exitGateNo =
+                    billingMapper
+                            .findExitGateNoByCarLogNoAndGateCode(
+                                    carLogNo,
+                                    "B1-OUT-1"
+                            );
+
+            // B1 키오스크 2는 오른쪽 출차 게이트를 사용한다.
+        } else if (Integer.valueOf(2).equals(kioskNo)) {
+            exitGateNo =
+                    billingMapper
+                            .findExitGateNoByCarLogNoAndGateCode(
+                                    carLogNo,
+                                    "B1-OUT-2"
+                            );
+
+            // 키오스크 3, 4와 기존 호출은 원래 출구 조회 방식을 유지한다.
+        } else {
+            exitGateNo =
+                    billingMapper.findExitGateNoByCarLogNo(
+                            carLogNo
+                    );
+        }
 
         if (exitGateNo == null) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "같은 층에서 이용할 수 있는 출차 게이트를 찾을 수 없습니다."
+                    "이용할 수 있는 출차 게이트를 찾을 수 없습니다."
             );
         }
 
