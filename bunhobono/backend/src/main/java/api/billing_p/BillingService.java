@@ -7,6 +7,7 @@ import api.kiosk_p.KioskService;
 import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -140,7 +141,33 @@ public class BillingService {
         return sameFloorCars;
     }
 
-    // 차량번호로 현재 주차 기록을 찾아 정산서를 생성하거나 갱신
+    // B2에 입차한 비입주민 차량의 미결제 정산서를 생성한다.
+    public void createEntryBill(
+            int carLogNo,
+            LocalDateTime inTime
+    ) {
+        // 입차시각에 적용 중인 요금 규칙을 조회한다.
+        FeeRuleDTO feeRule =
+                billingMapper.findFeeRuleByInTime(inTime);
+
+        validateFeeRule(feeRule);
+
+        BillDTO bill = new BillDTO();
+        bill.setCarLogNo(carLogNo);
+        bill.setFeeRuleNo(feeRule.getFeeRuleNo());
+        bill.setChargeMinutes(0);
+        bill.setBillAmount(BigDecimal.ZERO);
+        bill.setBillStatus("UNPAID");
+
+        if (billingMapper.insert(bill) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "입차 정산서를 생성하지 못했습니다."
+            );
+        }
+    }
+
+    // 차량번호로 현재 주차 기록을 찾아 기존 정산서를 갱신한다.
     @Transactional
     public BillDTO createOrRefreshBill(
             String carNo,
@@ -201,61 +228,32 @@ public class BillingService {
             return bill;
         }
 
+        // 비입주민 차량은 입차할 때 정산서가 생성되어 있어야 한다.
         if (bill == null) {
-            // 최초 정산이면 현재 활성화된 요금 규칙을 적용한다.
-            FeeRuleDTO feeRule = billingMapper.findActiveFeeRule();
-
-            validateFeeRule(feeRule);
-
-            bill = new BillDTO();
-            bill.setCarLogNo(parkingLog.getCarLogNo());
-            bill.setFeeRuleNo(feeRule.getFeeRuleNo());
-            bill.setKioskNo(kioskNo);
-            bill.setBillStatus("UNPAID");
-
-            // 입차시각, 무료시간, 요금 규칙으로 과금시간과 금액을 계산한다.
-            calculateBill(
-                    bill,
-                    parkingLog.getInTime(),
-                    parkingLog.getFreeTime(),
-                    feeRule.getUnitMinutes(),
-                    feeRule.getUnitFee(),
-                    feeRule.getDailyMaxFee()
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "입차 시 생성된 정산서를 찾을 수 없습니다."
             );
+        }
 
-            // 계산한 정산서를 bill 테이블에 등록한다.
-            if (billingMapper.insert(bill) != 1) {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT,
-                        "정산서를 생성하지 못했습니다."
-                );
-            }
+        // 기존 미결제 정산서는 입차할 때 적용한 요금 규칙을 유지한다.
+        bill.setKioskNo(kioskNo);
 
-            // 입주민이 등록한 방문차량에 유료 정산서가 최초 생성되면
-            // 해당 방문차량을 등록한 입주민에게 고지 알림을 생성한다.
-            if (bill.getBillAmount().compareTo(BigDecimal.ZERO) > 0) {
-                createVisitParkingFeeNotification(bill);
-            }
-        } else {
-            // 기존 미결제 정산서는 처음 적용한 요금 규칙을 유지한다.
-            bill.setKioskNo(kioskNo);
+        // 입차시각부터 현재까지 지난 시간을 반영해 정산금액을 다시 계산한다.
+        calculateBill(
+                bill,
+                parkingLog.getInTime(),
+                parkingLog.getFreeTime(),
+                bill.getUnitMinutes(),
+                bill.getUnitFee(),
+                bill.getDailyMaxFee()
+        );
 
-            // 시간이 지났을 수 있으므로 현재 시각을 기준으로 금액만 다시 계산한다.
-            calculateBill(
-                    bill,
-                    parkingLog.getInTime(),
-                    parkingLog.getFreeTime(),
-                    bill.getUnitMinutes(),
-                    bill.getUnitFee(),
-                    bill.getDailyMaxFee()
+        if (billingMapper.updateUnpaidAmount(bill) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "정산금액을 갱신하지 못했습니다."
             );
-
-            if (billingMapper.updateUnpaidAmount(bill) != 1) {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT,
-                        "정산금액을 갱신하지 못했습니다."
-                );
-            }
         }
 
         // 계산 결과가 0원이면 토스 결제 없이 정산 완료로 처리한다.
@@ -288,7 +286,7 @@ public class BillingService {
             }
         }
 
-        // INSERT 또는 UPDATE 결과가 반영된 최종 정산서를 다시 조회한다.
+        // UPDATE 결과가 반영된 최종 정산서를 다시 조회한다.
         return billingMapper.findByCarLogNo(
                 parkingLog.getCarLogNo()
         );
@@ -474,6 +472,242 @@ public class BillingService {
         }
 
         return approvedPayment;
+    }
+
+    // 등록된 요금 규칙 목록 조회
+    public List<FeeRuleDTO> findFeeRuleList() {
+        return billingMapper.findFeeRuleList();
+    }
+
+    // 새로운 요금 규칙 등록
+    @Transactional
+    public FeeRuleDTO createFeeRule(FeeRuleDTO dto) {
+        if (dto == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "요금 규칙 정보를 입력해 주세요."
+            );
+        }
+
+        String ruleName =
+                dto.getRuleName() == null
+                        ? ""
+                        : dto.getRuleName().trim();
+
+        if (ruleName.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "요금 규칙명을 입력해 주세요."
+            );
+        }
+
+        if (dto.getUnitMinutes() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "과금 단위는 1분 이상이어야 합니다."
+            );
+        }
+
+        if (dto.getUnitFee() == null
+                || dto.getUnitFee().compareTo(BigDecimal.ZERO) < 0
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "단위요금은 0원 이상이어야 합니다."
+            );
+        }
+
+        if (dto.getDailyMaxFee() != null
+                && dto.getDailyMaxFee().compareTo(BigDecimal.ZERO) < 0
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "일일 최대요금은 0원 이상이어야 합니다."
+            );
+        }
+
+        if (dto.getEffectiveFrom() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "적용 시작일시를 입력해 주세요."
+            );
+        }
+
+        if (dto.getEffectiveTo() != null
+                && !dto.getEffectiveTo().isAfter(dto.getEffectiveFrom())
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "적용 종료일시는 시작일시보다 뒤여야 합니다."
+            );
+        }
+
+        dto.setRuleName(ruleName);
+
+        try {
+            if (billingMapper.insertFeeRule(dto) != 1) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "요금 규칙을 등록하지 못했습니다."
+                );
+            }
+        } catch (DuplicateKeyException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 등록된 요금 규칙명입니다."
+            );
+        }
+
+        return dto;
+    }
+
+    // 요금 규칙의 적용 종료일시 수정
+    @Transactional
+    public FeeRuleDTO updateFeeRuleEffectiveTo(
+            int feeRuleNo,
+            LocalDateTime effectiveTo
+    ) {
+        if (feeRuleNo <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "요금 규칙 번호를 확인해 주세요."
+            );
+        }
+
+        FeeRuleDTO feeRule =
+                billingMapper.findFeeRuleByNo(feeRuleNo);
+
+        if (feeRule == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "요금 규칙을 찾을 수 없습니다."
+            );
+        }
+
+        if (effectiveTo != null
+                && !effectiveTo.isAfter(feeRule.getEffectiveFrom())
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "적용 종료일시는 시작일시보다 뒤여야 합니다."
+            );
+        }
+
+        feeRule.setEffectiveTo(effectiveTo);
+
+        if (billingMapper.updateFeeRuleEffectiveTo(feeRule) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "요금 규칙의 적용 종료일시를 수정하지 못했습니다."
+            );
+        }
+
+        return feeRule;
+    }
+
+    // 예약 상태의 요금 규칙 전체 수정
+    @Transactional
+    public FeeRuleDTO updateScheduledFeeRule(
+            int feeRuleNo,
+            FeeRuleDTO dto
+    ) {
+        if (feeRuleNo <= 0 || dto == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "요금 규칙 정보를 확인해 주세요."
+            );
+        }
+
+        FeeRuleDTO feeRule =
+                billingMapper.findFeeRuleByNo(feeRuleNo);
+
+        if (feeRule == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "요금 규칙을 찾을 수 없습니다."
+            );
+        }
+
+        if (!feeRule.getEffectiveFrom().isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "예약 상태의 요금 규칙만 전체 수정할 수 있습니다."
+            );
+        }
+
+        String ruleName =
+                dto.getRuleName() == null
+                        ? ""
+                        : dto.getRuleName().trim();
+
+        if (ruleName.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "요금 규칙명을 입력해 주세요."
+            );
+        }
+
+        if (dto.getUnitMinutes() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "과금 단위는 1분 이상이어야 합니다."
+            );
+        }
+
+        if (dto.getUnitFee() == null
+                || dto.getUnitFee().compareTo(BigDecimal.ZERO) < 0
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "단위요금은 0원 이상이어야 합니다."
+            );
+        }
+
+        if (dto.getDailyMaxFee() != null
+                && dto.getDailyMaxFee().compareTo(BigDecimal.ZERO) < 0
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "일일 최대요금은 0원 이상이어야 합니다."
+            );
+        }
+
+        if (dto.getEffectiveFrom() == null
+                || !dto.getEffectiveFrom().isAfter(LocalDateTime.now())
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "예약 규칙의 적용 시작일시는 현재 시각보다 뒤여야 합니다."
+            );
+        }
+
+        if (dto.getEffectiveTo() != null
+                && !dto.getEffectiveTo().isAfter(dto.getEffectiveFrom())
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "적용 종료일시는 시작일시보다 뒤여야 합니다."
+            );
+        }
+
+        dto.setFeeRuleNo(feeRuleNo);
+        dto.setRuleName(ruleName);
+
+        try {
+            if (billingMapper.updateScheduledFeeRule(dto) != 1) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "예약 요금 규칙을 수정하지 못했습니다."
+                );
+            }
+        } catch (DuplicateKeyException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 등록된 요금 규칙명입니다."
+            );
+        }
+
+        return billingMapper.findFeeRuleByNo(feeRuleNo);
     }
 
     // 현재 주차 중인 비입주민 차량의 정산 목록과 출차 가능 여부를 조회한다.

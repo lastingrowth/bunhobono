@@ -112,8 +112,17 @@
             </div>
 
             <div>
-                <dt>요금 규칙명</dt>
-                <dd>{{ valueText(detail.ruleName) }}</dd>
+              <dt>요금 규칙명</dt>
+              <dd>
+                <button
+                  type="button"
+                  class="fee-rule-link"
+                  :disabled="!detail.ruleName"
+                  @click="goFeeRules"
+                >
+                  {{ valueText(detail.ruleName) }}
+                </button>
+              </dd>
             </div>
         </dl>
       </section>
@@ -284,6 +293,13 @@ const saveEdit = async () => {
   isEditing.value = false
 }
 
+// 요금 규칙 관리 화면으로 이동한다.
+const goFeeRules = () => {
+  router.push({
+    name: 'AdminFeeRuleList'
+  })
+}
+
 // 정산 목록 화면으로 돌아간다.
 const goList = () => {
   router.push({
@@ -425,6 +441,27 @@ onMounted(() => {
 .save-button:hover {
   border-color: var(--admin-muted);
   background: var(--admin-muted);
+}
+
+.fee-rule-link {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  color: #d4b83f;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fee-rule-link:hover:not(:disabled) {
+  color: #ead46d;
+}
+
+.fee-rule-link:disabled {
+  border-bottom-color: transparent;
+  color: var(--admin-muted);
+  cursor: default;
 }
 
 .list-button:disabled,

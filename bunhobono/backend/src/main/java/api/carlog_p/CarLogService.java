@@ -1,5 +1,6 @@
 package api.carlog_p;
 
+import api.billing_p.BillingService;
 import api.cameradata_p.CameraDataDTO;
 import api.parking_space_p.ParkingSpaceDTO;
 import api.parking_space_p.ParkingSpaceService;
@@ -22,6 +23,9 @@ public class CarLogService {
 
     @Resource
     private CarLogMapper carLogMapper;
+
+    @Resource
+    private BillingService billingService;
 
     @Resource
     private ParkingSpaceService parkingSpaceService;
@@ -176,6 +180,20 @@ public class CarLogService {
 
         if (carLogMapper.insertEntry(log) != 1) {
             return 0;
+        }
+
+        // B2에 입차한 비입주민 차량은 입차 즉시 미결제 정산서를 생성한다.
+        if (
+            B2.equalsIgnoreCase(gate.getGateArea())
+                    && (
+                    "VISIT".equals(log.getSnapshotCarKind())
+                            || "UNKNOWN".equals(log.getSnapshotCarKind())
+            )
+        ) {
+            billingService.createEntryBill(
+                    log.getCarLogNo(),
+                    log.getInTime()
+            );
         }
 
         if (entrySpace == null) {

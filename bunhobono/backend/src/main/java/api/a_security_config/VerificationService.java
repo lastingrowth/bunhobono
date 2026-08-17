@@ -95,17 +95,17 @@ public class VerificationService {
 
     // 회원가입 전화번호로 인증번호를 보낸다.
     public void sendSignupPhoneCode(String phone) {
-        sendCode(signupKey(phone), "PHONE", phone);
+        sendCode(signupKey("PHONE", phone), "PHONE", phone);
     }
 
     // 사용자가 입력한 회원가입 인증번호를 확인한다.
     public void verifySignupPhoneCode(String phone, String code) {
-        verifyCode(signupKey(phone), code, false);
+        verifyCode(signupKey("PHONE", phone), code, false);
     }
 
     // 회원가입 직전에 인증 여부를 확인하고 사용한 인증정보를 삭제한다.
     public void consumeSignupPhoneVerification(String phone) {
-        String key = signupKey(phone);
+        String key = signupKey("PHONE", phone);
         VerificationData data = verificationStore.remove(key);
 
         if (data == null
@@ -115,6 +115,25 @@ public class VerificationService {
                     HttpStatus.BAD_REQUEST,
                     "전화번호 인증을 완료해 주세요."
             );
+        }
+    }
+
+    // [회원가입 email 인증] 회원가입 이메일로 인증번호를 보낸다.
+    public void sendSignupEmailCode(String email) {
+        sendCode(signupKey("EMAIL", email), "EMAIL", email);
+    }
+
+    // [회원가입 email 인증] 이메일로 받은 인증번호를 확인한다.
+    public void verifySignupEmailCode(String email, String code) {
+        verifyCode(signupKey("EMAIL", email), code, false);
+    }
+
+    // [회원가입 email 인증] 회원가입 저장 직전에 이메일 인증 여부를 확인한다.
+    public void consumeSignupEmailVerification(String email) {
+        String key = signupKey("EMAIL", email);
+        VerificationData data = verificationStore.remove(key);
+        if (data == null || !data.verified() || LocalDateTime.now().isAfter(data.expiresAt())) {
+            throw error(HttpStatus.BAD_REQUEST, "이메일 인증을 완료해 주세요.");
         }
     }
 
@@ -393,12 +412,16 @@ public class VerificationService {
     // 인증정보를 구분할 저장 키
     // ================================
 
-    private String signupKey(String phone) {
+    // [회원가입 email 인증] 전화번호와 이메일 인증정보를 채널별로 구분한다.
+    private String signupKey(String channel, String contact) {
+        String normalizedChannel = normalizeChannel(channel);
         return String.join(
                 "|",
                 "SIGNUP",
-                "PHONE",
-                normalizePhone(phone)
+                normalizedChannel,
+                "PHONE".equals(normalizedChannel)
+                        ? normalizePhone(contact)
+                        : normalizeEmail(contact)
         );
     }
 

@@ -1196,11 +1196,94 @@ function backToPasswordContactStep() {
 
 @media (max-width: 560px) {
     .find-account-card {
-        min-height: 100%;
+        min-height: auto;
+        padding: 26px 18px;
+        justify-content: flex-start;
+    }
+
+    .find-account-brand {
+        margin-bottom: 22px;
+        font-size: 20px;
+    }
+
+    .find-account-content {
+        max-width: none;
+        gap: 14px;
+    }
+
+    .find-account-content .login-title {
+        margin-bottom: 4px;
+        font-size: 24px;
+    }
+
+    .find-description {
+        margin: -4px 0 2px;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .contact-method-form {
+        gap: 14px;
+    }
+
+    .contact-type-toggle button {
+        padding: 0 6px;
+        font-size: 13px;
+    }
+
+    .email-input-group {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .email-at {
+        display: none;
+    }
+
+    .form-field input,
+    .email-input-group select {
+        font-size: 16px;
+    }
+
+    .unit-fields {
+        gap: 8px;
+    }
+
+    .contact-summary,
+    .verification-target,
+    .account-result {
+        padding: 13px 14px;
     }
 
     .find-actions {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .find-actions .secondary-button,
+    .find-actions .login-submit {
+        padding: 0 8px;
+        font-size: 14px;
+    }
+
+    .step-next-button {
+        width: 100%;
+        align-self: stretch;
+    }
+
+    .back-to-login {
+        margin-top: 18px;
+    }
+}
+
+@media (max-width: 400px) {
+    .phone-target {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .phone-target .send-code-button {
+        width: 100%;
     }
 }
 </style>

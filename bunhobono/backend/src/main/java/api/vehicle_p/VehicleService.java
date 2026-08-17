@@ -1,5 +1,6 @@
 package api.vehicle_p;
 
+import api.mem_purchase_p.MemPurchaseService;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,8 +13,13 @@ import java.util.List;
 @Service
 public class VehicleService {
 
+    private static final int MONTHLY_FREE_VISIT_LIMIT = 10;
+
     @Resource
     VehicleMapper vehicleMapper;
+
+    @Resource
+    private MemPurchaseService memPurchaseService;
 
     // ADMIN 전체 차량 목록
     public List<VehicleDTO> listservice() {
@@ -55,6 +61,13 @@ public class VehicleService {
     public int getMonthlyRegisteredVisitCount(String loginId) {
         return vehicleMapper
                 .countMonthlyRegisteredVisitsByLoginId(loginId);
+    }
+
+    // 기본 무료 횟수와 이번 달 결제 완료 횟수를 합산한 세대 등록 한도
+    public int getMonthlyVisitLimitCount(String loginId) {
+        return MONTHLY_FREE_VISIT_LIMIT
+                + memPurchaseService
+                .getMonthlyPaidVisitQuantity(loginId);
     }
 
     // ADMIN 차량 등록
@@ -202,10 +215,12 @@ public class VehicleService {
                                 loginId
                         );
 
-        if (registeredCount >= 10) {
+        int limitCount = getMonthlyVisitLimitCount(loginId);
+
+        if (registeredCount >= limitCount) {
             throw new ResponseStatusException(
                     HttpStatus.PAYMENT_REQUIRED,
-                    "이번 달 무료 방문차량 등록 10대를 모두 사용했습니다. 추가 등록을 위해 결제해 주세요."
+                    "이번 달 사용 가능한 방문차량 등록 횟수를 모두 사용했습니다. 추가 등록을 위해 결제해 주세요."
             );
         }
 

@@ -197,7 +197,7 @@ public interface MemberMapper {
             EXISTS (
                 SELECT 1
                 FROM member_archive ma
-                WHERE ma.member_no = m.member_no
+                WHERE ma.original_member_no = m.member_no
                   AND ma.archived_at > m.create_at
             ) archived
         FROM member m
@@ -285,7 +285,7 @@ public interface MemberMapper {
     // 전출 확정 전에 회원 정보와 당시 동·호수를 member_archive에 보관한다.
     @Insert("""
         INSERT INTO member_archive (
-            member_no,
+            original_member_no,
             login_id,
             mem_name,
             mem_phone,

@@ -11,6 +11,61 @@
 
         <!-- 입주민 헤더 -->
         <div v-if="isResidentDashboard" class="resident-header-actions">
+            <RouterLink
+                class="resident-mobile-notification"
+                :to="{ path: '/resident/vehicles', query: { mode: 'notification' } }"
+                aria-label="차량 알림 확인"
+            >
+                <span class="notification-icon-wrap">
+                    <img src="@/assets/images/mail.png" alt="">
+                    <b v-if="resVehicleStore.unreadNotificationCount > 0">
+                        {{ resVehicleStore.unreadNotificationCount > 99 ? '99+' : resVehicleStore.unreadNotificationCount }}
+                    </b>
+                </span>
+                <small>알림</small>
+            </RouterLink>
+            <div class="resident-menu-wrap">
+                <button
+                    type="button"
+                    class="resident-menu-button"
+                    :aria-expanded="residentMenuOpen"
+                    @click="residentMenuOpen = !residentMenuOpen"
+                >
+                    메뉴 <span aria-hidden="true">▾</span>
+                </button>
+                <nav v-if="residentMenuOpen" class="resident-dropdown-menu" aria-label="입주민 메뉴">
+                    <RouterLink
+                        to="/resident/mypage"
+                        :class="{ 'menu-active': route.path.startsWith('/resident/mypage') }"
+                        @click="closeResidentMenu"
+                    >내 정보 상세보기</RouterLink>
+                    <RouterLink
+                        to="/resident/vehicles"
+                        :class="{ 'menu-active': route.path === '/resident/vehicles' && route.query.mode !== 'notification' }"
+                        @click="closeResidentMenu"
+                    >차량 관리</RouterLink>
+                    <RouterLink
+                        to="/resident/carlogs"
+                        :class="{ 'menu-active': route.path === '/resident/carlogs' }"
+                        @click="closeResidentMenu"
+                    >입출차 내역</RouterLink>
+                    <RouterLink
+                        to="/resident/boards"
+                        :class="{ 'menu-active': route.path.startsWith('/resident/boards') }"
+                        @click="closeResidentMenu"
+                    >공지사항</RouterLink>
+                    <RouterLink
+                        to="/resident/inquiries"
+                        :class="{ 'menu-active': route.path.startsWith('/resident/inquiries') }"
+                        @click="closeResidentMenu"
+                    >1:1 문의</RouterLink>
+                    <RouterLink
+                        :to="{ path: '/resident/vehicles', query: { mode: 'notification' } }"
+                        :class="{ 'menu-active': route.path === '/resident/vehicles' && route.query.mode === 'notification' }"
+                        @click="closeResidentMenu"
+                    >차량 알림</RouterLink>
+                </nav>
+            </div>
             <div class="resident-header-clock">
                 <span>▣&nbsp; {{ formattedDate }}</span>
                 <i></i>
@@ -71,12 +126,14 @@ import { resetDemo } from '@/features/reset/resetApi';
 import DemoResetConfirm from '@/features/reset/DemoResetConfirm.vue';
 import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
 import { useHistoryStore } from '@/stores/historyStore';
+import { useResVehicleStore } from '@/features/resVehicle/resVehicleStore';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 const jwtStore = useJwtStore()
 const route = useRoute()
 const historyStore = useHistoryStore()
+const resVehicleStore = useResVehicleStore()
 const now = ref(new Date())
 const residentMenuOpen = ref(false)
 const demoResetting = ref(false)
@@ -184,6 +241,9 @@ function goForward() {
 
 onMounted(() => {
     clockTimer = window.setInterval(() => { now.value = new Date() }, 1000)
+    if (jwtStore.role === 'RESIDENT') {
+        resVehicleStore.loadNotifications().catch(() => [])
+    }
 })
 
 onUnmounted(() => {
@@ -231,6 +291,11 @@ const emit = defineEmits([
   gap: 7px;
 }
 
+.resident-mobile-notification {
+  display: none;
+}
+
+
 @media (max-width: 1000px) {
   .header { gap: 10px; padding-inline: 12px; }
   .header-left { gap: 8px; }
@@ -245,13 +310,74 @@ const emit = defineEmits([
 }
 
 @media (max-width: 650px) {
-  .header { gap: 7px; padding-inline: 8px; }
-  .header .logo { font-size: 14px; }
+  .header { gap: 8px; padding-inline: 12px; }
+  .header .logo { font-size: 15px; }
   .resident-header-actions { margin-left: auto; margin-right: 2px; }
-  .resident-header-clock span:first-child,
-  .resident-header-clock i,
+  .resident-header-actions .resident-menu-button { display: none !important; }
+  .resident-mobile-notification {
+    position: relative;
+    display: flex;
+    min-width: 56px;
+    align-items: center;
+    flex-direction: column;
+    gap: 2px;
+    color: #294966;
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .notification-icon-wrap {
+    position: relative;
+    display: grid;
+    width: 46px;
+    height: 38px;
+    place-items: center;
+    border: 1px solid #c8d8e5;
+    border-radius: 10px;
+    background: #fff;
+  }
+  .notification-icon-wrap img { width: 30px; height: 22px; object-fit: contain; }
+  .notification-icon-wrap b {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 4px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 11px;
+    line-height: 21px;
+    text-align: center;
+    background: #e5484d;
+  }
+  .resident-mobile-notification small { font-size: 13px; line-height: 1.1; }
+  .resident-header-clock,
   .header .user-role,
   .header .user-name { display: none; }
+  .resident-header-clock,
+  .header > .user-info { display: none !important; }
+  .resident-header-actions .resident-menu-button {
+    min-height: 38px;
+    padding: 7px 9px;
+    font-size: 13px;
+  }
+  .header .logout-btn {
+    min-height: 38px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  .resident-dropdown-menu {
+    right: 0;
+    left: auto;
+    width: min(210px, calc(100vw - 24px));
+  }
+}
+
+@media (max-width: 390px) {
+  .header { padding-inline: 9px; }
+  .header .logo { max-width: 128px; font-size: 13px; white-space: normal; line-height: 1.15; }
+  .resident-header-actions .resident-menu-button { padding-inline: 6px; }
+  .header .logout-btn { padding-inline: 7px; }
 }
 
 .resident-menu-wrap {

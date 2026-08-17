@@ -5,8 +5,15 @@
       :type="feedbackType"
     />
 
-    <div v-if="mode !== 'form'" class="resident-vehicle-header">
-      <h2>알림</h2>
+    <div
+      v-if="mode !== 'form'"
+      class="resident-vehicle-header"
+      :class="{
+        'notification-mode': mode === 'notification',
+        'list-mode': mode === 'list'
+      }"
+    >
+      <h2>{{ mode.startsWith('notification') ? '알림' : '차량관리' }}</h2>
 
       <div class="resident-vehicle-header-actions">
         <button
@@ -130,7 +137,7 @@
       :open="paymentRequiredOpen"
       icon="₩"
       title="방문차량 추가 등록"
-      message="이번 달 무료 등록 10대를 모두 사용했습니다. 추가 등록을 위해 횟수를 충전해 주세요."
+      message="이번 달 사용 가능한 방문차량 등록 횟수를 모두 사용했습니다. 추가 등록을 위해 횟수를 충전해 주세요."
       caution="결제가 완료되면 결제한 수량만큼 추가 등록할 수 있습니다."
       cancel-text="닫기"
       confirm-text="횟수 충전"
@@ -391,7 +398,7 @@ function closePaymentRequired() {
 
 function openVisitCreditCharge() {
   paymentRequiredOpen.value = false;
-  showFeedback("방문차량 횟수 충전 기능을 준비 중입니다.");
+  router.push({ name: "MemPurchase" });
 }
 
 function cancelVisitVehicle(vehicle) {
@@ -579,11 +586,14 @@ function openResidentBillPayment(billNo) {
 
 @media (max-width: 600px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
-    width: calc(100% - 12px);
+    width: calc(100% - 24px);
   }
 
+  .resident-vehicle-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .resident-vehicle-header-actions { display: none; }
+
   .vehicle-management-section {
-    padding: 18px;
+    padding: 16px 12px;
   }
 
   .vehicle-management-section-header {
@@ -591,12 +601,19 @@ function openResidentBillPayment(billNo) {
     flex-direction: column;
   }
 
-  .visit-application-actions { align-items: flex-end; flex-direction: column-reverse; }
+  .visit-application-actions { width: 100%; align-items: stretch; flex-direction: column-reverse; }
+  .visit-application-actions button { width: 100%; min-height: 44px; }
 }
 
 .resident-vehicle-header-actions { display: flex; align-items: center; gap: 8px; }
 
-@media (min-width: 601px) and (max-width: 900px) {
+@media (max-width: 760px) {
+  .resident-vehicle-header-actions { display: none !important; }
+  .resident-vehicle-header:is(.notification-mode,.list-mode) { display: none; }
+  .resident-vehicle-member { display: none; }
+}
+
+@media (min-width: 761px) and (max-width: 900px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
     width: calc(100% - 36px);
   }

@@ -18,9 +18,9 @@ public class FeeRuleDTO {
 
     private BigDecimal dailyMaxFee;
 
-    private boolean active;
-
     private LocalDateTime createdAt;
 
     private LocalDateTime effectiveFrom;
+
+    private LocalDateTime effectiveTo;
 }

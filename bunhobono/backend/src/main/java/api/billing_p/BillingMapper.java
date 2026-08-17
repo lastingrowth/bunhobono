@@ -2,20 +2,66 @@ package api.billing_p;
 
 import org.apache.ibatis.annotations.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
 public interface BillingMapper {
 
-    // 현재시각에 적용 가능한 최신 요금 규칙 조회
+    // 입차시각에 적용 가능한 최신 요금 규칙 조회
     @Select("SELECT fee_rule_no, rule_name, unit_minutes, unit_fee, " +
-            " daily_max_fee, active, created_at, effective_from " +
+            " daily_max_fee, created_at, effective_from, effective_to " +
             " FROM fee_rule " +
-            " WHERE active = TRUE " +
-            " AND effective_from <= CURRENT_TIMESTAMP " +
+            " WHERE effective_from <= #{inTime} " +
+            " AND (effective_to IS NULL " +
+            " OR effective_to > #{inTime}) " +
             " ORDER BY effective_from DESC, fee_rule_no DESC " +
             " LIMIT 1")
-    FeeRuleDTO findActiveFeeRule();
+    FeeRuleDTO findFeeRuleByInTime(@Param("inTime") LocalDateTime inTime);
+
+    // 등록된 요금 규칙을 적용 시작시각 역순으로 조회
+    @Select("SELECT fee_rule_no, rule_name, unit_minutes, unit_fee, " +
+            " daily_max_fee, created_at, effective_from, effective_to " +
+            " FROM fee_rule " +
+            " ORDER BY effective_from DESC, fee_rule_no DESC")
+    List<FeeRuleDTO> findFeeRuleList();
+
+    // 요금 규칙 번호로 요금 규칙 조회
+    @Select("SELECT fee_rule_no, rule_name, unit_minutes, unit_fee, " +
+            " daily_max_fee, created_at, effective_from, effective_to " +
+            " FROM fee_rule " +
+            " WHERE fee_rule_no = #{feeRuleNo}")
+    FeeRuleDTO findFeeRuleByNo(int feeRuleNo);
+
+    // 요금 규칙의 적용 종료일시 수정
+    @Update("UPDATE fee_rule " +
+            " SET effective_to = #{effectiveTo} " +
+            " WHERE fee_rule_no = #{feeRuleNo}")
+    int updateFeeRuleEffectiveTo(FeeRuleDTO dto);
+
+    // 예약 상태의 요금 규칙 전체 수정
+    @Update("UPDATE fee_rule " +
+            " SET rule_name = #{ruleName}, " +
+            " unit_minutes = #{unitMinutes}, " +
+            " unit_fee = #{unitFee}, " +
+            " daily_max_fee = #{dailyMaxFee}, " +
+            " effective_from = #{effectiveFrom}, " +
+            " effective_to = #{effectiveTo} " +
+            " WHERE fee_rule_no = #{feeRuleNo}")
+    int updateScheduledFeeRule(FeeRuleDTO dto);
+
+    // 새로운 요금 규칙 등록
+    @Insert("INSERT INTO fee_rule (" +
+            " rule_name, unit_minutes, unit_fee, daily_max_fee, " +
+            " effective_from, effective_to) " +
+            " VALUES (#{ruleName}, #{unitMinutes}, #{unitFee}, " +
+            " #{dailyMaxFee}, #{effectiveFrom}, #{effectiveTo})")
+    @Options(
+            useGeneratedKeys = true,
+            keyProperty = "feeRuleNo",
+            keyColumn = "fee_rule_no"
+    )
+    int insertFeeRule(FeeRuleDTO dto);
 
     // 차량번호로 현재 주차 중인 입출차 기록과 입차 주차장을 조회
     @Select("SELECT cl.car_log_no, " +
@@ -185,10 +231,10 @@ public interface BillingMapper {
             " ON in_gate.gate_no = cl.in_gate_no " +
             " JOIN parking p " +
             " ON p.parking_no = in_gate.parking_no " +
-            " LEFT JOIN bill b " +
+            " JOIN bill b " +
             " ON b.car_log_no = cl.car_log_no " +
             " WHERE cl.snapshot_car_kind IN ('VISIT', 'UNKNOWN') " +
-//            " AND p.parking_code = 'B2' " +
+            " AND p.parking_code = 'B2' " +
             " AND (cl.out_time IS NULL " +
             " OR b.bill_status = 'PAID') " +
             " ORDER BY cl.in_time DESC")

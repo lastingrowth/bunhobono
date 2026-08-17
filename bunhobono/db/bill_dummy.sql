@@ -328,29 +328,59 @@ WITH test_car (
         ON camera.gate_no = gate.gate_no
        AND camera.camera_type = 'In'
     RETURNING camera_data_no, vehicle_car_no, car_no, capture_time, cam_note
+), inserted_log AS (
+    INSERT INTO car_log (
+        vehicle_car_no,
+        camera_data_no,
+        in_gate_no,
+        in_time,
+        free_time,
+        snapshot_car_no,
+        snapshot_car_kind
+    )
+    SELECT
+        inserted_camera.vehicle_car_no,
+        inserted_camera.camera_data_no,
+        gate.gate_no,
+        inserted_camera.capture_time,
+        test_car.free_time,
+        test_car.car_no,
+        test_car.car_kind
+    FROM inserted_camera
+    JOIN test_car
+        ON test_car.cam_note = inserted_camera.cam_note
+    JOIN gate
+        ON gate.gate_code = test_car.gate_code
+    RETURNING car_log_no, snapshot_car_no
+), selected_rule AS (
+    SELECT fee_rule_no
+    FROM fee_rule
+    WHERE effective_from <= CURRENT_TIMESTAMP
+      AND (
+          effective_to IS NULL
+          OR effective_to > CURRENT_TIMESTAMP
+      )
+    ORDER BY effective_from DESC, fee_rule_no DESC
+    LIMIT 1
 )
-INSERT INTO car_log (
-    vehicle_car_no,
-    camera_data_no,
-    in_gate_no,
-    in_time,
-    free_time,
-    snapshot_car_no,
-    snapshot_car_kind
+INSERT INTO bill (
+    car_log_no,
+    fee_rule_no,
+    kiosk_no,
+    charge_minutes,
+    bill_amount,
+    bill_status
 )
 SELECT
-    inserted_camera.vehicle_car_no,
-    inserted_camera.camera_data_no,
-    gate.gate_no,
-    inserted_camera.capture_time,
-    test_car.free_time,
-    test_car.car_no,
-    test_car.car_kind
-FROM inserted_camera
-JOIN test_car
-    ON test_car.cam_note = inserted_camera.cam_note
-JOIN gate
-    ON gate.gate_code = test_car.gate_code;
+    inserted_log.car_log_no,
+    selected_rule.fee_rule_no,
+    NULL,
+    0,
+    0,
+    'UNPAID'
+FROM inserted_log
+CROSS JOIN selected_rule
+WHERE inserted_log.snapshot_car_no <> '299가1203';
 
 
 -- 1203 방문차량의 미결제 고지서를 미리 생성한다.
@@ -364,8 +394,11 @@ WITH target_log AS (
 ), selected_rule AS (
     SELECT fee_rule_no, unit_minutes, unit_fee, daily_max_fee
     FROM fee_rule
-    WHERE active = TRUE
-      AND effective_from <= CURRENT_TIMESTAMP
+    WHERE effective_from <= CURRENT_TIMESTAMP
+      AND (
+          effective_to IS NULL
+          OR effective_to > CURRENT_TIMESTAMP
+      )
     ORDER BY effective_from DESC, fee_rule_no DESC
     LIMIT 1
 )
@@ -491,8 +524,11 @@ WITH inserted_camera AS (
 ), selected_rule AS (
     SELECT fee_rule_no
     FROM fee_rule
-    WHERE active = TRUE
-      AND effective_from <= CURRENT_TIMESTAMP
+    WHERE effective_from <= CURRENT_TIMESTAMP
+      AND (
+          effective_to IS NULL
+          OR effective_to > CURRENT_TIMESTAMP
+      )
     ORDER BY effective_from DESC, fee_rule_no DESC
     LIMIT 1
 )
@@ -546,7 +582,7 @@ COMMIT;
 -- 299가1204: 미등록차량, 무료시간 없음, 입차 직후부터 과금 확인용
 -- 299가1205: B2 출차·결제 완료 차량, 관리자 직접 지난 기록 이동 확인용
 --
--- 실행 직후에는 bill 행이 없으므로 관리자 목록에서 미정산으로 표시된다.
--- B2 키오스크에서 차량을 선택하면 정산서가 생성되어 미결제로 바뀐다.
+-- 실행 직후 B2 입차 차량의 미결제 정산서가 함께 생성된다.
+-- B2 키오스크에서 차량을 선택하면 주차시간에 맞춰 정산금액이 갱신된다.
 -- 결제를 완료하면 정산완료 및 30분간 출차 가능으로 바뀐다.
 -- =====================================================

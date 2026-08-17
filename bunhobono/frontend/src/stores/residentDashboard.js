@@ -1,5 +1,6 @@
 import {
     getMyVehicleLocations,
+    getMonthlyVisitRegistration,
     getResidentDashboard,
     getTodayWeather
 } from "@/shared/api/residentDashboardApi"; 
@@ -171,7 +172,8 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
             const [
                 residentResponse,
                 parkingResponse,
-                vehicleLocationResponse
+                vehicleLocationResponse,
+                monthlyVisitResponse
             ] = await Promise.all([
                 getResidentDashboard(),
                 getParkingsList(),
@@ -179,6 +181,7 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
                     console.error("차량 주차면을 불러오지 못했습니다.", error);
                     return { data: [] };
                 }),
+                getMonthlyVisitRegistration(),
                 loadWeather()
             ]);
 
@@ -212,13 +215,9 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
                 visitVehicleCount: vehicles.filter((vehicle) => {
                     return vehicle.vehicleType === "visit";
                 }).length,
-                // 현재 등록된 방문차량을 기준으로 무료 잔여 횟수를 표시한다.
-                visitRegistrationRemaining: Math.max(
-                    10 - vehicles.filter((vehicle) => {
-                        return vehicle.vehicleType === "visit";
-                    }).length,
-                    0
-                ),
+                // 기본 무료 횟수와 결제 완료 추가 횟수가 반영된 서버 계산값
+                visitRegistrationRemaining:
+                    monthlyVisitResponse.data?.remainingCount ?? 10,
                 totalParkingSpaces: parkings.reduce((sum, parking) => {
                     return sum + Number(parking.parkingSpaces || 0);
                 }, 0),

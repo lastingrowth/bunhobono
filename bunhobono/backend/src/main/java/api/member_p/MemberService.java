@@ -68,6 +68,10 @@ public class MemberService {
         dto.setLoginPwd(passwordEncoder.encode(dto.getLoginPwd()));
         // [sms인증] 저장 직전에 인증 여부를 확인하고 사용한 인증정보를 제거한다.
         verificationService.consumeSignupPhoneVerification(dto.getMemPhone());
+        // [email인증] 일반 입주민은 이메일 인증까지 완료해야 저장한다.
+        if ("RESIDENT".equals(dto.getRole())) {
+            verificationService.consumeSignupEmailVerification(dto.getEmail());
+        }
 
         // ADMIN은 주소 없이 등록하고 RESIDENT는 빈 세대와 연결해 새 회원으로 등록한다.
         int savedCount = "ADMIN".equals(dto.getRole())
