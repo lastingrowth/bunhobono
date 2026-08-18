@@ -6,11 +6,19 @@
         <!-- 챗봇 대화창 -->
         <section
             v-if="chatOpen"
+            ref="chatPanel"
             class="ai-chat-panel"
+            :style="panelPosition"
             aria-label="AI 챗봇"
         >
             <!-- 챗봇 상단 -->
-            <header class="ai-chat-header">
+            <header
+                class="ai-chat-header"
+                @pointerdown="startPanelDrag"
+                @pointermove="movePanelDrag"
+                @pointerup="endPanelDrag"
+                @pointercancel="endPanelDrag"
+            >
                 <div>
                     <strong>보노 AI 챗봇</strong>
                     <span>주차관리 서비스 이용 안내</span>
@@ -26,6 +34,7 @@
 
                     <button
                         type="button"
+                        class="ai-chat-close"
                         aria-label="챗봇 닫기"
                         @click="closeChat"
                     >
@@ -154,11 +163,16 @@ const question = ref("");
 const messageList = ref(null);
 const questionInput = ref(null);
 const widget = ref(null);
+const chatPanel = ref(null);
 const widgetPosition = ref({});
+const panelPosition = ref({});
 let dragStart = null;
+let panelDragStart = null;
 let dragged = false;
 
 const startDrag = (event) => {
+    if (!window.matchMedia("(max-width: 600px)").matches) return;
+
     const rect = widget.value?.getBoundingClientRect();
     if (!rect) return;
 
@@ -193,6 +207,51 @@ const endDrag = (event) => {
     dragStart = null;
 };
 
+const startPanelDrag = (event) => {
+    if (window.matchMedia("(max-width: 600px)").matches
+        || event.target.closest("button")) return;
+
+    const rect = chatPanel.value?.getBoundingClientRect();
+    if (!rect) return;
+
+    panelDragStart = {
+        pointerX: event.clientX,
+        pointerY: event.clientY,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+};
+
+const movePanelDrag = (event) => {
+    if (!panelDragStart) return;
+
+    const left = Math.min(
+        Math.max(8, panelDragStart.left + event.clientX - panelDragStart.pointerX),
+        window.innerWidth - panelDragStart.width - 8
+    );
+    const top = Math.min(
+        Math.max(8, panelDragStart.top + event.clientY - panelDragStart.pointerY),
+        window.innerHeight - panelDragStart.height - 8
+    );
+
+    panelPosition.value = {
+        left: `${left}px`,
+        top: `${top}px`,
+        right: "auto",
+        bottom: "auto"
+    };
+};
+
+const endPanelDrag = (event) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    panelDragStart = null;
+};
+
 const handleToggleClick = () => {
     if (dragged) {
         dragged = false;
@@ -206,8 +265,21 @@ const openFromMenu = () => {
     openChat();
 };
 
-onMounted(() => window.addEventListener("open-ai-chat", openFromMenu));
-onUnmounted(() => window.removeEventListener("open-ai-chat", openFromMenu));
+const resetDesktopPosition = () => {
+    if (!window.matchMedia("(max-width: 600px)").matches) {
+        widgetPosition.value = {};
+        panelPosition.value = {};
+    }
+};
+
+onMounted(() => {
+    window.addEventListener("open-ai-chat", openFromMenu);
+    window.addEventListener("resize", resetDesktopPosition);
+});
+onUnmounted(() => {
+    window.removeEventListener("open-ai-chat", openFromMenu);
+    window.removeEventListener("resize", resetDesktopPosition);
+});
 
 // 챗봇 대화창 열기
 const openChat = async () => {
@@ -383,8 +455,12 @@ watch(
 }
 
 .ai-chat-panel {
+    position: fixed;
+    top: 16px;
+    right: 28px;
+    bottom: auto;
     width: min(390px, calc(100vw - 32px));
-    height: min(570px, calc(100vh - 100px));
+    height: min(570px, calc(100vh - 32px));
     display: flex;
     overflow: hidden;
     flex-direction: column;
@@ -403,6 +479,14 @@ watch(
     gap: 12px;
     color: #ffffff;
     background: #23a6d5;
+    cursor: move;
+    touch-action: none;
+}
+
+@media (min-width: 601px) {
+    .ai-chat-hide {
+        display: none;
+    }
 }
 
 .ai-chat-header > div:first-child {
@@ -618,7 +702,7 @@ watch(
         border-radius: 16px;
     }
 
-    .ai-chat-header { min-height: 50px; padding: 7px 11px; }
+    .ai-chat-header { min-height: 50px; padding: 7px 11px; cursor: default; touch-action: auto; }
     .ai-chat-header strong { font-size: 16px; }
     .ai-chat-header span { font-size: 11px; }
     .ai-chat-messages { min-height: 0; padding: 9px 11px; overscroll-behavior: contain; }

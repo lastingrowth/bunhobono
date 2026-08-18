@@ -14,19 +14,40 @@ export const useGateStore =  defineStore("gate", () => {
 
   // 게이트 등록
   const signup = async (data, router) => {
-    const res = await signUpGate(data);
+    const duplicated = list.value.some((gate) =>
+      String(gate.gateCode).toUpperCase()
+        === String(data.gateCode).toUpperCase()
+    );
 
-    if (res.data === 1) {
-      alert("게이트 등록 완료");
+    if (duplicated) {
+      return {
+        success: false,
+        message: "이미 등록된 게이트 코드입니다.",
+      };
+    }
 
-      await loadList();
-      if (router) {
-        router.push("/admin/gates");
+    try {
+      const res = await signUpGate(data);
+
+      if (Number(res.data) === 1) {
+        await loadList();
+        if (router) {
+          router.push("/admin/gates");
+        }
+        return { success: true };
       }
-      return true;
-    } else {
-      alert("게이트 등록 실패");
-      return false;
+
+      return {
+        success: false,
+        message: "게이트 등록 처리 결과를 확인할 수 없습니다.",
+      };
+    } catch (e) {
+      console.error(e);
+      return {
+        success: false,
+        message: e.response?.data?.message
+          ?? "게이트 등록에 실패했습니다.",
+      };
     }
   };
 
