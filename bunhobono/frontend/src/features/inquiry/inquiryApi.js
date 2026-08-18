@@ -10,11 +10,6 @@ export const getResidentInquiries = () => {
     return api.get("/inquiries/resident");
 };
 
-// 입주민 본인 자동 보관 문의 목록 조회
-export const getResidentArchivedInquiries = () => {
-    return api.get("/inquiries/resident/archived");
-};
-
 // 입주민 본인 문의 상세 조회
 export const getResidentInquiry = (inquiryNo) => {
     return api.get(`/inquiries/resident/${inquiryNo}`);
@@ -43,6 +38,11 @@ export const getAdminInquiries = (status) => {
 // 관리자 문의 상세 조회
 export const getAdminInquiry = (inquiryNo) => {
     return api.get(`/inquiries/admin/${inquiryNo}`);
+};
+
+// 관리자 문의를 지난 기록으로 이동
+export const deleteAdminInquiry = (inquiryNo) => {
+    return api.delete(`/inquiries/admin/${inquiryNo}`);
 };
 
 // 관리자 답변 등록

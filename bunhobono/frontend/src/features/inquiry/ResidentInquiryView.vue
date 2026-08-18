@@ -175,7 +175,7 @@
       </section>
 
       <button
-        v-if="store.inquiry.status === 'WAITING'"
+        v-if="!store.inquiry.trashNo"
         type="button"
         class="delete-button"
         :disabled="store.deletingInquiryNo === store.inquiry.inquiryNo"
@@ -241,11 +241,13 @@ import {
   useRouter
 } from "vue-router";
 
+import { useDialog } from "@/shared/alert/useDialog";
 import { useInquiryStore } from "./inquiryStore";
 
 const route = useRoute();
 const router = useRouter();
 const store = useInquiryStore();
+const { alertDialog, confirmDialog } = useDialog();
 
 const form = reactive({
   category: "",
@@ -259,10 +261,6 @@ const inquiryNo = computed(() =>
   Number(route.params.inquiryNo)
 );
 
-const trashNo = computed(() =>
-  Number(route.params.trashNo)
-);
-
 const mode = computed(() => {
   if (route.name === "ResidentInquiryWrite") {
     return "write";
@@ -272,12 +270,9 @@ const mode = computed(() => {
     return "reInquiry";
   }
 
-  if (
-    route.name === "ResidentInquiryDetail"
-    || route.name === "ResidentArchivedInquiryDetail"
-  ) {
-    return "detail";
-  }
+if (route.name === "ResidentInquiryDetail") {
+  return "detail";
+}
 
   return "list";
 });
@@ -338,13 +333,6 @@ const loadPage = async () => {
   }
 
   if (
-    route.name === "ResidentArchivedInquiryDetail"
-  ) {
-    await store.loadArchivedInquiry(trashNo.value);
-    return;
-  }
-
-  if (
     mode.value === "detail"
     || mode.value === "reInquiry"
   ) {
@@ -383,13 +371,6 @@ const goWrite = () =>
   router.push("/resident/inquiries/write");
 
 const goDetail = (item) => {
-  if (item.trashNo) {
-    router.push(
-      `/resident/inquiries/archived/${item.trashNo}/detail`
-    );
-    return;
-  }
-
   router.push(`/resident/inquiries/${item.inquiryNo}/detail`);
 };
 
@@ -399,9 +380,19 @@ const goReInquiry = () =>
   );
 
 const deleteInquiry = async (item) => {
-  const confirmed = window.confirm(
-    `「${item.title}」 문의를 삭제하시겠습니까?`
-  );
+  const confirmMessage =
+    item.rootInquiryNo !== null
+      ? "재문의 삭제 시 원본 문의까지 삭제됩니다.\n삭제하시겠습니까?"
+      : `「${item.title}」 문의를 삭제하시겠습니까?`;
+
+  const confirmed = await confirmDialog({
+    theme: "resident",
+    type: "warning",
+    title: "문의 삭제",
+    message: confirmMessage,
+    confirmText: "삭제",
+    cancelText: "취소"
+  });
 
   if (!confirmed) {
     return;
@@ -411,7 +402,12 @@ const deleteInquiry = async (item) => {
     await store.removeResidentInquiry(item.inquiryNo);
     goList();
   } catch (error) {
-    window.alert(store.errorMessage);
+    await alertDialog({
+      theme: "resident",
+      type: "error",
+      title: "문의 삭제 실패",
+      message: store.errorMessage
+    });
   }
 };
 

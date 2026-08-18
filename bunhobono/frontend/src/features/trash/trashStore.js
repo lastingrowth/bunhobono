@@ -80,9 +80,13 @@ export const useTrashStore = defineStore("trash", () => {
                 return false;
             }
 
-            trashList.value = trashList.value.filter(
-                (item) => item.trashNo !== trashNo
-            );
+            if (response.data.dataType === "INQUIRY") {
+                await loadTrashList();
+            } else {
+                trashList.value = trashList.value.filter(
+                    (item) => item.trashNo !== trashNo
+                );
+            }
 
             if (trashDetail.value?.trashNo === trashNo) {
                 trashDetail.value = null;

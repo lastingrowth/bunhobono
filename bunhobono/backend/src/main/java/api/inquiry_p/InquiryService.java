@@ -326,7 +326,48 @@ public class InquiryService {
         return member;
     }
 
+    // 관리자가 문의 흐름 전체를 지난 기록으로 이동
+    @Transactional
+    public int deleteByAdmin(int inquiryNo, String loginId) {
+
+        admin(loginId);
+
+        // 이동할 문의 조회
+        InquiryDTO inquiry = inquiryMapper.detail(inquiryNo);
+
+        if (inquiry == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "삭제할 문의사항이 없습니다."
+            );
+        }
+
+        // 최초 문의 번호 결정
+        int rootInquiryNo =
+                inquiry.getRootInquiryNo() == null
+                        ? inquiry.getInquiryNo()
+                        : inquiry.getRootInquiryNo();
+
+        // 최초 문의와 연결된 재문의 조회
+        List<Integer> inquiryNos =
+                inquiryMapper.findInquiryNosByRoot(
+                        rootInquiryNo,
+                        inquiry.getMemberNo()
+                );
+
+        // 외래키를 참조하는 재문의부터 지난 기록으로 이동
+        for (Integer targetInquiryNo : inquiryNos) {
+            trashService.moveInquiry(
+                    targetInquiryNo,
+                    "MANUAL"
+            );
+        }
+
+        return inquiryNos.size();
+    }
+
     // 입주민 본인 문의 삭제
+    @Transactional
     public int deleteByMember(int inquiryNo, String loginId) {
 
         LoginDTO member = resident(loginId);
@@ -345,27 +386,27 @@ public class InquiryService {
             );
         }
 
-        // 답변이 등록되기 전 문의만 삭제 가능
-        if (!"WAITING".equals(inquiry.getStatus())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "답변이 완료된 문의는 삭제할 수 없습니다."
+        // 최초 문의 번호 결정
+        int rootInquiryNo =
+                inquiry.getRootInquiryNo() == null
+                        ? inquiry.getInquiryNo()
+                        : inquiry.getRootInquiryNo();
+
+        // 최초 문의와 연결된 재문의 조회
+        List<Integer> inquiryNos =
+                inquiryMapper.findInquiryNosByRoot(
+                        rootInquiryNo,
+                        member.getMemberNo()
+                );
+
+        // 외래키를 참조하는 재문의부터 지난 기록으로 이동
+        for (Integer targetInquiryNo : inquiryNos) {
+            trashService.moveInquiry(
+                    targetInquiryNo,
+                    "MANUAL"
             );
         }
 
-        // 휴지통으로 이동한 뒤 원본 문의 삭제
-        trashService.moveInquiry(inquiryNo, "MANUAL");
-
-        return 1;
-    }
-
-    // 입주민 본인 지난 문의 목록 조회
-    public List<InquiryDTO> archivedListByMember(String loginId) {
-
-        LoginDTO member = resident(loginId);
-
-        return inquiryMapper.archivedListByMemberNo(
-                member.getMemberNo()
-        );
+        return inquiryNos.size();
     }
 }

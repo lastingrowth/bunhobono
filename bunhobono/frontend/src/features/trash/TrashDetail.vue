@@ -159,6 +159,7 @@ const detailTitle = computed(() => {
     CAR_LOG: "입출차 기록",
     NOTICE: "알림 정보",
     BILL: "정산 내역",
+    INQUIRY: "1:1 문의",
   };
 
   return title[dataType] ?? "원본 데이터";
@@ -237,6 +238,28 @@ const getBillStatusText = (value) => {
   };
 
   return statusText[String(value ?? "").toUpperCase()] ?? showValue(value);
+};
+
+const getInquiryCategoryText = (value) => {
+  const categoryText = {
+    PARKING: "주차",
+    VISIT: "방문",
+    PAYMENT: "결제",
+    ETC: "기타",
+  };
+
+  return categoryText[String(value ?? "").toUpperCase()]
+    ?? showValue(value);
+};
+
+const getInquiryStatusText = (value) => {
+  const statusText = {
+    WAITING: "답변 대기",
+    ANSWERED: "답변 완료",
+  };
+
+  return statusText[String(value ?? "").toUpperCase()]
+    ?? showValue(value);
 };
 
 const detailRows = computed(() => {
@@ -450,6 +473,55 @@ const detailRows = computed(() => {
       {
         label: "일일 최대요금",
         value: formatAmount(data.daily_max_fee),
+      },
+    ];
+  }
+
+  if (dataType === "INQUIRY") {
+    return [
+      {
+        label: "문의 번호",
+        value: showValue(data.inquiry_no),
+      },
+      {
+        label: "원본 문의 번호",
+        value: showValue(data.root_inquiry_no),
+      },
+      {
+        label: "작성 회원 번호",
+        value: showValue(data.member_no),
+      },
+      {
+        label: "문의 분류",
+        value: getInquiryCategoryText(data.category),
+      },
+      {
+        label: "제목",
+        value: showValue(data.title),
+      },
+      {
+        label: "문의 내용",
+        value: showValue(data.content),
+      },
+      {
+        label: "처리 상태",
+        value: getInquiryStatusText(data.status),
+      },
+      {
+        label: "답변 내용",
+        value: showValue(data.answer_content),
+      },
+      {
+        label: "답변 관리자 번호",
+        value: showValue(data.answered_by),
+      },
+      {
+        label: "문의 일시",
+        value: formatDate(data.created_at),
+      },
+      {
+        label: "답변 일시",
+        value: formatDate(data.answered_at),
       },
     ];
   }

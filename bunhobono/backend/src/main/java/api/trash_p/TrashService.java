@@ -37,11 +37,15 @@ public class TrashService {
             throw new IllegalArgumentException("휴지통 기록을 찾을 수 없습니다.");
         }
 
+        // 문의는 원본 문의부터 재문의까지 묶음으로 복원
+        if ("INQUIRY".equals(trash.getDataType())) {
+            return restoreInquiryThread(trash);
+        }
+
         int restored = switch (trash.getDataType()) {
             case "CAMERA_DATA" -> trashMapper.restoreCameraData(trashNo);
             case "CAR_LOG" -> trashMapper.restoreCarLog(trashNo);
             case "NOTICE" -> trashMapper.restoreNotice(trashNo);
-            case "INQUIRY" -> trashMapper.restoreInquiry(trashNo);
             case "BILL" -> trashMapper.restoreBill(trashNo);
             default -> throw new IllegalArgumentException("복원할 수 없는 데이터 유형입니다: " + trash.getDataType());
         };
@@ -57,6 +61,44 @@ public class TrashService {
         response.setSuccess(true);
         response.setDataType(trash.getDataType());
         response.setRestoredNo(trash.getOriginalNo());
+        return response;
+    }
+
+    // 원본 문의를 먼저 복원한 뒤 연결된 재문의를 순서대로 복원
+    private TrashDTO restoreInquiryThread(TrashDTO trash) {
+        List<Integer> trashNos =
+                trashMapper.findInquiryTrashNosForRestore(
+                        trash.getTrashNo()
+                );
+
+        if (trashNos.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "복원할 문의 기록을 찾을 수 없습니다."
+            );
+        }
+
+        for (Integer inquiryTrashNo : trashNos) {
+            int restored =
+                    trashMapper.restoreInquiry(inquiryTrashNo);
+
+            if (restored != 1) {
+                throw new IllegalStateException(
+                        "문의 기록 복원에 실패했습니다."
+                );
+            }
+
+            if (trashMapper.deleteTrash(inquiryTrashNo) != 1) {
+                throw new IllegalStateException(
+                        "문의 복원 후 지난 기록 삭제에 실패했습니다."
+                );
+            }
+        }
+
+        TrashDTO response = new TrashDTO();
+        response.setSuccess(true);
+        response.setDataType(trash.getDataType());
+        response.setRestoredNo(trash.getOriginalNo());
+
         return response;
     }
 

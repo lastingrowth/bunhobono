@@ -21,6 +21,7 @@
             <option value="CAR_LOG">입출차 기록</option>
             <option value="NOTICE">알림</option>
             <option value="BILL">정산 내역</option>
+            <option value="INQUIRY">1:1 문의</option>
           </select>
         </div>
 
@@ -174,6 +175,11 @@ const getTrashRecordDate = (item) => {
   }
   if (item?.dataType === "BILL") {
     return data.paid_at ?? data.out_time ?? data.issued_at ?? item.deletedAt;
+  }
+  if (item?.dataType === "INQUIRY") {
+    return data.answered_at
+      ?? data.created_at
+      ?? item.deletedAt;
   }
 
   return item?.deletedAt;

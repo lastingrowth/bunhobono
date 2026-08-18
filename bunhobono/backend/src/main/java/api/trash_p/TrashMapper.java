@@ -303,139 +303,160 @@ public interface TrashMapper {
 
     // 휴지통에 보관된 관리자 알림 복원
     @Insert("""
-    INSERT INTO notice (
-        notice_no,
-        notice_type,
-        car_log_no,
-        camera_data_no,
-        detect_at,
-        due_at,
-        alert_stat,
-        handled_by_member_no,
-        handled_at,
-        snapshot_car_log_no,
-        snapshot_camera_data_no,
-        snapshot_registered_car_no,
-        snapshot_captured_car_no,
-        snapshot_car_kind,
-        snapshot_parking_name,
-        snapshot_in_time,
-        snapshot_image_path,
-        snapshot_confidence_score
-    )
-    SELECT
-        (tb.data_json ->> 'notice_no')::int,
-        tb.data_json ->> 'notice_type',
-
-        CASE
-            WHEN EXISTS (
-                SELECT 1
-                FROM car_log cl
-                WHERE cl.car_log_no =
-                    NULLIF(
-                        tb.data_json ->> 'car_log_no',
-                        ''
-                    )::int
-            )
-            THEN NULLIF(
-                tb.data_json ->> 'car_log_no',
-                ''
-            )::int
-            ELSE NULL
-        END,
-
-        CASE
-            WHEN EXISTS (
-                SELECT 1
-                FROM camera_data cd
-                WHERE cd.camera_data_no =
-                    NULLIF(
-                        tb.data_json ->> 'camera_data_no',
-                        ''
-                    )::int
-            )
-            THEN NULLIF(
-                tb.data_json ->> 'camera_data_no',
-                ''
-            )::int
-            ELSE NULL
-        END,
-
-        COALESCE(
+        INSERT INTO notice (
+            notice_no,
+            notice_type,
+            car_log_no,
+            camera_data_no,
+            detect_at,
+            due_at,
+            alert_stat,
+            handled_by_member_no,
+            handled_at,
+            snapshot_car_log_no,
+            snapshot_camera_data_no,
+            snapshot_registered_car_no,
+            snapshot_captured_car_no,
+            snapshot_car_kind,
+            snapshot_parking_name,
+            snapshot_in_time,
+            snapshot_image_path,
+            snapshot_confidence_score
+        )
+        SELECT
+            (tb.data_json ->> 'notice_no')::int,
+            tb.data_json ->> 'notice_type',
+    
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM car_log cl
+                    WHERE cl.car_log_no =
+                        NULLIF(
+                            tb.data_json ->> 'car_log_no',
+                            ''
+                        )::int
+                )
+                THEN NULLIF(
+                    tb.data_json ->> 'car_log_no',
+                    ''
+                )::int
+                ELSE NULL
+            END,
+    
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM camera_data cd
+                    WHERE cd.camera_data_no =
+                        NULLIF(
+                            tb.data_json ->> 'camera_data_no',
+                            ''
+                        )::int
+                )
+                THEN NULLIF(
+                    tb.data_json ->> 'camera_data_no',
+                    ''
+                )::int
+                ELSE NULL
+            END,
+    
+            COALESCE(
+                NULLIF(
+                    tb.data_json ->> 'detect_at',
+                    ''
+                )::timestamp,
+                CURRENT_TIMESTAMP
+            ),
+    
             NULLIF(
-                tb.data_json ->> 'detect_at',
+                tb.data_json ->> 'due_at',
                 ''
             )::timestamp,
-            CURRENT_TIMESTAMP
-        ),
-
-        NULLIF(
-            tb.data_json ->> 'due_at',
-            ''
-        )::timestamp,
-
-        COALESCE(
-            NULLIF(
-                tb.data_json ->> 'alert_stat',
-                ''
+    
+            COALESCE(
+                NULLIF(
+                    tb.data_json ->> 'alert_stat',
+                    ''
+                ),
+                'Unresolved'
             ),
-            'Unresolved'
-        ),
-
-        CASE
-            WHEN EXISTS (
-                SELECT 1
-                FROM member m
-                WHERE m.member_no =
-                    NULLIF(
-                        tb.data_json ->> 'handled_by_member_no',
-                        ''
-                    )::int
-            )
-            THEN NULLIF(
-                tb.data_json ->> 'handled_by_member_no',
+    
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM member m
+                    WHERE m.member_no =
+                        NULLIF(
+                            tb.data_json ->> 'handled_by_member_no',
+                            ''
+                        )::int
+                )
+                THEN NULLIF(
+                    tb.data_json ->> 'handled_by_member_no',
+                    ''
+                )::int
+                ELSE NULL
+            END,
+    
+            NULLIF(
+                tb.data_json ->> 'handled_at',
                 ''
-            )::int
-            ELSE NULL
-        END,
-
-        NULLIF(
-            tb.data_json ->> 'handled_at',
-            ''
-        )::timestamp,
-
-        NULLIF(
-            tb.data_json ->> 'snapshot_car_log_no',
-            ''
-        )::int,
-
-        NULLIF(
-            tb.data_json ->> 'snapshot_camera_data_no',
-            ''
-        )::int,
-
-        tb.data_json ->> 'snapshot_registered_car_no',
-        tb.data_json ->> 'snapshot_captured_car_no',
-        tb.data_json ->> 'snapshot_car_kind',
-        tb.data_json ->> 'snapshot_parking_name',
-
-        NULLIF(
-            tb.data_json ->> 'snapshot_in_time',
-            ''
-        )::timestamp,
-
-        tb.data_json ->> 'snapshot_image_path',
-
-        NULLIF(
-            tb.data_json ->> 'snapshot_confidence_score',
-            ''
-        )::numeric
-
-    FROM trash_bin tb
-    WHERE tb.trash_no = #{trashNo}
-      AND tb.data_type = 'NOTICE'
-""")
+            )::timestamp,
+    
+            NULLIF(
+                tb.data_json ->> 'snapshot_car_log_no',
+                ''
+            )::int,
+    
+            NULLIF(
+                tb.data_json ->> 'snapshot_camera_data_no',
+                ''
+            )::int,
+    
+            tb.data_json ->> 'snapshot_registered_car_no',
+            tb.data_json ->> 'snapshot_captured_car_no',
+            tb.data_json ->> 'snapshot_car_kind',
+            tb.data_json ->> 'snapshot_parking_name',
+    
+            NULLIF(
+                tb.data_json ->> 'snapshot_in_time',
+                ''
+            )::timestamp,
+    
+            tb.data_json ->> 'snapshot_image_path',
+    
+            NULLIF(
+                tb.data_json ->> 'snapshot_confidence_score',
+                ''
+            )::numeric
+    
+        FROM trash_bin tb
+        WHERE tb.trash_no = #{trashNo}
+          AND tb.data_type = 'NOTICE'
+    """)
     int restoreNotice(int trashNo);
+
+    // 같은 문의 흐름의 지난 기록 번호를 원본 문의부터 조회
+    @Select("SELECT target.trash_no " +
+            " FROM trash_bin target " +
+            " WHERE target.data_type = 'INQUIRY' " +
+            " AND COALESCE(" +
+            " NULLIF(target.data_json ->> 'root_inquiry_no', '')::int, " +
+            " target.original_no" +
+            " ) = (" +
+            " SELECT COALESCE(" +
+            " NULLIF(selected.data_json ->> 'root_inquiry_no', '')::int, " +
+            " selected.original_no" +
+            " ) " +
+            " FROM trash_bin selected " +
+            " WHERE selected.trash_no = #{trashNo} " +
+            " AND selected.data_type = 'INQUIRY'" +
+            " ) " +
+            " ORDER BY CASE " +
+            " WHEN NULLIF(target.data_json ->> 'root_inquiry_no', '') IS NULL THEN 0 " +
+            " ELSE 1 END, target.original_no")
+    List<Integer> findInquiryTrashNosForRestore(int trashNo);
 
     // 휴지통에 보관된 1:1 문의 복원
     @Insert("""
