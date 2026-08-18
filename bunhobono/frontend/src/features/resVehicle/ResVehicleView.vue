@@ -85,7 +85,7 @@
 
     <section
       v-else-if="mode === 'notification'"
-      class="vehicle-management-section"
+      class="vehicle-management-section notification-list-section"
     >
       <ResMemNotice
         :notifications="resVehicleStore.notifications"
@@ -594,6 +594,14 @@ function openResidentBillPayment(billNo) {
 
   .vehicle-management-section {
     padding: 16px 12px;
+  }
+
+  .notification-list-section {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .vehicle-management-section-header {

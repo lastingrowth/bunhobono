@@ -1002,6 +1002,20 @@ onUnmounted(() => {
     }
 }
 
+/* 웹에서는 공지사항도 내 정보·차량현황처럼 사각형 영역 안에 표시한다. */
+@media (min-width: 901px) {
+    .resident-board:not(.resident-carlog-page) .board-info-grid {
+        border-bottom: 0;
+    }
+
+    .resident-board:not(.resident-carlog-page) .board-summary-card {
+        border: 0;
+        border-radius: 0;
+        background: #ffffff;
+        box-shadow: 0 8px 22px rgba(39, 79, 113, .1);
+    }
+}
+
 .unread-notification-dialog { width: min(430px, calc(100vw - 32px)); padding: 0; border: 1px solid #cbd8e5; border-radius: 8px; background: #fff; box-shadow: 0 20px 55px rgba(20, 48, 74, .26); }
 .unread-notification-dialog::backdrop { background: rgba(19, 35, 51, .48); }
 .unread-dialog-body { padding: 26px; }
