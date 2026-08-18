@@ -15,19 +15,28 @@ export const useCameraStore =  defineStore("camera", () => {
 
   // 카메라 등록
   const signup = async (data, router) => {
-    const res = await signupCamera(data);
+    try {
+      const res = await signupCamera(data);
 
-    if (res.data === 1) {
-      alert("카메라 등록 완료");
-
-      await loadList();
-      if (router) {
-        router.push("/admin/cameras");
+      if (Number(res.data) === 1) {
+        await loadList();
+        if (router) {
+          router.push("/admin/cameras");
+        }
+        return { success: true };
       }
-      return true;
-    } else {
-      alert("카메라 등록 실패");
-      return false;
+
+      return {
+        success: false,
+        message: "카메라 등록 처리 결과를 확인할 수 없습니다.",
+      };
+    } catch (e) {
+      console.error(e);
+      return {
+        success: false,
+        message: e.response?.data?.message
+          ?? "카메라 등록에 실패했습니다.",
+      };
     }
   };
 

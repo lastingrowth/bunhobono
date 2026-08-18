@@ -49,6 +49,17 @@ textarea {
   background-attachment: fixed;
 }
 
+/* 긴 입주민 콘텐츠가 화면 높이로 축소되어 푸터 밑에 깔리지 않도록 한다. */
+.resident-layout .container {
+  flex: 1 0 auto;
+  min-height: calc(100dvh - var(--header-height));
+}
+
+.resident-layout .content {
+  flex: 1 0 auto;
+  overflow: visible;
+}
+
 /* 입주민 화면의 기본 문자는 검정으로 통일한다.
  * 상태 배지·오류·경고·포인트 요소의 내부 span/strong 색은 각 컴포넌트 설정을 유지한다. */
 .resident-layout .content :is(h1, h2, h3, h4, h5, h6, p, dt, dd, label, th, td, legend) {
@@ -81,7 +92,7 @@ textarea {
 }
 
 /* 전체 배경 페이지를 제외한 입주민 콘텐츠 폭을 대시보드와 통일한다. */
-.resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard) {
+.resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard):not(.exit-request-page) {
   width: min(760px, calc(100% - 200px));
   max-width: 760px;
   min-height: 0;
@@ -95,7 +106,7 @@ textarea {
 }
 
 @media (max-width: 900px) {
-  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard) {
+  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard):not(.exit-request-page) {
     width: calc(100% - 36px);
     padding-right: 22px;
     padding-left: 22px;
@@ -112,7 +123,11 @@ textarea {
     display: none;
   }
 
-  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard) {
+  .resident-layout:not(.resident-welcome-layout) .resident-footer {
+    padding-bottom: calc(94px + env(safe-area-inset-bottom));
+  }
+
+  .resident-layout .content > :not(.resident-board-page):not(.resident-welcome):not(.mobile-dashboard):not(.exit-request-page) {
     width: calc(100% - 24px);
     margin: 12px auto;
     padding: 18px 14px;

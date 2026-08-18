@@ -224,18 +224,18 @@ function overdueMinutesText(value) {
     const minutes = totalMinutes % 60;
 
     if (days > 0) {
-        return `만기됨(+${days}일 ${hours}시간 ${minutes}분)`;
+        return `${days}일 ${hours}시간 ${minutes}분 초과`;
     }
 
     if (hours > 0) {
         if (minutes === 0) {
-            return `만기됨(+${hours}시간)`;
+            return `${hours}시간 초과`;
         }
 
-        return `만기됨(+${hours}시간 ${minutes}분)`;
+        return `${hours}시간 ${minutes}분 초과`;
     }
 
-    return `만기됨(+${minutes}분)`;
+    return `${minutes}분 초과`;
 }
 
 // startDate와 endDate의 차이를 등록기간 문구로 변환
@@ -285,6 +285,14 @@ function periodText(startDate, endDate) {
     if (days > 0) {
         if (hours === 0 && minutes === 0) {
             return `${days}일`;
+        }
+
+        if (minutes === 0) {
+            return `${days}일 ${hours}시간`;
+        }
+
+        if (hours === 0) {
+            return `${days}일 ${minutes}분`;
         }
 
         return `${days}일 ${hours}시간 ${minutes}분`;

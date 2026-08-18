@@ -206,6 +206,9 @@ public class VehicleService {
         dto.setVehicleType("visit");
         dto.setVehicleStatus("APPROVED"); //바로 등록되게 함
 
+        // 입주민 방문차량은 선택한 방문 시작시간부터 24시간을 제공한다.
+        applyResidentVisitDuration(dto);
+
         // 방문 예정시간과 종료시간 검증
         validateResidentVisitDate(dto);
 
@@ -277,6 +280,8 @@ public class VehicleService {
             int vehicleCarNo,
             VehicleDTO dto
     ) {
+        // 시간 변경 시에도 방문 가능시간은 시작시간부터 24시간으로 고정한다.
+        applyResidentVisitDuration(dto);
         validateResidentVisitDate(dto);
 
         int result = vehicleMapper.updateUnenteredVisitTime(
@@ -290,6 +295,37 @@ public class VehicleService {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "이미 입차했거나 수정할 수 없는 방문차량입니다."
+            );
+        }
+
+        return result;
+    }
+
+    // 입차 중인 방문차량을 1일 연장하고 방문등록 가능 횟수 1회를 사용한다.
+    @Transactional
+    public int extendEnteredVisitOneDay(
+            String loginId,
+            int vehicleCarNo
+    ) {
+        int usedCount = getMonthlyRegisteredVisitCount(loginId);
+        int limitCount = getMonthlyVisitLimitCount(loginId);
+
+        if (usedCount >= limitCount) {
+            throw new ResponseStatusException(
+                    HttpStatus.PAYMENT_REQUIRED,
+                    "사용 가능한 방문차량 횟수가 없습니다. 추가 연장을 위해 횟수를 충전해 주세요."
+            );
+        }
+
+        int result = vehicleMapper.extendEnteredVisitOneDay(
+                loginId,
+                vehicleCarNo
+        );
+
+        if (result == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "현재 입차 중인 방문차량만 1일 연장할 수 있습니다."
             );
         }
 
@@ -405,6 +441,14 @@ public class VehicleService {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST
             );
+        }
+    }
+
+    private void applyResidentVisitDuration(
+            VehicleDTO dto
+    ) {
+        if (dto != null && dto.getStartDate() != null) {
+            dto.setEndDate(dto.getStartDate().plusHours(24));
         }
     }
 

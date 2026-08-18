@@ -1,5 +1,8 @@
 <template>
-  <main class="exit-request-page resident-welcome">
+  <main
+    class="exit-request-page resident-welcome"
+    :class="{ 'request-mode': step !== 'menu' }"
+  >
     <section class="exit-kiosk-card welcome-mode-card">
       <template v-if="step === 'menu'">
         <header class="kiosk-welcome">
@@ -376,6 +379,27 @@ onMounted(() => memberStore.loadMypage());
   .welcome-mode-card .vehicle-register-button { min-height:50px; }
   .footer-button-copy strong { font-size: 19px; }
   .welcome-mode-card .kiosk-return-button:not(.vehicle-register-button) { min-height:36px;margin-top:4px;font-size:17px; }
+
+  /* 125% 확대 상태의 출차 단계는 내용 높이만큼 늘어나고 푸터를 아래로 민다. */
+  .exit-request-page.request-mode {
+    height: auto;
+    min-height: calc(100dvh - var(--header-height));
+    padding: 10px 20px 32px;
+    place-items: start center;
+    overflow: visible;
+  }
+  .request-mode .exit-kiosk-card { padding:18px 30px 22px; }
+  .request-mode .exit-header { gap:10px;padding-bottom:9px; }
+  .request-mode .exit-header h1 { margin:0 0 2px;font-size:22px; }
+  .request-mode .exit-header p { font-size:12px; }
+  .request-mode .back-button { width:32px;height:32px;font-size:17px; }
+  .request-mode .vehicle-display { margin:10px 0;padding:11px; }
+  .request-mode .vehicle-display strong { margin:1px 0;font-size:31px; }
+  .request-mode .location-details { gap:6px; }
+  .request-mode .location-details div { padding:8px 11px; }
+  .request-mode .eligibility-message { margin-top:8px;padding:7px 11px; }
+  .request-mode .request-actions { margin-top:8px;gap:8px; }
+  .request-mode .request-actions button { min-height:38px; }
 }
 .resident-welcome {
     min-height: calc(100vh - var(--header-height));

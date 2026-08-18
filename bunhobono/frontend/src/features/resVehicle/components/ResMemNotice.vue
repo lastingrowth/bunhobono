@@ -34,6 +34,18 @@
             <td class="notification-index">
               {{ index + 1 }}
             </td>
+            <td class="notification-mobile-summary">
+              <span class="notification-type">
+                {{ notification.referenceTable || "-" }}
+              </span>
+              <button type="button" @click="$emit('open-detail', notification)">
+                <span v-if="notification.readAt == null" class="unread-dot" aria-label="읽지 않은 알림"></span>
+                {{ notification.title }}
+              </button>
+              <small class="notification-mobile-created-at">
+                {{ formatDateTime(notification.createdAt) }}
+              </small>
+            </td>
             <td>
               <span class="notification-type">
                 {{ notification.referenceTable || "-" }}
@@ -140,6 +152,7 @@ th { background: var(--bg-soft); font-weight: 700; white-space: nowrap; }
 tr.unread { background: #f2fbfe; }
 .notification-type { display: inline-flex; padding: 4px 7px; border-radius: 6px; color: #087443; background: #d9f5e7; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .notification-index { color: #555; font-weight: 700; }
+.notification-mobile-summary { display: none; }
 .notification-title { overflow: hidden; font-weight: 700; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .notification-title button { width: 100%; padding: 0; display: flex; align-items: center; gap: 9px; overflow: hidden; border: 0; color: inherit; text-align: left; text-overflow: ellipsis; background: transparent; cursor: pointer; }
 .notification-title button { font-weight: 700; white-space: nowrap; }
@@ -157,5 +170,133 @@ tr.unread { background: #f2fbfe; }
 .delete-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .delete-dialog-actions button { min-width: 72px; height: 38px; border: 1px solid #ccd7e1; border-radius: 6px; background: #fff; cursor: pointer; }
 .delete-dialog-actions .delete-confirm-button { border-color: #db4b4b; color: #fff; background: #db4b4b; }
-@media (max-width:700px){.col-index{width:52px}.col-type{width:92px}.col-created{width:120px}.col-manage{width:68px}th,td{padding:12px 7px}.created-at{white-space:normal}}
+@media (max-width:700px) {
+  .member-notification {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    padding: 18px 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(35, 76, 112, .08);
+  }
+  .notification-table-wrap { min-width: 0; max-width: 100%; overflow: hidden; }
+  table {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: auto;
+  }
+  tbody { display: grid; width: 100%; min-width: 0; max-width: 100%; }
+  colgroup, col, thead { display: none; width: 0 !important; }
+  tbody { display: grid; gap: 0; }
+  tbody tr {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 68px;
+    grid-template-rows: auto;
+    gap: 0 6px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    border-top: 1px solid #e2e9ef;
+    border-radius: 0;
+    background: transparent;
+  }
+  tbody tr.unread { background: transparent; }
+  tbody td { width: auto; min-width: 0; padding: 0; border: 0 !important; }
+  .notification-index {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    border-right: 1px solid #e2e9ef !important;
+    font-size: 16px;
+  }
+  .notification-mobile-summary {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 50px;
+    align-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    text-align: left;
+  }
+  .notification-mobile-summary button {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 7px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    color: #243746;
+    background: transparent;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+  }
+  .notification-mobile-summary .notification-type {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .notification-mobile-summary button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .notification-mobile-created-at {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    color: #66798c;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  tbody tr > td:nth-child(3),
+  tbody tr > .notification-title,
+  tbody tr > .created-at { display: none; }
+  tbody tr::before { display: none; }
+  .created-at {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    box-sizing: border-box;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    color: #66798c;
+    font-size: 10px;
+    text-align: center;
+    white-space: normal;
+  }
+  .created-at::before { display: none; }
+  .notification-manage {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    justify-self: end;
+    margin-right: 10px;
+  }
+  .delete-notification-button {
+    border-color: #1677d2 !important;
+    color: #ffffff !important;
+    background: #1677d2 !important;
+    font-weight: 800;
+  }
+  .empty-message { grid-column: 1 / -1; padding: 20px 4px; }
+}
 </style>

@@ -79,13 +79,14 @@
           :show-cancel="true"
           @edit-visit-time="openVisitTimeEdit"
           @cancel-visit="cancelVisitVehicle"
+          @extend-visit-one-day="extendVisitVehicleOneDay"
         />
       </section>
     </template>
 
     <section
       v-else-if="mode === 'notification'"
-      class="vehicle-management-section"
+      class="vehicle-management-section notification-list-section"
     >
       <ResMemNotice
         :notifications="resVehicleStore.notifications"
@@ -133,17 +134,40 @@
       @confirm="confirmCancelVisit"
     />
 
-    <ManagementConfirm
-      :open="paymentRequiredOpen"
-      icon="₩"
-      title="방문차량 추가 등록"
-      message="이번 달 사용 가능한 방문차량 등록 횟수를 모두 사용했습니다. 추가 등록을 위해 횟수를 충전해 주세요."
-      caution="결제가 완료되면 결제한 수량만큼 추가 등록할 수 있습니다."
-      cancel-text="닫기"
-      confirm-text="횟수 충전"
-      @cancel="closePaymentRequired"
-      @confirm="openVisitCreditCharge"
-    />
+    <div
+      v-if="paymentRequiredOpen"
+      class="resident-notification-backdrop"
+      @click.self="closePaymentRequired"
+    >
+      <section
+        class="resident-notification-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="visit-credit-notification-title"
+      >
+        <div class="resident-notification-heading">
+          <span aria-hidden="true"></span>
+          <h2 id="visit-credit-notification-title">방문차량 추가 등록</h2>
+        </div>
+
+        <p>
+          이번 달 사용 가능한 방문차량 등록 횟수를 모두 사용했습니다.
+          추가 등록을 위해 횟수를 충전해 주세요.
+        </p>
+        <small>결제가 완료되면 결제한 수량만큼 추가 등록할 수 있습니다.</small>
+
+        <div class="resident-notification-actions">
+          <button type="button" @click="closePaymentRequired">나중에</button>
+          <button
+            type="button"
+            class="resident-notification-primary"
+            @click="openVisitCreditCharge"
+          >
+            횟수 충전
+          </button>
+        </div>
+      </section>
+    </div>
   </div>
 
 
@@ -392,6 +416,23 @@ async function submitVisitVehicle(data) {
   }
 }
 
+async function extendVisitVehicleOneDay(vehicle) {
+  try {
+    await resVehicleStore.extendVisitVehicleOneDay(vehicle.vehicleCarNo);
+    showFeedback(`${vehicle.carNo} 방문기간을 1일 연장했습니다.`);
+  } catch (error) {
+    if (error.response?.status === 402) {
+      paymentRequiredOpen.value = true;
+      return;
+    }
+
+    showFeedback(
+      error.response?.data?.message || "방문기간을 연장하지 못했습니다.",
+      "error"
+    );
+  }
+}
+
 function closePaymentRequired() {
   paymentRequiredOpen.value = false;
 }
@@ -584,6 +625,78 @@ function openResidentBillPayment(billNo) {
   color: var(--text-muted);
 }
 
+.resident-notification-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(19, 35, 51, 0.48);
+}
+
+.resident-notification-dialog {
+  width: min(430px, calc(100vw - 32px));
+  padding: 26px;
+  border: 1px solid #cbd8e5;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 20px 55px rgba(20, 48, 74, 0.26);
+}
+
+.resident-notification-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resident-notification-heading span {
+  width: 5px;
+  height: 24px;
+  border-radius: 2px;
+  background: #2387d9;
+}
+
+.resident-notification-heading h2 {
+  margin: 0;
+  color: #18344e;
+  font-size: 21px;
+}
+
+.resident-notification-dialog p {
+  margin: 22px 0 8px;
+  color: #526b80;
+  line-height: 1.7;
+}
+
+.resident-notification-dialog small {
+  display: block;
+  color: #708698;
+  line-height: 1.6;
+}
+
+.resident-notification-actions {
+  margin-top: 26px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.resident-notification-actions button {
+  min-width: 86px;
+  height: 38px;
+  border: 1px solid #cad7e3;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.resident-notification-actions .resident-notification-primary {
+  border-color: #2387d9;
+  color: #fff;
+  background: #2387d9;
+}
+
 @media (max-width: 600px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
     width: calc(100% - 24px);
@@ -594,6 +707,14 @@ function openResidentBillPayment(billNo) {
 
   .vehicle-management-section {
     padding: 16px 12px;
+  }
+
+  .notification-list-section {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .vehicle-management-section-header {

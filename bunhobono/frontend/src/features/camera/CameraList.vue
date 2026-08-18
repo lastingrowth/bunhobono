@@ -28,6 +28,7 @@
             <th>카메라 이름</th>
             <th>카메라 종류</th>
             <th>설치 날짜</th>
+            <th>상태</th>
             <th>관리</th>
           </tr>
         </thead>
@@ -39,10 +40,15 @@
             <td>{{ c.cameraName }}</td>
             <td>{{ c.cameraType }}</td>
             <td>{{ formatInstallDate(c.installDate) }}</td>
+            <td>
+              <span class="pdm-status-badge" :class="pdmStatus(c.cameraNo).className">
+                {{ pdmStatus(c.cameraNo).label }}
+              </span>
+            </td>
             <td><button class="delete-button" type="button" @click="requestDelete(c)">삭제</button></td>
           </tr>
           <tr v-if="cStore.list.length === 0">
-            <td class="empty-row" colspan="7">등록된 카메라가 없습니다.</td>
+            <td class="empty-row" colspan="8">등록된 카메라가 없습니다.</td>
           </tr>
         </tbody>
       </table>
@@ -150,6 +156,7 @@ import { useGateStore } from '@/features/gates/gateStore';
 import { useParkingsStore } from '@/features/parking/parkingsStore';
 import ManagementDeleteConfirm from '@/shared/components/ManagementDeleteConfirm.vue';
 import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
+import { getLatestCameraPdm } from '@/features/predictive-maintenance/predictiveMaintenanceApi';
 
 const cStore = useCameraStore();
 const gStore = useGateStore();
@@ -160,6 +167,7 @@ const pendingDeleteItem = ref(null);
 const deleting = ref(false);
 const feedbackMessage = ref('');
 const feedbackType = ref('success');
+const pdmByCameraNo = ref(new Map());
 let feedbackTimer;
 
 const showFeedback = (message, type = 'success') => {
@@ -167,6 +175,41 @@ const showFeedback = (message, type = 'success') => {
   feedbackType.value = type;
   window.clearTimeout(feedbackTimer);
   feedbackTimer = window.setTimeout(() => { feedbackMessage.value = ''; }, 2500);
+};
+
+const normalizePdmStatus = (riskLevel) => {
+  const level = String(riskLevel || '').toUpperCase();
+
+  if (level === '정상' || level === 'NORMAL') {
+    return { label: '정상', className: 'normal' };
+  }
+
+  if (level === '주의' || level === 'WARNING' || level === 'MAINTENANCE') {
+    return { label: '주의', className: 'warning' };
+  }
+
+  if (level === '위험' || level === 'CRITICAL' || level === 'FAULT') {
+    return { label: '고장', className: 'fault' };
+  }
+
+  return { label: '미확인', className: 'unknown' };
+};
+
+const pdmStatus = (cameraNo) => normalizePdmStatus(
+  pdmByCameraNo.value.get(Number(cameraNo))?.riskLevel,
+);
+
+const loadPdmStatuses = async () => {
+  try {
+    const response = await getLatestCameraPdm();
+    const items = Array.isArray(response.data) ? response.data : [];
+    pdmByCameraNo.value = new Map(
+      items.map((item) => [Number(item.cameraNo), item]),
+    );
+  } catch (error) {
+    console.error('카메라 예지보전 상태 조회 실패', error);
+    pdmByCameraNo.value = new Map();
+  }
 };
 
 const requestDelete = (item) => { pendingDeleteItem.value = item; };
@@ -233,12 +276,22 @@ const closeOnBackdrop = (event) => {
 
 // 카메라 등록
 const signupGo = async () => {
-  const success = await cStore.signup(camera.value);
-  if (success) closeDialog();
+  const result = await cStore.signup(camera.value);
+  if (result.success) {
+    closeDialog();
+    showFeedback('카메라를 등록했습니다.');
+  } else {
+    showFeedback(result.message || '카메라 등록에 실패했습니다.', 'error');
+  }
 };
 
 onMounted(async () => {
-  await Promise.all([cStore.loadList(), pStore.loadList(), gStore.loadList()]);
+  await Promise.all([
+    cStore.loadList(),
+    pStore.loadList(),
+    gStore.loadList(),
+    loadPdmStatuses(),
+  ]);
 });
 </script>
 
@@ -372,6 +425,21 @@ button:hover {
   color: #d33f49;
   background: #fff0f0;
 }
+
+.pdm-status-badge {
+  min-width: 48px;
+  padding: 3px 8px;
+  display: inline-block;
+  border-radius: 999px;
+  color: #657487;
+  background: #edf1f5;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.pdm-status-badge.normal { color: #26704b; background: #e4f3e9; }
+.pdm-status-badge.warning { color: #8b641d; background: #fff1d2; }
+.pdm-status-badge.fault { color: #a23b43; background: #fbe4e6; }
 
 /* 카메라 등록 다이얼로그 */
 .camera-dialog {

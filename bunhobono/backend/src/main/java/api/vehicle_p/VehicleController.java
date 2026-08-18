@@ -121,6 +121,18 @@ public class VehicleController {
         );
     }
 
+    // 입차 중인 방문차량 1일 연장
+    @PatchMapping("/resident/visit/{vehicleCarNo}/extend-one-day")
+    public int extendEnteredVisitOneDay(
+            Authentication authentication,
+            @PathVariable int vehicleCarNo
+    ) {
+        return vehicleService.extendEnteredVisitOneDay(
+                authentication.getName(),
+                vehicleCarNo
+        );
+    }
+
     // 입주민 본인 일반차량 등록기간 연장
     @PatchMapping("/resident/normal/{vehicleCarNo}/end-date")
     public int extendResidentNormalVehicle(
