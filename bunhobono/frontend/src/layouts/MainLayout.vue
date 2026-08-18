@@ -113,9 +113,9 @@ function openAiChat() {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         padding: 14px max(8px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
-        border-top: 1px solid #bcd3e6;
-        background: rgba(255, 255, 255, .98);
-        box-shadow: 0 -7px 20px rgba(42, 63, 82, .08);
+        border-top: 1px solid #0f64b3;
+        background: #1677d2;
+        box-shadow: 0 -7px 20px rgba(18, 75, 128, .2);
         backdrop-filter: blur(12px);
     }
 
@@ -127,17 +127,17 @@ function openAiChat() {
         justify-content: center;
         padding: 8px 3px;
         border: 0;
-        color: #667f94;
+        color: #ffffff;
         background: transparent;
         font: inherit;
         font-size: 17px;
-        font-weight: 850;
+        font-weight: 950;
         text-align: center;
         text-decoration: none;
     }
 
     .resident-mobile-bottom-nav .active {
-        color: #1677d2;
+        color: #ffffff;
         font-weight: 950;
     }
 }

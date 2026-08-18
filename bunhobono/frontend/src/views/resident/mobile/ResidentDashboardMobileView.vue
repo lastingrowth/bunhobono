@@ -46,7 +46,7 @@
                         role="tab"
                         :aria-selected="activeQuickTab === tab.value"
                         :class="{ active: activeQuickTab === tab.value }"
-                        @click="activeQuickTab = tab.value"
+                        @click="selectQuickTab(tab.value)"
                     >{{ tab.label }}</button>
                 </div>
                 <div class="quick-grid">
@@ -142,7 +142,9 @@ const { loading, errorMessage, dashboard, residenceText, normalVehicles, parking
 const vehicleStatusNow = ref(Date.now());
 let vehicleStatusTimer;
 
-const activeQuickTab = ref("vehicle");
+const QUICK_TAB_STORAGE_KEY = "resident-dashboard-quick-tab";
+const savedQuickTab = sessionStorage.getItem(QUICK_TAB_STORAGE_KEY);
+const activeQuickTab = ref(["vehicle", "resident"].includes(savedQuickTab) ? savedQuickTab : "vehicle");
 const quickTabs = [
     { label: "차량관리", value: "vehicle" },
     { label: "생활편의", value: "resident" }
@@ -162,6 +164,10 @@ const quickMenus = {
     ]
 };
 const visibleQuickMenus = computed(() => quickMenus[activeQuickTab.value]);
+const selectQuickTab = (tab) => {
+    activeQuickTab.value = tab;
+    sessionStorage.setItem(QUICK_TAB_STORAGE_KEY, tab);
+};
 const mobileParkingStatus = computed(() => parkingStatusList.value.slice(0, 2));
 const greetingTemperature = computed(() => weather.value.temperature === null || weather.value.temperature === undefined ? "--°C" : `${weather.value.temperature}°C`);
 const greetingWeatherText = computed(() => weather.value.precipitation === "강수 없음" ? "맑음" : weather.value.precipitation || "맑음");
@@ -210,6 +216,8 @@ const isNewBoard = (board) => {
 const go = (path) => router.push(path);
 const openAiChat = () => window.dispatchEvent(new CustomEvent("open-ai-chat"));
 const openQuickMenu = (item) => {
+    sessionStorage.setItem(QUICK_TAB_STORAGE_KEY, activeQuickTab.value);
+
     if (item.action === "none") {
         return;
     }
