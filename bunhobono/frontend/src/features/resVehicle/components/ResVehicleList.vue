@@ -36,7 +36,14 @@
         >
           <td><span class="vehicle-cell-one-line">{{ vehicle.carNo }}</span></td>
           <td><span class="vehicle-cell-one-line">{{ vehicle.vehicleTypeText || vehicle.vehicleType }}</span></td>
-          <td><span class="vehicle-cell-one-line">{{ vehicle.vehicleStatusText || vehicle.vehicleStatus }}</span></td>
+          <td>
+            <span class="vehicle-cell-lines vehicle-cell-status-text">
+              <span>{{ splitStatusText(vehicle.vehicleStatusText || vehicle.vehicleStatus)[0] }}</span>
+              <span v-if="splitStatusText(vehicle.vehicleStatusText || vehicle.vehicleStatus)[1]">
+                {{ splitStatusText(vehicle.vehicleStatusText || vehicle.vehicleStatus)[1] }}
+              </span>
+            </span>
+          </td>
           <td>
             <span class="vehicle-cell-lines">
               <span>{{ splitDateTime(vehicle.approvedAtText)[0] }}</span>
@@ -45,7 +52,11 @@
               </span>
             </span>
           </td>
-          <td><span class="vehicle-cell-one-line">{{ vehicle.periodText || '-' }}</span></td>
+          <td>
+            <span class="vehicle-cell-period-text">
+              {{ vehicle.periodText || '-' }}
+            </span>
+          </td>
           <td>
             <span class="vehicle-cell-lines">
               <span>{{ splitDateTime(vehicle.endDateText)[0] }}</span>
@@ -93,7 +104,15 @@
              취소
             </button>
 
-            <span v-else-if="showCancel">입차 완료</span>
+            <button
+              v-if="showCancel && vehicle.inTime && !vehicle.outTime"
+              type="button"
+              @click="$emit('extend-visit-one-day', vehicle)"
+            >
+              1일 연장
+            </button>
+
+            <span v-else-if="showCancel && vehicle.inTime">출차 완료</span>
           </td>
         </tr>
 
@@ -143,7 +162,7 @@ defineProps({
   }
 });
 
-defineEmits(["edit", "remove", "extend-normal", "edit-visit-time", "cancel-visit", "empty-action"]);
+defineEmits(["edit", "remove", "extend-normal", "edit-visit-time", "cancel-visit", "extend-visit-one-day", "empty-action"]);
 
 const normalizedText = (value) => String(value || "-").trim();
 
@@ -188,6 +207,21 @@ const splitRemainingTime = (value) => {
     parts.slice(dayIndex + 1).join(" ")
   ];
 };
+
+// 만기 상태는 의미가 잘 보이도록 두 줄로 나눕니다.
+const splitStatusText = (value) => {
+  const text = normalizedText(value);
+
+  if (text === "미입차 만기") {
+    return ["미입차", "만기"];
+  }
+
+  if (text === "주차시간 만기") {
+    return ["주차시간", "만기"];
+  }
+
+  return [text, ""];
+};
 </script>
 
 <style scoped>
@@ -206,13 +240,13 @@ const splitRemainingTime = (value) => {
   min-width: 0;
 }
 
-.vehicle-col-number { width: 13%; }
-.vehicle-col-type { width: 14%; }
-.vehicle-col-status { width: 12%; }
-.vehicle-col-date { width: 14%; }
-.vehicle-col-period { width: 14%; }
-.vehicle-col-remaining { width: 19%; }
-.vehicle-col-manage { width: 16%; }
+.vehicle-col-number { width: 12%; }
+.vehicle-col-type { width: 10%; }
+.vehicle-col-status { width: 11%; }
+.vehicle-col-date { width: 12%; }
+.vehicle-col-period { width: 13%; }
+.vehicle-col-remaining { width: 16%; }
+.vehicle-col-manage { width: 14%; }
 
 .resident-vehicle-table--manage .vehicle-col-number { width: 11%; }
 .resident-vehicle-table--manage .vehicle-col-type { width: 12%; }
@@ -223,11 +257,10 @@ const splitRemainingTime = (value) => {
 
 .resident-vehicle-table th,
 .resident-vehicle-table td {
-  padding-top: 8px;
-  padding-right: 6px;
-  padding-bottom: 8px;
-  padding-left: 6px;
+  padding: 12px 8px;
   text-align: center;
+  font-size: clamp(13px, 0.95vw, 16px);
+  line-height: 1.45;
 }
 
 .resident-vehicle-table th {
@@ -236,7 +269,7 @@ const splitRemainingTime = (value) => {
 
 .resident-vehicle-table .vehicle-data-row,
 .resident-vehicle-table .vehicle-data-row td {
-  height: 74px;
+  height: 88px;
 }
 
 .vehicle-cell-one-line,
@@ -245,13 +278,42 @@ const splitRemainingTime = (value) => {
   white-space: nowrap;
 }
 
+.vehicle-cell-period-text {
+  max-width: 100%;
+  display: block;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: normal;
+  line-height: 1.45;
+}
+
+.vehicle-cell-status-text {
+  align-items: center;
+  text-align: center;
+}
+
 .vehicle-cell-lines {
-  min-height: 44px;
+  min-height: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
   line-height: 1.35;
+}
+
+.resident-vehicle-table td button {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  white-space: nowrap;
+  font-size: clamp(13px, 0.9vw, 15px);
+}
+
+.resident-vehicle-table td button + button {
+  margin-top: 6px;
+  margin-left: 0;
 }
 
 .empty-action-link {

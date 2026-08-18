@@ -446,6 +446,31 @@ public interface VehicleMapper {
             @Param("endDate") java.time.LocalDateTime endDate
     );
 
+    // 로그인한 세대의 현재 입차 중인 방문차량을 1일 연장
+    @Update("""
+        UPDATE vehicle_car vc
+        SET end_date = vc.end_date + INTERVAL '1 day'
+        FROM member owner,
+             member login_member
+        WHERE vc.vehicle_car_no = #{vehicleCarNo}
+          AND vc.member_no = owner.member_no
+          AND login_member.login_id = #{loginId}
+          AND owner.unit_no = login_member.unit_no
+          AND vc.vehicle_type = 'visit'
+          AND vc.vehicle_status = 'APPROVED'
+          AND EXISTS (
+              SELECT 1
+              FROM car_log cl
+              WHERE cl.vehicle_car_no = vc.vehicle_car_no
+                AND cl.in_time IS NOT NULL
+                AND cl.out_time IS NULL
+          )
+    """)
+    int extendEnteredVisitOneDay(
+            @Param("loginId") String loginId,
+            @Param("vehicleCarNo") int vehicleCarNo
+    );
+
     // 로그인한 입주민 본인 일반차량 만기일 연장
     @Update("""
         UPDATE vehicle_car vc
@@ -493,7 +518,14 @@ public interface VehicleMapper {
 
     // 같은 세대의 이번 달 방문차량 등록 수
     @Select("""
-    SELECT COUNT(DISTINCT vc.vehicle_car_no)
+    SELECT
+        COUNT(DISTINCT vc.vehicle_car_no)
+        + COALESCE(SUM(
+            GREATEST(
+                FLOOR(EXTRACT(EPOCH FROM (vc.end_date - vc.start_date)) / 86400)::INT - 1,
+                0
+            )
+        ), 0)
 
     FROM member login_member
 

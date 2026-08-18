@@ -79,6 +79,7 @@
           :show-cancel="true"
           @edit-visit-time="openVisitTimeEdit"
           @cancel-visit="cancelVisitVehicle"
+          @extend-visit-one-day="extendVisitVehicleOneDay"
         />
       </section>
     </template>
@@ -387,6 +388,23 @@ async function submitVisitVehicle(data) {
       || (mode.value === "edit-time"
         ? "방문시간을 변경하지 못했습니다."
         : "방문차량을 등록하지 못했습니다."),
+      "error"
+    );
+  }
+}
+
+async function extendVisitVehicleOneDay(vehicle) {
+  try {
+    await resVehicleStore.extendVisitVehicleOneDay(vehicle.vehicleCarNo);
+    showFeedback(`${vehicle.carNo} 방문기간을 1일 연장했습니다.`);
+  } catch (error) {
+    if (error.response?.status === 402) {
+      paymentRequiredOpen.value = true;
+      return;
+    }
+
+    showFeedback(
+      error.response?.data?.message || "방문기간을 연장하지 못했습니다.",
       "error"
     );
   }

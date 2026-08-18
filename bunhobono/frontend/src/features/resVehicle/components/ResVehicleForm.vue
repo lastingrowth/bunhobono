@@ -77,21 +77,8 @@
           </tr>
 
           <tr>
-            <th>방문 시간</th>
-            <td>
-              <select v-model.number="form.periodHours" required>
-                <option :value="2">2시간</option>
-                <option :value="4">4시간</option>
-                <option :value="6">6시간</option>
-                <option :value="8">8시간</option>
-                <option :value="12">12시간</option>
-              </select>
-            </td>
-          </tr>
-
-          <tr>
-            <th>예상 만료</th>
-            <td>{{ expectedEndText || '-' }}</td>
+            <th>방문 예정 기간</th>
+            <td>{{ visitPeriodText || '방문 시작시간을 선택하세요.' }}</td>
           </tr>
 
           <tr>
@@ -141,8 +128,7 @@ const form = reactive({
   carNo: '',
   visitDate: '',
   visitHour: '',
-  visitMinute: '',
-  periodHours: 2
+  visitMinute: ''
 })
 
 const currentTime = ref(new Date())
@@ -185,14 +171,15 @@ const selectedStartDate = computed(() => {
   )
 })
 
-const expectedEndText = computed(() => {
+const visitPeriodText = computed(() => {
   if (!selectedStartDate.value) {
     return ''
   }
 
-  return formatDateTimeText(
-    makeEndDate(selectedStartDate.value)
-  )
+  const startDate = selectedStartDate.value
+  const endDate = makeEndDate(startDate)
+
+  return `${formatDateTimeText(startDate)} ~ ${formatDateTimeText(endDate)}`
 })
 
 onMounted(() => {
@@ -208,8 +195,6 @@ watch(
     if (!vehicle) return
 
     const startDate = new Date(vehicle.startDate)
-    const endDate = new Date(vehicle.endDate)
-
     form.carNo = vehicle.carNo || ''
 
     if (!Number.isNaN(startDate.getTime())) {
@@ -218,13 +203,6 @@ watch(
       form.visitMinute = String(startDate.getMinutes())
     }
 
-    const durationHours = Math.round(
-      (endDate.getTime() - startDate.getTime()) / (60 * 60 * 1000)
-    )
-
-    if ([2, 4, 6, 8, 12].includes(durationHours)) {
-      form.periodHours = durationHours
-    }
   },
   { immediate: true }
 )
@@ -287,7 +265,6 @@ function resetForm() {
   form.visitDate = ''
   form.visitHour = ''
   form.visitMinute = ''
-  form.periodHours = 2
   currentTime.value = new Date()
 }
 
@@ -360,9 +337,7 @@ function makeLocalDate(dateValue, hour, minute) {
 function makeEndDate(startDate) {
   const endDate = new Date(startDate)
 
-  endDate.setHours(
-    endDate.getHours() + Number(form.periodHours)
-  )
+  endDate.setHours(endDate.getHours() + 24)
 
   return endDate
 }
@@ -392,7 +367,7 @@ function formatDateTimeText(date) {
   const hh = pad(date.getHours())
   const mi = pad(date.getMinutes())
 
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`
+  return `${yyyy}.${mm}.${dd} ${hh}:${mi}`
 }
 
 function pad(value) {
