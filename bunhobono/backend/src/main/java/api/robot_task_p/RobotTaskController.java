@@ -44,5 +44,4 @@ public class RobotTaskController {
         return robotTaskService.createReparkTask(carLogNo);
     }
 
-
 }

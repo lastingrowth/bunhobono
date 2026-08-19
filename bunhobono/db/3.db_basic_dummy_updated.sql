@@ -1406,6 +1406,40 @@ VALUES
     (9,  3, 5,  8,    '빠른 답변 감사드립니다.'),                                                      -- 게시글 3의 8번 댓글에 대한 답글(3단계)
     (10, 3, 9,  NULL, '아이들과 함께 참여해도 괜찮은가요?');                                             -- 게시글 3의 최상위 댓글(1단계)
 
+-- =====================================================
+-- FEE RULE DUMMY
+-- 방문차량의 무료시간 종료 후와 미등록차량의 입차 직후부터 적용할
+-- 기본 시간당 주차요금 규칙을 등록한다.
+--
+-- 방문차량: car_log.free_time에 1,440분을 저장하여 24시간 무료 적용
+-- 미등록차량: car_log.free_time에 0분을 저장하여 입차 직후부터 과금
+-- =====================================================
+INSERT INTO fee_rule (
+    rule_name,                -- 요금 규칙명
+    unit_minutes,             -- 요금이 한 번 부과되는 시간 단위(분)
+    unit_fee,                 -- 시간 단위마다 부과되는 금액
+    daily_max_fee,            -- 과금 24시간당 최대요금
+    created_at,               -- 요금 규칙 등록 시각
+	effective_from,           -- 요금 규칙 적용 시작시각
+	effective_to			  -- 요금 규칙 적용 종료시각
+)
+VALUES (
+    '일반 시간당 주차요금',
+    30,                       -- 30분 단위
+    1000,                     -- 30분당 1,000원
+    15000,                    -- 과금 24시간당 최대 15,000원
+    CURRENT_TIMESTAMP,
+	CURRENT_TIMESTAMP,
+	NULL
+);
+
+-- =====================================================
+-- KIOSK BILLING AND B1 RESIDENT EXIT TEST DUMMY
+-- B2 키오스크에서 차량 조회, 정산서 생성, 결제 완료,
+-- 관리자 정산 목록의 출차 가능 상태 변경을 확인한다.
+-- B1 키오스크에서는 입주민 차량의 로봇 출차 작업 생성을 확인한다.
+-- 같은 파일을 다시 실행할 수 있도록 기존 테스트 데이터만 먼저 삭제한다.
+-- =====================================================
 
 DELETE FROM robot_task
 WHERE car_log_no IN (
@@ -1428,6 +1462,27 @@ WHERE car_log_no IN (
         '299가1101',
         '299가1102',
         '299가1103'
+    )
+);
+
+DELETE FROM mem_notice
+WHERE reference_table = 'bill'
+  AND reference_no IN (
+    SELECT bill_no
+    FROM bill
+    WHERE car_log_no IN (
+        SELECT car_log_no
+        FROM car_log
+        WHERE snapshot_car_no IN (
+            '299가1101',
+            '299가1102',
+            '299가1103',
+            '299가1201',
+            '299가1202',
+            '299가1203',
+            '299가1204',
+            '299가1205'
+        )
     )
 );
 
@@ -1470,6 +1525,31 @@ WHERE cam_note IN (
     'B2-BILLING-TEST-UNKNOWN-1',
     'B2-BILLING-TRASH-TEST-1'
 );
+
+-- 1203 차량은 res1이 등록한 방문차량으로 생성하여
+-- 정산서 발행 시 res1에게 mem_notice가 생성되도록 연결한다.
+DELETE FROM vehicle_car
+WHERE car_no = '299가1203';
+
+INSERT INTO vehicle_car (
+    vehicle_type,
+    car_no,
+    vehicle_status,
+    start_date,
+    end_date,
+    member_no,
+    approved_at
+)
+SELECT
+    'visit',
+    '299가1203',
+    'APPROVED',
+    CURRENT_TIMESTAMP - INTERVAL '30 hours',
+    CURRENT_TIMESTAMP + INTERVAL '6 hours',
+    member.member_no,
+    CURRENT_TIMESTAMP - INTERVAL '30 hours'
+FROM member
+WHERE member.login_id = 'res1';
 
 
 -- B1 입주민 차량 3대를 현재 주차 중인 서로 다른 일반 주차면에 배정한다.
@@ -1658,7 +1738,13 @@ WITH test_car (
     )
     SELECT
         camera.camera_no,
-        NULL,
+        (
+            SELECT vehicle_car.vehicle_car_no
+            FROM vehicle_car
+            WHERE vehicle_car.car_no = test_car.car_no
+              AND vehicle_car.vehicle_type = 'visit'
+            LIMIT 1
+        ),
         test_car.car_no,
         test_car.car_no,
         test_car.in_time,
@@ -1673,30 +1759,143 @@ WITH test_car (
     JOIN camera
         ON camera.gate_no = gate.gate_no
        AND camera.camera_type = 'In'
-    RETURNING camera_data_no, car_no, capture_time, cam_note
+    RETURNING
+        camera_data_no,
+        vehicle_car_no,
+        car_no,
+        capture_time,
+        cam_note
+), inserted_log AS (
+    INSERT INTO car_log (
+        vehicle_car_no,
+        camera_data_no,
+        in_gate_no,
+        in_time,
+        free_time,
+        snapshot_car_no,
+        snapshot_car_kind
+    )
+    SELECT
+        inserted_camera.vehicle_car_no,
+        inserted_camera.camera_data_no,
+        gate.gate_no,
+        inserted_camera.capture_time,
+        test_car.free_time,
+        test_car.car_no,
+        test_car.car_kind
+    FROM inserted_camera
+    JOIN test_car
+        ON test_car.cam_note = inserted_camera.cam_note
+    JOIN gate
+        ON gate.gate_code = test_car.gate_code
+    RETURNING car_log_no, snapshot_car_no
+), selected_rule AS (
+    SELECT fee_rule_no
+    FROM fee_rule
+    WHERE effective_from <= CURRENT_TIMESTAMP
+      AND (
+          effective_to IS NULL
+          OR effective_to > CURRENT_TIMESTAMP
+      )
+    ORDER BY effective_from DESC, fee_rule_no DESC
+    LIMIT 1
 )
-INSERT INTO car_log (
-    vehicle_car_no,
-    camera_data_no,
-    in_gate_no,
-    in_time,
-    free_time,
-    snapshot_car_no,
-    snapshot_car_kind
+INSERT INTO bill (
+    car_log_no,
+    fee_rule_no,
+    kiosk_no,
+    charge_minutes,
+    bill_amount,
+    bill_status
 )
 SELECT
+    inserted_log.car_log_no,
+    selected_rule.fee_rule_no,
     NULL,
-    inserted_camera.camera_data_no,
-    gate.gate_no,
-    inserted_camera.capture_time,
-    test_car.free_time,
-    test_car.car_no,
-    test_car.car_kind
-FROM inserted_camera
-JOIN test_car
-    ON test_car.cam_note = inserted_camera.cam_note
-JOIN gate
-    ON gate.gate_code = test_car.gate_code;
+    0,
+    0,
+    'UNPAID'
+FROM inserted_log
+CROSS JOIN selected_rule
+WHERE inserted_log.snapshot_car_no <> '299가1203';
+
+-- 1203 방문차량의 미결제 고지서를 미리 생성한다.
+-- 더미 실행 직후 res1 알림 화면과 입주민 결제 페이지를 확인할 수 있다.
+WITH target_log AS (
+    SELECT car_log_no
+    FROM car_log
+    WHERE snapshot_car_no = '299가1203'
+    ORDER BY car_log_no DESC
+    LIMIT 1
+), selected_rule AS (
+    SELECT fee_rule_no, unit_minutes, unit_fee, daily_max_fee
+    FROM fee_rule
+    WHERE effective_from <= CURRENT_TIMESTAMP
+      AND (
+          effective_to IS NULL
+          OR effective_to > CURRENT_TIMESTAMP
+      )
+    ORDER BY effective_from DESC, fee_rule_no DESC
+    LIMIT 1
+)
+
+INSERT INTO bill (
+    car_log_no,
+    fee_rule_no,
+    kiosk_no,
+    charge_minutes,
+    bill_amount,
+    bill_status,
+    payment_order_id
+)
+SELECT
+    target_log.car_log_no,
+    selected_rule.fee_rule_no,
+    NULL,
+    120,
+    CASE
+        WHEN selected_rule.daily_max_fee IS NULL THEN
+            CEIL(120.0 / selected_rule.unit_minutes) * selected_rule.unit_fee
+        ELSE LEAST(
+            CEIL(120.0 / selected_rule.unit_minutes) * selected_rule.unit_fee,
+            selected_rule.daily_max_fee
+        )
+    END,
+    'UNPAID',
+    'BILL-DUMMY-' || MD5(
+        RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT
+    )
+FROM target_log
+CROSS JOIN selected_rule;
+
+INSERT INTO mem_notice (
+    recipient_member_no,
+    reference_table,
+    reference_no,
+    notice_type,
+    title,
+    message
+)
+SELECT
+    member.member_no,
+    'bill',
+    bill.bill_no,
+    'VISIT_PARKING_FEE_ISSUED',
+    '방문차량 주차요금 발생',
+    '등록하신 방문차량 299가1203에 주차요금 '
+        || TO_CHAR(bill.bill_amount, 'FM999,999,999,990')
+        || '원이 부과되었습니다.'
+FROM bill
+JOIN car_log
+    ON car_log.car_log_no = bill.car_log_no
+JOIN vehicle_car
+    ON vehicle_car.vehicle_car_no = car_log.vehicle_car_no
+JOIN member
+    ON member.member_no = vehicle_car.member_no
+WHERE car_log.snapshot_car_no = '299가1203'
+  AND member.login_id = 'res1'
+ON CONFLICT ON CONSTRAINT uq_mem_notice_reference
+DO NOTHING;
 
 
 -- 관리자 정산 목록에서 직접 지난 기록 이동을 확인할 수 있도록
@@ -1762,15 +1961,14 @@ WITH inserted_camera AS (
 ), selected_rule AS (
     SELECT fee_rule_no
     FROM fee_rule
- 	  WHERE effective_from <= CURRENT_TIMESTAMP
- 		 AND (
-     		 effective_to IS NULL
-     		 OR effective_to > CURRENT_TIMESTAMP
-	  )
+    WHERE effective_from <= CURRENT_TIMESTAMP
+      AND (
+          effective_to IS NULL
+          OR effective_to > CURRENT_TIMESTAMP
+      )
     ORDER BY effective_from DESC, fee_rule_no DESC
     LIMIT 1
 )
-
 INSERT INTO bill (
     car_log_no,
     fee_rule_no,
@@ -1799,32 +1997,30 @@ SELECT
 FROM inserted_log
 CROSS JOIN selected_rule;
 
--- =====================================================
--- FEE RULE DUMMY
--- 방문차량의 무료시간 종료 후와 미등록차량의 입차 직후부터 적용할
--- 기본 시간당 주차요금 규칙을 등록한다.
---
--- 방문차량: car_log.free_time에 1,440분을 저장하여 24시간 무료 적용
--- 미등록차량: car_log.free_time에 0분을 저장하여 입차 직후부터 과금
--- =====================================================
-INSERT INTO fee_rule (
-    rule_name,                -- 요금 규칙명
-    unit_minutes,             -- 요금이 한 번 부과되는 시간 단위(분)
-    unit_fee,                 -- 시간 단위마다 부과되는 금액
-    daily_max_fee,            -- 과금 24시간당 최대요금
-    created_at,               -- 요금 규칙 등록 시각
-	effective_from,           -- 요금 규칙 적용 시작시각
-	effective_to			  -- 요금 규칙 적용 종료시각
-)
-VALUES (
-    '일반 시간당 주차요금',
-    30,                       -- 30분 단위
-    1000,                     -- 30분당 1,000원
-    15000,                    -- 과금 24시간당 최대 15,000원
-    CURRENT_TIMESTAMP,
-	CURRENT_TIMESTAMP,
-	NULL
-);
 
+
+
+-- =====================================================
+-- TEST VEHICLES
+-- B1 키오스크 번호는 기본 더미 기준 1 또는 2를 사용한다.
+-- B2 키오스크 번호는 기본 더미 기준 3 또는 4를 사용한다.
+--
+-- 299가1101: B1 입주민 차량, 번호 뒤 4자리 1101
+--             B1 일반 주차면에 배정되어 로봇 출차 작업 생성 가능
+-- 299가1102: B1 입주민 차량, 번호 뒤 4자리 1102
+--             B1 일반 주차면에 배정되어 로봇 출차 작업 생성 가능
+-- 299가1103: B1 입주민 차량, 번호 뒤 4자리 1103
+--             B1 일반 주차면에 배정되어 로봇 출차 작업 생성 가능
+--
+-- 299가1201: 방금 입차한 방문차량, 24시간 무료, 정산금액 0원 확인용
+-- 299가1202: 12시간 주차한 방문차량, 24시간 무료 범위, 정산금액 0원 확인용
+-- 299가1203: 26시간 주차한 방문차량, 24시간 초과분 과금 확인용
+-- 299가1204: 미등록차량, 무료시간 없음, 입차 직후부터 과금 확인용
+-- 299가1205: B2 출차·결제 완료 차량, 관리자 직접 지난 기록 이동 확인용
+--
+-- 실행 직후 B2 입차 차량의 미결제 정산서가 함께 생성된다.
+-- B2 키오스크에서 차량을 선택하면 주차시간에 맞춰 정산금액이 갱신된다.
+-- 결제를 완료하면 정산완료 및 30분간 출차 가능으로 바뀐다.
+-- =====================================================
 
 COMMIT;

@@ -1,12 +1,5 @@
 BEGIN;
 
--- 기존 뷰 삭제
-DROP VIEW IF EXISTS notice_overstay;
-DROP VIEW IF EXISTS notice_detail;
-DROP VIEW IF EXISTS robot_task_detail;
-DROP VIEW IF EXISTS car_log_detail;
-
-
 -- =====================================================
 -- CAR LOG DETAIL VIEW
 -- B1·B2 입출차 기록 조회용
