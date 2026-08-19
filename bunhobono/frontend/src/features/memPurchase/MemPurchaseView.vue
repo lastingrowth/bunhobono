@@ -61,8 +61,8 @@ const router = useRouter();
 const tossClientKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
 const products = [
   { quantity: 1, amount: 5000, originalAmount: null, badge: "" },
-  { quantity: 5, amount: 20000, originalAmount: 25000, badge: "5,000원 할인" },
-  { quantity: 10, amount: 43000, originalAmount: 50000, badge: "7,000원 할인" }
+  { quantity: 5, amount: 23000, originalAmount: 25000, badge: "5,000원 할인" },
+  { quantity: 10, amount: 40000, originalAmount: 50000, badge: "7,000원 할인" }
 ];
 const selectedQuantity = ref(5);
 const paymentLoading = ref(false);
