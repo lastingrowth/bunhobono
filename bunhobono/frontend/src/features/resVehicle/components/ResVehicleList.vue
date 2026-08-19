@@ -107,9 +107,9 @@
             <button
               v-if="showCancel && vehicle.inTime && !vehicle.outTime"
               type="button"
-              @click="$emit('extend-visit-one-day', vehicle)"
+              @click="$emit('extend-visit-hours', vehicle)"
             >
-              1일 연장
+              시간 연장
             </button>
 
             <span v-else-if="showCancel && vehicle.inTime">출차 완료</span>
@@ -162,7 +162,7 @@ defineProps({
   }
 });
 
-defineEmits(["edit", "remove", "extend-normal", "edit-visit-time", "cancel-visit", "extend-visit-one-day", "empty-action"]);
+defineEmits(["edit", "remove", "extend-normal", "edit-visit-time", "cancel-visit", "extend-visit-hours", "empty-action"]);
 
 const normalizedText = (value) => String(value || "-").trim();
 

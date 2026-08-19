@@ -30,9 +30,13 @@ export const updateResVisitVehicleTime = (vehicleCarNo, data) => {
     return api.patch(`/vehicles/resident/visit/${vehicleCarNo}/time`, data);
 };
 
-// 입차 중인 방문차량 1일 연장
-export const extendResVisitVehicleOneDay = (vehicleCarNo) => {
-    return api.patch(`/vehicles/resident/visit/${vehicleCarNo}/extend-one-day`);
+// 입차 중인 방문차량을 선택한 시간만큼 연장
+export const extendResVisitVehicleHours = (vehicleCarNo, hours) => {
+    return api.patch(
+        `/vehicles/resident/visit/${vehicleCarNo}/extend`,
+        null,
+        { params: { hours } }
+    );
 };
 
 // 본인 일반차량 등록기간 연장

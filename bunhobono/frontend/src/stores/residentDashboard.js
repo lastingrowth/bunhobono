@@ -29,7 +29,7 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         member: {},
         normalVehicleCount : 0,
         visitVehicleCount: 0,
-        visitRegistrationRemaining: 10,
+        visitRegistrationRemaining: 150 * 60,
         totalParkingSpaces: 0,
         availableParkingSpaces: 0,
         vehicles: [],
@@ -64,9 +64,13 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
 
     const visitRegistrationRemaining = computed(() => {
         return Math.max(
-            Number(dashboard.value.visitRegistrationRemaining ?? 10),
+            Number(dashboard.value.visitRegistrationRemaining ?? 150 * 60),
             0
         );
+    });
+
+    const visitRegistrationRemainingText = computed(() => {
+        return `${Math.floor(visitRegistrationRemaining.value / 60)}시간`;
     });
 
     // 주차장별 전체·사용·가능 면수와 사용률
@@ -215,9 +219,9 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
                 visitVehicleCount: vehicles.filter((vehicle) => {
                     return vehicle.vehicleType === "visit";
                 }).length,
-                // 기본 무료 횟수와 결제 완료 추가 횟수가 반영된 서버 계산값
+                // 기본 무료시간과 결제 완료 추가시간이 반영된 잔여 분
                 visitRegistrationRemaining:
-                    monthlyVisitResponse.data?.remainingCount ?? 10,
+                    monthlyVisitResponse.data?.remainingCount ?? 150 * 60,
                 totalParkingSpaces: parkings.reduce((sum, parking) => {
                     return sum + Number(parking.parkingSpaces || 0);
                 }, 0),
@@ -248,6 +252,7 @@ export const useResidentDashboardStore = defineStore("residentdashboard", () => 
         normalVehicles,
         visitVehicles,
         visitRegistrationRemaining,
+        visitRegistrationRemainingText,
         parkingStatusList,
         loadWeather,
         loadDashboard

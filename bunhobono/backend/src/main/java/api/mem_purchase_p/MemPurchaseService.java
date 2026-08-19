@@ -20,8 +20,8 @@ import java.util.UUID;
 @Service
 public class MemPurchaseService {
 
-    private static final String VISIT_REGISTRATION_COUNT =
-            "VISIT_REGISTRATION_COUNT";
+    private static final String VISIT_PARKING_MINUTES =
+            "VISIT_PARKING_MINUTES";
 
     @Resource
     private MemPurchaseMapper memPurchaseMapper;
@@ -34,7 +34,7 @@ public class MemPurchaseService {
                     .baseUrl("https://api.tosspayments.com")
                     .build();
 
-    // 로그인한 입주민 세대의 이번 달 결제 완료 추가 횟수를 조회한다.
+    // 로그인한 입주민 세대의 이번 달 결제 완료 추가시간(분)을 조회한다.
     public int getMonthlyPaidVisitQuantity(String loginId) {
         if (loginId == null || loginId.isBlank()) {
             throw new ResponseStatusException(
@@ -47,10 +47,10 @@ public class MemPurchaseService {
         condition.setSnapshotLoginId(loginId);
 
         return memPurchaseMapper
-                .sumMonthlyPaidVisitQuantity(condition);
+                .sumMonthlyPaidVisitMinutes(condition);
     }
 
-    // 로그인한 입주민의 방문차량 추가 횟수 구매 주문을 생성한다.
+    // 로그인한 입주민의 방문차량 추가시간 구매 주문을 생성한다.
     @Transactional
     public MemPurchaseDTO createOrder(
             String loginId,
@@ -83,7 +83,7 @@ public class MemPurchaseService {
             );
         }
 
-        member.setPurchaseType(VISIT_REGISTRATION_COUNT);
+        member.setPurchaseType(VISIT_PARKING_MINUTES);
         member.setPurchaseQuantity(quantity);
         member.setPurchaseAmount(purchaseAmount);
         member.setPurchaseStatus("UNPAID");
@@ -235,9 +235,9 @@ public class MemPurchaseService {
         }
 
         return switch (quantity) {
-            case 1 -> BigDecimal.valueOf(5000);
-            case 5 -> BigDecimal.valueOf(20000);
-            case 10 -> BigDecimal.valueOf(43000);
+            case 120 -> BigDecimal.valueOf(5000);
+            case 600 -> BigDecimal.valueOf(24000);
+            case 1800 -> BigDecimal.valueOf(66000);
             default -> throw invalidQuantity();
         };
     }
@@ -245,7 +245,7 @@ public class MemPurchaseService {
     private ResponseStatusException invalidQuantity() {
         return new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "구매 횟수는 1회, 5회, 10회 중에서 선택해 주세요."
+                "구매시간은 2시간, 10시간, 30시간 중에서 선택해 주세요."
         );
     }
 

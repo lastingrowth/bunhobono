@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -335,11 +336,13 @@ public class CarLogService {
                         cameraData.getStartDate().plusHours(72)
                 );
 
-        // 입주민 방문차량은 B2 입차 시점부터 24시간 무료,
+        // 입주민 방문차량은 등록할 때 선택한 이용시간만큼 무료,
         // 관리실 긴급차량은 B2 입차 시점부터 72시간 무료,
         // 관리실 일반 방문차량과 그 외 차량은 무료시간이 없다.
         if (residentVisit) {
-            log.setFreeTime(1440);
+            log.setFreeTime(
+                    calculateResidentVisitFreeMinutes(cameraData)
+            );
         } else if (emergencyVisit) {
             log.setFreeTime(4320);
         } else {
@@ -362,6 +365,38 @@ public class CarLogService {
         }
 
         return log;
+    }
+
+    // 방문 시작·종료시각의 차이를 해당 입차 기록의 무료시간으로 사용한다.
+    private int calculateResidentVisitFreeMinutes(
+            CameraDataDTO cameraData
+    ) {
+        if (cameraData.getStartDate() == null
+                || cameraData.getEndDate() == null
+                || !cameraData.getEndDate().isAfter(
+                cameraData.getStartDate()
+        )) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "방문차량 등록시간을 확인할 수 없습니다."
+            );
+        }
+
+        long freeMinutes = Duration.between(
+                cameraData.getStartDate(),
+                cameraData.getEndDate()
+        ).toMinutes();
+
+        if (freeMinutes < 60
+                || freeMinutes > 24 * 60
+                || freeMinutes % 60 != 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "방문차량 등록시간은 1시간 단위로 최대 24시간이어야 합니다."
+            );
+        }
+
+        return Math.toIntExact(freeMinutes);
     }
 
     // 주차장별 차량 입차 자격을 확인한다.

@@ -52,7 +52,7 @@
                 <div class="quick-grid">
                     <button v-for="item in visibleQuickMenus" :key="item.path || item.action" type="button" @click="openQuickMenu(item)">
                         <strong>{{ item.label }}</strong>
-                        <small v-if="item.showVisitRemaining">{{ dashboard.visitRegistrationRemaining ?? 10 }}회 남음</small>
+                        <small v-if="item.showVisitRemaining">{{ visitRegistrationRemainingText }} 남음</small>
                     </button>
                 </div>
             </section>
@@ -138,7 +138,7 @@ import { vehicleExpiryText } from "@/features/vehicle/vehicleFormat";
 const router = useRouter();
 const dashboardStore = useResidentDashboardStore();
 const boardStore = useBoardStore();
-const { loading, errorMessage, dashboard, residenceText, normalVehicles, parkingStatusList, weather } = storeToRefs(dashboardStore);
+const { loading, errorMessage, dashboard, residenceText, normalVehicles, visitRegistrationRemainingText, parkingStatusList, weather } = storeToRefs(dashboardStore);
 const vehicleStatusNow = ref(Date.now());
 let vehicleStatusTimer;
 
