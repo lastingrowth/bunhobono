@@ -157,9 +157,18 @@ public class CarLogService {
             return 0;
         }
 
+        boolean emergencyVisit =
+                isEmergencyVisit(cameraData);
+
         ParkingSpaceDTO entrySpace = null;
 
-        if (B1.equalsIgnoreCase(gate.getGateArea())) {
+        // B1 일반 입주민 차량만 입차대기면을 배정한다.
+        if (
+                B1.equalsIgnoreCase(
+                        gate.getGateArea()
+                )
+                        && !emergencyVisit
+        ) {
             entrySpace =
                     parkingSpaceService
                             .findEmptyWaitingSpace(
@@ -182,13 +191,19 @@ public class CarLogService {
             return 0;
         }
 
-        // B2에 입차한 비입주민 차량은 입차 즉시 미결제 정산서를 생성한다.
+        // B2 비입주민 차량의 미결제 정산서 생성
         if (
-            B2.equalsIgnoreCase(gate.getGateArea())
-                    && (
-                    "VISIT".equals(log.getSnapshotCarKind())
-                            || "UNKNOWN".equals(log.getSnapshotCarKind())
-            )
+                B2.equalsIgnoreCase(
+                        gate.getGateArea()
+                )
+                        && (
+                        "VISIT".equals(
+                                log.getSnapshotCarKind()
+                        )
+                                || "UNKNOWN".equals(
+                                log.getSnapshotCarKind()
+                        )
+                )
         ) {
             billingService.createEntryBill(
                     log.getCarLogNo(),
@@ -196,6 +211,7 @@ public class CarLogService {
             );
         }
 
+        // B2 또는 긴급차량은 로봇 작업을 생성하지 않는다.
         if (entrySpace == null) {
             return 1;
         }
@@ -245,9 +261,18 @@ public class CarLogService {
             return 0;
         }
 
+        boolean emergencyLog =
+                isEmergencyLog(log);
+
         ParkingSpaceDTO currentSpace = null;
 
-        if (B1.equalsIgnoreCase(gate.getGateArea())) {
+        // 일반 B1 차량만 출차대기면과 연결 게이트를 확인한다.
+        if (
+                B1.equalsIgnoreCase(
+                        gate.getGateArea()
+                )
+                        && !emergencyLog
+        ) {
             currentSpace =
                     parkingSpaceService.findByCarLogNo(
                             log.getCarLogNo()
@@ -319,25 +344,15 @@ public class CarLogService {
                 );
 
         // 입주민이 등록한 방문차량인지 확인한다.
-        // 입주민 차량은 member를 통해 실제 세대와 연결되어 있다.
         boolean residentVisit =
-                visitVehicle && cameraData.getApartmentUnitNo() != null;
-
-        // 관리실에 등록된 72시간 긴급차량인지 확인한다.
-        // 관리실 차량은 apartment_unit_no가 없으며,
-        // 긴급차량 등록기간은 정확히 72시간으로 설정된다.
-        boolean emergencyVisit =
                 visitVehicle
-                        && cameraData.getApartmentUnitNo() == null
-                        && cameraData.getStartDate() != null
-                        && cameraData.getEndDate() != null
-                        && cameraData.getEndDate().equals(
-                        cameraData.getStartDate().plusHours(72)
-                );
+                        && cameraData.getApartmentUnitNo() != null;
 
-        // 입주민 방문차량은 B2 입차 시점부터 24시간 무료,
-        // 관리실 긴급차량은 B2 입차 시점부터 72시간 무료,
-        // 관리실 일반 방문차량과 그 외 차량은 무료시간이 없다.
+        // 관리실 또는 시스템이 등록한 긴급차량인지 확인한다.
+        boolean emergencyVisit =
+                isEmergencyVisit(cameraData);
+
+        // 입주민 방문차량은 24시간, 긴급차량은 72시간 무료
         if (residentVisit) {
             log.setFreeTime(1440);
         } else if (emergencyVisit) {
@@ -350,23 +365,46 @@ public class CarLogService {
                 resolvedCarNo(cameraData)
         );
 
-        // 입주민 방문차량과 관리실 일반·긴급차량은
-        // 모두 vehicle_car에 방문차량으로 등록된다.
         if (visitVehicle) {
             log.setSnapshotCarKind("VISIT");
-        }
-
-        // 나머지는 입주민 등록차량이다.
-        else {
+        } else {
             log.setSnapshotCarKind("REGISTERED");
         }
 
         return log;
     }
 
+    // 72시간 긴급·작업 방문차량인지 확인한다.
+    private boolean isEmergencyVisit(
+            CameraDataDTO cameraData
+    ) {
+        return cameraData != null
+                && "visit".equalsIgnoreCase(
+                cameraData.getVehicleType()
+        )
+                && cameraData.getApartmentUnitNo() == null
+                && cameraData.getStartDate() != null
+                && cameraData.getEndDate() != null
+                && cameraData.getEndDate().equals(
+                cameraData.getStartDate().plusHours(72)
+        )
+                && isWithinVisitPeriod(cameraData);
+    }
+
+    // 입차 기록이 긴급·작업 차량인지 확인한다.
+    private boolean isEmergencyLog(
+            CarLogDTO log
+    ) {
+        return log != null
+                && "VISIT".equalsIgnoreCase(
+                log.getSnapshotCarKind()
+        )
+                && Integer.valueOf(4320).equals(
+                log.getFreeTime()
+        );
+    }
+
     // 주차장별 차량 입차 자격을 확인한다.
-    // 정문·후문에서 승인된 일반·긴급차량도 vehicle_car에 등록되므로
-    // 등록번호와 승인상태가 확인된 차량만 내부 주차장에 입차할 수 있다.
     private boolean canEnter(
             CameraDataDTO cameraData,
             String gateArea
@@ -380,6 +418,12 @@ public class CarLogService {
             return false;
         }
 
+        // 긴급차량은 B1과 B2 게이트를 통과할 수 있다.
+        if (isEmergencyVisit(cameraData)) {
+            return B1.equalsIgnoreCase(gateArea)
+                    || B2.equalsIgnoreCase(gateArea);
+        }
+
         // B1은 입주민 등록차량만 입차할 수 있다.
         if (B1.equalsIgnoreCase(gateArea)) {
             return "normal".equalsIgnoreCase(
@@ -388,7 +432,6 @@ public class CarLogService {
         }
 
         if (B2.equalsIgnoreCase(gateArea)) {
-
             // 입주민 등록차량은 B2에도 입차할 수 있다.
             if (
                     "normal".equalsIgnoreCase(
@@ -398,8 +441,7 @@ public class CarLogService {
                 return true;
             }
 
-            // 일반 방문차량과 긴급·작업 차량은
-            // 등록된 방문기간 안에 B2로 입차할 수 있다.
+            // 방문차량은 등록기간 안에 B2로 입차할 수 있다.
             return "visit".equalsIgnoreCase(
                     cameraData.getVehicleType()
             ) && isWithinVisitPeriod(cameraData);
@@ -429,6 +471,7 @@ public class CarLogService {
         );
     }
 
+    // OCR 촬영시각을 입출차 처리시각으로 변환한다.
     private LocalDateTime captureTime(
             CameraDataDTO cameraData
     ) {
@@ -438,6 +481,7 @@ public class CarLogService {
                 .toLocalDateTime();
     }
 
+    // 보정된 차량번호를 우선 반환한다.
     private String resolvedCarNo(
             CameraDataDTO cameraData
     ) {
@@ -451,6 +495,7 @@ public class CarLogService {
         return cameraData.getOcrCarNo();
     }
 
+    // 처리 가능한 차량번호가 있는지 확인한다.
     private boolean hasCarNo(
             CameraDataDTO cameraData
     ) {
