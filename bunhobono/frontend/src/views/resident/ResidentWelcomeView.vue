@@ -361,7 +361,7 @@ onMounted(() => memberStore.loadMypage());
 .page-state.error { color: #a34343; }
 .retry-button { min-height: 42px; padding: 0 18px; color: #fff; background: #2f83d5; }
 /* 1280 x 720 화면에서 웰컴 메뉴가 한눈에 보이도록 높이를 줄인다. */
-@media (min-width: 601px) and (max-height: 760px) {
+@media (pointer: fine) and (min-width: 821px) and (max-height: 760px) {
   .exit-request-page { width:100%;height:calc(100dvh - var(--header-height));min-height:0;padding:10px 20px;box-sizing:border-box;place-items:center;overflow:hidden; }
   .exit-kiosk-card { width:min(820px,100%);padding:16px 36px 14px;box-sizing:border-box;border-radius:24px; }
   .welcome-mode-card .kiosk-welcome { padding:0 16px 12px; }
@@ -417,7 +417,8 @@ onMounted(() => memberStore.loadMypage());
         url('@/assets/images/back.jpg')
             center center / cover fixed no-repeat;
 }
-@media (max-width: 600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .exit-request-page { padding: 20px 12px 50px; }
   .exit-kiosk-card { padding: 28px 18px 22px; border-radius: 24px; }
   .kiosk-welcome { padding-bottom: 28px; }

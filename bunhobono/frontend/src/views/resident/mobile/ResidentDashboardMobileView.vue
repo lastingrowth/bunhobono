@@ -124,6 +124,34 @@
 
         </template>
 
+        <!-- [공지 팝업] 모바일 로그인 후 최신 공지 포스터를 보여준다. -->
+        <dialog ref="boardPopupDialog" class="mobile-board-popup">
+            <article v-if="popupBoard" class="mobile-board-popup-card">
+                <button
+                    type="button"
+                    class="mobile-board-popup-poster"
+                    :aria-label="`${popupBoard.title} 상세보기`"
+                    @click="openPopupBoardDetail"
+                >
+                    <img :src="popupImageUrl" :alt="popupBoard.title">
+                </button>
+
+                <div class="mobile-board-popup-actions">
+                    <label>
+                        <input
+                            v-model="hidePopupTodayChecked"
+                            type="checkbox"
+                            @change="changePopupTodayHidden"
+                        >
+                        <span>오늘 하루 보지 않기</span>
+                    </label>
+                    <button type="button" class="mobile-board-popup-close" @click="closeBoardPopup">
+                        닫기
+                    </button>
+                </div>
+            </article>
+        </dialog>
+
     </main>
 </template>
 
@@ -140,6 +168,10 @@ const dashboardStore = useResidentDashboardStore();
 const boardStore = useBoardStore();
 const { loading, errorMessage, dashboard, residenceText, normalVehicles, parkingStatusList, weather } = storeToRefs(dashboardStore);
 const vehicleStatusNow = ref(Date.now());
+const boardPopupDialog = ref(null);
+const popupBoard = ref(null);
+const popupImageUrl = ref("");
+const hidePopupTodayChecked = ref(false);
 let vehicleStatusTimer;
 
 const QUICK_TAB_STORAGE_KEY = "resident-dashboard-quick-tab";
@@ -213,6 +245,52 @@ const isNewBoard = (board) => {
     return !Number.isNaN(createdAt) && Date.now() - createdAt >= 0 && Date.now() - createdAt < 259200000;
 };
 
+// [공지 팝업] 오늘 날짜를 로컬 시간 기준으로 만든다.
+const todayKey = () => {
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
+const closeBoardPopup = () => boardPopupDialog.value?.close();
+
+// [공지 팝업] 포스터를 누르면 해당 공지사항 상세 화면으로 이동한다.
+const openPopupBoardDetail = () => {
+    const boardNo = popupBoard.value?.boardNo;
+    closeBoardPopup();
+    if (boardNo) go(`/resident/boards/${boardNo}/detail`);
+};
+
+// [공지 팝업] 체크한 공지를 오늘 하루 동안 다시 표시하지 않는다.
+const changePopupTodayHidden = () => {
+    if (popupBoard.value && hidePopupTodayChecked.value) {
+        localStorage.setItem(
+            "residentBoardPopupHidden",
+            `${popupBoard.value.boardNo}|${todayKey()}`
+        );
+        closeBoardPopup();
+        return;
+    }
+
+    localStorage.removeItem("residentBoardPopupHidden");
+};
+
+// [공지 팝업] 이미지가 있는 최신 공지사항을 모바일에서 한 번 표시한다.
+const showLatestBoardPopup = () => {
+    const board = boardStore.list.find(
+        (item) => item.hasImage && boardStore.imageUrls[item.boardNo]
+    );
+    if (!board) return;
+
+    const hiddenValue = localStorage.getItem("residentBoardPopupHidden");
+    if (hiddenValue === `${board.boardNo}|${todayKey()}`) return;
+
+    popupBoard.value = board;
+    popupImageUrl.value = boardStore.imageUrls[board.boardNo];
+    hidePopupTodayChecked.value = false;
+    boardPopupDialog.value?.showModal();
+};
+
 const go = (path) => router.push(path);
 const openAiChat = () => window.dispatchEvent(new CustomEvent("open-ai-chat"));
 const openQuickMenu = (item) => {
@@ -233,6 +311,7 @@ const loadPage = async () => {
     await Promise.all([dashboardStore.loadDashboard(), boardStore.loadList().catch(() => [])]);
     const imageBoards = boardStore.list.filter((board) => board.hasImage).slice(0, 5);
     await Promise.all(imageBoards.map((board) => boardStore.loadImage(board.boardNo).catch(() => "")));
+    showLatestBoardPopup();
 };
 
 onMounted(() => {
@@ -255,5 +334,13 @@ onUnmounted(() => window.clearInterval(vehicleStatusTimer));
 .parking-status-card{padding:16px 18px}.parking-status-card header{margin-bottom:8px}.parking-status-card h2{font-size:18px}.parking-donuts{display:grid;grid-template-columns:1fr 1fr;gap:14px}.parking-donuts article{display:flex;min-width:0;align-items:center;flex-direction:column;padding:10px 6px;border-radius:14px;background:#f3f8fc}.parking-donut{display:grid;width:88px;aspect-ratio:1;place-items:center;border-radius:50%;background:conic-gradient(#1677d2 0 var(--parking-rate),#dceaf5 var(--parking-rate) 360deg)}.parking-donut::before{content:"";grid-area:1/1;width:62px;aspect-ratio:1;border-radius:50%;background:#fff}.parking-donut span{z-index:1;grid-area:1/1;color:#155d98;font-size:17px;font-weight:900}.parking-donuts article>strong{margin-top:8px;color:#264e70;font-size:14px}.parking-donuts article>small{margin-top:2px;color:#6a8296;font-size:11px}.parking-car-numbers{display:grid;width:100%;gap:4px;margin-top:7px}.parking-car-numbers span{overflow:hidden;padding:5px 4px;border-radius:7px;color:#1768a7;font-size:11px;font-weight:850;text-align:center;text-overflow:ellipsis;white-space:nowrap;background:#deeffc}.parking-car-numbers .no-parking-car{color:#8293a0;font-weight:650;background:#e9f0f5}
 .notice-card ul{margin:0;padding:0;list-style:none}.notice-card li+li{border-top:1px solid #edf0f3}.notice-card li>button{display:flex;width:100%;align-items:center;justify-content:space-between;padding:14px 2px;border:0;text-align:left;background:transparent}.notice-card li span{min-width:0}.notice-card li strong{display:block;overflow:hidden;font-size:15px;text-overflow:ellipsis;white-space:nowrap}.notice-card em{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:7px;vertical-align:middle;color:#e44848;font-size:10px;font-style:normal;font-weight:900;background:#fff0f1}.notice-card li b{color:#98a3ad}.empty-message{color:#8796a5;text-align:center}
 .notice-poster-section{width:100%;margin-top:9px}.notice-poster-track{display:flex;width:100%;gap:12px;padding:0 0 8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}.notice-poster-track::-webkit-scrollbar{display:none}.notice-poster-card{position:relative;min-width:100%;height:250px;overflow:hidden;padding:0;opacity:1!important;scroll-snap-align:start;-webkit-tap-highlight-color:transparent}.notice-poster-card:is(:hover,:focus,:focus-visible,:active){border-color:rgba(157,192,222,.8)!important;outline:0!important;opacity:1!important;background:#fff!important;box-shadow:0 9px 26px rgba(35,91,142,.11)!important;transform:none!important}.notice-poster-card img{display:block;width:100%;height:100%;object-fit:contain;opacity:1!important;background:#fff}.notice-poster-copy{position:absolute;inset:auto 0 0;display:block;padding:28px 15px 14px;color:#fff;text-align:left;background:linear-gradient(transparent,rgba(13,52,85,.88))}.notice-poster-copy small{display:block;margin-bottom:3px;color:#a9d9ff;font-size:10px;font-weight:900;letter-spacing:.12em}.notice-poster-copy strong{display:block;overflow:hidden;font-size:16px;text-overflow:ellipsis;white-space:nowrap}.notice-poster-guide{margin:2px 2px 0;color:#7890a4;font-size:12px;font-weight:700;text-align:right}
-@media (min-width:761px){.mobile-dashboard{display:none}}
+.mobile-board-popup{width:min(420px,calc(100vw - 64px));max-width:calc(100vw - 64px);max-height:70dvh;padding:0;overflow:hidden;border:0;border-radius:12px;background:#fff;box-shadow:0 18px 54px rgba(15,35,52,.42)}
+.mobile-board-popup::backdrop{background:rgba(13,25,36,.58)}
+.mobile-board-popup-card{display:flex;width:100%;max-height:70dvh;flex-direction:column;margin:0;overflow:hidden;background:#fff}
+.mobile-board-popup-poster{display:block;width:100%;max-height:calc(70dvh - 52px);margin:0;padding:0;overflow:hidden;border:0;border-radius:0;outline:0;background:#fff;line-height:0}
+.mobile-board-popup-poster img{display:block;width:100%;max-height:calc(70dvh - 52px);object-fit:contain;background:#fff}
+.mobile-board-popup-actions{display:flex;min-height:52px;align-items:center;justify-content:flex-end;gap:8px;padding:8px 10px;background:#fff}
+.mobile-board-popup-actions label{display:inline-flex;align-items:center;gap:5px;color:#5e7182;font-size:12px;cursor:pointer}
+.mobile-board-popup-actions input{width:15px;height:15px;margin:0;accent-color:#2f83d5}
+.mobile-board-popup-close{padding:7px 10px;border:1px solid #2f83d5;border-radius:8px;color:#fff;font-size:12px;font-weight:800;background:#2f83d5}
 </style>

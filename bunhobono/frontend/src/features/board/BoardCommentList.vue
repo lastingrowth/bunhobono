@@ -316,7 +316,8 @@ button:disabled { cursor: default; opacity: .55; }
 .comment-section:not(.admin-comments) .comment-content :deep(.comment-meta strong) { color: #263746; }
 .comment-section:not(.admin-comments) .comment-content :deep(.comment-meta .edited) { color: #557188; }
 .comment-section:not(.admin-comments) .comment-content :deep(.delete) { color: #111; }
-@media (max-width: 600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .comment-section { min-width: 0; padding: 14px 0; }
   .write-form { padding: 14px; }
   .write-form textarea { min-height: 76px; font-size: 16px; }

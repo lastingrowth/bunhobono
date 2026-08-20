@@ -144,7 +144,8 @@ async function loginGo() {
 }
 
 /* 작은 화면에서는 화면 가장자리 간격을 줄인다. */
-@media (max-width: 700px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .ocr-demo-link {
     right: 16px;
     bottom: 16px;
@@ -152,7 +153,8 @@ async function loginGo() {
 }
 
 /* 모바일 로그인 화면 */
-@media (max-width: 560px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .login-card {
     padding: 28px 22px;
   }

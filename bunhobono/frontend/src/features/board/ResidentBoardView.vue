@@ -441,7 +441,8 @@ watch(currentPage, () => {
   white-space: pre-wrap;
 }
 
-@media (max-width: 760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .resident-board-list-page {
     width: calc(100% - 24px);
     margin: 12px auto;

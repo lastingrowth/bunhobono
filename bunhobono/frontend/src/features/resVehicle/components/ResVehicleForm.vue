@@ -411,7 +411,8 @@ function pad(value) {
   background: #e3ebf1;
 }
 
-@media (max-width: 600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   table, tbody, tr, th, td { display: block; width: 100%; }
   table { min-width: 0; }
   tr { padding: 10px 0; }

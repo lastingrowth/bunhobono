@@ -170,7 +170,8 @@ tr.unread { background: #f2fbfe; }
 .delete-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .delete-dialog-actions button { min-width: 72px; height: 38px; border: 1px solid #ccd7e1; border-radius: 6px; background: #fff; cursor: pointer; }
 .delete-dialog-actions .delete-confirm-button { border-color: #db4b4b; color: #fff; background: #db4b4b; }
-@media (max-width:700px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .member-notification {
     box-sizing: border-box;
     min-width: 0;

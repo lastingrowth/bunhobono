@@ -1194,7 +1194,8 @@ function backToPasswordContactStep() {
     transform: none;
 }
 
-@media (max-width: 560px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .find-account-card {
         min-height: auto;
         padding: 26px 18px;

@@ -113,7 +113,8 @@ textarea {
   }
 }
 
-@media (max-width: 600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .resident-layout:not(.resident-welcome-layout) .content {
     padding-bottom: calc(94px + env(safe-area-inset-bottom));
   }
@@ -135,7 +136,15 @@ textarea {
 }
 
 /* [모바일] 입주민 공통 레이아웃 - 관리자 화면에는 적용하지 않는다. */
-@media (max-width: 760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
+  /* [모바일] 아이패드 미니 시연에서 전체 글자의 가독성을 높인다. */
+  .resident-layout,
+  .auth-layout.auth-layout--mobile-ready {
+    -webkit-text-size-adjust: 112%;
+    text-size-adjust: 112%;
+  }
+
   .resident-layout .content {
     overflow-x: hidden;
     background-attachment: scroll;
@@ -812,7 +821,8 @@ textarea {
 }
 
 /* [모바일] 로그인 전 인증 화면의 공통 바깥 틀 */
-@media (max-width: 560px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .auth-layout.auth-layout--mobile-ready {
     width: 100%;
     min-height: 100vh;

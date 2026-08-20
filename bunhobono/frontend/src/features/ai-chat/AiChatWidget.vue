@@ -153,6 +153,7 @@
 <script setup>
 import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useAiChatStore } from "./aiChatStore";
+import { isMobileDevice } from "@/shared/responsive/mobileDevice";
 
 const store = useAiChatStore();
 
@@ -171,7 +172,7 @@ let panelDragStart = null;
 let dragged = false;
 
 const startDrag = (event) => {
-    if (!window.matchMedia("(max-width: 600px)").matches) return;
+    if (!isMobileDevice()) return;
 
     const rect = widget.value?.getBoundingClientRect();
     if (!rect) return;
@@ -208,7 +209,7 @@ const endDrag = (event) => {
 };
 
 const startPanelDrag = (event) => {
-    if (window.matchMedia("(max-width: 600px)").matches
+    if (isMobileDevice()
         || event.target.closest("button")) return;
 
     const rect = chatPanel.value?.getBoundingClientRect();
@@ -266,7 +267,7 @@ const openFromMenu = () => {
 };
 
 const resetDesktopPosition = () => {
-    if (!window.matchMedia("(max-width: 600px)").matches) {
+    if (!isMobileDevice()) {
         widgetPosition.value = {};
         panelPosition.value = {};
     }
@@ -288,7 +289,7 @@ const openChat = async () => {
     await nextTick();
 
     // 모바일에서는 창 전체를 먼저 보여주고, 입력창을 누를 때만 키보드를 연다.
-    if (!window.matchMedia("(max-width: 600px)").matches) {
+    if (!isMobileDevice()) {
         questionInput.value?.focus();
     }
     scrollToBottom();
@@ -483,7 +484,7 @@ watch(
     touch-action: none;
 }
 
-@media (min-width: 601px) {
+@media (hover: hover) and (pointer: fine) {
     .ai-chat-hide {
         display: none;
     }
@@ -665,7 +666,8 @@ watch(
     opacity: .55;
 }
 
-@media (max-width: 600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .ai-chat-backdrop {
         position: fixed;
         z-index: 1290;

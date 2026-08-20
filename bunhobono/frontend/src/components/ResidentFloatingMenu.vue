@@ -253,7 +253,8 @@ onMounted(() => {
 }
 
 /* [모바일] 상단 메뉴를 사용하므로 왼쪽 플로팅 메뉴는 숨긴다. */
-@media(max-width:760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .resident-floating-menu {
         display: none;
     }
