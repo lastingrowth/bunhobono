@@ -645,7 +645,7 @@ async def ocr(
 
 
 
-# C:\ProgramData\anaconda3\envs\bono_gpu\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000|
+# C:\ProgramData\anaconda3\envs\bono_gpu\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 
-# python -m pip install "uvicorn[standard]"
+# C:\ProgramData\anaconda3\envs\bono_gpu\python.exe -m pip install "uvicorn[standard]"
