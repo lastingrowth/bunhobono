@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -21,6 +22,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -30,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class VerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(VerificationService.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     // ================================
     // 인증 유효시간과 SOLAPI 주소
@@ -242,6 +245,24 @@ public class VerificationService {
     // SOLAPI 문자 발송
     // ================================
 
+    // 예지보전 위험 알림을 인증번호 생성·검증 과정과 무관하게 발송한다.
+    public void sendPdmDangerSms(
+            String phone,
+            String message
+    ) {
+        String normalizedPhone = normalizePhone(phone);
+        String normalizedMessage = message == null ? "" : message.trim();
+
+        if (normalizedPhone.isBlank()) {
+            throw error(HttpStatus.BAD_REQUEST, "문자 수신번호가 없습니다.");
+        }
+        if (normalizedMessage.isBlank()) {
+            throw error(HttpStatus.BAD_REQUEST, "문자 내용이 없습니다.");
+        }
+
+        sendSmsText(normalizedPhone, normalizedMessage);
+    }
+
     // SOLAPI로 보안코드 문자를 보낸다.
     private void sendSms(
             String phone,
@@ -252,11 +273,25 @@ public class VerificationService {
                         + code
                         + "]를 입력해주세요.";
 
-        String requestBody = """
-                {"messages":[{"to":"%s","from":"%s","text":"%s"}],"showMessageList":true}
-                """.formatted(phone, senderNumber, text);
+        sendSmsText(phone, text);
+    }
 
+    // 인증 문자와 예지보전 알림이 함께 사용하는 SOLAPI 전송 처리다.
+    private void sendSmsText(String phone, String text) {
         try {
+            String requestBody = OBJECT_MAPPER.writeValueAsString(
+                    Map.of(
+                            "messages", List.of(
+                                    Map.of(
+                                            "to", phone,
+                                            "from", senderNumber,
+                                            "text", text
+                                    )
+                            ),
+                            "showMessageList", true
+                    )
+            );
+
             HttpRequest request = HttpRequest.newBuilder(
                             URI.create(SOLAPI_SEND_URL)
                     )
@@ -298,14 +333,14 @@ public class VerificationService {
             Thread.currentThread().interrupt();
             throw error(
                     HttpStatus.BAD_GATEWAY,
-                    "보안코드를 발송하지 못했습니다."
+                    "문자를 발송하지 못했습니다."
             );
 
         } catch (Exception exception) {
             log.error("Failed to send SMS through SOLAPI", exception);
             throw error(
                     HttpStatus.BAD_GATEWAY,
-                    "보안코드를 발송하지 못했습니다."
+                    "문자를 발송하지 못했습니다."
             );
         }
     }

@@ -70,6 +70,20 @@ public class PredictiveMaintenanceClient {
                 );
     }
 
+    // FastAPI에서 로봇 1~8의 다음 예측 결과를 한 묶음으로 받는다.
+    public List<PredictiveMaintenanceResponseDTO> predictNextRobots() {
+        return restClient.post()
+                .uri(
+                        "/demo/predictive-maintenance/robot/next-all"
+                )
+                .retrieve()
+                .body(
+                        new ParameterizedTypeReference<
+                                List<PredictiveMaintenanceResponseDTO>
+                                >() {}
+                );
+    }
+
     // FastAPI에서 카메라 1~12의 다음 예측 결과를 한 묶음으로 받는다.
     public List<PredictiveMaintenanceResponseDTO> predictNextCameras() {
         return restClient.post()
@@ -82,5 +96,38 @@ public class PredictiveMaintenanceClient {
                                 List<PredictiveMaintenanceResponseDTO>
                                 >() {}
                 );
+    }
+
+    // 카메라 위험 행 고정을 해제한다.
+    public void completeCameraAction(int cameraNo) {
+        restClient.post()
+                .uri(
+                        "/demo/predictive-maintenance/camera/{equipmentNo}/complete-action",
+                        "ANT-%03d".formatted(cameraNo)
+                )
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    // 게이트 위험 행 고정을 해제한다.
+    public void completeGateAction(int gateNo) {
+        restClient.post()
+                .uri(
+                        "/demo/predictive-maintenance/gate/{equipmentNo}/complete-action",
+                        "GATE-%02d".formatted(gateNo)
+                )
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    // 로봇 위험 행 고정을 해제한다.
+    public void completeRobotAction(int robotNo) {
+        restClient.post()
+                .uri(
+                        "/demo/predictive-maintenance/robot/{equipmentNo}/complete-action",
+                        "ROBOT_%02d".formatted(robotNo)
+                )
+                .retrieve()
+                .toBodilessEntity();
     }
 }

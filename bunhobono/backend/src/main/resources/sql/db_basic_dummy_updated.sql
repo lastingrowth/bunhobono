@@ -4,6 +4,8 @@ TRUNCATE TABLE
     trash_bin,
     notice,
     board,
+    camera_pdm,
+    gate_pdm,
     robot_pdm,
     robot_log,
     robot_task,

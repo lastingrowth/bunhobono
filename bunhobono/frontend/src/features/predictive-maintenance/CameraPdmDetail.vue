@@ -86,7 +86,7 @@
         </header>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>분석시각</th><th>등급</th><th>정상</th><th>주의</th><th>위험</th></tr></thead>
+            <thead><tr><th>분석시각</th><th>등급</th><th>정상</th><th>주의</th><th>위험</th><th v-if="activeHistoryTab === 'saved'">조치 상태</th><th v-if="activeHistoryTab === 'saved'">관리</th></tr></thead>
             <tbody>
               <tr v-for="record in visibleHistory" :key="record.pdmNo || `${record.cameraNo}-${record.predictedAt}`">
                 <td>{{ formatDateTime(record.predictedAt) }}</td>
@@ -94,13 +94,16 @@
                 <td>{{ formatPercent(record.normalProbability) }}</td>
                 <td>{{ formatPercent(record.warningProbability) }}</td>
                 <td>{{ formatPercent(record.criticalProbability) }}</td>
+                <td v-if="activeHistoryTab === 'saved'"><span class="action-status" :class="record.actionStatus?.toLowerCase()">{{ actionStatusLabel(record.actionStatus) }}</span></td>
+                <td v-if="activeHistoryTab === 'saved'" class="action-cell"><button v-if="record.actionStatus === 'ACTION_REQUIRED'" type="button" class="action-button" @click="openActionDialog(record)">조치 완료</button><div v-else-if="record.actionStatus === 'COMPLETED'" class="completed-action"><span>{{ formatDateTime(record.actionCompletedAt) }}</span><button type="button" class="action-view-button" @click="openActionDialog(record)">조치내용 보기</button></div><span v-else>-</span></td>
               </tr>
-              <tr v-if="visibleHistory.length === 0"><td colspan="5" class="empty">{{ emptyHistoryMessage }}</td></tr>
+              <tr v-if="visibleHistory.length === 0"><td :colspan="activeHistoryTab === 'saved' ? 7 : 5" class="empty">{{ emptyHistoryMessage }}</td></tr>
             </tbody>
           </table>
         </div>
       </section>
     </template>
+    <PdmActionDialog v-if="selectedAction" :record="selectedAction" equipment-type="CAMERA" :equipment-name="camera?.cameraName || `카메라 #${cameraNo}`" :loading="actionSubmitting" :read-only="selectedAction.actionStatus === 'COMPLETED'" @cancel="closeActionDialog" @submit="completeSelectedAction" />
   </main>
 </template>
 
@@ -108,8 +111,10 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getCameraList } from '@/features/camera/cameraApi';
+import PdmActionDialog from './PdmActionDialog.vue';
 import {
   analyzeAllCameras,
+  completeCameraPdmAction,
   getLatestCameraPdm,
   getRecentCameraPdm,
   getSavedCameraPdm,
@@ -124,6 +129,8 @@ const savedHistory = ref([]);
 const activeHistoryTab = ref('realtime');
 const loading = ref(false);
 const errorMessage = ref('');
+const selectedAction = ref(null);
+const actionSubmitting = ref(false);
 let timer;
 
 const cameraNo = computed(() => Number(route.params.cameraNo));
@@ -168,6 +175,24 @@ const changeHistoryTab = async (tab) => {
       errorMessage.value = '저장 이력을 불러오지 못했습니다.';
     }
   }
+};
+
+const actionStatusLabel = (status) => ({ NOT_REQUIRED: '조치 불필요', ACTION_REQUIRED: '조치 필요', COMPLETED: '조치 완료' }[status] || '-');
+const openActionDialog = (record) => { if (record?.pdmNo && ['ACTION_REQUIRED', 'COMPLETED'].includes(record.actionStatus)) selectedAction.value = record; };
+const closeActionDialog = () => { if (!actionSubmitting.value) selectedAction.value = null; };
+const completeSelectedAction = async (actionNote) => {
+  if (!selectedAction.value?.pdmNo || actionSubmitting.value) return;
+  actionSubmitting.value = true;
+  errorMessage.value = '';
+  try {
+    await completeCameraPdmAction(selectedAction.value.pdmNo, actionNote);
+    selectedAction.value = null;
+    await loadSavedHistory();
+    await refresh();
+  } catch (error) {
+    console.error('카메라 예지보전 조치 완료 실패', error);
+    errorMessage.value = '조치 완료 처리에 실패했습니다.';
+  } finally { actionSubmitting.value = false; }
 };
 
 const refresh = async (manual = false) => {
@@ -505,6 +530,15 @@ th {
   color: #ffdadd;
   background: #66383c;
 }
+
+.action-status { display: inline-block; padding: 3px 7px; border: 1px solid var(--admin-line); color: var(--admin-muted); }
+.action-status.action_required { border-color: #c45a60; color: #ffdadd; background: #66383c; }
+.action-status.completed { border-color: #4f8c6b; color: #d9f7e6; background: #315641; }
+.action-cell { white-space: normal; }
+.action-button { padding: 4px 9px; border: 1px solid #c45a60; color: #ffdadd; background: #66383c; font-size: 11px; font-weight: 700; cursor: pointer; }
+.action-view-button { padding: 3px 8px; border: 1px solid #5b88b2; color: #d8ecff; background: #334c63; font-size: 10px; font-weight: 700; cursor: pointer; }
+.completed-action { display: grid; gap: 2px; }
+.completed-action small { overflow: hidden; color: var(--admin-muted); text-overflow: ellipsis; white-space: nowrap; }
 
 .message,
 .empty {

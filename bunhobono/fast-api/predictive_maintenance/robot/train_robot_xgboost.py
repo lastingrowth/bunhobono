@@ -13,6 +13,12 @@ from sklearn.metrics import (
 )
 from xgboost import XGBClassifier
 
+try:
+    from .prepare_robot_replay_csv import expand_to_eight_robots
+except ImportError:
+    # 파일 경로로 직접 실행하는 경우에도 같은 생성 함수를 사용한다.
+    from prepare_robot_replay_csv import expand_to_eight_robots
+
 
 # ============================================================
 # 1. 기본 설정
@@ -289,14 +295,18 @@ test_df = pd.concat(
     ignore_index=True
 )
 
-test_df.drop(columns=["target_id"]).to_csv(
+deployment_test_df = expand_to_eight_robots(
+    test_df.drop(columns=["target_id"])
+)
+
+deployment_test_df.to_csv(
     TEST_DATA_PATH,
     index=False,
     encoding="utf-8-sig"
 )
 print(
     f"테스트 데이터 저장: {TEST_DATA_PATH} "
-    f"({len(test_df)}건)"
+    f"({len(deployment_test_df)}건, 로봇 8대)"
 )
 
 X_train = train_df[FEATURE_COLS]

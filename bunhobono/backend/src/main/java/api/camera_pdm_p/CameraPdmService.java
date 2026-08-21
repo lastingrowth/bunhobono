@@ -2,8 +2,11 @@ package api.camera_pdm_p;
 
 import api.predictive_maintenance_p.PredictiveMaintenanceClient;
 import api.predictive_maintenance_p.PredictiveMaintenanceResponseDTO;
+import api.predictive_maintenance_p.PdmActionAuthorizationService;
 import jakarta.annotation.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,6 +32,9 @@ public class CameraPdmService {
 
     @Resource
     private PredictiveMaintenanceClient predictiveMaintenanceClient;
+
+    @Resource
+    private PdmActionAuthorizationService pdmActionAuthorizationService;
 
     // 카메라별 최신 예측 결과
     private final Map<Integer, CameraPdmDTO> latestPredictions =
@@ -84,11 +90,9 @@ public class CameraPdmService {
     ) {
         CameraPdmDTO dto = convertToCameraPdmDTO(response);
 
-        latestPredictions.put(dto.getCameraNo(), dto);
-
+        CameraPdmDTO latestDto = saveAbnormalIfRequired(dto);
+        latestPredictions.put(dto.getCameraNo(), latestDto);
         addRecentPrediction(dto);
-
-        saveAbnormalIfRequired(dto);
     }
 
     private void addRecentPrediction(CameraPdmDTO dto) {
@@ -141,6 +145,14 @@ public class CameraPdmService {
                 response.getPredictionCorrect()
         );
 
+        dto.setSourceRowIndex(response.getRowIndex());
+        dto.setSensorValues(response.getSensorValues());
+        dto.setActionStatus(
+                Boolean.TRUE.equals(response.getActionRequired())
+                        ? "ACTION_REQUIRED"
+                        : "NOT_REQUIRED"
+        );
+
         dto.setSensorCollectedAt(
                 parseSensorCollectedAt(
                         response.getSensorCollectedAt()
@@ -155,10 +167,77 @@ public class CameraPdmService {
     }
 
     // 주의·위험 결과는 분석 직후 즉시 저장한다.
-    private void saveAbnormalIfRequired(CameraPdmDTO dto) {
+    private CameraPdmDTO saveAbnormalIfRequired(CameraPdmDTO dto) {
         if ("주의".equals(dto.getRiskLevel())
                 || "위험".equals(dto.getRiskLevel())) {
-            cameraPdmMapper.savePrediction(dto);
+            int inserted = cameraPdmMapper.savePrediction(dto);
+            if (inserted == 1
+                    && "ACTION_REQUIRED".equals(dto.getActionStatus())) {
+                pdmActionAuthorizationService.sendDangerAlert(
+                        "카메라 ANT-%03d".formatted(dto.getCameraNo()),
+                        dto.getSensorValues()
+                );
+            }
+        }
+
+        if ("위험".equals(dto.getRiskLevel())) {
+            CameraPdmDTO active = cameraPdmMapper.findActiveAction(
+                    dto.getCameraNo()
+            );
+            if (active != null) {
+                return active;
+            }
+        }
+        return dto;
+    }
+
+    // 활성 위험을 완료 처리하고 FastAPI가 다음 CSV 행으로 진행하게 한다.
+    public CameraPdmDTO completeAction(
+            long pdmNo,
+            String actionNote,
+            String loginId
+    ) {
+        CameraPdmDTO target = cameraPdmMapper.detail(pdmNo);
+        validateActionTarget(target);
+
+        int memberNo = pdmActionAuthorizationService
+                .requireMemberNo(loginId);
+        String normalizedNote = pdmActionAuthorizationService
+                .normalizeActionNote(actionNote);
+
+        predictiveMaintenanceClient.completeCameraAction(
+                target.getCameraNo()
+        );
+
+        if (cameraPdmMapper.completeAction(
+                pdmNo,
+                memberNo,
+                normalizedNote
+        ) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 완료되었거나 조치할 수 없는 예측 결과입니다."
+            );
+        }
+
+        CameraPdmDTO completed = cameraPdmMapper.detail(pdmNo);
+        latestPredictions.put(completed.getCameraNo(), completed);
+        return completed;
+    }
+
+    private void validateActionTarget(CameraPdmDTO target) {
+        if (target == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "카메라 예지보전 결과가 없습니다."
+            );
+        }
+        if (!"위험".equals(target.getRiskLevel())
+                || !"ACTION_REQUIRED".equals(target.getActionStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "현재 조치가 필요한 위험 결과가 아닙니다."
+            );
         }
     }
 

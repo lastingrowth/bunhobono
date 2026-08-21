@@ -50,4 +50,11 @@ public class PredictiveMaintenanceResponseDTO {
     // FastAPI에서 예측한 시각
     @JsonProperty("predicted_at")
     private LocalDateTime predictedAt;
+
+    // 위험 행이 조치 대상인지 여부
+    @JsonProperty("action_required")
+    private Boolean actionRequired;
+
+    // 관리자가 조치할 때까지 현재 CSV 행이 고정되었는지 여부
+    private Boolean held;
 }

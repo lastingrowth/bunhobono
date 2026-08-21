@@ -57,3 +57,8 @@ toss:
 
 fast-api:
    base-url: ${FAST_API_BASE_URL:http://localhost:8000}
+
+solapi:
+  api-key: NCSIODJ88BTN5EY6
+  api-secret: EPYVBL0HWNI5JXT8K4KVF6MDMDMFUR37
+  sender-number: "010-3250-6720"

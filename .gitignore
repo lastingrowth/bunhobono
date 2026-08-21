@@ -1,6 +1,9 @@
 # ==========================================================
 # Frontend (Vue / Vite)
 # ==========================================================
+# 프로젝트 위치와 관계없이 Node.js 설치 의존성은 Git에서 제외한다.
+**/node_modules/
+
 bunhobono/frontend/node_modules/
 bunhobono/frontend/dist/
 bunhobono/frontend/.vite/
@@ -196,3 +199,6 @@ coverage/
 .cache/tools/
 tools/
 docs/
+
+# Codex local working files
+bunhobono/.codex_tmp/

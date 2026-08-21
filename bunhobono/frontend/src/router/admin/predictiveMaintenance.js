@@ -1,6 +1,7 @@
 import PredictiveMaintenanceView from '@/features/predictive-maintenance/PredictiveMaintenanceView.vue';
 import CameraPdmDetail from '@/features/predictive-maintenance/CameraPdmDetail.vue';
 import GatePdmDetail from '@/features/predictive-maintenance/GatePdmDetail.vue';
+import RobotPdmDetail from '@/features/predictive-maintenance/RobotPdmDetail.vue';
 
 export default [
   {
@@ -17,5 +18,10 @@ export default [
     path: 'predictive-maintenance/gates/:gateNo',
     name: 'AdminGatePdmDetail',
     component: GatePdmDetail,
+  },
+  {
+    path: 'predictive-maintenance/robots/:robotNo',
+    name: 'AdminRobotPdmDetail',
+    component: RobotPdmDetail,
   },
 ];
