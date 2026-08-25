@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import api.robot_p.RobotService;
 import api.gate_pdm_p.GatePdmService;
 import api.camera_pdm_p.CameraPdmService;
+import api.robot_pdm_p.RobotPdmService;
 
 @Component
 public class Scheduler {
@@ -42,6 +43,9 @@ public class Scheduler {
 
     @Resource
     private CameraPdmService cameraPdmService;
+
+    @Resource
+    private RobotPdmService robotPdmService;
 
     // 매일 자정: 촬영 후 3개월이 지난 카메라 데이터를 휴지통으로 이동한다.
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
@@ -135,6 +139,15 @@ public class Scheduler {
         cameraPdmService.analyzeAll();
     }
 
+    // 5초마다 로봇 1~8의 센서 데이터를 한 묶음으로 분석한다.
+    @Scheduled(
+            fixedDelay = 5000,
+            initialDelay = 5000
+    )
+    public void analyzeRobotPredictiveMaintenance() {
+        robotPdmService.analyzeAll();
+    }
+
     // 매시 정각에 카메라별 최신 정상 예지보전 결과를 저장한다.
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
     public void saveHourlyCameraPredictiveMaintenance() {
@@ -145,5 +158,11 @@ public class Scheduler {
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
     public void saveHourlyGatePredictiveMaintenance() {
         gatePdmService.saveHourlyNormalPredictions();
+    }
+
+    // 매시 정각에 로봇별 최신 정상 예지보전 결과를 저장한다.
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    public void saveHourlyRobotPredictiveMaintenance() {
+        robotPdmService.saveHourlyNormalPredictions();
     }
 }

@@ -666,15 +666,37 @@ CREATE TABLE gate_pdm (
     critical_probability NUMERIC(6,5), -- 위험 확률
     expected_risk_level VARCHAR(10), -- 테스트 CSV의 실제 정답
     prediction_correct BOOLEAN,      -- 예측 정답 일치 여부
+    source_row_index INT,             -- 예측에 사용한 테스트 CSV 행 번호
+    sensor_values JSONB,              -- 모델 예측에 사용된 게이트 센서값(JSON)
     sensor_collected_at TIMESTAMPTZ, -- 센서 데이터 수집 시각
     predicted_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,   -- 모델 예측 시각
+    action_status VARCHAR(20) NOT NULL
+        DEFAULT 'NOT_REQUIRED'
+        CHECK (action_status IN (
+            'NOT_REQUIRED', 'ACTION_REQUIRED', 'COMPLETED'
+        )),                           -- 조치 상태: 불필요·조치 필요·조치 완료
+    action_note VARCHAR(500),         -- 관리자가 기록한 점검 및 조치 내용
+    action_by_member_no INT,          -- 조치를 담당하거나 완료한 관리자 번호
+    action_started_at TIMESTAMPTZ,    -- 관리자가 조치를 시작한 시각
+    action_completed_at TIMESTAMPTZ,  -- 관리자가 조치를 완료한 시각
 
     CONSTRAINT fk_gate_pdm_gate
         FOREIGN KEY (gate_no)
         REFERENCES gate(gate_no)
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_gate_pdm_action_member
+        FOREIGN KEY (action_by_member_no)
+        REFERENCES member(member_no)
+        ON DELETE SET NULL
 );
+
+-- 같은 게이트에서 조치되지 않은 위험 사건은 한 건만 유지한다.
+CREATE UNIQUE INDEX uq_gate_pdm_active_critical
+    ON gate_pdm(gate_no)
+    WHERE risk_level = '위험'
+      AND action_status = 'ACTION_REQUIRED';
 -- =====================================================
 -- CAMERA PDM
 -- 카메라 센서값을 XGBoost 모델로 분석한
@@ -691,15 +713,37 @@ CREATE TABLE camera_pdm (
     critical_probability NUMERIC(6,5), -- 위험 확률
     expected_risk_level VARCHAR(10), -- 테스트 CSV의 실제 정답
     prediction_correct BOOLEAN,      -- 모델 예측과 테스트 정답 일치 여부
+    source_row_index INT,             -- 예측에 사용한 테스트 CSV 행 번호
+    sensor_values JSONB,              -- 모델 예측에 사용된 카메라 센서값(JSON)
     sensor_collected_at TIMESTAMPTZ, -- 센서 데이터 수집 시각
     predicted_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,   -- 모델 예측 시각
+    action_status VARCHAR(20) NOT NULL
+        DEFAULT 'NOT_REQUIRED'
+        CHECK (action_status IN (
+            'NOT_REQUIRED', 'ACTION_REQUIRED', 'COMPLETED'
+        )),                           -- 조치 상태: 불필요·조치 필요·조치 완료
+    action_note VARCHAR(500),         -- 관리자가 기록한 점검 및 조치 내용
+    action_by_member_no INT,          -- 조치를 담당하거나 완료한 관리자 번호
+    action_started_at TIMESTAMPTZ,    -- 관리자가 조치를 시작한 시각
+    action_completed_at TIMESTAMPTZ,  -- 관리자가 조치를 완료한 시각
 
     CONSTRAINT fk_camera_pdm_camera
         FOREIGN KEY (camera_no)
         REFERENCES camera(camera_no)
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_camera_pdm_action_member
+        FOREIGN KEY (action_by_member_no)
+        REFERENCES member(member_no)
+        ON DELETE SET NULL
 );
+
+-- 같은 카메라에서 조치되지 않은 위험 사건은 한 건만 유지한다.
+CREATE UNIQUE INDEX uq_camera_pdm_active_critical
+    ON camera_pdm(camera_no)
+    WHERE risk_level = '위험'
+      AND action_status = 'ACTION_REQUIRED';
 
 -- =====================================================
 -- ROBOT TASK
@@ -780,26 +824,48 @@ CREATE TABLE robot_log (
 -- =====================================================
 -- ROBOT PDM
 -- PDM(Predictive Maintenance): 예지보전
--- robot_log에 저장된 센서값을 분석한 고장 위험도와
--- 예지보전 모델의 예측 결과를 관리한다.
+-- 로봇별 센서 CSV를 실제 예지보전 모델로 분석한 결과를 관리한다.
 -- =====================================================
 CREATE TABLE robot_pdm (
-    pdm_no SERIAL PRIMARY KEY,                             -- 예지보전 분석 결과 내부 고유번호
-    robot_log_no INT NOT NULL UNIQUE,                      -- 분석 대상 로봇 로그번호. 로그당 결과는 한 건만 허용
-    risk_score NUMERIC(5,2) NOT NULL,                         -- 모델이 계산한 고장 위험 점수
-    risk_level VARCHAR(10) NOT NULL,                          -- 정상·경고·위험 등의 최종 위험 등급
-    normal_probability NUMERIC(6,5),                          -- 정상 상태일 확률
-    warning_probability NUMERIC(6,5),                         -- 경고 상태일 확률
-    critical_probability NUMERIC(6,5),                        -- 위험 상태일 확률
-    prediction_reason VARCHAR(500),                           -- 해당 예측 결과가 나온 주요 원인 또는 설명
-    model_version VARCHAR(50) NOT NULL,                       -- 예측에 사용한 모델 버전
+    pdm_no SERIAL PRIMARY KEY,                                 -- 예지보전 분석 결과 내부 고유번호
+    robot_no INT NOT NULL,                                     -- 분석 대상 로봇 번호
+    risk_score NUMERIC(6,5) NOT NULL,                          -- 모델이 선택한 위험 등급의 확률
+    risk_level VARCHAR(10) NOT NULL,                           -- 정상·주의·위험 등의 최종 위험 등급
+    normal_probability NUMERIC(6,5),                           -- 정상 상태일 확률
+    warning_probability NUMERIC(6,5),                          -- 주의 상태일 확률
+    critical_probability NUMERIC(6,5),                         -- 위험 상태일 확률
+    expected_risk_level VARCHAR(10),                            -- 테스트 CSV에 기록된 실제 정답
+    prediction_correct BOOLEAN,                                -- 모델 예측과 테스트 정답 일치 여부
+    source_row_index INT,                                       -- 예측에 사용한 테스트 CSV 행 번호
+    sensor_values JSONB,                                        -- 모델 예측에 사용된 로봇 센서값(JSON)
+    sensor_collected_at TIMESTAMPTZ,                            -- 센서 데이터 수집 시각
     predicted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 예지보전 모델이 분석한 시각
+    action_status VARCHAR(20) NOT NULL
+        DEFAULT 'NOT_REQUIRED'
+        CHECK (action_status IN (
+            'NOT_REQUIRED', 'ACTION_REQUIRED', 'COMPLETED'
+        )),                                                      -- 조치 상태: 불필요·조치 필요·조치 완료
+    action_note VARCHAR(500),                                   -- 관리자가 기록한 점검 및 조치 내용
+    action_by_member_no INT,                                    -- 조치를 담당하거나 완료한 관리자 번호
+    action_started_at TIMESTAMPTZ,                              -- 관리자가 조치를 시작한 시각
+    action_completed_at TIMESTAMPTZ,                            -- 관리자가 조치를 완료한 시각
 
-    CONSTRAINT fk_robot_pdm_log
-        FOREIGN KEY (robot_log_no)                            -- 분석 대상 로봇 상태 로그와 연결
-        REFERENCES robot_log(robot_log_no)
-        ON DELETE RESTRICT                                    -- 분석 결과가 있으면 원본 로그 삭제 제한
+    CONSTRAINT fk_robot_pdm_robot
+        FOREIGN KEY (robot_no)                                 -- 분석 대상 로봇과 연결
+        REFERENCES robot(robot_no)
+        ON DELETE RESTRICT,                                    -- 분석 결과가 있으면 로봇 삭제 제한
+
+    CONSTRAINT fk_robot_pdm_action_member
+        FOREIGN KEY (action_by_member_no)                       -- 조치를 담당한 관리자와 연결
+        REFERENCES member(member_no)
+        ON DELETE SET NULL
 );
+
+-- 같은 로봇에서 조치되지 않은 위험 사건은 한 건만 유지한다.
+CREATE UNIQUE INDEX uq_robot_pdm_active_critical
+    ON robot_pdm(robot_no)
+    WHERE risk_level = '위험'
+      AND action_status = 'ACTION_REQUIRED';
 
 
 

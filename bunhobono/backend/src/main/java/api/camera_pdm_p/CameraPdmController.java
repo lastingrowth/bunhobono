@@ -1,7 +1,9 @@
 package api.camera_pdm_p;
 
 import api.predictive_maintenance_p.PredictiveMaintenanceResponseDTO;
+import api.predictive_maintenance_p.PdmActionRequestDTO;
 import jakarta.annotation.Resource;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -59,5 +61,24 @@ public class CameraPdmController {
     @PostMapping("/analyze-all")
     public List<PredictiveMaintenanceResponseDTO> analyzeAll() {
         return cameraPdmService.analyzeAll();
+    }
+
+    // 관리자가 위험 조치를 완료하고 FastAPI의 CSV 행 고정을 해제한다.
+    @PatchMapping("/{pdmNo}/complete-action")
+    public CameraPdmDTO completeAction(
+            @PathVariable long pdmNo,
+            @RequestBody(required = false) PdmActionRequestDTO request,
+            Authentication authentication
+    ) {
+        String actionNote = request == null ? null : request.getActionNote();
+        String loginId = authentication == null
+                ? null
+                : authentication.getName();
+
+        return cameraPdmService.completeAction(
+                pdmNo,
+                actionNote,
+                loginId
+        );
     }
 }

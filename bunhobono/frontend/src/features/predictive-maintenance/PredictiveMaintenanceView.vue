@@ -177,15 +177,15 @@
           >
             <div class="camera-card-top">
               <span class="robot-icon" aria-hidden="true"><i></i></span>
-              <span class="status-badge"><i></i>{{ robotStatusText(robot.robotStatus) }}</span>
+              <span class="status-badge"><i></i>{{ statusText(robot.monitoringStatus) }}</span>
             </div>
             <strong>{{ robot.robotCode }}</strong>
             <p>SET {{ robot.setNo }} / {{ robot.setPosition }}</p>
             <dl>
-              <div><dt>배터리</dt><dd>{{ formatBattery(robot.batteryLevel) }}</dd></div>
-              <div><dt>운전시간</dt><dd>{{ formatOperatingHours(robot.operatingHours) }}</dd></div>
+              <div><dt>예측등급</dt><dd>{{ robot.riskLevel }}</dd></div>
+              <div><dt>예측확률</dt><dd>{{ formatRiskScore(robot.riskScore) }}</dd></div>
               <div><dt>장비번호</dt><dd>#{{ robot.robotNo }}</dd></div>
-              <div><dt>최근 통신</dt><dd>{{ formatHeartbeat(robot.lastHeartbeatAt) }}</dd></div>
+              <div><dt>분석시각</dt><dd>{{ formatHeartbeat(robot.predictedAt) }}</dd></div>
             </dl>
             <div class="signal-line"><span></span><span></span><span></span><span></span><span></span></div>
           </article>
@@ -222,8 +222,10 @@ import { getRobotList } from '@/features/robot/robotApi';
 import {
   analyzeAllCameras,
   analyzeAllGates,
+  analyzeAllRobots,
   getLatestCameraPdm,
   getLatestGatePdm,
+  getLatestRobotPdm,
 } from './predictiveMaintenanceApi';
 
 const router = useRouter();
@@ -265,24 +267,6 @@ const selectEquipment = (equipment) => {
 
 const normalizeStatus = (status) => ['NORMAL', 'FAULT', 'MAINTENANCE'].includes(status) ? status : 'UNKNOWN';
 const riskLevelToStatus = (riskLevel) => ({ 정상: 'NORMAL', 주의: 'MAINTENANCE', 위험: 'FAULT' }[riskLevel] || 'UNKNOWN');
-const robotStatusToMonitoringStatus = (status) => ({
-  STANDBY: 'NORMAL',
-  WORKING: 'NORMAL',
-  CHARGING: 'NORMAL',
-  LOW_BATTERY: 'MAINTENANCE',
-  WARNING: 'MAINTENANCE',
-  ERROR: 'FAULT',
-  OFFLINE: 'FAULT',
-}[status] || 'UNKNOWN');
-const robotStatusText = (status) => ({
-  STANDBY: '대기',
-  WORKING: '작업 중',
-  CHARGING: '충전 중',
-  LOW_BATTERY: '배터리 부족',
-  WARNING: '주의',
-  ERROR: '오류',
-  OFFLINE: '연결 끊김',
-}[status] || status || '상태 미확인');
 const statusText = (status) => ({ NORMAL: '정상', FAULT: '고장', MAINTENANCE: '점검 중', UNKNOWN: '상태 미확인' }[normalizeStatus(status)]);
 const statusClass = (status) => normalizeStatus(status).toLowerCase();
 const currentItems = computed(() => ({ CAMERA: cameras.value, GATE: gates.value, ROBOT: robots.value }[selectedEquipment.value] || []));
@@ -390,7 +374,7 @@ const goGateDetail = (gateNo) => {
 };
 
 const goRobotDetail = (robotNo) => {
-  router.push(`/admin/robots/${robotNo}`);
+  router.push(`/admin/predictive-maintenance/robots/${robotNo}`);
 };
 
 const goEventDetail = (event) => {
@@ -529,28 +513,44 @@ const refreshGates = async (manual = false) => {
   }
 };
 
-const refreshRobots = async () => {
+const refreshRobots = async (manual = false) => {
   if (loading.value) return;
   loading.value = true;
   errorMessage.value = '';
   const startedAt = performance.now();
 
   try {
-    const response = await getRobotList();
-    const robotList = Array.isArray(response.data) ? response.data : [];
-    const nextRobots = robotList.map((robot) => ({
-      ...robot,
-      monitoringStatus: robotStatusToMonitoringStatus(robot.robotStatus),
-    }));
-    const previousByNo = new Map(robots.value.map((robot) => [robot.robotNo, robot.robotStatus]));
+    if (manual) {
+      await analyzeAllRobots();
+    }
+
+    const [robotResponse, pdmResponse] = await Promise.all([
+      getRobotList(),
+      getLatestRobotPdm(),
+    ]);
+    const robotList = Array.isArray(robotResponse.data) ? robotResponse.data : [];
+    const pdmList = Array.isArray(pdmResponse.data) ? pdmResponse.data : [];
+    const pdmByRobotNo = new Map(pdmList.map((pdm) => [Number(pdm.robotNo), pdm]));
+    const nextRobots = robotList.map((robot) => {
+      const pdm = pdmByRobotNo.get(Number(robot.robotNo));
+      return {
+        ...robot,
+        monitoringStatus: riskLevelToStatus(pdm?.riskLevel),
+        riskLevel: pdm?.riskLevel || '미확인',
+        riskScore: pdm?.riskScore ?? null,
+        predictedAt: pdm?.predictedAt || null,
+      };
+    });
+    const previousByNo = new Map(robots.value.map((robot) => [robot.robotNo, normalizeStatus(robot.monitoringStatus)]));
 
     nextRobots.forEach((robot) => {
       const previous = previousByNo.get(robot.robotNo);
-      if (previous && previous !== robot.robotStatus) {
+      const current = normalizeStatus(robot.monitoringStatus);
+      if (previous && previous !== current) {
         pushEvent(
-          robot.monitoringStatus === 'FAULT' ? 'fault' : 'change',
+          current === 'FAULT' ? 'fault' : 'change',
           `${robot.robotCode} 상태 변경`,
-          `${robotStatusText(previous)} → ${robotStatusText(robot.robotStatus)}`,
+          `${statusText(previous)} → ${statusText(current)}`,
           'ROBOT',
           robot.robotNo,
         );
@@ -560,7 +560,7 @@ const refreshRobots = async () => {
     robots.value = nextRobots;
     responseTime.value = Math.max(1, Math.round(performance.now() - startedAt));
     lastUpdatedAt.value = new Date();
-    pushEvent('receive', '상태 데이터 수신', `주차로봇 ${nextRobots.length}대 · 응답 ${responseTime.value}ms`);
+    pushEvent('receive', manual ? '수동 상태 갱신' : '상태 데이터 수신', `주차로봇 ${nextRobots.length}대 · 응답 ${responseTime.value}ms`);
   } catch (error) {
     console.error('주차로봇 상태 조회 실패', error);
     errorMessage.value = '주차로봇 상태를 불러오지 못했습니다.';
@@ -570,9 +570,8 @@ const refreshRobots = async () => {
   }
 };
 
-const formatBattery = (value) => value == null ? '-' : `${Number(value).toFixed(1)}%`;
-const formatOperatingHours = (value) => value == null ? '-' : `${Number(value).toFixed(1)}시간`;
 const formatHeartbeat = (value) => value ? new Date(value).toLocaleTimeString('ko-KR', { hour12: false }) : '-';
+const formatRiskScore = (value) => value == null ? '-' : `${(Number(value) * 100).toFixed(1)}%`;
 
 const refreshStatistics = async () => {
   if (loading.value) return;
@@ -581,11 +580,12 @@ const refreshStatistics = async () => {
   const startedAt = performance.now();
 
   try {
-    const [cameraResponse, cameraPdmResponse, gateResponse, gatePdmResponse, robotResponse] = await Promise.all([
-      getCameraList(), getLatestCameraPdm(), getGateList(), getLatestGatePdm(), getRobotList(),
+    const [cameraResponse, cameraPdmResponse, gateResponse, gatePdmResponse, robotResponse, robotPdmResponse] = await Promise.all([
+      getCameraList(), getLatestCameraPdm(), getGateList(), getLatestGatePdm(), getRobotList(), getLatestRobotPdm(),
     ]);
     const cameraPdmByNo = new Map((Array.isArray(cameraPdmResponse.data) ? cameraPdmResponse.data : []).map((item) => [Number(item.cameraNo), item]));
     const gatePdmByNo = new Map((Array.isArray(gatePdmResponse.data) ? gatePdmResponse.data : []).map((item) => [Number(item.gateNo), item]));
+    const robotPdmByNo = new Map((Array.isArray(robotPdmResponse.data) ? robotPdmResponse.data : []).map((item) => [Number(item.robotNo), item]));
 
     cameras.value = (Array.isArray(cameraResponse.data) ? cameraResponse.data : []).map((item) => ({
       ...item,
@@ -597,7 +597,7 @@ const refreshStatistics = async () => {
     }));
     robots.value = (Array.isArray(robotResponse.data) ? robotResponse.data : []).map((item) => ({
       ...item,
-      monitoringStatus: robotStatusToMonitoringStatus(item.robotStatus),
+      monitoringStatus: riskLevelToStatus(robotPdmByNo.get(Number(item.robotNo))?.riskLevel),
     }));
     responseTime.value = Math.max(1, Math.round(performance.now() - startedAt));
     lastUpdatedAt.value = new Date();
@@ -613,7 +613,7 @@ const refreshCurrent = (manual = false) => ({
   STATS: () => refreshStatistics(),
   CAMERA: () => refreshCameras(manual),
   GATE: () => refreshGates(manual),
-  ROBOT: () => refreshRobots(),
+  ROBOT: () => refreshRobots(manual),
 }[selectedEquipment.value]?.());
 
 onMounted(async () => {

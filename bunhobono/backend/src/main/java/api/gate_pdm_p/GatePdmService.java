@@ -2,8 +2,11 @@ package api.gate_pdm_p;
 
 import api.predictive_maintenance_p.PredictiveMaintenanceClient;
 import api.predictive_maintenance_p.PredictiveMaintenanceResponseDTO;
+import api.predictive_maintenance_p.PdmActionAuthorizationService;
 import jakarta.annotation.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,6 +32,9 @@ public class GatePdmService {
 
     @Resource
     private PredictiveMaintenanceClient predictiveMaintenanceClient;
+
+    @Resource
+    private PdmActionAuthorizationService pdmActionAuthorizationService;
 
     private final Map<Integer, GatePdmDTO> latestPredictions =
             new ConcurrentHashMap<>();
@@ -77,9 +83,9 @@ public class GatePdmService {
     ) {
         GatePdmDTO dto = convertToGatePdmDTO(response);
 
-        latestPredictions.put(dto.getGateNo(), dto);
+        GatePdmDTO latestDto = saveAbnormalIfRequired(dto);
+        latestPredictions.put(dto.getGateNo(), latestDto);
         addRecentPrediction(dto);
-        saveAbnormalIfRequired(dto);
     }
 
     private void addRecentPrediction(GatePdmDTO dto) {
@@ -131,6 +137,14 @@ public class GatePdmService {
                 response.getPredictionCorrect()
         );
 
+        dto.setSourceRowIndex(response.getRowIndex());
+        dto.setSensorValues(response.getSensorValues());
+        dto.setActionStatus(
+                Boolean.TRUE.equals(response.getActionRequired())
+                        ? "ACTION_REQUIRED"
+                        : "NOT_REQUIRED"
+        );
+
         dto.setSensorCollectedAt(
                 parseSensorCollectedAt(
                         response.getSensorCollectedAt()
@@ -144,10 +158,75 @@ public class GatePdmService {
         return dto;
     }
 
-    private void saveAbnormalIfRequired(GatePdmDTO dto) {
+    private GatePdmDTO saveAbnormalIfRequired(GatePdmDTO dto) {
         if ("주의".equals(dto.getRiskLevel())
                 || "위험".equals(dto.getRiskLevel())) {
-            gatePdmMapper.savePrediction(dto);
+            int inserted = gatePdmMapper.savePrediction(dto);
+            if (inserted == 1
+                    && "ACTION_REQUIRED".equals(dto.getActionStatus())) {
+                pdmActionAuthorizationService.sendDangerAlert(
+                        "게이트 GATE-%02d".formatted(dto.getGateNo()),
+                        dto.getSensorValues()
+                );
+            }
+        }
+
+        if ("위험".equals(dto.getRiskLevel())) {
+            GatePdmDTO active = gatePdmMapper.findActiveAction(
+                    dto.getGateNo()
+            );
+            if (active != null) {
+                return active;
+            }
+        }
+        return dto;
+    }
+
+    // 활성 위험을 완료 처리하고 FastAPI가 다음 CSV 행으로 진행하게 한다.
+    public GatePdmDTO completeAction(
+            long pdmNo,
+            String actionNote,
+            String loginId
+    ) {
+        GatePdmDTO target = gatePdmMapper.detail(pdmNo);
+        validateActionTarget(target);
+
+        int memberNo = pdmActionAuthorizationService
+                .requireMemberNo(loginId);
+        String normalizedNote = pdmActionAuthorizationService
+                .normalizeActionNote(actionNote);
+
+        predictiveMaintenanceClient.completeGateAction(target.getGateNo());
+
+        if (gatePdmMapper.completeAction(
+                pdmNo,
+                memberNo,
+                normalizedNote
+        ) != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 완료되었거나 조치할 수 없는 예측 결과입니다."
+            );
+        }
+
+        GatePdmDTO completed = gatePdmMapper.detail(pdmNo);
+        latestPredictions.put(completed.getGateNo(), completed);
+        return completed;
+    }
+
+    private void validateActionTarget(GatePdmDTO target) {
+        if (target == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "게이트 예지보전 결과가 없습니다."
+            );
+        }
+        if (!"위험".equals(target.getRiskLevel())
+                || !"ACTION_REQUIRED".equals(target.getActionStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "현재 조치가 필요한 위험 결과가 아닙니다."
+            );
         }
     }
 
