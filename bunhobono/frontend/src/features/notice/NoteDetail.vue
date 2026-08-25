@@ -253,6 +253,24 @@ const detailRows = computed(() => {
       {
         label: "출차 일시",
         value: formatDate(getOutTime(target))
+      },
+      {
+        label: "현재 정산서 번호",
+        value: getField(target, "billNo", "bill_no")
+      },
+      {
+        label: "현재 과금시간",
+        value: formatNumber(
+          getField(target, "chargeMinutes", "charge_minutes"),
+          "분"
+        )
+      },
+      {
+        label: "현재 정산금액",
+        value: formatNumber(
+          getField(target, "billAmount", "bill_amount"),
+          "원"
+        )
       }
     );
   }
@@ -312,6 +330,18 @@ function formatDate(value) {
   }
 
   return date.toLocaleString("ko-KR");
+}
+
+function formatNumber(value, unit) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? `${number.toLocaleString("ko-KR")}${unit}`
+    : value;
 }
 
 function formatValue(value) {

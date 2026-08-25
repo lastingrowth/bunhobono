@@ -8,7 +8,7 @@ export default [
         component: AdminBillingView,
     },
     {
-        path: "billing/:carLogNo/detail",
+        path: "billing/:billNo/detail",
         name: "AdminBillingDetail",
         component: AdminBillingDetailView,
     },

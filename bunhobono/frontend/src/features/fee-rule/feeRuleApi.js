@@ -2,26 +2,15 @@ import api from "@/shared/api/apiClient";
 
 // 등록된 요금 규칙 목록 조회
 export const getFeeRuleList = () => {
-    return api.get('/billing/admin/fee-rules')
+    return api.get('/fee-rules')
 }
 
 // 새로운 요금 규칙 등록
-export const createFeeRule = (data) => {
-    return api.post('/billing/admin/fee-rules', data)
+export const createFeeRule = (dto) => {
+    return api.post('/fee-rules', dto)
 }
 
-// 요금 규칙의 적용 종료일시 수정
-export const updateFeeRuleEffectiveTo = (feeRuleNo, data) => {
-    return api.patch(
-        `/billing/admin/fee-rules/${feeRuleNo}/effective-to`,
-        data
-    )
-}
-
-// 예약 상태의 요금 규칙 전체 수정
-export const updateScheduledFeeRule = (feeRuleNo, data) => {
-    return api.patch(
-        `/billing/admin/fee-rules/${feeRuleNo}`,
-        data
-    )
+// 예약 규칙을 수정하거나 활성 규칙의 새 버전 등록
+export const updateFeeRule = (feeRuleNo, dto) => {
+    return api.patch(`/fee-rules/${feeRuleNo}`, dto)
 }

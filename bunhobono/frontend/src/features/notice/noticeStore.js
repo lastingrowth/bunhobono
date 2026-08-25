@@ -3,6 +3,7 @@ import { ref } from "vue";
 
 import {
     deleteNotice,
+    getNoteDetail,
     getNoteList,
     updateNoticeStatus
 } from "./noticeApi";
@@ -42,15 +43,9 @@ export const useNoticeStore = defineStore("notice", () => {
 
     // 관리자 알림 상세 조회
     const loadNotice = async (noticeNo) => {
-        if (notices.value.length === 0) {
-            await loadNotices();
-        }
+        const response = await getNoteDetail(noticeNo);
 
-        notice.value = notices.value.find((item) => {
-            const itemNo = item.noticeNo ?? item.notice_no;
-
-            return Number(itemNo) === Number(noticeNo);
-        }) ?? null;
+        notice.value = response.data ?? null;
     };
 
     // 관리자 알림 처리상태 변경

@@ -1,6 +1,7 @@
 package api.trash_p;
 
-import api.billing_p.BillingMapper;
+import api.bill_p.BillDTO;
+import api.bill_p.BillMapper;
 import api.cameradata_p.CameraDataMapper;
 import api.carlog_p.CarLogMapper;
 import api.inquiry_p.InquiryMapper;
@@ -20,7 +21,7 @@ public class TrashService {
     private final CarLogMapper carLogMapper;
     private final NoticeMapper noticeMapper;
     private final InquiryMapper inquiryMapper;
-    private final BillingMapper billingMapper;
+    private final BillMapper billMapper;
 
     public List<TrashDTO> list(String dataType) {
         return trashMapper.list(dataType);
@@ -163,26 +164,23 @@ public class TrashService {
         }
     }
 
-    // 출차가 끝난 완료 정산서를 지난 기록으로 이동
+    // 결제 완료된 정산서를 지난 기록으로 이동
     @Transactional
     public void moveBill(int billNo, String deleteType) {
-        int saved = trashMapper.saveBill(
-                billNo,
-                deleteType
-        );
+        BillDTO dto = new BillDTO();
+        dto.setBillNo(billNo);
+        dto = billMapper.detail(dto);
 
-        if (saved != 1) {
-            throw new IllegalArgumentException(
-                    "출차 완료된 정산 내역만 지난 기록으로 이동할 수 있습니다."
-            );
+        if (dto == null || !"PAID".equalsIgnoreCase(dto.getBillStatus())) {
+            throw new IllegalArgumentException("결제 완료된 정산 내역만 지난 기록으로 이동할 수 있습니다.");
         }
 
-        int deleted = billingMapper.deletePaidBill(billNo);
+        if (trashMapper.saveBill(billNo, deleteType) != 1) {
+            throw new IllegalStateException("정산서 지난 기록 저장에 실패했습니다.");
+        }
 
-        if (deleted != 1) {
-            throw new IllegalStateException(
-                    "완료 정산서 삭제에 실패했습니다."
-            );
+        if (billMapper.delete(billNo) != 1) {
+            throw new IllegalStateException("완료 정산서 삭제에 실패했습니다.");
         }
     }
     

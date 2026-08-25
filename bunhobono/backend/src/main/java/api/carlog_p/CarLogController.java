@@ -2,11 +2,7 @@ package api.carlog_p;
 
 import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -28,6 +24,11 @@ public class CarLogController {
     @GetMapping("/search")
     public List<CarLogDTO> search(CarLogDTO dto) {
         return carLogService.list(dto);
+    }
+
+    @GetMapping("/parking-cars")
+    public List<CarLogDTO> parkingCars(@RequestParam String lastFourDigits, @RequestParam Integer kioskNo) {
+        return carLogService.findParkingCars(lastFourDigits, kioskNo);
     }
 
     @DeleteMapping("/{carLogNo}/delete")

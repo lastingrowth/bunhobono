@@ -44,7 +44,7 @@
         <tbody>
           <tr
             v-for="(billing, index) in pagedBillingList"
-            :key="billing.carLogNo"
+            :key="billing.billNo"
           >
             <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
             <td>{{ billing.carNo }}</td>
@@ -59,7 +59,7 @@
               <button
                 type="button"
                 class="detail-button"
-                @click="goDetail(billing.carLogNo)"
+                @click="goDetail(billing.billNo)"
               >
                 상세
               </button>
@@ -204,12 +204,12 @@ const goFeeRules = () => {
   })
 }
 
-// 선택한 입출차 기록의 정산 상세 화면으로 이동한다.
-const goDetail = (carLogNo) => {
+// 선택한 정산서의 상세 화면으로 이동한다.
+const goDetail = (billNo) => {
   router.push({
     name: 'AdminBillingDetail',
     params: {
-      carLogNo
+      billNo
     }
   })
 }

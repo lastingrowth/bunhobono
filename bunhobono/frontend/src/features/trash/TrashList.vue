@@ -174,7 +174,9 @@ const getTrashRecordDate = (item) => {
     return data.handled_at ?? data.detect_at ?? data.snapshot_in_time ?? item.deletedAt;
   }
   if (item?.dataType === "BILL") {
-    return data.paid_at ?? data.out_time ?? data.issued_at ?? item.deletedAt;
+    return data.paid_at
+      ?? data.issued_at
+      ?? item.deletedAt;
   }
   if (item?.dataType === "INQUIRY") {
     return data.answered_at

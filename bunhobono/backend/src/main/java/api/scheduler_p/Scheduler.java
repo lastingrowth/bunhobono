@@ -1,6 +1,6 @@
 package api.scheduler_p;
 
-import api.billing_p.BillingService;
+import api.bill_p.BillService;
 import api.cameradata_p.CameraDataService;
 import api.carlog_p.CarLogService;
 import api.inquiry_p.InquiryService;
@@ -20,7 +20,7 @@ public class Scheduler {
     private CameraDataService cameraDataService;
 
     @Resource
-    private BillingService billingService;
+    private BillService billService;
 
     @Resource
     private CarLogService carLogService;
@@ -49,10 +49,21 @@ public class Scheduler {
         cameraDataService.autoDelete();
     }
 
-    // 매일 자정: 출차 후 3개월이 지난 정산서와 입출차 기록을 휴지통으로 이동한다.
+    // 1분마다 출차 유예시간 만료 여부를 확인하고 미결제 추가 정산서를 생성한다.
+    @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
+    public void createAdditionalBills() {
+        billService.createAdditionalBills();
+    }
+
+    // 매일 자정: 결제 완료 후 3개월이 지난 정산서를 지난 기록으로 이동한다.
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    public void moveOldBillsToTrash() {
+        billService.moveOldPaidBillsToTrash();
+    }
+
+    // 매일 자정: 출차 후 3개월이 지난 입출차 기록을 지난 기록으로 이동한다.
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void moveOldCarLogsToTrash() {
-        billingService.moveOldPaidBillsToTrash();
         carLogService.moveOldCarLogsToTrash();
     }
 
@@ -68,7 +79,6 @@ public class Scheduler {
         noticeService.moveResolvedNoticesToTrash();
     }
 
-    // 매일 자정: 하루 이상 주차 중인 미등록·만기 차량의 관리자 알림을 생성한다 에서
     // 10분마다 방문차량 초과 및 미등록차량 24시간 초과 알림을 생성한다.
     @Scheduled(cron = "0 */10 * * * *", zone = "Asia/Seoul")
     public void createParkingNotices() {

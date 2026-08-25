@@ -1,4 +1,4 @@
-package api.billing_p;
+package api.feerule_p;
 
 import lombok.Data;
 
@@ -18,9 +18,13 @@ public class FeeRuleDTO {
 
     private BigDecimal dailyMaxFee;
 
+    private Integer exitGraceMinutes;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime effectiveFrom;
 
     private LocalDateTime effectiveTo;
+
+    private Boolean isDefault;
 }

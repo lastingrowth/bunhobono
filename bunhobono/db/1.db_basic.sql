@@ -569,11 +569,13 @@ CREATE TABLE fee_rule (
     unit_fee NUMERIC(12, 0) NOT NULL,                       -- 시간 단위마다 부과되는 금액
     daily_max_fee NUMERIC(12, 0),                           -- 과금 24시간당 부과할 수 있는 최대요금
                                                             -- 최대요금 제한이 없으면 NULL
+	exit_grace_minutes INT NOT NULL,                        -- 결제 완료 후 출차할 수 있는 유예시간(분)															
     created_at TIMESTAMP NOT NULL
         DEFAULT CURRENT_TIMESTAMP,                          -- 요금 규칙 등록 시각
 	effective_from TIMESTAMP NOT NULL,                     	-- 요금 규칙 적용 시작시각
-	effective_to TIMESTAMP                                  -- 요금 규칙 적용 종료시각
+	effective_to TIMESTAMP,                                 -- 요금 규칙 적용 종료시각
                                                             -- 종료 예정이 없으면 NULL
+	is_default BOOLEAN NOT NULL DEFAULT FALSE				-- 활성 요금 규칙 중 자동 정산에 기본 적용할지 여부
 );
 
 -- =====================================================
@@ -584,11 +586,11 @@ CREATE TABLE fee_rule (
 -- =====================================================
 CREATE TABLE bill (
     bill_no SERIAL PRIMARY KEY,                             -- 정산서 고유번호
-    car_log_no INT NOT NULL UNIQUE,                         -- 정산 대상 차량 입출차 기록 고유번호
-                                                             -- 입출차 기록 한 건당 정산서 한 건만 생성
+    car_log_no INT,                         				-- 현재 연결된 차량 입출차 기록 고유번호
+                                                            -- 동일 주차 건에 여러 정산서가 생성될 수 있으며 삭제 후에는 NULL
     fee_rule_no INT NOT NULL,                               -- 정산에 적용된 요금 규칙 고유번호
     kiosk_no INT,                                           -- 결제가 진행된 키오스크 고유번호
-                                                             -- 미결제 또는 요금 면제 정산이면 NULL 가능
+                                                            -- 미결제 또는 요금 면제 정산이면 NULL 가능
     charge_minutes INT NOT NULL,                            -- 무료시간을 제외하고 요금 계산에 적용한 시간(분)
     bill_amount NUMERIC(12, 0) NOT NULL,                    -- 백엔드에서 계산한 최종 정산금액
     bill_status VARCHAR(20) NOT NULL DEFAULT 'UNPAID'  
@@ -608,10 +610,14 @@ CREATE TABLE bill (
 
     paid_at TIMESTAMP,                                       -- 결제 승인 완료 시각
                                                              -- 미결제 상태이면 NULL
+	snapshot_car_log_no INT NOT NULL,                        -- 정산서 생성 당시 입출차 기록 고유번호
+                                                             -- 동일 주차 건의 여러 정산서를 묶는 기준
+    snapshot_car_no VARCHAR(50) NOT NULL,                    -- 정산서 생성 당시 확정된 차량번호
+
     CONSTRAINT fk_bill_car_log
         FOREIGN KEY (car_log_no)                             -- 정산서를 차량 입출차 기록과 연결
         REFERENCES car_log(car_log_no)
-        ON DELETE RESTRICT,                                  -- 정산서가 존재하면 입출차 기록 삭제 제한
+        ON DELETE SET NULL,                                   -- 입출차 기록 삭제 시 연결만 해제하고 정산서는 유지
 
     CONSTRAINT fk_bill_fee_rule
         FOREIGN KEY (fee_rule_no)                            -- 정산서를 적용된 요금 규칙과 연결
@@ -624,6 +630,15 @@ CREATE TABLE bill (
         ON DELETE RESTRICT                                   -- 정산 기록이 있으면 키오스크 삭제 제한
 );
 
+
+-- 현재 연결된 입출차 기록으로 정산서를 조회하는 데 사용한다.
+CREATE INDEX idx_bill_car_log_no
+    ON bill(car_log_no);
+
+
+-- 동일 주차 건에 속한 여러 정산서를 조회하는 데 사용한다.
+CREATE INDEX idx_bill_snapshot_car_log_no
+    ON bill(snapshot_car_log_no);
 
 -- 미결제·결제완료 상태별 정산 목록을 생성 시각 역순으로 조회하는 데 사용한다.
 CREATE INDEX idx_bill_status_issued_at

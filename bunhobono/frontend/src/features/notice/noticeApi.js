@@ -5,6 +5,11 @@ export const getNoteList = () => {
     return api.get("/notice");
 };
 
+// 관리자 알림 상세 조회
+export const getNoteDetail = (noticeNo) => {
+    return api.get(`/notice/${noticeNo}`);
+};
+
 // 차량번호로 관리자 알림 검색
 export const searchNoticesByCarNo = (carNo) => {
     return api.get("/notice/search", {
