@@ -26,7 +26,7 @@ public interface MemPurchaseMapper {
     """)
     MemPurchaseDTO findActiveResident(MemPurchaseDTO dto);
 
-    // 방문차량 추가 등록 횟수 구매 주문을 생성한다.
+    // 방문차량 추가 이용시간 구매 주문을 생성한다.
     @Insert("""
         INSERT INTO mem_purchase (
             member_no,
@@ -94,7 +94,7 @@ public interface MemPurchaseMapper {
     """)
     int markPaid(MemPurchaseDTO dto);
 
-    // 로그인한 입주민과 같은 세대가 이번 달 결제한 추가 등록 횟수 합계
+    // 로그인한 입주민과 같은 세대가 이번 달 결제한 추가시간(분) 합계
     @Select("""
         SELECT COALESCE(SUM(mp.purchase_quantity), 0)
         FROM member login_member
@@ -103,11 +103,11 @@ public interface MemPurchaseMapper {
         JOIN mem_purchase mp
           ON mp.member_no = household_member.member_no
         WHERE login_member.login_id = #{snapshotLoginId}
-          AND mp.purchase_type = 'VISIT_REGISTRATION_COUNT'
+          AND mp.purchase_type = 'VISIT_PARKING_MINUTES'
           AND mp.purchase_status = 'PAID'
           AND mp.paid_at >= DATE_TRUNC('month', CURRENT_TIMESTAMP)
           AND mp.paid_at < DATE_TRUNC('month', CURRENT_TIMESTAMP)
                            + INTERVAL '1 month'
     """)
-    int sumMonthlyPaidVisitQuantity(MemPurchaseDTO dto);
+    int sumMonthlyPaidVisitMinutes(MemPurchaseDTO dto);
 }

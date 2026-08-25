@@ -77,6 +77,22 @@
           </tr>
 
           <tr>
+            <th>방문 이용시간</th>
+            <td>
+              <select v-model.number="form.durationHours" required>
+                <option
+                  v-for="hour in durationHourOptions"
+                  :key="hour"
+                  :value="hour"
+                >
+                  {{ hour }}시간
+                </option>
+              </select>
+              <small>1시간 단위로 최대 24시간까지 선택할 수 있습니다.</small>
+            </td>
+          </tr>
+
+          <tr>
             <th>방문 예정 기간</th>
             <td>{{ visitPeriodText || '방문 시작시간을 선택하세요.' }}</td>
           </tr>
@@ -128,7 +144,8 @@ const form = reactive({
   carNo: '',
   visitDate: '',
   visitHour: '',
-  visitMinute: ''
+  visitMinute: '',
+  durationHours: 1
 })
 
 const currentTime = ref(new Date())
@@ -141,6 +158,11 @@ const hourOptions = Array.from(
 const minuteOptions = Array.from(
   { length: 60 },
   (_, index) => index
+)
+
+const durationHourOptions = Array.from(
+  { length: 24 },
+  (_, index) => index + 1
 )
 
 let currentTimeTimer = null
@@ -195,12 +217,20 @@ watch(
     if (!vehicle) return
 
     const startDate = new Date(vehicle.startDate)
+    const endDate = new Date(vehicle.endDate)
     form.carNo = vehicle.carNo || ''
 
     if (!Number.isNaN(startDate.getTime())) {
       form.visitDate = formatDateValue(startDate)
       form.visitHour = String(startDate.getHours())
       form.visitMinute = String(startDate.getMinutes())
+    }
+
+    if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime())) {
+      const durationHours = Math.round(
+        (endDate.getTime() - startDate.getTime()) / (60 * 60 * 1000)
+      )
+      form.durationHours = Math.min(Math.max(durationHours, 1), 24)
     }
 
   },
@@ -265,6 +295,7 @@ function resetForm() {
   form.visitDate = ''
   form.visitHour = ''
   form.visitMinute = ''
+  form.durationHours = 1
   currentTime.value = new Date()
 }
 
@@ -337,7 +368,7 @@ function makeLocalDate(dateValue, hour, minute) {
 function makeEndDate(startDate) {
   const endDate = new Date(startDate)
 
-  endDate.setHours(endDate.getHours() + 24)
+  endDate.setHours(endDate.getHours() + Number(form.durationHours))
 
   return endDate
 }

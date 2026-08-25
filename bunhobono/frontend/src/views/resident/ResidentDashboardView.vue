@@ -89,7 +89,7 @@
                     <header class="summary-card-header">
                         <h2>차량현황</h2>
                         <span class="visit-registration-remaining">
-                            방문등록 {{ dashboard.visitRegistrationRemaining ?? 10 }}회 남음
+                            방문차량 {{ visitRegistrationRemainingText }} 남음
                         </span>
                     </header>
                     <div class="vehicle-status-groups">
@@ -397,6 +397,7 @@ const {
     residenceText,
     normalVehicles,
     visitVehicles,
+    visitRegistrationRemainingText,
     parkingStatusList
 } = storeToRefs(dashboardStore);
 

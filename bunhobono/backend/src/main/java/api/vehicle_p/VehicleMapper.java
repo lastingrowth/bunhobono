@@ -446,29 +446,47 @@ public interface VehicleMapper {
             @Param("endDate") java.time.LocalDateTime endDate
     );
 
-    // 로그인한 세대의 현재 입차 중인 방문차량을 1일 연장
+    // 로그인한 세대의 현재 입차 중인 방문차량을 선택한 시간만큼 연장
     @Update("""
-        UPDATE vehicle_car vc
-        SET end_date = vc.end_date + INTERVAL '1 day'
-        FROM member owner,
-             member login_member
-        WHERE vc.vehicle_car_no = #{vehicleCarNo}
-          AND vc.member_no = owner.member_no
-          AND login_member.login_id = #{loginId}
-          AND owner.unit_no = login_member.unit_no
-          AND vc.vehicle_type = 'visit'
-          AND vc.vehicle_status = 'APPROVED'
-          AND EXISTS (
-              SELECT 1
-              FROM car_log cl
-              WHERE cl.vehicle_car_no = vc.vehicle_car_no
-                AND cl.in_time IS NOT NULL
-                AND cl.out_time IS NULL
-          )
+        WITH eligible_vehicle AS (
+            SELECT vc.vehicle_car_no
+            FROM vehicle_car vc
+            JOIN member owner
+              ON owner.member_no = vc.member_no
+            JOIN member login_member
+              ON login_member.unit_no = owner.unit_no
+            WHERE vc.vehicle_car_no = #{vehicleCarNo}
+              AND login_member.login_id = #{loginId}
+              AND vc.vehicle_type = 'visit'
+              AND vc.vehicle_status = 'APPROVED'
+              AND EXISTS (
+                  SELECT 1
+                  FROM car_log cl
+                  WHERE cl.vehicle_car_no = vc.vehicle_car_no
+                    AND cl.in_time IS NOT NULL
+                    AND cl.out_time IS NULL
+              )
+        ),
+        updated_vehicle AS (
+            UPDATE vehicle_car vc
+            SET end_date = vc.end_date
+                           + (#{hours} * INTERVAL '1 hour')
+            FROM eligible_vehicle ev
+            WHERE vc.vehicle_car_no = ev.vehicle_car_no
+            RETURNING vc.vehicle_car_no
+        )
+        UPDATE car_log cl
+        SET free_time = COALESCE(cl.free_time, 0)
+                        + (#{hours} * 60)
+        FROM updated_vehicle uv
+        WHERE cl.vehicle_car_no = uv.vehicle_car_no
+          AND cl.in_time IS NOT NULL
+          AND cl.out_time IS NULL
     """)
-    int extendEnteredVisitOneDay(
+    int extendEnteredVisitHours(
             @Param("loginId") String loginId,
-            @Param("vehicleCarNo") int vehicleCarNo
+            @Param("vehicleCarNo") int vehicleCarNo,
+            @Param("hours") int hours
     );
 
     // 로그인한 입주민 본인 일반차량 만기일 연장
@@ -491,63 +509,34 @@ public interface VehicleMapper {
             @Param("endDate") java.time.LocalDateTime endDate
     );
 
-    // 같은 세대의 이번 달 방문차량 실제 입차 횟수
+    // 로그인한 입주민과 같은 세대의 이번 달 방문차량 신청시간 합계(분)
     @Select("""
-    SELECT COUNT(DISTINCT cl.car_log_no)
-    FROM member login_member 
-
-    JOIN member household_member
-        ON household_member.unit_no = login_member.unit_no
-
-    JOIN vehicle_car vc
-        ON vc.member_no = household_member.member_no
-       AND vc.vehicle_type = 'visit'
-
-    JOIN car_log cl
-        ON cl.vehicle_car_no = vc.vehicle_car_no
-
-    WHERE login_member.login_id = #{loginId}
-      AND cl.in_time >= DATE_TRUNC('month', CURRENT_TIMESTAMP)
-      AND cl.in_time < DATE_TRUNC('month', CURRENT_TIMESTAMP)
-                       + INTERVAL '1 month'
+        SELECT COALESCE(
+            SUM(
+                GREATEST(
+                    CEIL(
+                        EXTRACT(EPOCH FROM (vc.end_date - vc.start_date)) / 60
+                    )::INT,
+                    0
+                )
+            ),
+            0
+        )::INT
+        FROM member login_member
+        JOIN member household_member
+          ON household_member.unit_no = login_member.unit_no
+        JOIN vehicle_car vc
+          ON vc.member_no = household_member.member_no
+         AND vc.vehicle_type = 'visit'
+         AND vc.vehicle_status = 'APPROVED'
+        WHERE login_member.login_id = #{loginId}
+          AND vc.start_date IS NOT NULL
+          AND vc.end_date IS NOT NULL
+          AND vc.start_date >= DATE_TRUNC('month', CURRENT_TIMESTAMP)
+          AND vc.start_date < DATE_TRUNC('month', CURRENT_TIMESTAMP)
+                              + INTERVAL '1 month'
     """)
-    //실제 입차 한 차량 수
-    int countMonthlyVisitEntriesByLoginId(
-            @Param("loginId") String loginId
-    );
-
-    // 같은 세대의 이번 달 방문차량 등록 수
-    @Select("""
-    SELECT
-        COUNT(DISTINCT vc.vehicle_car_no)
-        + COALESCE(SUM(
-            GREATEST(
-                FLOOR(EXTRACT(EPOCH FROM (vc.end_date - vc.start_date)) / 86400)::INT - 1,
-                0
-            )
-        ), 0)
-
-    FROM member login_member
-
-    JOIN member household_member
-        ON household_member.unit_no =
-           login_member.unit_no
-
-    JOIN vehicle_car vc
-        ON vc.member_no =
-           household_member.member_no
-       AND vc.vehicle_type = 'visit'
-       AND vc.vehicle_status = 'APPROVED'
-
-    WHERE login_member.login_id = #{loginId}
-      AND vc.start_date >=
-          DATE_TRUNC('month', CURRENT_TIMESTAMP)
-      AND vc.start_date <
-          DATE_TRUNC('month', CURRENT_TIMESTAMP)
-          + INTERVAL '1 month'
-    """)
-    //등록한 차량 수
-    int countMonthlyRegisteredVisitsByLoginId(
+    int sumMonthlyRequestedVisitMinutesByLoginId(
             @Param("loginId") String loginId
     );
 }

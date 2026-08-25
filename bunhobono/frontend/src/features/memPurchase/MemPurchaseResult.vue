@@ -20,7 +20,7 @@ const success = ref(false);
 const errorMessage = ref("");
 const message = computed(() => processing.value
   ? "결제 정보를 확인하고 있습니다."
-  : success.value ? "방문차량 추가 등록 횟수가 충전되었습니다." : errorMessage.value);
+  : success.value ? "구매한 방문차량 이용 시간이 추가되었습니다." : errorMessage.value);
 
 onMounted(async () => {
   if (route.name === "MemPurchaseFail") {

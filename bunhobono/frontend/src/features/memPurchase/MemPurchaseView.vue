@@ -2,8 +2,8 @@
   <section class="purchase-page">
     <header class="purchase-header">
       <div>
-        <h2>방문차량 등록 횟수 충전</h2>
-        <p>필요한 추가 등록 횟수를 선택해 주세요.</p>
+        <h2>방문차량 추가시간 구매</h2>
+        <p>필요한 방문차량 이용 시간을 선택해 주세요.</p>
       </div>
       <button type="button" @click="goVehicles">차량 목록으로</button>
     </header>
@@ -18,19 +18,19 @@
         @click="selectedQuantity = product.quantity"
       >
         <span v-if="product.badge" class="product-badge">{{ product.badge }}</span>
-        <strong>{{ product.quantity }}회</strong>
+        <strong>{{ product.hours }}시간</strong>
         <b>{{ formatAmount(product.amount) }}</b>
         <small v-if="product.originalAmount">
           정상가 {{ formatAmount(product.originalAmount) }}
         </small>
-        <small v-else>1회 기본 상품</small>
+        <small v-else>2시간 기본 상품</small>
       </button>
     </div>
 
     <article class="purchase-summary">
       <div>
         <span>선택 상품</span>
-        <strong>방문차량 추가 등록 {{ selectedProduct.quantity }}회</strong>
+        <strong>방문차량 추가 이용 {{ selectedProduct.hours }}시간</strong>
       </div>
       <div>
         <span>결제금액</span>
@@ -60,11 +60,11 @@ import { createMemPurchaseOrder } from "./memPurchaseApi";
 const router = useRouter();
 const tossClientKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
 const products = [
-  { quantity: 1, amount: 5000, originalAmount: null, badge: "" },
-  { quantity: 5, amount: 23000, originalAmount: 25000, badge: "5,000원 할인" },
-  { quantity: 10, amount: 40000, originalAmount: 50000, badge: "7,000원 할인" }
+  { quantity: 120, hours: 2, amount: 5000, originalAmount: null, badge: "" },
+  { quantity: 600, hours: 10, amount: 24000, originalAmount: 25000, badge: "1,000원 할인" },
+  { quantity: 1800, hours: 30, amount: 66000, originalAmount: 75000, badge: "9,000원 할인" }
 ];
-const selectedQuantity = ref(5);
+const selectedQuantity = ref(600);
 const paymentLoading = ref(false);
 const errorMessage = ref("");
 const selectedProduct = computed(() =>
@@ -90,7 +90,7 @@ const requestPayment = async () => {
       method: "CARD",
       amount: { currency: "KRW", value: Number(order.purchaseAmount) },
       orderId: order.paymentOrderId,
-      orderName: `방문차량 추가 등록 ${order.purchaseQuantity}회`,
+      orderName: `방문차량 추가 이용 ${order.purchaseQuantity / 60}시간`,
       successUrl: `${window.location.origin}/resident/visit-credit/success`,
       failUrl: `${window.location.origin}/resident/visit-credit/fail`,
       card: {

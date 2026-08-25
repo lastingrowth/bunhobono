@@ -121,15 +121,17 @@ public class VehicleController {
         );
     }
 
-    // 입차 중인 방문차량 1일 연장
-    @PatchMapping("/resident/visit/{vehicleCarNo}/extend-one-day")
-    public int extendEnteredVisitOneDay(
+    // 입차 중인 방문차량을 선택한 시간만큼 연장
+    @PatchMapping("/resident/visit/{vehicleCarNo}/extend")
+    public int extendEnteredVisitHours(
             Authentication authentication,
-            @PathVariable int vehicleCarNo
+            @PathVariable int vehicleCarNo,
+            @RequestParam int hours
     ) {
-        return vehicleService.extendEnteredVisitOneDay(
+        return vehicleService.extendEnteredVisitHours(
                 authentication.getName(),
-                vehicleCarNo
+                vehicleCarNo,
+                hours
         );
     }
 

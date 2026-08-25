@@ -79,7 +79,7 @@
           :show-cancel="true"
           @edit-visit-time="openVisitTimeEdit"
           @cancel-visit="cancelVisitVehicle"
-          @extend-visit-one-day="extendVisitVehicleOneDay"
+          @extend-visit-hours="openVisitExtension"
         />
       </section>
     </template>
@@ -135,6 +135,63 @@
     />
 
     <div
+      v-if="extensionDialogOpen"
+      class="resident-notification-backdrop"
+      @click.self="closeVisitExtension"
+    >
+      <section
+        class="resident-notification-dialog visit-extension-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="visit-extension-title"
+      >
+        <div class="resident-notification-heading">
+          <span aria-hidden="true"></span>
+          <h2 id="visit-extension-title">방문차량 시간 연장</h2>
+        </div>
+
+        <p class="visit-extension-car-number">
+          {{ extensionTarget?.carNo }}
+        </p>
+
+        <label class="visit-extension-field">
+          <span>연장 시간</span>
+          <select v-model.number="extensionHours" :disabled="extensionProcessing">
+            <option
+              v-for="hour in extensionHourOptions"
+              :key="hour"
+              :value="hour"
+            >
+              {{ hour }}시간
+            </option>
+          </select>
+        </label>
+
+        <small>
+          선택한 {{ extensionHours }}시간만큼 이번 달 방문 가능 시간에서 차감됩니다.
+        </small>
+
+        <div class="resident-notification-actions">
+          <button
+            type="button"
+            :disabled="extensionProcessing"
+            @click="closeVisitExtension"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            class="resident-notification-primary"
+            :disabled="extensionProcessing"
+            @click="confirmVisitExtension"
+          >
+            {{ extensionProcessing ? '연장 중' : '연장하기' }}
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div
       v-if="paymentRequiredOpen"
       class="resident-notification-backdrop"
       @click.self="closePaymentRequired"
@@ -147,14 +204,14 @@
       >
         <div class="resident-notification-heading">
           <span aria-hidden="true"></span>
-          <h2 id="visit-credit-notification-title">방문차량 추가 등록</h2>
+          <h2 id="visit-credit-notification-title">방문차량 추가시간 구매</h2>
         </div>
 
         <p>
-          이번 달 사용 가능한 방문차량 등록 횟수를 모두 사용했습니다.
-          추가 등록을 위해 횟수를 충전해 주세요.
+          이번 달 사용 가능한 방문차량 시간이 부족합니다.
+          추가 이용을 위해 시간을 구매해 주세요.
         </p>
-        <small>결제가 완료되면 결제한 수량만큼 추가 등록할 수 있습니다.</small>
+        <small>결제가 완료되면 구매한 시간만큼 추가로 이용할 수 있습니다.</small>
 
         <div class="resident-notification-actions">
           <button type="button" @click="closePaymentRequired">나중에</button>
@@ -163,7 +220,7 @@
             class="resident-notification-primary"
             @click="openVisitCreditCharge"
           >
-            횟수 충전
+            시간 구매
           </button>
         </div>
       </section>
@@ -204,6 +261,11 @@ const cancelTarget = ref(null);
 const cancelConfirmOpen = ref(false);
 const cancelProcessing = ref(false);
 const paymentRequiredOpen = ref(false);
+const extensionTarget = ref(null);
+const extensionDialogOpen = ref(false);
+const extensionHours = ref(1);
+const extensionProcessing = ref(false);
+const extensionHourOptions = Array.from({ length: 24 }, (_, index) => index + 1);
 const feedbackMessage = ref("");
 const feedbackType = ref("success");
 
@@ -327,7 +389,7 @@ async function openInsert() {
   } catch (error) {
     showFeedback(
       error.response?.data?.message
-      || "방문차량 등록 가능 횟수를 확인하지 못했습니다.",
+      || "방문차량 이용 가능시간을 확인하지 못했습니다.",
       "error"
     );
   }
@@ -416,12 +478,35 @@ async function submitVisitVehicle(data) {
   }
 }
 
-async function extendVisitVehicleOneDay(vehicle) {
+function openVisitExtension(vehicle) {
+  extensionTarget.value = vehicle;
+  extensionHours.value = 1;
+  extensionDialogOpen.value = true;
+}
+
+function closeVisitExtension() {
+  if (extensionProcessing.value) return;
+  extensionDialogOpen.value = false;
+  extensionTarget.value = null;
+  extensionHours.value = 1;
+}
+
+async function confirmVisitExtension() {
+  if (!extensionTarget.value || extensionProcessing.value) return;
+
+  const vehicle = extensionTarget.value;
+  const hours = extensionHours.value;
+  extensionProcessing.value = true;
+
   try {
-    await resVehicleStore.extendVisitVehicleOneDay(vehicle.vehicleCarNo);
-    showFeedback(`${vehicle.carNo} 방문기간을 1일 연장했습니다.`);
+    await resVehicleStore.extendVisitVehicleHours(vehicle.vehicleCarNo, hours);
+    extensionDialogOpen.value = false;
+    extensionTarget.value = null;
+    showFeedback(`${vehicle.carNo} 방문기간을 ${hours}시간 연장했습니다.`);
   } catch (error) {
     if (error.response?.status === 402) {
+      extensionDialogOpen.value = false;
+      extensionTarget.value = null;
       paymentRequiredOpen.value = true;
       return;
     }
@@ -430,6 +515,8 @@ async function extendVisitVehicleOneDay(vehicle) {
       error.response?.data?.message || "방문기간을 연장하지 못했습니다.",
       "error"
     );
+  } finally {
+    extensionProcessing.value = false;
   }
 }
 
@@ -673,6 +760,32 @@ function openResidentBillPayment(billNo) {
   display: block;
   color: #708698;
   line-height: 1.6;
+}
+
+.visit-extension-car-number {
+  margin-bottom: 16px !important;
+  color: #111 !important;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.visit-extension-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: #111;
+  font-weight: 700;
+}
+
+.visit-extension-field select {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #cad7e3;
+  border-radius: 6px;
+  color: #111;
+  background: #fff;
+  font: inherit;
 }
 
 .resident-notification-actions {
