@@ -26,6 +26,11 @@ public class NoticeDTO {
     private LocalDateTime dueAt;
     private Long overdueMinutes;
 
+    // 장기주차 알림 상세의 현재 정산 정보
+    private Integer billNo;
+    private Integer chargeMinutes;
+    private BigDecimal billAmount;
+
     // 기존 프론트 호환용 계산 필드
     private Integer stayDays;
     private LocalDateTime expectedOutTime;

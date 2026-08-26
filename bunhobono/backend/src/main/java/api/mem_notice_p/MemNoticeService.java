@@ -48,7 +48,7 @@ public class MemNoticeService {
         return deletedCount;
     }
 
-    // BillingService 등 알림을 발생시키는 백엔드 기능에서 호출한다.
+    // BillService 등 알림을 발생시키는 백엔드 기능에서 호출한다.
     @Transactional
     public int createNotification(MemNoticeDTO dto) {
         validateNotification(dto);

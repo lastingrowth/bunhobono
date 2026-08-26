@@ -19,6 +19,12 @@ public class GateController {
         return gateService.listservice(dto);
     }
 
+    // 입출차 기록과 키오스크 위치에 맞는 활성 출차 게이트 번호 조회
+    @GetMapping("/{carLogNo}/exit-gate")
+    public int exitGate(@PathVariable int carLogNo, @RequestParam(required = false) Integer kioskNo) {
+        return gateService.findExitGateNo(carLogNo, kioskNo);
+    }
+
     //생성
     @PostMapping("/signUp")
     public int signUp(@RequestBody GateDTO dto){

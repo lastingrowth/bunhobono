@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 public class CarLogDTO {
@@ -44,9 +45,17 @@ public class CarLogDTO {
     private String parkingCode;
     private String parkingName;
 
+    // 현재 주차면 조회값
+    private String spaceCode;
+    private String spaceType;
+    private OffsetDateTime spaceUpdatedAt;
+
     // 목록 검색 조건
     @JsonIgnore
     private Integer gateNo;
+
+    @JsonIgnore
+    private String lastFourDigits;
 
     @JsonIgnore
     private String sort;

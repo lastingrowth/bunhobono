@@ -408,7 +408,7 @@ const detailRows = computed(() => {
       },
       {
         label: "카로그 번호",
-        value: showValue(data.car_log_no),
+        value: showValue(data.car_log_no ?? data.snapshot_car_log_no),
       },
       {
         label: "차량번호",
@@ -416,7 +416,7 @@ const detailRows = computed(() => {
       },
       {
         label: "차량 구분",
-        value: getCarKindText(data.snapshot_car_kind),
+        value: getCarKindText(data.car_kind),
       },
       {
         label: "주차장",

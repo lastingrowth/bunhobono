@@ -114,14 +114,39 @@
             <div>
               <dt>요금 규칙명</dt>
               <dd>
-                <button
-                  type="button"
-                  class="fee-rule-link"
-                  :disabled="!detail.ruleName"
-                  @click="goFeeRules"
+                <select
+                  v-if="isEditing"
+                  v-model.number="feeRuleNoDraft"
+                  class="fee-rule-select"
+                  :disabled="
+                    billingStore.loading
+                      || activeFeeRules.length === 0
+                  "
                 >
-                  {{ valueText(detail.ruleName) }}
-                </button>
+                  <option :value="null" disabled>
+                    요금 규칙을 선택하세요
+                  </option>
+
+                  <option
+                    v-for="rule in activeFeeRules"
+                    :key="rule.feeRuleNo"
+                    :value="rule.feeRuleNo"
+                  >
+                    {{ rule.ruleName }}{{ rule.isDefault ? ' (기본)' : '' }}
+                  </option>
+                </select>
+
+                <RouterLink
+                  v-else-if="detail.ruleName"
+                  :to="{ name: 'AdminFeeRuleList' }"
+                  class="fee-rule-link"
+                >
+                  {{ detail.ruleName }}
+                </RouterLink>
+
+                <span v-else>
+                  -
+                </span>
               </dd>
             </div>
         </dl>
@@ -176,11 +201,15 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useDialog } from '@/shared/alert/useDialog'
 import { useBillingStore } from './billingStore'
+import { useFeeRuleStore } from '../fee-rule/feeRuleStore'
 
 const route = useRoute()
 const router = useRouter()
 const billingStore = useBillingStore()
+const feeRuleStore = useFeeRuleStore()
+const { alertDialog } = useDialog()
 
 // 정산 수정 화면 전환 여부
 const isEditing = ref(false)
@@ -188,8 +217,37 @@ const isEditing = ref(false)
 // 관리자가 입력한 무료시간
 const freeTimeDraft = ref(0)
 
+// 관리자가 선택한 요금 규칙 번호
+const feeRuleNoDraft = ref(null)
+
+// 활성 요금 규칙을 판별하는 기준시각
+const currentTime = ref(Date.now())
+
 const detail = computed(() => {
   return billingStore.adminBillingDetail
+})
+
+// 현재 활성화된 요금 규칙을 기본 적용 규칙부터 표시한다.
+const activeFeeRules = computed(() => {
+  const now = currentTime.value
+
+  return feeRuleStore.feeRuleList
+    .filter((rule) => {
+      const effectiveFrom = new Date(rule.effectiveFrom).getTime()
+      const effectiveTo = rule.effectiveTo
+        ? new Date(rule.effectiveTo).getTime()
+        : null
+
+      return effectiveFrom <= now
+        && (effectiveTo === null || effectiveTo > now)
+    })
+    .sort((a, b) => {
+      if (a.isDefault === b.isDefault) {
+        return 0
+      }
+
+      return a.isDefault ? -1 : 1
+    })
 })
 
 // 값이 없는 상세항목은 하이픈으로 표시한다.
@@ -259,44 +317,80 @@ const dateTimeText = (dateTime) => {
   }).format(new Date(dateTime))
 }
 
-// 현재 무료시간을 입력값에 복사하고 수정 상태로 전환한다.
+// 현재 무료시간과 요금 규칙을 입력값에 복사하고 수정 상태로 전환한다.
 const startEdit = () => {
+  currentTime.value = Date.now()
   freeTimeDraft.value = Number(detail.value?.freeTime ?? 0)
+
+  const isCurrentRuleActive = activeFeeRules.value.some(
+    (rule) => rule.feeRuleNo === detail.value?.feeRuleNo
+  )
+
+  feeRuleNoDraft.value = isCurrentRuleActive
+    ? detail.value.feeRuleNo
+    : null
+
   isEditing.value = true
 }
 
 // 입력값을 버리고 상세 조회 상태로 돌아간다.
 const cancelEdit = () => {
   freeTimeDraft.value = Number(detail.value?.freeTime ?? 0)
+  feeRuleNoDraft.value = null
   isEditing.value = false
 }
 
-// 수정한 무료시간을 저장하고 재계산된 상세정보를 표시한다.
+// 수정한 무료시간과 요금 규칙을 저장하고 재계산된 상세정보를 표시한다.
 const saveEdit = async () => {
   const freeTime = Number(freeTimeDraft.value)
+  const feeRuleNo = Number(feeRuleNoDraft.value)
 
   if (!Number.isInteger(freeTime) || freeTime < 0) {
-    window.alert('무료시간은 0분 이상의 정수로 입력해주세요.')
+    await alertDialog({
+      theme: 'admin',
+      type: 'warning',
+      title: '정산 수정값 확인',
+      message: '무료시간은 0분 이상의 정수로 입력해 주세요.'
+    })
+    return
+  }
+
+  if (!Number.isInteger(feeRuleNo) || feeRuleNo <= 0) {
+    await alertDialog({
+      theme: 'admin',
+      type: 'warning',
+      title: '정산 수정값 확인',
+      message: '적용할 요금 규칙을 선택해 주세요.'
+    })
     return
   }
 
   const result = await billingStore.saveAdminBilling(
-    detail.value.carLogNo,
-    freeTime
+    detail.value.billNo,
+    {
+      freeTime,
+      feeRuleNo
+    }
   )
 
   if (!result.success) {
-    window.alert(result.message)
+    await alertDialog({
+      theme: 'admin',
+      type: 'error',
+      title: '정산 수정 실패',
+      message: result.message
+    })
     return
   }
 
+  feeRuleNoDraft.value = null
   isEditing.value = false
-}
 
-// 요금 규칙 관리 화면으로 이동한다.
-const goFeeRules = () => {
-  router.push({
-    name: 'AdminFeeRuleList'
+  await alertDialog({
+    theme: 'admin',
+    type: 'success',
+    title: '정산 수정 완료',
+    message: '정산정보를 수정했습니다.'
   })
 }
 
@@ -307,12 +401,16 @@ const goList = () => {
   })
 }
 
-// 주소의 입출차 기록 번호로 정산 상세정보를 조회한다.
-onMounted(() => {
-  billingStore.loadAdminBillingDetail(
-    Number(route.params.carLogNo)
-  )
+// 정산 상세정보와 선택 가능한 요금 규칙 목록을 조회한다.
+onMounted(async () => {
+  await Promise.all([
+    billingStore.loadAdminBillingDetail(
+      Number(route.params.billNo)
+    ),
+    feeRuleStore.loadFeeRuleList()
+  ])
 })
+
 </script>
 
 <style scoped>
@@ -385,9 +483,10 @@ onMounted(() => {
   overflow-wrap: anywhere;
 }
 
-.free-time-input {
+.free-time-input,
+.fee-rule-select {
+  box-sizing: border-box;
   width: 100%;
-  max-width: 180px;
   padding: 9px 12px;
   border: 1px solid var(--admin-line);
   border-radius: 4px;
@@ -396,10 +495,30 @@ onMounted(() => {
   font: inherit;
 }
 
-.free-time-input:focus {
+.free-time-input {
+  max-width: 180px;
+}
+
+.fee-rule-select {
+  max-width: 300px;
+}
+
+.free-time-input:focus,
+.fee-rule-select:focus {
   border-color: var(--admin-muted);
   outline: none;
   box-shadow: 0 0 0 3px rgba(81, 91, 99, 0.14);
+}
+
+.fee-rule-link {
+  color: #d4b83f;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fee-rule-link:hover {
+  color: #ead46d;
 }
 
 .detail-actions {
@@ -441,27 +560,6 @@ onMounted(() => {
 .save-button:hover {
   border-color: var(--admin-muted);
   background: var(--admin-muted);
-}
-
-.fee-rule-link {
-  padding: 0;
-  border: 0;
-  border-bottom: 1px solid currentColor;
-  color: #d4b83f;
-  background: transparent;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.fee-rule-link:hover:not(:disabled) {
-  color: #ead46d;
-}
-
-.fee-rule-link:disabled {
-  border-bottom-color: transparent;
-  color: var(--admin-muted);
-  cursor: default;
 }
 
 .list-button:disabled,

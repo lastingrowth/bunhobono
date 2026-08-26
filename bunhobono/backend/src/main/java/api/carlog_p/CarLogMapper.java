@@ -14,55 +14,45 @@ import java.util.List;
 @Mapper
 public interface CarLogMapper {
 
-    // 차량 입출차 목록 조회
-    @Select("""
-        <script>
-        SELECT
-            ROW_NUMBER() OVER (
-                ORDER BY detail.in_time
-            ) AS display_no,
-            detail.*,
-            detail.snapshot_car_kind AS car_kind
-        FROM car_log_detail detail
-        WHERE 1 = 1
-
-        <if test="gateNo != null">
-            AND (
-                detail.in_gate_no = #{gateNo}
-                OR detail.out_gate_no = #{gateNo}
-            )
-        </if>
-
-        <if test="parkingNo != null">
-            AND detail.parking_no = #{parkingNo}
-        </if>
-
-        <if test="parkingState != null and parkingState != ''">
-            AND detail.parking_state = #{parkingState}
-        </if>
-
-        <if test="carKind != null and carKind != ''">
-            AND detail.snapshot_car_kind = #{carKind}
-        </if>
-
-        <if test="carNo != null and carNo != ''">
-            AND detail.car_no LIKE CONCAT(
-                '%',
-                #{carNo},
-                '%'
-            )
-        </if>
-
-        <choose>
-            <when test="sort == 'oldest'">
-                ORDER BY detail.in_time
-            </when>
-            <otherwise>
-                ORDER BY detail.in_time DESC
-            </otherwise>
-        </choose>
-        </script>
-    """)
+    // 차량 입출차 목록 동적 조회
+    @Select("<script>" +
+            " SELECT ROW_NUMBER() OVER (ORDER BY detail.in_time) AS display_no, " +
+            " detail.*, detail.snapshot_car_kind AS car_kind, " +
+            " space.space_code, space.space_type, space.updated_at AS space_updated_at " +
+            " FROM car_log_detail detail " +
+            " LEFT JOIN parking_space space " +
+            " ON space.car_log_no = detail.car_log_no " +
+            " AND space.active = TRUE " +
+            " <where> " +
+            " <if test='gateNo != null'> " +
+            " AND (detail.in_gate_no = #{gateNo} " +
+            " OR detail.out_gate_no = #{gateNo}) " +
+            " </if> " +
+            " <if test='parkingNo != null'> " +
+            " AND detail.parking_no = #{parkingNo} " +
+            " </if> " +
+            " <if test='parkingState != null and parkingState != \"\"'> " +
+            " AND detail.parking_state = #{parkingState} " +
+            " </if> " +
+            " <if test='carKind != null and carKind != \"\"'> " +
+            " AND detail.snapshot_car_kind = #{carKind} " +
+            " </if> " +
+            " <if test='carNo != null and carNo != \"\"'> " +
+            " AND detail.car_no LIKE CONCAT('%', #{carNo}, '%') " +
+            " </if> " +
+            " <if test='lastFourDigits != null and lastFourDigits != \"\"'> " +
+            " AND RIGHT(detail.car_no, 4) = #{lastFourDigits} " +
+            " </if> " +
+            " </where> " +
+            " <choose> " +
+            " <when test='sort == \"oldest\"'> " +
+            " ORDER BY detail.in_time " +
+            " </when> " +
+            " <otherwise> " +
+            " ORDER BY detail.in_time DESC " +
+            " </otherwise> " +
+            " </choose> " +
+            "</script>")
     List<CarLogDTO> list(CarLogDTO dto);
 
     // 차량 입출차 상세 조회
@@ -76,6 +66,12 @@ public interface CarLogMapper {
     CarLogDTO detail(
             @Param("carLogNo") int carLogNo
     );
+
+    // 입출차 기록의 무료시간 수정
+    @Update("UPDATE car_log " +
+            " SET free_time = #{freeTime} " +
+            " WHERE car_log_no = #{carLogNo}")
+    int updateFreeTime(CarLogDTO dto);
 
     // 촬영 카메라가 연결된 게이트 조회
     @Select("""

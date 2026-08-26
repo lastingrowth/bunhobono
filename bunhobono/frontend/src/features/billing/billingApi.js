@@ -1,11 +1,14 @@
 import api from "@/shared/api/apiClient";
 
-// 출차 유형, 차량번호 뒤 4자리, 키오스크 번호로 현재 주차 차량을 조회한다.
+// 출차 유형에 따라 입주민 입출차 기록 또는 비입주민 정산서를 조회한다.
 export const getParkingCars = (lastFourDigits, exitType, kioskNo) => {
-    return api.get('/billing/cars', {
+    const url = exitType === 'RESIDENT'
+        ? '/carlog/parking-cars'
+        : '/billing/guest-cars'
+
+    return api.get(url, {
         params: {
             lastFourDigits,
-            exitType,
             kioskNo
         }
     })
@@ -38,14 +41,14 @@ export const getAdminBillingList = () => {
     return api.get('/billing/admin')
 }
 
-// 입출차 기록 번호로 관리자 정산 상세정보 조회
-export const getAdminBillingDetail = (carLogNo) => {
-    return api.get(`/billing/admin/${carLogNo}`)
+// 정산서 번호로 관리자 정산 상세정보 조회
+export const getAdminBillingDetail = (billNo) => {
+    return api.get(`/billing/admin/${billNo}`)
 }
 
-// 미결제 정산의 무료시간 수정 및 정산금액 재계산
-export const updateAdminBilling = (carLogNo, freeTime) => {
-    return api.patch(`/billing/admin/${carLogNo}`, {freeTime})
+// 미결제 정산서의 무료시간과 요금 규칙 수정 및 정산금액 재계산
+export const updateAdminBilling = (billNo, dto) => {
+    return api.patch(`/billing/admin/${billNo}`, dto)
 }
 
 // 완료 정산서를 지난 기록으로 직접 이동
@@ -53,9 +56,9 @@ export const archiveAdminBilling = (billNo) => {
     return api.delete(`/billing/admin/${billNo}/archive`)
 }
 
-// 차량과 현재 키오스크에 맞는 활성 출차 게이트 번호 조회
+// 입출차 기록과 현재 키오스크 위치에 맞는 활성 출차 게이트 번호 조회
 export const getExitGateNo = (carLogNo, kioskNo) => {
-    return api.get(`/billing/cars/${carLogNo}/exit-gate`, {
+    return api.get(`/gates/${carLogNo}/exit-gate`, {
         params: {
             kioskNo
         }

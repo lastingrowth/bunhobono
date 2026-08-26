@@ -171,14 +171,14 @@ export const useBillingStore = defineStore('billing', () => {
         }
     }
 
-    // 입출차 기록 번호로 관리자 정산 상세정보 조회
-    const loadAdminBillingDetail = async (carLogNo) => {
+    // 정산서 번호로 관리자 정산 상세정보 조회
+    const loadAdminBillingDetail = async (billNo) => {
         loading.value = true
         errorMessage.value = ''
         adminBillingDetail.value = null
 
         try {
-            const response = await getAdminBillingDetail(carLogNo)
+            const response = await getAdminBillingDetail(billNo)
 
             adminBillingDetail.value = response.data
 
@@ -202,16 +202,13 @@ export const useBillingStore = defineStore('billing', () => {
         }
     }
 
-        // 미결제 정산의 무료시간을 수정하고 재계산된 상세정보를 저장한다.
-    const saveAdminBilling = async (carLogNo, freeTime) => {
+    // 미결제 정산서의 무료시간과 요금 규칙을 수정하고 재계산된 상세정보를 저장한다.
+    const saveAdminBilling = async (billNo, dto) => {
         loading.value = true
         errorMessage.value = ''
 
         try {
-            const response = await updateAdminBilling(
-                carLogNo,
-                freeTime
-            )
+            const response = await updateAdminBilling(billNo, dto)
 
             adminBillingDetail.value = response.data
 

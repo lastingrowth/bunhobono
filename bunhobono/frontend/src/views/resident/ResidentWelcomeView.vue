@@ -23,7 +23,7 @@
             <span class="menu-arrow" aria-hidden="true">›</span>
           </button>
 
-          <button type="button" class="kiosk-menu-button status" @click="step = 'status'">
+          <button type="button" class="kiosk-menu-button status" @click="showExitStatus">
             <span class="kiosk-button-icon" aria-hidden="true">
               <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22"/><path d="M32 19v14l10 6"/><path d="M21 8h22"/></svg>
             </span>
@@ -174,7 +174,7 @@
             type="button"
             class="request-button"
             :disabled="!isB1Parking"
-            @click="showPreparingMessage"
+            @click="startExitRequest"
           >
             출차 신청
           </button>
@@ -255,9 +255,12 @@ const loadLocations = async () => {
   }
 };
 
-const startExitRequest = async () => {
-  step.value = 'select';
-  await loadLocations();
+const startExitRequest = () => {
+  router.push({ name: 'ResidentExitRequest', query: { mode: 'request' } });
+};
+
+const showExitStatus = () => {
+  router.push({ name: 'ResidentExitRequest', query: { mode: 'status' } });
 };
 
 const selectVehicle = (location) => {
@@ -267,10 +270,6 @@ const selectVehicle = (location) => {
 
 const returnDashboard = () => router.push('/resident/dashboard');
 const goVehicleRegistration = () => router.push('/resident/vehicles?mode=form');
-
-const showPreparingMessage = () => {
-  window.alert('출차 신청 API 연결 후 사용할 수 있습니다.');
-};
 
 onMounted(() => memberStore.loadMypage());
 

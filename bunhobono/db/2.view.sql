@@ -47,6 +47,61 @@ LEFT JOIN parking
     ON in_gate.parking_no = parking.parking_no;
 
 -- =====================================================
+-- BILL DETAIL VIEW
+-- 정산서와 입출차·차량·주차장·요금 규칙을 함께 조회한다.
+-- =====================================================
+CREATE VIEW bill_detail AS
+SELECT
+    b.bill_no,
+    b.car_log_no,
+    b.snapshot_car_log_no,
+    b.snapshot_car_no,
+    b.fee_rule_no,
+    b.kiosk_no,
+    b.charge_minutes,
+    b.bill_amount,
+    b.bill_status,
+    b.payment_order_id,
+    b.payment_key,
+    b.payment_method,
+    b.issued_at,
+    b.paid_at,
+
+    vc.member_no,
+    cl.camera_data_no,
+    b.snapshot_car_no AS car_no,
+    cl.snapshot_car_kind AS car_kind,
+    cl.in_time,
+    cl.out_time,
+    cl.free_time,
+
+    p.parking_no,
+    p.parking_code,
+
+    fr.rule_name,
+    fr.unit_minutes,
+    fr.unit_fee,
+    fr.daily_max_fee,
+    fr.exit_grace_minutes
+
+FROM bill b
+
+LEFT JOIN car_log cl
+    ON b.car_log_no = cl.car_log_no
+
+LEFT JOIN vehicle_car vc
+    ON cl.vehicle_car_no = vc.vehicle_car_no
+
+LEFT JOIN gate in_gate
+    ON cl.in_gate_no = in_gate.gate_no
+
+LEFT JOIN parking p
+    ON in_gate.parking_no = p.parking_no
+
+JOIN fee_rule fr
+    ON b.fee_rule_no = fr.fee_rule_no;
+
+-- =====================================================
 -- ROBOT TASK DETAIL VIEW
 -- 로봇 작업과 차량·이동 공간을 한 번에 조회한다.
 -- =====================================================

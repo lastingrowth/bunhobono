@@ -1,8 +1,12 @@
 package api.gate_p;
 
+import api.carlog_p.CarLogDTO;
+import api.carlog_p.CarLogMapper;
 import jakarta.annotation.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,6 +16,9 @@ public class GateService {
 
     @Resource
     GateMapper gateMapper;
+
+    @Resource
+    CarLogMapper carLogMapper;
 
     @Resource
     TaskScheduler taskScheduler;
@@ -83,6 +90,37 @@ public class GateService {
                 () -> close(gateNo),
                 Instant.now().plusSeconds(CLOSE_DELAY_SECONDS)
         );
+    }
+
+    // 입출차 기록과 키오스크 위치에 맞는 활성 출차 게이트 번호를 조회한다.
+    public int findExitGateNo(int carLogNo, Integer kioskNo) {
+        if (carLogNo <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        CarLogDTO carLog = carLogMapper.detail(carLogNo);
+
+        if (carLog == null || carLog.getParkingNo() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        GateDTO dto = new GateDTO();
+        dto.setParkingNo(carLog.getParkingNo());
+        dto.setGateType("Out");
+
+        if (Integer.valueOf(1).equals(kioskNo)) {
+            dto.setGateCode("B1-OUT-1");
+        } else if (Integer.valueOf(2).equals(kioskNo)) {
+            dto.setGateCode("B1-OUT-2");
+        }
+
+        List<GateDTO> list = gateMapper.list(dto);
+
+        if (list.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        return list.get(0).getGateNo();
     }
 
     // 카메라 번호로 연결된 게이트 조회

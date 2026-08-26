@@ -69,7 +69,7 @@ CREATE TABLE member_archive (
 
 -- =====================================================
 -- MEMBER PURCHASE
--- 입주민의 방문차량 추가 등록 횟수 구매 이력을 보관한다.
+-- 입주민의 방문차량 추가 이용시간 구매 이력을 보관한다.
 -- 회원이 삭제되어도 구매 당시 회원 정보와 결제 이력은 유지한다.
 -- =====================================================
 CREATE TABLE mem_purchase (
@@ -82,10 +82,10 @@ CREATE TABLE mem_purchase (
     snapshot_ho INT,                                       -- 구매 당시 거주 호수
 
     purchase_type VARCHAR(40) NOT NULL
-        DEFAULT 'VISIT_REGISTRATION_COUNT',                 -- 구매 상품 종류
+        DEFAULT 'VISIT_PARKING_MINUTES',                    -- 방문차량 이용시간 구매 상품
 
     purchase_quantity INT NOT NULL
-        CHECK (purchase_quantity > 0),                      -- 구매한 추가 등록 횟수
+        CHECK (purchase_quantity > 0),                      -- 구매시간(분): 120, 600, 1800
 
     purchase_amount NUMERIC(12, 0) NOT NULL
         CHECK (purchase_amount > 0),                        -- 최종 결제 금액

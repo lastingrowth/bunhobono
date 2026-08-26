@@ -1,5 +1,7 @@
 package api.notice_p;
 
+import api.bill_p.BillDTO;
+import api.bill_p.BillService;
 import api.trash_p.TrashService;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,9 @@ public class NoticeService {
     private NoticeMapper noticeMapper;
 
     @Resource
+    private BillService billService;
+
+    @Resource
     private TrashService trashService;
 
     // 관리자 알림 전체 조회
@@ -29,6 +34,18 @@ public class NoticeService {
 
         if (notice == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        if (notice.getCarLogNo() != null
+                && ("VISIT_OVERDUE".equalsIgnoreCase(notice.getNoticeType())
+                || "UNKNOWN_OVERSTAY".equalsIgnoreCase(notice.getNoticeType()))) {
+            BillDTO dto = billService.findCurrentUnpaidBill(notice.getCarLogNo());
+
+            if (dto != null) {
+                notice.setBillNo(dto.getBillNo());
+                notice.setChargeMinutes(dto.getChargeMinutes());
+                notice.setBillAmount(dto.getBillAmount());
+            }
         }
 
         return notice;

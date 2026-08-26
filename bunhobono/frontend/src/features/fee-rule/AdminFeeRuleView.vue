@@ -45,6 +45,8 @@
                 <th>과금 단위</th>
                 <th>단위요금</th>
                 <th>일일 최대요금</th>
+                <th>출차 유예시간</th>
+                <th>기본 적용</th>
                 <th>적용 시작일시</th>
                 <th>적용 종료일시</th>
               </tr>
@@ -59,12 +61,14 @@
                 <td>{{ minuteText(rule.unitMinutes) }}</td>
                 <td>{{ amountText(rule.unitFee) }}</td>
                 <td>{{ amountText(rule.dailyMaxFee) }}</td>
+                <td>{{ minuteText(rule.exitGraceMinutes) }}</td>
+                <td>{{ rule.isDefault ? '예' : '아니오' }}</td>
                 <td>{{ dateTimeText(rule.effectiveFrom) }}</td>
                 <td>{{ dateTimeText(rule.effectiveTo) }}</td>
               </tr>
 
               <tr v-if="currentFeeRules.length === 0">
-                <td colspan="6" class="empty-cell">
+                <td colspan="8" class="empty-cell">
                   현재 사용 중인 요금 규칙이 없습니다.
                 </td>
               </tr>
@@ -86,6 +90,8 @@
                 <th>과금 단위</th>
                 <th>단위요금</th>
                 <th>일일 최대요금</th>
+                <th>출차 유예시간</th>
+                <th>기본 적용</th>
                 <th>등록일시</th>
                 <th>적용 시작일시</th>
                 <th>적용 종료일시</th>
@@ -111,6 +117,8 @@
                 <td>{{ minuteText(rule.unitMinutes) }}</td>
                 <td>{{ amountText(rule.unitFee) }}</td>
                 <td>{{ amountText(rule.dailyMaxFee) }}</td>
+                <td>{{ minuteText(rule.exitGraceMinutes) }}</td>
+                <td>{{ rule.isDefault ? '예' : '아니오' }}</td>
                 <td>{{ dateTimeText(rule.createdAt) }}</td>
                 <td>{{ dateTimeText(rule.effectiveFrom) }}</td>
                 <td>{{ dateTimeText(rule.effectiveTo) }}</td>
@@ -130,7 +138,7 @@
               </tr>
 
               <tr v-if="feeRuleStore.feeRuleList.length === 0">
-                <td colspan="10" class="empty-cell">
+                <td colspan="12" class="empty-cell">
                   등록된 요금 규칙이 없습니다.
                 </td>
               </tr>
@@ -206,10 +214,30 @@
         </label>
 
         <label>
+          출차 유예시간 (분)
+          <input
+            v-model.number="form.exitGraceMinutes"
+            type="number"
+            min="0"
+            step="1"
+            required
+          />
+        </label>
+
+        <label class="checkbox-label">
+          <input
+            v-model="form.isDefault"
+            type="checkbox"
+          />
+          활성 규칙 중 기본으로 적용
+        </label>
+
+        <label>
           적용 시작일시
           <input
             v-model="form.effectiveFrom"
             type="datetime-local"
+            :min="effectiveFromMin"
             required
           />
         </label>
@@ -261,11 +289,7 @@
       </button>
 
       <h3 id="fee-rule-edit-dialog-title">
-        {{
-          scheduledEdit
-            ? '예약 요금 규칙 수정'
-            : '요금 규칙 종료일시 수정'
-        }}
+        요금 규칙 수정
       </h3>
 
       <form @submit.prevent="submitEditFeeRule">
@@ -276,9 +300,7 @@
             type="text"
             maxlength="100"
             required
-            :disabled="
-              !scheduledEdit || feeRuleStore.saving
-            "
+            :disabled="feeRuleStore.saving"
           />
         </label>
 
@@ -290,9 +312,7 @@
             min="1"
             step="1"
             required
-            :disabled="
-              !scheduledEdit || feeRuleStore.saving
-            "
+            :disabled="feeRuleStore.saving"
           />
         </label>
 
@@ -304,9 +324,7 @@
             min="0"
             step="1"
             required
-            :disabled="
-              !scheduledEdit || feeRuleStore.saving
-            "
+            :disabled="feeRuleStore.saving"
           />
         </label>
 
@@ -318,10 +336,29 @@
             min="0"
             step="1"
             placeholder="제한이 없으면 비워두세요"
-            :disabled="
-              !scheduledEdit || feeRuleStore.saving
-            "
+            :disabled="feeRuleStore.saving"
           />
+        </label>
+
+        <label>
+          출차 유예시간 (분)
+          <input
+            v-model.number="editForm.exitGraceMinutes"
+            type="number"
+            min="0"
+            step="1"
+            required
+            :disabled="feeRuleStore.saving"
+          />
+        </label>
+
+        <label class="checkbox-label">
+          <input
+            v-model="editForm.isDefault"
+            type="checkbox"
+            :disabled="!scheduledEdit || feeRuleStore.saving"
+          />
+          활성 규칙 중 기본으로 적용
         </label>
 
         <label>
@@ -329,10 +366,9 @@
           <input
             v-model="editForm.effectiveFrom"
             type="datetime-local"
+            :min="effectiveFromMin"
             required
-            :disabled="
-              !scheduledEdit || feeRuleStore.saving
-            "
+            :disabled="feeRuleStore.saving"
           />
         </label>
 
@@ -384,6 +420,9 @@ const createDialog = ref(null)
 // 요금 규칙 수정 Dialog 요소
 const editDialog = ref(null)
 
+// 현재 열린 Dialog에서 선택할 수 있는 가장 이른 적용 시작일시
+const effectiveFromMin = ref('')
+
 // 수정할 요금 규칙
 const selectedFeeRule = ref(null)
 
@@ -393,6 +432,8 @@ const editForm = reactive({
   unitMinutes: 30,
   unitFee: 0,
   dailyMaxFee: '',
+  exitGraceMinutes: 30,
+  isDefault: false,
   effectiveFrom: '',
   effectiveTo: ''
 })
@@ -403,16 +444,18 @@ const currentTime = ref(Date.now())
 // 현재 시각을 주기적으로 갱신하는 타이머
 let statusTimer = null
 
-// datetime-local 입력값에 사용할 현재 지역시각을 만든다.
-const currentDateTimeInput = () => {
-  const now = new Date()
-
-  now.setMinutes(
-    now.getMinutes() - now.getTimezoneOffset()
+// 현재 시각에서 최소 5분 뒤의 기본 시작일시
+const defaultEffectiveFrom = computed(() => {
+  const date = new Date(
+    Math.ceil((currentTime.value + 5 * 60000) / 60000) * 60000
   )
 
-  return now.toISOString().slice(0, 16)
-}
+  date.setMinutes(
+    date.getMinutes() - date.getTimezoneOffset()
+  )
+
+  return date.toISOString().slice(0, 16)
+})
 
 // 서버의 날짜·시간을 datetime-local 입력값으로 변환한다.
 const dateTimeInput = (dateTime) => {
@@ -435,7 +478,9 @@ const form = reactive({
   unitMinutes: 30,
   unitFee: 0,
   dailyMaxFee: '',
-  effectiveFrom: currentDateTimeInput(),
+  exitGraceMinutes: 30,
+  isDefault: false,
+  effectiveFrom: defaultEffectiveFrom.value,
   effectiveTo: ''
 })
 
@@ -445,7 +490,9 @@ const resetForm = () => {
   form.unitMinutes = 30
   form.unitFee = 0
   form.dailyMaxFee = ''
-  form.effectiveFrom = currentDateTimeInput()
+  form.exitGraceMinutes = 30
+  form.isDefault = false
+  form.effectiveFrom = effectiveFromMin.value
   form.effectiveTo = ''
 }
 
@@ -477,28 +524,24 @@ const statusClass = (rule) => {
   }[statusText(rule)]
 }
 
-// 요금 규칙 상태에 맞는 관리 버튼 문구를 반환한다.
+// 종료 여부에 따라 요금 규칙 수정 버튼 문구를 반환한다.
 const editButtonText = (rule) => {
-  const status = statusText(rule)
-
-  if (status === '예약') {
-    return '수정'
-  }
-
-  if (status === '사용 중') {
-    return rule.effectiveTo
-      ? '종료 수정'
-      : '종료 설정'
-  }
-
-  return '수정 불가'
+  return statusText(rule) === '종료'
+    ? '수정 불가'
+    : '수정'
 }
 
-// 전체 규칙 중 현재 사용 기간에 포함되는 규칙만 표시한다.
+// 현재 사용 중인 규칙을 기본 적용 규칙부터 표시한다.
 const currentFeeRules = computed(() => {
-  return feeRuleStore.feeRuleList.filter(
-    (rule) => statusText(rule) === '사용 중'
-  )
+  return feeRuleStore.feeRuleList
+    .filter((rule) => statusText(rule) === '사용 중')
+    .sort((a, b) => {
+      if (a.isDefault === b.isDefault) {
+        return 0
+      }
+
+      return a.isDefault ? -1 : 1
+    })
 })
 
 // 분 단위 값을 화면용 문구로 표시한다.
@@ -536,6 +579,7 @@ const dateTimeText = (dateTime) => {
 
 // 신규 요금 규칙 등록 Dialog를 연다.
 const openCreateDialog = () => {
+  effectiveFromMin.value = defaultEffectiveFrom.value
   resetForm()
   createDialog.value.showModal()
 }
@@ -569,11 +613,17 @@ const openEditDialog = (rule) => {
   }
 
   selectedFeeRule.value = rule
+  effectiveFromMin.value = defaultEffectiveFrom.value
+
+  const effectiveFrom = dateTimeInput(rule.effectiveFrom)
+
   editForm.ruleName = rule.ruleName
   editForm.unitMinutes = rule.unitMinutes
   editForm.unitFee = rule.unitFee
   editForm.dailyMaxFee = rule.dailyMaxFee ?? ''
-  editForm.effectiveFrom = dateTimeInput(rule.effectiveFrom)
+  editForm.exitGraceMinutes = rule.exitGraceMinutes
+  editForm.isDefault = rule.isDefault
+  editForm.effectiveFrom = scheduledEdit.value && effectiveFrom >= effectiveFromMin.value ? effectiveFrom : effectiveFromMin.value
   editForm.effectiveTo = dateTimeInput(rule.effectiveTo)
   editDialog.value.showModal()
 }
@@ -595,6 +645,8 @@ const resetEditForm = () => {
   editForm.unitMinutes = 30
   editForm.unitFee = 0
   editForm.dailyMaxFee = ''
+  editForm.exitGraceMinutes = 30
+  editForm.isDefault = false
   editForm.effectiveFrom = ''
   editForm.effectiveTo = ''
 }
@@ -625,10 +677,34 @@ const showEditError = async (
   }
 }
 
+// 등록값을 유지한 채 등록 Dialog 대신 오류 Dialog를 표시한다.
+const showCreateError = async (
+  title,
+  message
+) => {
+  const dto = { ...form }
+
+  createDialog.value.close()
+
+  await alertDialog({
+    theme: 'admin',
+    type: 'error',
+    title,
+    message
+  })
+
+  Object.assign(form, dto)
+
+  if (createDialog.value) {
+    createDialog.value.showModal()
+  }
+}
+
 // 입력한 요금 규칙을 등록한다.
 const submitFeeRule = async () => {
   const unitMinutes = Number(form.unitMinutes)
   const unitFee = Number(form.unitFee)
+  const exitGraceMinutes = Number(form.exitGraceMinutes)
 
   const dailyMaxFee =
     form.dailyMaxFee === ''
@@ -636,46 +712,46 @@ const submitFeeRule = async () => {
       : Number(form.dailyMaxFee)
 
   if (!Number.isInteger(unitMinutes) || unitMinutes <= 0) {
-    await alertDialog({
-      theme: 'admin',
-      type: 'error',
-      title: '요금 규칙 입력 오류',
-      message: '과금 단위는 1분 이상의 정수로 입력해 주세요.'
-    })
+    await showCreateError(
+      '요금 규칙 입력 오류',
+      '과금 단위는 1분 이상의 정수로 입력해 주세요.'
+    )
     return
   }
 
   if (!Number.isFinite(unitFee) || unitFee < 0) {
-    await alertDialog({
-      theme: 'admin',
-      type: 'error',
-      title: '요금 규칙 입력 오류',
-      message: '단위요금은 0원 이상으로 입력해 주세요.'
-    })
+    await showCreateError(
+      '요금 규칙 입력 오류',
+      '단위요금은 0원 이상으로 입력해 주세요.'
+    )
     return
   }
 
   if (dailyMaxFee !== null
         && (!Number.isFinite(dailyMaxFee) || dailyMaxFee < 0)
   ) {
-    await alertDialog({
-      theme: 'admin',
-      type: 'error',
-      title: '요금 규칙 입력 오류',
-      message: '일일 최대요금은 0원 이상으로 입력해 주세요.'
-    })
+    await showCreateError(
+      '요금 규칙 입력 오류',
+      '일일 최대요금은 0원 이상으로 입력해 주세요.'
+    )
+    return
+  }
+
+  if (!Number.isInteger(exitGraceMinutes) || exitGraceMinutes < 0) {
+    await showCreateError(
+      '요금 규칙 입력 오류',
+      '출차 유예시간은 0분 이상의 정수로 입력해 주세요.'
+    )
     return
   }
 
   if (form.effectiveTo
         && new Date(form.effectiveTo) <= new Date(form.effectiveFrom)
   ) {
-    await alertDialog({
-      theme: 'admin',
-      type: 'error',
-      title: '요금 규칙 입력 오류',
-      message: '적용 종료일시는 시작일시보다 뒤여야 합니다.'
-    })
+    await showCreateError(
+      '요금 규칙 입력 오류',
+      '적용 종료일시는 시작일시보다 뒤여야 합니다.'
+    )
     return
   }
 
@@ -684,17 +760,17 @@ const submitFeeRule = async () => {
     unitMinutes,
     unitFee,
     dailyMaxFee,
+    exitGraceMinutes,
+    isDefault: form.isDefault,
     effectiveFrom: form.effectiveFrom,
     effectiveTo: form.effectiveTo || null
   })
 
   if (!result.success) {
-    await alertDialog({
-      theme: 'admin',
-      type: 'error',
-      title: '요금 규칙 등록 실패',
-      message: result.message
-    })
+    await showCreateError(
+      '요금 규칙 등록 실패',
+      result.message
+    )
     return
   }
 
@@ -703,12 +779,12 @@ const submitFeeRule = async () => {
   await alertDialog({
     theme: 'admin',
     type: 'success',
-    title: '요금 규칙 등록 완료',
-    message: '새 요금 규칙을 등록했습니다.'
+    title: '요금 규칙 저장 완료',
+    message: '요금 규칙을 저장했습니다.'
   })
 }
 
-// 상태에 따라 예약 규칙 전체 또는 사용 중 규칙의 종료일시를 수정한다.
+// 예약 규칙을 수정하거나 활성 규칙의 새 버전을 등록한다.
 const submitEditFeeRule = async () => {
   if (!selectedFeeRule.value) {
     return
@@ -717,15 +793,14 @@ const submitEditFeeRule = async () => {
   const scheduled = scheduledEdit.value
   const unitMinutes = Number(editForm.unitMinutes)
   const unitFee = Number(editForm.unitFee)
+  const exitGraceMinutes = Number(editForm.exitGraceMinutes)
 
   const dailyMaxFee =
     editForm.dailyMaxFee === ''
       ? null
       : Number(editForm.dailyMaxFee)
 
-  if (scheduled
-        && (!Number.isInteger(unitMinutes) || unitMinutes <= 0)
-  ) {
+  if (!Number.isInteger(unitMinutes) || unitMinutes <= 0) {
     await showEditError(
       '요금 규칙 수정 오류',
       '과금 단위는 1분 이상의 정수로 입력해 주세요.'
@@ -733,9 +808,7 @@ const submitEditFeeRule = async () => {
     return
   }
 
-  if (scheduled
-        && (!Number.isFinite(unitFee) || unitFee < 0)
-  ) {
+  if (!Number.isFinite(unitFee) || unitFee < 0) {
     await showEditError(
       '요금 규칙 수정 오류',
       '단위요금은 0원 이상으로 입력해 주세요.'
@@ -743,8 +816,7 @@ const submitEditFeeRule = async () => {
     return
   }
 
-  if (scheduled
-        && dailyMaxFee !== null
+  if (dailyMaxFee !== null
         && (!Number.isFinite(dailyMaxFee) || dailyMaxFee < 0)
   ) {
     await showEditError(
@@ -754,12 +826,20 @@ const submitEditFeeRule = async () => {
     return
   }
 
-  if (scheduled
-        && new Date(editForm.effectiveFrom) <= new Date()
+  if (!Number.isInteger(exitGraceMinutes) || exitGraceMinutes < 0) {
+    await showEditError(
+      '요금 규칙 수정 오류',
+      '출차 유예시간은 0분 이상의 정수로 입력해 주세요.'
+    )
+    return
+  }
+
+  if (!editForm.effectiveFrom
+        || new Date(editForm.effectiveFrom) <= new Date()
   ) {
     await showEditError(
       '요금 규칙 수정 오류',
-      '예약 규칙의 적용 시작일시는 현재 시각보다 뒤여야 합니다.'
+      '적용 시작일시는 현재 시각보다 뒤여야 합니다.'
     )
     return
   }
@@ -775,22 +855,19 @@ const submitEditFeeRule = async () => {
     return
   }
 
-  const result = scheduled
-    ? await feeRuleStore.saveScheduledFeeRule(
-        selectedFeeRule.value.feeRuleNo,
-        {
-          ruleName: editForm.ruleName.trim(),
-          unitMinutes,
-          unitFee,
-          dailyMaxFee,
-          effectiveFrom: editForm.effectiveFrom,
-          effectiveTo: editForm.effectiveTo || null
-        }
-      )
-    : await feeRuleStore.saveFeeRuleEffectiveTo(
-        selectedFeeRule.value.feeRuleNo,
-        editForm.effectiveTo || null
-      )
+  const result = await feeRuleStore.saveFeeRule(
+    selectedFeeRule.value.feeRuleNo,
+    {
+      ruleName: editForm.ruleName.trim(),
+      unitMinutes,
+      unitFee,
+      dailyMaxFee,
+      exitGraceMinutes,
+      isDefault: editForm.isDefault,
+      effectiveFrom: editForm.effectiveFrom,
+      effectiveTo: editForm.effectiveTo || null
+    }
+  )
 
   if (!result.success) {
     await showEditError(
@@ -808,7 +885,7 @@ const submitEditFeeRule = async () => {
     title: '요금 규칙 수정 완료',
     message: scheduled
       ? '예약 요금 규칙을 수정했습니다.'
-      : '요금 규칙의 적용 종료일시를 수정했습니다.'
+      : '새 버전의 요금 규칙을 등록했습니다.'
   })
 }
 
@@ -979,14 +1056,15 @@ onUnmounted(() => {
 .fee-rule-dialog {
   box-sizing: border-box;
   width: min(560px, calc(100vw - 32px));
-  max-height: none !important;
+  max-height: calc(100vh - 32px) !important;
   margin: auto;
   padding: 28px;
   border: 1px solid #69737b;
   color: #f1f3f5;
   background: #2b3035;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
-  overflow: visible !important;
+  overflow-x: hidden;
+  overflow-y: auto !important;
 }
 
 .fee-rule-dialog::backdrop {
@@ -1021,6 +1099,20 @@ onUnmounted(() => {
   gap: 7px;
   color: #d9dde0;
   font-weight: 700;
+}
+
+.fee-rule-dialog .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.fee-rule-dialog .checkbox-label input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
 }
 
 .fee-rule-dialog input {

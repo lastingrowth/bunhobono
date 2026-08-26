@@ -7,27 +7,25 @@ import java.util.List;
 @Mapper
 public interface GateMapper {
 
-    // 활성 게이트 목록 조회
-    @Select("""
-        SELECT
-            ROW_NUMBER() OVER (
-                ORDER BY g.gate_no
-            ) AS display_no,
-            g.gate_no,
-            g.parking_no,
-            g.gate_code,
-            g.gate_name,
-            g.gate_type,
-            g.gate_area,
-            g.gate_status,
-            p.parking_name,
-            p.parking_location
-        FROM gate g
-        LEFT JOIN parking p
-            ON g.parking_no = p.parking_no
-        WHERE g.active = TRUE
-        ORDER BY g.gate_no
-    """)
+    // 조건에 맞는 활성 게이트 목록 조회
+    @Select("<script>" +
+            " SELECT ROW_NUMBER() OVER (ORDER BY g.gate_no) AS display_no, " +
+            " g.gate_no, g.parking_no, g.gate_code, g.gate_name, g.gate_type, g.gate_area, g.gate_status, " +
+            " p.parking_name, p.parking_location " +
+            " FROM gate g " +
+            " LEFT JOIN parking p ON g.parking_no = p.parking_no " +
+            " WHERE g.active = TRUE " +
+            " <if test='parkingNo != null'> " +
+            " AND g.parking_no = #{parkingNo} " +
+            " </if> " +
+            " <if test='gateCode != null and gateCode != \"\"'> " +
+            " AND g.gate_code = #{gateCode} " +
+            " </if> " +
+            " <if test='gateType != null and gateType != \"\"'> " +
+            " AND g.gate_type = #{gateType} " +
+            " </if> " +
+            " ORDER BY g.gate_no " +
+            "</script>")
     List<GateDTO> list(GateDTO dto);
 
     // 게이트 등록

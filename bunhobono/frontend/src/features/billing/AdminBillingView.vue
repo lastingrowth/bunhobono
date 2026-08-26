@@ -44,14 +44,14 @@
         <tbody>
           <tr
             v-for="(billing, index) in pagedBillingList"
-            :key="billing.carLogNo"
+            :key="billing.billNo"
           >
             <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
             <td>
               <router-link
                 :to="{
                   name: 'AdminBillingDetail',
-                  params: { carLogNo: billing.carLogNo }
+                  params: { billNo: billing.billNo }
                 }"
               >
                 {{ billing.carNo }}
