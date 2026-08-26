@@ -20,7 +20,7 @@
             <span class="menu-arrow" aria-hidden="true">›</span>
           </button>
 
-          <button type="button" class="kiosk-menu-button status" @click="step = 'status'">
+          <button type="button" class="kiosk-menu-button status" @click="showExitStatus">
             <span class="kiosk-button-icon" aria-hidden="true">
               <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22"/><path d="M32 19v14l10 6"/><path d="M21 8h22"/></svg>
             </span>
@@ -48,10 +48,25 @@
           </div>
         </header>
 
-        <section class="status-preparing">
+        <section v-if="billingStore.residentExitTask" class="status-preparing">
+          <div class="status-display-icon" aria-hidden="true">P</div>
+          <h2>{{ billingStore.residentExitTask.carNo || selectedLocation?.carNo || '선택 차량' }}</h2>
+          <p :class="{ 'status-error': billingStore.residentExitTask.taskStatus === 'FAILED' }">
+            {{ residentExitStatusText }}
+          </p>
+          <ol class="status-flow">
+            <li :class="{ active: residentExitStep >= 1 }">신청 접수</li>
+            <li :class="{ active: residentExitStep >= 2 }">로봇 배정</li>
+            <li :class="{ active: residentExitStep >= 3 }">차량 이동</li>
+            <li :class="{ active: residentExitStep >= 4 }">출차 준비 완료</li>
+          </ol>
+          <button type="button" class="status-home-button" @click="step = 'menu'">처음 화면</button>
+        </section>
+
+        <section v-else class="status-preparing">
           <div class="status-display-icon" aria-hidden="true">P</div>
           <h2>출차 신청 내역이 없습니다</h2>
-          <p>출차 신청 API가 연결되면 차량 이동 단계가 이곳에 표시됩니다.</p>
+          <p>출차를 신청하면 차량 이동 단계가 이곳에 표시됩니다.</p>
           <ol class="status-flow">
             <li>신청 접수</li>
             <li>로봇 배정</li>
@@ -162,10 +177,10 @@
           <button
             type="button"
             class="request-button"
-            :disabled="!isB1Parking"
-            @click="showPreparingMessage"
+            :disabled="!isB1Parking || billingStore.loading"
+            @click="requestExit"
           >
-            출차 신청
+            {{ billingStore.loading ? '신청 중' : '출차 신청' }}
           </button>
         </div>
       </template>
@@ -181,17 +196,21 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { getMyVehicleLocations } from '@/shared/api/residentDashboardApi';
+import { useBillingStore } from '@/features/billing/billingStore';
 
+const route = useRoute();
 const router = useRouter();
+const billingStore = useBillingStore();
 
 const step = ref('menu');
 const loading = ref(false);
 const errorMessage = ref('');
 const locations = ref([]);
 const selectedVehicleNo = ref(null);
+let residentExitPollTimer = null;
 
 const selectedLocation = computed(() =>
   locations.value.find(
@@ -206,6 +225,47 @@ const isB1Parking = computed(() => {
   return location.parkingCode === 'B1'
     || String(location.spaceCode || '').startsWith('B1-')
     || String(location.parkingName || '').includes('지하 1층');
+});
+
+// 로봇 출차 작업 단계를 화면의 네 단계로 구분한다.
+const residentExitStep = computed(() => {
+  const task = billingStore.residentExitTask;
+
+  if (!task) return 0;
+  if (task.taskStatus === 'COMPLETED') return 4;
+
+  return {
+    WAITING: 1,
+    TRAFFIC_WAIT_EMPTY: 2,
+    MOVING_TO_PICKUP: 2,
+    PICKUP_POSITIONING: 2,
+    LIFTING: 2,
+    TRAFFIC_WAIT_LOADED: 3,
+    MOVING_TO_DROPOFF: 3,
+    DROPOFF_POSITIONING: 3,
+    LOWERING: 3,
+  }[task.taskPhase] ?? 1;
+});
+
+// 로봇 작업상태를 입주민 화면용 문구로 표시한다.
+const residentExitStatusText = computed(() => {
+  const task = billingStore.residentExitTask;
+
+  if (!task) return '출차 신청 내역이 없습니다.';
+  if (task.taskStatus === 'COMPLETED') return '차량이 출차 대기위치에 도착했습니다.';
+  if (task.taskStatus === 'FAILED') return task.failureReason || '차량 출차 작업에 실패했습니다.';
+
+  return {
+    WAITING: '출차 신청이 접수되었습니다.',
+    TRAFFIC_WAIT_EMPTY: '로봇 이동 경로를 확인하고 있습니다.',
+    MOVING_TO_PICKUP: '로봇이 차량 위치로 이동하고 있습니다.',
+    PICKUP_POSITIONING: '로봇이 차량을 들어 올릴 준비를 하고 있습니다.',
+    LIFTING: '로봇이 차량을 들어 올리고 있습니다.',
+    TRAFFIC_WAIT_LOADED: '출차 이동 경로를 확인하고 있습니다.',
+    MOVING_TO_DROPOFF: '차량을 출차 대기위치로 이동하고 있습니다.',
+    DROPOFF_POSITIONING: '차량을 출차 대기위치에 배치하고 있습니다.',
+    LOWERING: '차량을 출차 대기위치에 내려놓고 있습니다.',
+  }[task.taskPhase] || '출차 작업을 준비하고 있습니다.';
 });
 
 const dateTimeText = (value) => {
@@ -246,16 +306,85 @@ const startExitRequest = async () => {
   await loadLocations();
 };
 
-const selectVehicle = (location) => {
+const selectVehicle = async (location) => {
   selectedVehicleNo.value = location.vehicleCarNo;
+  errorMessage.value = '';
+  await billingStore.selectCar(location, null, 'RESIDENT');
   step.value = 'request';
 };
 
 const returnDashboard = () => router.push('/resident/dashboard');
 
-const showPreparingMessage = () => {
-  window.alert('출차 신청 API 연결 후 사용할 수 있습니다.');
+// 로봇 출차 작업의 반복 조회를 중지한다.
+const stopResidentExitPolling = () => {
+  if (residentExitPollTimer !== null) {
+    window.clearInterval(residentExitPollTimer);
+    residentExitPollTimer = null;
+  }
 };
+
+// 출차 작업의 최신 상태를 조회하고 완료·실패 시 반복 조회를 끝낸다.
+const loadResidentExitStatus = async () => {
+  const result = await billingStore.loadResidentExitTask();
+
+  if (!result.success) {
+    errorMessage.value = result.message;
+    stopResidentExitPolling();
+    return;
+  }
+
+  if (result.task?.taskStatus === 'COMPLETED' || result.task?.taskStatus === 'FAILED') {
+    stopResidentExitPolling();
+  }
+};
+
+// 저장된 출차 작업이 있으면 현황 화면에서 최신 상태를 다시 조회한다.
+const showExitStatus = async () => {
+  step.value = 'status';
+
+  if (!billingStore.residentExitTask) return;
+
+  stopResidentExitPolling();
+  await loadResidentExitStatus();
+
+  const taskStatus = billingStore.residentExitTask?.taskStatus;
+  if (taskStatus !== 'COMPLETED' && taskStatus !== 'FAILED') {
+    residentExitPollTimer = window.setInterval(loadResidentExitStatus, 5000);
+  }
+};
+
+// 선택한 B1 차량의 출차 게이트를 조회하고 로봇 출차 작업을 요청한다.
+const requestExit = async () => {
+  if (!selectedLocation.value?.carLogNo || !isB1Parking.value) return;
+
+  stopResidentExitPolling();
+  errorMessage.value = '';
+
+  const result = await billingStore.requestResidentExit();
+
+  if (!result.success) {
+    errorMessage.value = result.message;
+    return;
+  }
+
+  step.value = 'status';
+  await loadResidentExitStatus();
+
+  const taskStatus = billingStore.residentExitTask?.taskStatus;
+  if (taskStatus !== 'COMPLETED' && taskStatus !== 'FAILED') {
+    residentExitPollTimer = window.setInterval(loadResidentExitStatus, 5000);
+  }
+};
+
+onMounted(async () => {
+  if (route.query.mode === 'request') {
+    await startExitRequest();
+  } else if (route.query.mode === 'status') {
+    await showExitStatus();
+  }
+});
+
+onUnmounted(stopResidentExitPolling);
 
 </script>
 
@@ -291,10 +420,13 @@ const showPreparingMessage = () => {
 .status-display-icon { width: 82px; height: 82px; margin: 0 auto 18px; display: grid; place-items: center; border: 5px solid #9bb4c5; border-radius: 20px; color: #66879d; font-size: 43px; font-weight: 900; }
 .status-preparing h2 { margin: 0 0 10px; color: #294559; }
 .status-preparing > p { margin: 0; color: #7890a2; }
+.status-preparing > p.status-error { color: #a34343; }
 .status-flow { margin: 34px 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; counter-reset: status-step; }
 .status-flow li { position: relative; padding-top: 42px; color: #668096; font-size: 12px; font-weight: 800; counter-increment: status-step; }
 .status-flow li::before { content: counter(status-step); position: absolute; top: 0; left: 50%; z-index: 1; width: 30px; height: 30px; display: grid; place-items: center; border: 3px solid #b8cbd8; border-radius: 50%; color: #668096; background: #fff; transform: translateX(-50%); }
 .status-flow li:not(:last-child)::after { content: ''; position: absolute; top: 15px; left: calc(50% + 15px); width: calc(100% - 30px); height: 3px; background: #d7e2e9; }
+.status-flow li.active { color: #2383cf; }
+.status-flow li.active::before { border-color: #2383cf; color: #fff; background: #2383cf; }
 .status-home-button { min-width: 180px; min-height: 50px; border: 0; border-radius: 13px; color: #fff; background: #315f83; font-weight: 900; cursor: pointer; }
 .vehicle-choice-list { margin-top: 26px; display: grid; gap: 14px; }
 .vehicle-choice-card { position: relative; width: 100%; min-height: 142px; padding: 22px 64px 22px 22px; display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 20px; align-items: center; border: 1px solid #d9e6ee; border-radius: 20px; color: #28485e; background: #fff; box-shadow: 0 9px 24px rgba(53, 88, 111, .08); text-align: left; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }

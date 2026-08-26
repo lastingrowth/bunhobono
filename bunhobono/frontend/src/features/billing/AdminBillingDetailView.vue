@@ -201,6 +201,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useDialog } from '@/shared/alert/useDialog'
 import { useBillingStore } from './billingStore'
 import { useFeeRuleStore } from '../fee-rule/feeRuleStore'
 
@@ -208,6 +209,7 @@ const route = useRoute()
 const router = useRouter()
 const billingStore = useBillingStore()
 const feeRuleStore = useFeeRuleStore()
+const { alertDialog } = useDialog()
 
 // 정산 수정 화면 전환 여부
 const isEditing = ref(false)
@@ -344,12 +346,22 @@ const saveEdit = async () => {
   const feeRuleNo = Number(feeRuleNoDraft.value)
 
   if (!Number.isInteger(freeTime) || freeTime < 0) {
-    window.alert('무료시간은 0분 이상의 정수로 입력해 주세요.')
+    await alertDialog({
+      theme: 'admin',
+      type: 'warning',
+      title: '정산 수정값 확인',
+      message: '무료시간은 0분 이상의 정수로 입력해 주세요.'
+    })
     return
   }
 
   if (!Number.isInteger(feeRuleNo) || feeRuleNo <= 0) {
-    window.alert('적용할 요금 규칙을 선택해 주세요.')
+    await alertDialog({
+      theme: 'admin',
+      type: 'warning',
+      title: '정산 수정값 확인',
+      message: '적용할 요금 규칙을 선택해 주세요.'
+    })
     return
   }
 
@@ -362,12 +374,24 @@ const saveEdit = async () => {
   )
 
   if (!result.success) {
-    window.alert(result.message)
+    await alertDialog({
+      theme: 'admin',
+      type: 'error',
+      title: '정산 수정 실패',
+      message: result.message
+    })
     return
   }
 
   feeRuleNoDraft.value = null
   isEditing.value = false
+
+  await alertDialog({
+    theme: 'admin',
+    type: 'success',
+    title: '정산 수정 완료',
+    message: '정산정보를 수정했습니다.'
+  })
 }
 
 // 정산 목록 화면으로 돌아간다.
