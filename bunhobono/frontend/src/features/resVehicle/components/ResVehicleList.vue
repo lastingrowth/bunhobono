@@ -329,7 +329,8 @@ const splitStatusText = (value) => {
   color: var(--resident-accent-hover);
 }
 
-@media (max-width: 600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .resident-vehicle-table-wrap { overflow: visible; }
   .resident-vehicle-table,
   .resident-vehicle-table tbody,

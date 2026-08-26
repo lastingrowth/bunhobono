@@ -5,7 +5,6 @@
     <header class="page-heading facility-list-heading">
       <div>
         <h1 class="management-list-title">B1 로봇 주차장 배치도</h1>
-        <p>대기면에 차량을 맡기면 주차 로봇이 100개 주차면까지 자동으로 이송합니다.</p>
       </div>
       <div class="map-actions">
         <span class="live"><i></i> 작업 상태 빠른 갱신</span>
@@ -69,7 +68,6 @@
 
         <div class="parking-layout">
         <section class="parking-zone floor-zone">
-          <header><strong>B1 주차구역</strong><span>B1-P001 ~ B1-P100</span></header>
           <div class="robot-set-row top-sets">
             <div v-for="setNo in [1, 2]" :key="setNo" class="robot-set" :class="{ simulating: activeSetNos.has(setNo) }" :data-set-no="setNo">
               <strong>ROBOT SET {{ setNo }}</strong>
@@ -1170,4 +1168,89 @@ onUnmounted(() => {
 .robot-set-row.top-sets{margin-bottom:0}.top-transfer-aisle{height:58px;position:relative;display:flex;align-items:center;justify-content:center;gap:12px;margin:4px 0 5px;padding:0 12%;border-right:2px solid #e8d36c;border-left:2px solid #e8d36c;background:#272d32;overflow:hidden}.top-transfer-aisle::before{content:"";position:absolute;right:0;left:0;top:50%;border-top:2px dashed #68727a}.top-transfer-aisle .direction{z-index:1;position:absolute;color:#d8c968;font-size:20px}.top-transfer-aisle .direction:first-child{left:22%}.top-transfer-aisle .direction:last-child{right:22%}.top-transfer-aisle .cross-line{display:none}.top-transfer-aisle strong{z-index:1;padding:5px 15px;color:#d8c45e;background:#272d32;font-size:8px;font-weight:900;letter-spacing:.12em;white-space:nowrap}
 .parking-map-page :deep(.parking-space.has-car-number>.car-number-lines){gap:2px}.parking-map-page :deep(.car-number-lines .parking-elapsed){display:block!important;color:#c8ded6!important;font-size:6px!important;font-weight:600!important;line-height:1!important;white-space:nowrap!important}
 .space-detail-action{margin-top:14px;padding-top:12px;border-top:1px solid #505960}.space-detail-action button{width:100%;padding:9px 10px;border:1px solid #d0aa37;color:#171b1f;background:#ffc928;font-size:11px;font-weight:900;cursor:pointer}.space-detail-action button:disabled{border-color:#596168;color:#8f999f;background:#2b3035;cursor:not-allowed}.space-detail-action small{display:block;margin-top:7px;color:#9da6ad;font-size:9px;line-height:1.4;text-align:center}
+
+/* 100면 배치도를 데스크톱 한 화면에서 조망할 수 있도록 세로 밀도를 높인다. */
+@media (min-width: 901px) {
+  .parking-map-page { min-height: 0; padding: 10px 14px 12px; }
+  .page-heading { min-height: 0 !important; margin-bottom: 7px; }
+  .page-heading h1 { margin-bottom: 2px; font-size: 21px; }
+  .page-heading p { font-size: 11px; }
+  .map-actions { gap: 8px; }
+  .map-actions button { padding: 6px 10px; font-size: 11px; }
+
+  .map-summary { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 7px; }
+  .map-summary div { padding: 7px 11px; display: flex; align-items: center; justify-content: space-between; }
+  .map-summary span { font-size: 10px; }
+  .map-summary strong { font-size: 20px; }
+
+  .garage-shell { width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 10px; overflow: hidden; }
+  .garage-title { padding-bottom: 6px; }
+  .access-layout {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: clamp(72px, 6vw, 92px) minmax(0, 1fr) clamp(72px, 6vw, 92px);
+    gap: clamp(3px, .35vw, 5px);
+    padding-top: 6px;
+  }
+  .parking-layout { width: 100%; min-width: 0; }
+  .parking-zone { width: 100%; min-width: 0; box-sizing: border-box; padding: 7px; }
+  .floor-zone > header { margin-bottom: 5px; padding: 5px 8px !important; }
+  .bank-label { padding-block: 2px; }
+
+  .parking-bank { width: 100%; min-width: 0; grid-template-columns: repeat(5,minmax(0,1fr)) clamp(11px,1.2vw,19px) repeat(5,minmax(0,1fr)) clamp(11px,1.2vw,19px) repeat(5,minmax(0,1fr)) clamp(11px,1.2vw,19px) repeat(5,minmax(0,1fr)); gap: clamp(1px,.12vw,2px); }
+  .parking-space,
+  .robot-cross-road { height: 37px; }
+  .parking-map-page :deep(.parking-space) {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+  }
+  .parking-map-page :deep(.parking-space:not(.has-car-number):not(.reserved)) {
+    display: grid !important;
+    place-items: center !important;
+    padding: 0 !important;
+    text-align: center !important;
+  }
+  .parking-map-page :deep(.parking-space:not(.has-car-number):not(.reserved) > span) {
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    padding: 0 !important;
+    color: #d8dde1 !important;
+    -webkit-text-fill-color: #d8dde1 !important;
+    font-size: clamp(9px, .7vw, 14px) !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+  .car-shape { width: 14px; height: 25px; top: 6px; }
+
+  .robot-set-row { min-height: 30px; padding: 3px 11%; }
+  .robot-set-row.top-sets { margin-bottom: 0; }
+  .robot-set-row.bottom-sets { margin-top: 3px; }
+  .robot-set { width: 72px; padding: 3px 5px; }
+  .robot-set > strong { margin-bottom: 2px; font-size: 6px; }
+  .robot-set span { width: 26px; padding: 2px 0; }
+  .top-transfer-aisle,
+  .drive-aisle { height: 36px; margin-block: 2px; }
+  .cross-aisle { height: 32px; margin: 4px -7px; }
+
+  .side-entrance { padding: 5px 4px; }
+  .entrance-title { padding-bottom: 5px; font-size: 9px; }
+  .outside-label { margin: 5px 0; padding: 4px 0; }
+  .gate-barrier { padding: 5px 0 3px; }
+  .side-waiting { gap: 3px; }
+  .side-waiting .waiting-space { min-height: 27px; }
+  .flow-arrow { padding: 3px; font-size: 17px; }
+  .side-road { width: 42px; min-height: 35px; }
+  .map-legend { width: 100%; min-width: 0; flex-wrap: wrap; gap: 16px; padding-top: 7px; }
+}
 </style>

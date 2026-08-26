@@ -371,7 +371,8 @@ onBeforeUnmount(stopChallengeTimer);
 .captcha-timer { margin: 0; color: #2563eb; font-size: 14px; }
 .captcha-timer.expired { color: #dc2626; font-weight: 700; }
 
-@media (max-width: 760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .resident-edit-page { width: 100%; padding: 18px 12px; }
     .edit-page-title { margin-bottom: 16px; }
     .edit-page-title h2 { font-size: 25px; }

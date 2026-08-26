@@ -43,7 +43,7 @@
                         <td>{{ kiosk.installDate || '-' }}</td>
                         <td>
                             <button
-                                class="delete-button"
+                                class="delete-button list-delete-text"
                                 type="button"
                                 @click="requestDelete(kiosk)"
                             >

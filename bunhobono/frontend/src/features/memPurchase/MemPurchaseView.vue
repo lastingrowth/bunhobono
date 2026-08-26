@@ -124,5 +124,5 @@ const formatAmount = (value) => `${Number(value || 0).toLocaleString("ko-KR")}ì›
 .purchase-summary div { display: flex; justify-content: space-between; gap: 12px; }.purchase-summary span { color: #626b73; }.purchase-summary strong { font-weight: 900; }.purchase-summary .amount { color: #23a6d5; font-size: 20px; }
 .payment-button { width: 100%; min-height: 56px; margin-top: 18px; border: 0; border-radius: 12px; color: #fff; background: #23a6d5; cursor: pointer; font-size: 18px; font-weight: 900; }
 .payment-button:disabled { cursor: wait; opacity: .6; }.error-message { margin: 18px 0 0; color: #c33; text-align: center; font-weight: 700; }
-@media(max-width:700px){.purchase-page{width:calc(100% - 24px)}.purchase-header{flex-direction:column}.product-grid{grid-template-columns:1fr}.product-card{min-height:150px}.purchase-summary{grid-template-columns:1fr}.purchase-summary div{flex-direction:column}}
+@media (any-pointer: coarse) and (max-width: 820px), (any-pointer: coarse) and (max-height: 820px){.purchase-page{width:calc(100% - 24px)}.purchase-header{flex-direction:column}.product-grid{grid-template-columns:1fr}.product-card{min-height:150px}.purchase-summary{grid-template-columns:1fr}.purchase-summary div{flex-direction:column}}
 </style>

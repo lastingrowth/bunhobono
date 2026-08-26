@@ -1809,6 +1809,156 @@ body:has(.admin-dashboard),
   background: #24292e !important;
 }
 
+/* 모든 관리자 화면에서 왼쪽 메뉴를 같은 컴팩트 크기로 표시한다. */
+.admin-layout .sidebar:not(.collapsed) {
+  width: 184px;
+  padding: 12px 10px;
+  gap: 3px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* 모든 관리자 화면에서 메뉴를 접으면 얇은 레일도 남기지 않는다. */
+.admin-layout .sidebar.collapsed {
+  width: 0;
+  padding: 0;
+  gap: 0;
+  border-right: 0;
+  overflow: hidden;
+}
+
+.admin-layout .sidebar.collapsed .menu-item {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.admin-layout .sidebar:not(.collapsed) .menu-item {
+  min-height: 34px;
+  padding: 6px 9px;
+  gap: 8px;
+  border-radius: 4px;
+}
+
+.admin-layout .sidebar:not(.collapsed) .menu-item::before {
+  border-top-width: 4px;
+  border-bottom-width: 4px;
+  border-left-width: 6px;
+}
+
+.admin-layout .sidebar:not(.collapsed) .menu-title {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+/* 영상 중심의 관제 화면: 정보 박스는 내용에 맞춰 조밀하게 정리한다. */
+.admin-layout:has(.admin-dashboard) .admin-control-layout {
+  grid-template-columns: minmax(0, 64fr) minmax(380px, 36fr);
+}
+
+.admin-layout:has(.admin-dashboard) .admin-control-right {
+  grid-template-rows: minmax(0, 0.27fr) minmax(0, 0.27fr) minmax(0, 0.46fr);
+}
+
+.admin-layout:has(.admin-dashboard) .carlog-dashboard-block > .section-heading,
+.admin-layout:has(.admin-dashboard) .camera-dashboard-block > .section-heading {
+  min-height: 27px;
+  margin: 0;
+  padding: 2px 6px;
+}
+
+.admin-layout:has(.admin-dashboard) :is(.carlog-dashboard-block, .camera-dashboard-block) .section-heading h3 {
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.admin-layout:has(.admin-dashboard) .dashboard-follow-title.active::after {
+  font-size: 9px;
+}
+
+.admin-layout:has(.admin-dashboard) .dashboard-view-all-button {
+  height: 20px;
+  padding: 0 6px;
+  font-size: 9px;
+}
+
+.admin-layout:has(.admin-dashboard) :is(.carlog-dashboard-block, .camera-dashboard-block) .dashboard-log-table {
+  font-size: 9px;
+}
+
+.admin-layout:has(.admin-dashboard) :is(.carlog-dashboard-block, .camera-dashboard-block) .dashboard-log-table :is(th, td) {
+  height: 21px;
+  padding: 1px 3px;
+  line-height: 1.1;
+}
+
+.admin-layout:has(.admin-dashboard) :is(.carlog-dashboard-block, .camera-dashboard-block) .dashboard-log-table th {
+  font-size: 9px;
+}
+
+.admin-layout:has(.admin-dashboard) .carlog-dashboard-block .dashboard-log-table th:nth-child(1) { width: 20%; }
+.admin-layout:has(.admin-dashboard) .carlog-dashboard-block .dashboard-log-table th:nth-child(2) { width: 16%; }
+.admin-layout:has(.admin-dashboard) .carlog-dashboard-block .dashboard-log-table th:nth-child(3) { width: 15%; }
+.admin-layout:has(.admin-dashboard) .carlog-dashboard-block .dashboard-log-table th:nth-child(4) { width: 9%; }
+.admin-layout:has(.admin-dashboard) .carlog-dashboard-block .dashboard-log-table th:nth-child(5) { width: 40%; }
+
+.admin-layout:has(.admin-dashboard) .camera-dashboard-block .dashboard-log-table th:nth-child(1) { width: 26%; }
+.admin-layout:has(.admin-dashboard) .camera-dashboard-block .dashboard-log-table th:nth-child(2) { width: 14%; }
+.admin-layout:has(.admin-dashboard) .camera-dashboard-block .dashboard-log-table th:nth-child(3) { width: 20%; }
+.admin-layout:has(.admin-dashboard) .camera-dashboard-block .dashboard-log-table th:nth-child(4) { width: 40%; }
+
+.admin-layout:has(.admin-dashboard) .carlog-dashboard-block .state-badge {
+  height: 16px;
+  padding: 0 3px;
+  font-size: 9px;
+}
+
+.admin-layout:has(.admin-dashboard) .selected-log-content {
+  grid-template-columns: minmax(0, 1.3fr) minmax(190px, 0.7fr);
+}
+
+.admin-layout:has(.admin-dashboard) .selected-log-info > div {
+  grid-template-columns: 56px minmax(0, 1fr);
+  padding: 0 3px;
+}
+
+.admin-layout:has(.admin-dashboard) .selected-log-info dt {
+  font-size: 9px;
+  line-height: 1.1;
+}
+
+.admin-layout:has(.admin-dashboard) .selected-log-info dd {
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.admin-layout:has(.admin-dashboard) .dashboard-bottom-strip {
+  min-height: 48px;
+  margin: 0;
+  padding: 6px 10px;
+  gap: 6px;
+}
+
+.admin-layout:has(.admin-dashboard) .quick-register-inline {
+  gap: 4px;
+}
+
+.admin-layout:has(.admin-dashboard) .quick-register-inline :is(input, select) {
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.admin-layout:has(.admin-dashboard) .quick-register-inline button,
+.admin-layout:has(.admin-dashboard) .dashboard-alert-chips .alert-chip {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
 .content:has(.admin-dashboard) {
   background: #24292e !important;
 }

@@ -103,7 +103,8 @@ function openAiChat() {
 <style scoped>
 .resident-mobile-bottom-nav { display: none; }
 
-@media (max-width: 760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .resident-mobile-bottom-nav {
         position: fixed;
         z-index: 1100;

@@ -47,7 +47,16 @@
             :key="billing.carLogNo"
           >
             <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
-            <td>{{ billing.carNo }}</td>
+            <td>
+              <router-link
+                :to="{
+                  name: 'AdminBillingDetail',
+                  params: { carLogNo: billing.carLogNo }
+                }"
+              >
+                {{ billing.carNo }}
+              </router-link>
+            </td>
             <td>{{ carKindText(billing.carKind) }}</td>
             <td>{{ billing.parkingCode }}</td>
             <td>{{ amountText(billing.billAmount) }}</td>
@@ -58,15 +67,7 @@
             <td>
               <button
                 type="button"
-                class="detail-button"
-                @click="goDetail(billing.carLogNo)"
-              >
-                상세
-              </button>
-
-              <button
-                type="button"
-                class="archive-button"
+                class="archive-button list-delete-text"
                 @click="pendingArchiveBilling = billing"
               >
                 삭제
@@ -204,16 +205,6 @@ const goFeeRules = () => {
   })
 }
 
-// 선택한 입출차 기록의 정산 상세 화면으로 이동한다.
-const goDetail = (carLogNo) => {
-  router.push({
-    name: 'AdminBillingDetail',
-    params: {
-      carLogNo
-    }
-  })
-}
-
 // 이동 요청 중이 아닐 때 확인 Dialog를 닫는다.
 const cancelArchive = () => {
   if (!archiving.value) {
@@ -317,16 +308,6 @@ onUnmounted(() => {
 
 .billing-admin-page .page-state.error {
   color: #c73d3d;
-}
-
-.detail-button {
-  padding: 8px 16px;
-  border: 0;
-  border-radius: 7px;
-  color: #fff;
-  background: #345b7e;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .archive-button {

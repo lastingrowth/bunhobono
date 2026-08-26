@@ -303,12 +303,12 @@ textarea:focus {
   background: #cbd1d5 !important;
 }
 
-.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button),
+.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button):not(.card-delete-button):not(.delete-btn):not(.list-delete-text):not(.list-edit-text),
 .admin-layout .dashboard-view-all-button {
   border-color: #444d54;
 }
 
-.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button):hover,
+.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button):not(.card-delete-button):not(.delete-btn):not(.list-delete-text):not(.list-edit-text):hover,
 .admin-layout .dashboard-view-all-button:hover {
   border-color: #20252a !important;
   color: #ffffff !important;
@@ -557,7 +557,7 @@ textarea:focus {
   box-shadow: 0 0 0 2px rgba(255, 201, 40, 0.14) !important;
 }
 
-.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button),
+.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button):not(.card-delete-button):not(.delete-btn):not(.list-delete-text):not(.list-edit-text),
 .admin-layout .dashboard-view-all-button,
 .admin-layout .back-to-list-button,
 .admin-layout .period-buttons button,
@@ -569,7 +569,7 @@ textarea:focus {
   box-shadow: none !important;
 }
 
-.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button):hover,
+.admin-layout .content button:not(.camera-gate-button):not(.camera-play-button):not(.card-delete-button):not(.delete-btn):not(.list-delete-text):not(.list-edit-text):hover,
 .admin-layout .dashboard-view-all-button:hover,
 .admin-layout .back-to-list-button:hover,
 .admin-layout .period-buttons button:hover,
@@ -1845,4 +1845,68 @@ textarea:focus {
   .admin-layout .admin-header-clock i,
   .admin-layout .user-role,
   .admin-layout .user-name { display: none; }
+}
+
+/* 목록의 삭제 동작은 버튼 박스 대신 한눈에 구분되는 빨간 텍스트로 표시한다. */
+.admin-layout .content button.list-delete-text {
+  display: inline !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #ff626b !important;
+  -webkit-text-fill-color: #ff626b !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-layout .content button.list-delete-text:hover:not(:disabled),
+.admin-layout .content button.list-delete-text:focus-visible {
+  border: 0 !important;
+  color: #ff7a82 !important;
+  -webkit-text-fill-color: #ff7a82 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-decoration: underline;
+}
+
+/* 목록 수정 동작은 삭제 텍스트와 같은 형태에 밝은 하늘색을 사용한다. */
+.admin-layout .content button.list-edit-text {
+  display: inline !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 14px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #67d8ff !important;
+  -webkit-text-fill-color: #67d8ff !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-layout .content button.list-edit-text:hover:not(:disabled),
+.admin-layout .content button.list-edit-text:focus-visible {
+  border: 0 !important;
+  color: #9be7ff !important;
+  -webkit-text-fill-color: #9be7ff !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-decoration: underline;
 }

@@ -1200,7 +1200,8 @@ const signupGo = async () => {
     }
 }
 
-@media (max-width: 700px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .signup-card:not(.admin-signup-card) {
         padding: 28px 24px;
     }
@@ -1272,7 +1273,8 @@ const signupGo = async () => {
     box-shadow: 0 10px 22px rgba(36, 111, 184, 0.35) !important;
 }
 
-@media (max-width: 560px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .signup-card:not(.admin-signup-card) {
         padding: 26px 18px;
         border-radius: 16px;

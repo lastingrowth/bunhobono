@@ -2,6 +2,7 @@ import router from "@/router"
 import api from "@/shared/api/apiClient"
 import { jwtDecode } from "jwt-decode"
 import { defineStore } from "pinia"
+import { isMobileDevice } from "@/shared/responsive/mobileDevice"
 
 
 export const useJwtStore = defineStore('jwtStore', {
@@ -56,6 +57,11 @@ export const useJwtStore = defineStore('jwtStore', {
           localStorage.removeItem('memStatus')
 
           return false
+        }
+
+        // 모바일·태블릿에서는 관리자 계정의 로그인을 허용하지 않는다.
+        if (this.role === 'ADMIN' && isMobileDevice()) {
+          return blockLogin('관리자 페이지는 PC 환경에서만 이용할 수 있습니다.')
         }
 
         // 가입 승인 대기 회원은 관리자 승인 전까지 로그인할 수 없다.

@@ -30,3 +30,13 @@ def predict_next_gate():
         return service.predict_next()
     except Exception as error:
         raise HTTPException(status_code=500, detail=f"게이트 예측 실패: {error}") from error
+
+
+@router.post("/{equipment_no}/complete-action")
+def complete_gate_action(equipment_no: str):
+    try:
+        return service.complete_action(equipment_no)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"게이트 조치 완료 처리 실패: {error}") from error

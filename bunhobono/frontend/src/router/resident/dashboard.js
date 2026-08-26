@@ -2,25 +2,26 @@ import { defineComponent, h, onBeforeUnmount, onMounted, ref } from "vue";
 import ResidentDashboardView from "@/views/resident/ResidentDashboardView.vue";
 import ResidentDashboardMobileView from "@/views/resident/mobile/ResidentDashboardMobileView.vue";
 import ResidentExitRequestView from "@/views/resident/ResidentExitRequestView.vue";
+import { isMobileDevice } from "@/shared/responsive/mobileDevice";
 
 // 화면 너비에 따라 PC 또는 모바일 입주민 대시보드를 표시한다.
 const ResidentDashboard = defineComponent({
     setup() {
         const isMobile = ref(false);
-        let mediaQuery;
 
-        const updateScreen = (event) => {
-            isMobile.value = event.matches;
+        const updateScreen = () => {
+            isMobile.value = isMobileDevice();
         };
 
         onMounted(() => {
-            mediaQuery = window.matchMedia("(max-width: 760px)");
-            isMobile.value = mediaQuery.matches;
-            mediaQuery.addEventListener("change", updateScreen);
+            updateScreen();
+            window.addEventListener("orientationchange", updateScreen);
+            window.addEventListener("resize", updateScreen);
         });
 
         onBeforeUnmount(() => {
-            mediaQuery?.removeEventListener("change", updateScreen);
+            window.removeEventListener("orientationchange", updateScreen);
+            window.removeEventListener("resize", updateScreen);
         });
 
         return () => h(

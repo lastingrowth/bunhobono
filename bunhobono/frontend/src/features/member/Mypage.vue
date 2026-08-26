@@ -281,7 +281,8 @@ onBeforeUnmount(stopChallengeTimer);
 .captcha-timer.expired { color: #dc2626; font-weight: 700; }
 .security-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-@media (max-width: 760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .resident-mypage { width: 100%; min-width: 0; max-width: 100%; margin: 0; padding: 8px 8px 76px; overflow: hidden; }
     .mypage-title { margin-bottom: 7px; text-align: left; }
     .mypage-title h2 { font-size: 21px; }

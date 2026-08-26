@@ -274,7 +274,8 @@ onMounted(() => {
   color: #be4242;
 }
 
-@media (max-width: 760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .resident-faq-page {
     width: calc(100% - 24px);
     padding: 18px;

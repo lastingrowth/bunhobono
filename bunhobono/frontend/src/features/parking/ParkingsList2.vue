@@ -71,8 +71,8 @@
                 <button class="delete-button" type="button" @click="cancelEdit">취소</button>
               </template>
               <template v-else>
-                <button class="edit-button" type="button" @click="startEdit(p)">수정</button>
-                <button class="delete-button" type="button" @click="requestDelete(p)">삭제</button>
+                <button class="edit-button list-edit-text" type="button" @click="startEdit(p)">수정</button>
+                <button class="delete-button list-delete-text" type="button" @click="requestDelete(p)">삭제</button>
               </template>
             </td>
 

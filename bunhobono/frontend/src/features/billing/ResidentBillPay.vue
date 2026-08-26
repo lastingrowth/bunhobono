@@ -103,5 +103,5 @@ const formatDateTime = (value) => value ? new Intl.DateTimeFormat("ko-KR", { dat
 .bill-card .pay-button { width: 100%; margin-top: 24px; border-color: #23a6d5; color: #fff; background: #23a6d5; }
 .page-state { padding: 60px; text-align: center; }.page-state.error { color: #c33; }
 .paid-message { margin: 24px 0 0; color: #087443; text-align: center; font-weight: 800; }
-@media(max-width:700px){.resident-bill-page{width:calc(100% - 24px)}.bill-card dl{grid-template-columns:1fr}.resident-bill-page header{align-items:flex-start;flex-direction:column;gap:12px}}
+@media (any-pointer: coarse) and (max-width: 820px), (any-pointer: coarse) and (max-height: 820px){.resident-bill-page{width:calc(100% - 24px)}.bill-card dl{grid-template-columns:1fr}.resident-bill-page header{align-items:flex-start;flex-direction:column;gap:12px}}
 </style>

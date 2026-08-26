@@ -87,7 +87,23 @@
     <template v-else>
       <header class="page-header">
         <h2>1:1 문의 상세</h2>
-        <button type="button" class="secondary-button" @click="goList">목록</button>
+        <div class="header-actions">
+          <button
+            v-if="store.inquiry"
+            type="button"
+            class="delete-button"
+            :disabled="store.deletingInquiryNo === store.inquiry.inquiryNo"
+            @click="deleteInquiry(store.inquiry)"
+          >
+            {{ store.deletingInquiryNo === store.inquiry.inquiryNo
+              ? "이동 중"
+              : "지난기록 이동" }}
+          </button>
+
+          <button type="button" class="secondary-button" @click="goList">
+            목록
+          </button>
+        </div>
       </header>
 
       <p v-if="store.loading" class="page-state">문의사항을 불러오는 중입니다.</p>
@@ -155,11 +171,13 @@ import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import Pagination from "@/shared/pagination/Pagination.vue";
 import { usePagination } from "@/shared/pagination/usePagination";
+import { useDialog } from "@/shared/alert/useDialog";
 import { useInquiryStore } from "./inquiryStore";
 
 const route = useRoute();
 const router = useRouter();
 const store = useInquiryStore();
+const { alertDialog, confirmDialog } = useDialog();
 const { adminInquiries } = storeToRefs(store);
 const answerContent = ref("");
 const successMessage = ref("");
@@ -242,6 +260,38 @@ const goList = () => router.push({
   query: route.query.status === "ANSWERED" ? { status: "ANSWERED" } : {},
 });
 
+const deleteInquiry = async (item) => {
+  const confirmMessage =
+    item.rootInquiryNo !== null
+      ? "재문의 이동 시 원본 문의까지 지난 기록으로 이동합니다.\n이동하시겠습니까?"
+      : "연결된 재문의까지 모두 지난 기록으로 이동합니다.\n이동하시겠습니까?";
+
+  const confirmed = await confirmDialog({
+    theme: "admin",
+    type: "warning",
+    title: "문의 지난기록 이동",
+    message: confirmMessage,
+    confirmText: "이동",
+    cancelText: "취소"
+  });
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await store.removeAdminInquiry(item.inquiryNo);
+    goList();
+  } catch (error) {
+    await alertDialog({
+      theme: "admin",
+      type: "error",
+      title: "문의 이동 실패",
+      message: store.errorMessage
+    });
+  }
+};
+
 const submitAnswer = async () => {
   const content = answerContent.value.trim();
 
@@ -267,8 +317,9 @@ watch(
 .page-header h2,.detail-heading h3 { margin: 0; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
 .status-tabs { display: flex; gap: 8px; }
-.status-tabs button,.secondary-button,.answer-form button { min-height: 38px; padding: 8px 15px; border: 1px solid #c9d5df; border-radius: 7px; background: #fff; cursor: pointer; font-weight: 700; }
+.status-tabs button,.secondary-button,.delete-button,.answer-form button { min-height: 38px; padding: 8px 15px; border: 1px solid #c9d5df; border-radius: 7px; background: #fff; cursor: pointer; font-weight: 700; }
 .status-tabs button.active,.answer-form button { border-color: #168bd2; color: #fff; background: #168bd2; }
+.delete-button { border-color: #c73d3d; color: #fff; background: #c73d3d; }
 .table-wrap { width: 100%; overflow-x: auto; }
 table { width: 100%; min-width: 850px; border-collapse: collapse; background: #fff; }
 th,td { padding: 11px 10px; border: 1px solid #dce5ec; text-align: center; }

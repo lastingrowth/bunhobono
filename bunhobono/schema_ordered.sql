@@ -1,7 +1,7 @@
 BEGIN;
 -- =====================================================
 -- DROP schema 전체삭제후 재생성 
--- 21개의 테이블		2026-08-10
+-- 27개의 테이블		2026-08-10
 -- =====================================================
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
@@ -11,7 +11,6 @@ CREATE SCHEMA public;
 -- 실제 아파트 세대만 저장하며 관리실 0동 0호는 만들지 않는다.
 -- =====================================================
 CREATE TABLE apartment_unit (
-    
     apartment_unit_no SERIAL PRIMARY KEY,				-- 세대를 다른 테이블에서 참조할 때 사용하는 내부 고유번호
     dong INT NOT NULL,							 		-- 아파트 동 번호. 관리실을 의미하는 0동은 허용하지 않는다.
     ho INT NOT NULL,							 		-- 아파트 호수. 0호와 음수는 허용하지 않는다.
@@ -30,6 +29,7 @@ CREATE TABLE member (
     login_id VARCHAR(30) NOT NULL UNIQUE,			-- 로그인에 사용하는 아이디. 회원 간 중복을 허용하지 않는다.
     login_pwd VARCHAR(100) NOT NULL,				-- 암호화된 로그인 비밀번호
     unit_no INT,									-- 입주민이 거주하는 세대 번호. 관리자는 NULL이다.
+    email varchar(255),                             -- email
     mem_name VARCHAR(30) NOT NULL,					-- 회원 이름
     mem_phone VARCHAR(30),							-- 회원 연락처. 미입력 상태를 허용한다.
 
@@ -69,25 +69,23 @@ CREATE TABLE member_archive (
 
 -- =====================================================
 -- MEMBER PURCHASE
--- 입주민의 방문차량 추가 이용시간 구매 이력을 보관한다.
+-- 입주민의 방문차량 추가 등록 횟수 구매 이력을 보관한다.
 -- 회원이 삭제되어도 구매 당시 회원 정보와 결제 이력은 유지한다.
 -- =====================================================
 CREATE TABLE mem_purchase (
 
     mem_purchase_no SERIAL PRIMARY KEY,                    -- 구매 주문 고유번호
-
     member_no INT,                                         -- 구매한 회원 고유번호
-
     snapshot_login_id VARCHAR(30) NOT NULL,                -- 구매 당시 로그인 아이디
-    snapshot_member_name VARCHAR(30) NOT NULL,              -- 구매 당시 회원 이름
-    snapshot_dong INT,                                      -- 구매 당시 거주 동
-    snapshot_ho INT,                                        -- 구매 당시 거주 호수
+    snapshot_member_name VARCHAR(30) NOT NULL,             -- 구매 당시 회원 이름
+    snapshot_dong INT,                                     -- 구매 당시 거주 동
+    snapshot_ho INT,                                       -- 구매 당시 거주 호수
 
     purchase_type VARCHAR(40) NOT NULL
-        DEFAULT 'VISIT_PARKING_MINUTES',                    -- 방문차량 이용시간 구매 상품
+        DEFAULT 'VISIT_REGISTRATION_COUNT',                 -- 구매 상품 종류
 
     purchase_quantity INT NOT NULL
-        CHECK (purchase_quantity > 0),                      -- 구매시간(분): 120, 600, 1800
+        CHECK (purchase_quantity > 0),                      -- 구매한 추가 등록 횟수
 
     purchase_amount NUMERIC(12, 0) NOT NULL
         CHECK (purchase_amount > 0),                        -- 최종 결제 금액
@@ -142,7 +140,6 @@ CREATE TABLE gate (
     parking_no INT,                           -- 게이트가 설치된 주차장 고유번호
     gate_code VARCHAR(30) NOT NULL UNIQUE,    -- 게이트 식별 코드
     gate_name VARCHAR(100) NOT NULL,          -- 게이트 이름
-
     gate_type VARCHAR(10) NOT NULL            -- In: 입차 게이트, Out: 출차 게이트
         CHECK (gate_type IN ('In', 'Out')),
     gate_area VARCHAR(20) NOT NULL,           -- 게이트가 위치한 구역
@@ -226,7 +223,6 @@ CREATE TABLE camera_data (
     recognition_state BOOLEAN,                        -- 차량번호 인식 성공 여부
     confidence_score NUMERIC(5,2),                    -- OCR 차량번호 인식 신뢰도
     cam_note VARCHAR(100),                            -- 카메라 데이터에 대한 관리자 비고
-
     gate_opened BOOLEAN NOT NULL DEFAULT FALSE,       -- 정문·후문에서 실제 게이트가 열린 촬영 기록
     gate_opened_at TIMESTAMP,                         -- 게이트가 열린 시각
 
@@ -292,7 +288,7 @@ CREATE TABLE car_log (
 -- 값이 있으면 해당 입출차 기록의 차량이 사용 중인 자리이다.
 -- =====================================================
 CREATE TABLE parking_space (
-    space_no BIGSERIAL PRIMARY KEY,                            -- 주차면 내부 고유번호
+    space_no SERIAL PRIMARY KEY,                            -- 주차면 내부 고유번호
     parking_no INT NOT NULL,                                   -- 주차면이 소속된 주차장 고유번호
     gate_no INT,                                               -- 입·출차 대기면과 연결된 게이트 고유번호
     car_log_no INT UNIQUE,                                     -- 현재 주차면을 사용하는 차량의 입출차 기록번호
@@ -341,102 +337,6 @@ CREATE TABLE robot (
         UNIQUE (set_no, set_position)                         -- 하나의 세트에서 A·B 위치가 중복되지 않도록 제한
 );
 
--- =====================================================
--- ROBOT TASK
--- 입차 대기면, 일반 주차면, 출차 대기면 사이에서
--- 로봇이 차량을 이동하는 작업과 진행 상태를 관리한다.
--- =====================================================
-CREATE TABLE robot_task (
-    task_no BIGSERIAL PRIMARY KEY,                               -- 로봇 작업 내부 고유번호
-    car_log_no INT NOT NULL,                                     -- 이동 대상 차량의 입출차 기록번호
-    pickup_space_no BIGINT NOT NULL,                             -- 차량을 들어 올릴 출발 주차면 번호
-    dropoff_space_no BIGINT NOT NULL,                            -- 차량을 내려놓을 도착 주차면 번호
-    set_no INT,                                                  -- 작업을 수행하는 로봇 세트 번호
-    task_type VARCHAR(20) NOT NULL,                              -- 입차·출차·재배치 등의 작업 종류
-    task_phase VARCHAR(30) NOT NULL DEFAULT 'WAITING',           -- 작업의 세부 진행 단계
-    task_status VARCHAR(20) NOT NULL DEFAULT 'WAITING',    	     -- 작업 전체 처리 상태
-    priority INT NOT NULL DEFAULT 0,                         	 -- 작업 우선순위. 값이 높을수록 우선 처리
-    requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 로봇 작업 요청 시각
-    started_at TIMESTAMPTZ,                                      -- 로봇이 실제 작업을 시작한 시각
-    completed_at TIMESTAMPTZ,                                    -- 로봇 작업이 완료된 시각
-    failure_reason VARCHAR(500),                                 -- 작업 실패 또는 중단 사유
-
-    CONSTRAINT fk_task_car_log
-        FOREIGN KEY (car_log_no)                              -- 이동 대상 차량의 입출차 기록과 연결
-        REFERENCES car_log(car_log_no)
-        ON DELETE RESTRICT,                                   -- 작업이 남아 있으면 입출차 기록 삭제 제한
-
-    CONSTRAINT fk_task_pickup_space
-        FOREIGN KEY (pickup_space_no)                         -- 차량을 가져올 출발 주차면과 연결
-        REFERENCES parking_space(space_no)
-        ON DELETE RESTRICT,                                   -- 작업이 남아 있으면 출발 주차면 삭제 제한
-
-    CONSTRAINT fk_task_dropoff_space
-        FOREIGN KEY (dropoff_space_no)                        -- 차량을 내려놓을 도착 주차면과 연결
-        REFERENCES parking_space(space_no)
-        ON DELETE RESTRICT                                    -- 작업이 남아 있으면 도착 주차면 삭제 제한
-);
-
--- =====================================================
--- ROBOT LOG
--- 로봇이 운행하거나 작업을 수행하는 동안 전송한
--- 센서값, 배터리 상태, 안전 상태 등의 원시 데이터를 기록한다.
--- =====================================================
-CREATE TABLE robot_log (
-    robot_log_no SERIAL PRIMARY KEY,                      	   -- 로봇 상태 로그 내부 고유번호
-    source_event_id UUID NOT NULL UNIQUE,                      -- 외부 로봇 시스템에서 생성한 이벤트 고유번호
-    robot_no BIGINT NOT NULL,                                  -- 상태 데이터를 전송한 로봇 번호
-    task_no BIGINT,                                            -- 상태 데이터와 관련된 로봇 작업번호
-    robot_status VARCHAR(20) NOT NULL,                         -- 로그 생성 당시 로봇 상태
-    task_phase VARCHAR(30),                                    -- 로그 생성 당시 작업 진행 단계
-    payload_state VARCHAR(20),                                 -- 차량 또는 적재물의 탑재 상태
-    drive_motor_temperature_c NUMERIC(6,2),                    -- 구동 모터 온도(섭씨)
-    drive_motor_current_a NUMERIC(8,3),                        -- 구동 모터 전류(A)
-    drive_vibration_mm_s NUMERIC(8,4),                         -- 구동부 진동 속도(mm/s)
-    battery_voltage_v NUMERIC(8,3),                            -- 배터리 전압(V)
-    battery_temperature_c NUMERIC(6,2),                        -- 배터리 온도(섭씨)
-    -- days_since_maintenance INT NOT NULL,                       -- 마지막 정비 이후 경과 일수
-    battery_level NUMERIC(5,2),                                -- 로그 생성 당시 배터리 잔량 또는 충전율
-    obstacle_detected BOOLEAN NOT NULL DEFAULT FALSE,          -- 장애물 감지 여부
-    safety_stop BOOLEAN NOT NULL DEFAULT FALSE,                -- 안전장치에 의한 긴급 정지 여부
-    alarm_code VARCHAR(50),                                    -- 로봇에서 발생한 경고·오류 코드
-    sampled_at TIMESTAMPTZ NOT NULL,                           -- 로봇이 상태 데이터를 측정한 시각
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 상태 로그가 DB에 저장된 시각
-
-    CONSTRAINT fk_robot_log_robot
-        FOREIGN KEY (robot_no)                                -- 상태 데이터를 전송한 로봇과 연결
-        REFERENCES robot(robot_no)
-        ON DELETE RESTRICT,                                   -- 로그가 남아 있으면 로봇 정보 삭제 제한
-
-    CONSTRAINT fk_robot_log_task
-        FOREIGN KEY (task_no)                                 -- 로그가 발생한 로봇 작업과 연결
-        REFERENCES robot_task(task_no)
-        ON DELETE SET NULL                                    -- 작업 삭제 후에도 로그는 유지하고 연결값만 NULL 처리
-);
-
--- =====================================================
--- ROBOT PDM
--- PDM(Predictive Maintenance): 예지보전
--- robot_log에 저장된 센서값을 분석한 고장 위험도와
--- 예지보전 모델의 예측 결과를 관리한다.
--- =====================================================
-CREATE TABLE robot_pdm (
-    pdm_no BIGSERIAL PRIMARY KEY,                             -- 예지보전 분석 결과 내부 고유번호
-    robot_log_no BIGINT NOT NULL UNIQUE,                      -- 분석 대상 로봇 로그번호. 로그당 결과는 한 건만 허용
-    risk_score NUMERIC(5,2) NOT NULL,                         -- 모델이 계산한 고장 위험 점수
-    risk_level VARCHAR(10) NOT NULL,                          -- 정상·경고·위험 등의 최종 위험 등급
-    normal_probability NUMERIC(6,5),                          -- 정상 상태일 확률
-    warning_probability NUMERIC(6,5),                         -- 경고 상태일 확률
-    critical_probability NUMERIC(6,5),                        -- 위험 상태일 확률
-    prediction_reason VARCHAR(500),                           -- 해당 예측 결과가 나온 주요 원인 또는 설명
-    model_version VARCHAR(50) NOT NULL,                       -- 예측에 사용한 모델 버전
-    predicted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 예지보전 모델이 분석한 시각
-
-    CONSTRAINT fk_robot_pdm_log
-        FOREIGN KEY (robot_log_no)                            -- 분석 대상 로봇 상태 로그와 연결
-        REFERENCES robot_log(robot_log_no)
-        ON DELETE RESTRICT                                    -- 분석 결과가 있으면 원본 로그 삭제 제한
-);
 
 -- =====================================================
 -- MEMBER NOTICE
@@ -445,18 +345,14 @@ CREATE TABLE robot_pdm (
 CREATE TABLE mem_notice (
 
     mem_notice_no SERIAL PRIMARY KEY,                         -- 입주민 알림 고유번호
-
     recipient_member_no INT NOT NULL                          -- 알림을 받는 입주민 회원 고유번호
         REFERENCES member(member_no)
         ON DELETE CASCADE,                                    -- 수신 회원 삭제 시 해당 회원의 알림도 삭제
-
     reference_table VARCHAR(50) NOT NULL,                     -- 알림을 발생시킨 원본 테이블 이름
     reference_no INT NOT NULL,                                -- 원본 테이블 데이터의 고유번호
-
     notice_type VARCHAR(40) NOT NULL,                         -- 알림 종류
     title VARCHAR(100) NOT NULL,                              -- 알림 제목
     message VARCHAR(500) NOT NULL,                            -- 알림 내용
-
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- 알림 생성 시각
     read_at TIMESTAMP,                                        -- 알림 확인 시각, NULL이면 읽지 않음
 
@@ -480,25 +376,19 @@ CREATE TABLE notice (
 
     notice_no SERIAL PRIMARY KEY,                              -- 관리자 관제 알림 고유번호
     notice_type VARCHAR(30) NOT NULL,                          -- 장기주차·미등록차량 등 관제 알림 종류
-	
     car_log_no INT                                             -- 알림이 발생한 입출차 기록 고유번호
         REFERENCES car_log(car_log_no)
         ON DELETE SET NULL,                                    -- 입출차 기록 삭제 후에도 알림은 유지
     camera_data_no INT                                         -- 알림이 발생한 카메라 촬영 데이터 고유번호
         REFERENCES camera_data(camera_data_no)
         ON DELETE SET NULL,                                    -- 촬영 데이터 삭제 후에도 알림은 유지
-
     detect_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,    -- 이상 상황을 감지하고 알림을 생성한 시각
     due_at TIMESTAMP,                                          -- 알림을 처리해야 하는 기준·만료 시각
-
     alert_stat VARCHAR(20) NOT NULL DEFAULT 'Unresolved',      -- 알림 처리 상태: 미처리·처리 완료 등
-
     handled_by_member_no INT                                   -- 알림을 처리한 관리자 회원 고유번호
         REFERENCES member(member_no)
         ON DELETE SET NULL,                                    -- 관리자 삭제 후에도 알림 처리 이력은 유지
-
     handled_at TIMESTAMP,                                      -- 관리자가 알림을 처리한 시각
-
     snapshot_car_log_no INT,                                   -- 알림 발생 당시 입출차 기록번호 스냅숏
     snapshot_camera_data_no INT,                               -- 알림 발생 당시 카메라 데이터번호 스냅숏
     snapshot_registered_car_no VARCHAR(50),                    -- 차량 테이블에 등록된 차량번호 스냅숏
@@ -631,11 +521,9 @@ CREATE TABLE inquiry (
     CONSTRAINT fk_inquiry_member
         FOREIGN KEY (member_no)                               -- 문의 작성자를 member 테이블과 연결
         REFERENCES member(member_no),
-
     CONSTRAINT fk_inquiry_root
         FOREIGN KEY (root_inquiry_no)                         -- 재문의를 최초 문의와 자기참조로 연결
         REFERENCES inquiry(inquiry_no),
-
     CONSTRAINT fk_inquiry_answered_by
         FOREIGN KEY (answered_by)                             -- 답변 관리자를 member 테이블과 연결
         REFERENCES member(member_no)
@@ -658,11 +546,9 @@ CREATE TABLE board_comment (
     CONSTRAINT fk_board_comment_board                   -- 공지사항과 연결
         FOREIGN KEY (board_no)
         REFERENCES board(board_no),
-
     CONSTRAINT fk_board_comment_member                  -- 작성 회원과 연결
         FOREIGN KEY (member_no)
         REFERENCES member(member_no),
-
     CONSTRAINT fk_board_comment_parent                  -- 부모 댓글과 연결
         FOREIGN KEY (parent_comment_no)
         REFERENCES board_comment(comment_no)
@@ -677,20 +563,17 @@ CREATE TABLE board_comment (
 -- 기존 정산 기록은 당시 연결된 요금 규칙을 계속 참조한다.
 -- =====================================================
 CREATE TABLE fee_rule (
-
     fee_rule_no SERIAL PRIMARY KEY,                         -- 요금 규칙 고유번호
     rule_name VARCHAR(100) NOT NULL UNIQUE,                 -- 요금 규칙을 구분하기 위한 이름
     unit_minutes INT NOT NULL,                              -- 요금이 한 번 부과되는 시간 단위(분)
     unit_fee NUMERIC(12, 0) NOT NULL,                       -- 시간 단위마다 부과되는 금액
     daily_max_fee NUMERIC(12, 0),                           -- 과금 24시간당 부과할 수 있는 최대요금
-                                                             -- 최대요금 제한이 없으면 NULL
+                                                            -- 최대요금 제한이 없으면 NULL
     created_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,                           -- 요금 규칙 등록 시각
-
+        DEFAULT CURRENT_TIMESTAMP,                          -- 요금 규칙 등록 시각
 	effective_from TIMESTAMP NOT NULL,                     	-- 요금 규칙 적용 시작시각
-
 	effective_to TIMESTAMP                                  -- 요금 규칙 적용 종료시각
-                                                             -- 종료 예정이 없으면 NULL
+                                                            -- 종료 예정이 없으면 NULL
 );
 
 -- =====================================================
@@ -700,7 +583,6 @@ CREATE TABLE fee_rule (
 -- 정산서에 함께 저장한다.
 -- =====================================================
 CREATE TABLE bill (
-
     bill_no SERIAL PRIMARY KEY,                             -- 정산서 고유번호
     car_log_no INT NOT NULL UNIQUE,                         -- 정산 대상 차량 입출차 기록 고유번호
                                                              -- 입출차 기록 한 건당 정산서 한 건만 생성
@@ -709,37 +591,37 @@ CREATE TABLE bill (
                                                              -- 미결제 또는 요금 면제 정산이면 NULL 가능
     charge_minutes INT NOT NULL,                            -- 무료시간을 제외하고 요금 계산에 적용한 시간(분)
     bill_amount NUMERIC(12, 0) NOT NULL,                    -- 백엔드에서 계산한 최종 정산금액
-    bill_status VARCHAR(20) NOT NULL
-        DEFAULT 'UNPAID',                                   -- 정산 상태
+    bill_status VARCHAR(20) NOT NULL DEFAULT 'UNPAID'  
+            CHECK (bill_status IN ('UNPAID', 'PAID')),	
+                                                             -- 정산 상태
                                                              -- UNPAID: 미결제
                                                              -- PAID: 결제완료
-
-    payment_order_id VARCHAR(64) UNIQUE,                    -- 백엔드에서 생성한 토스페이먼츠 주문번호
+    payment_order_id VARCHAR(64) UNIQUE,                     -- 백엔드에서 생성한 토스페이먼츠 주문번호
                                                              -- 결제를 요청하기 전에는 NULL 가능
-    payment_key VARCHAR(200) UNIQUE,                        -- 토스페이먼츠에서 발급한 결제 고유키
+    payment_key VARCHAR(200) UNIQUE,                         -- 토스페이먼츠에서 발급한 결제 고유키
                                                              -- 결제 승인 전에는 NULL
-    payment_method VARCHAR(30),                             -- 승인된 결제수단
+    payment_method VARCHAR(30),                              -- 승인된 결제수단
                                                              -- 카드·간편결제 등
                                                              -- 결제 승인 전에는 NULL
     issued_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,                          -- 정산서 생성 시각
+        DEFAULT CURRENT_TIMESTAMP,                           -- 정산서 생성 시각
 
-    paid_at TIMESTAMP,                                      -- 결제 승인 완료 시각
+    paid_at TIMESTAMP,                                       -- 결제 승인 완료 시각
                                                              -- 미결제 상태이면 NULL
     CONSTRAINT fk_bill_car_log
-        FOREIGN KEY (car_log_no)                            -- 정산서를 차량 입출차 기록과 연결
+        FOREIGN KEY (car_log_no)                             -- 정산서를 차량 입출차 기록과 연결
         REFERENCES car_log(car_log_no)
-        ON DELETE RESTRICT,                                 -- 정산서가 존재하면 입출차 기록 삭제 제한
+        ON DELETE RESTRICT,                                  -- 정산서가 존재하면 입출차 기록 삭제 제한
 
     CONSTRAINT fk_bill_fee_rule
-        FOREIGN KEY (fee_rule_no)                           -- 정산서를 적용된 요금 규칙과 연결
+        FOREIGN KEY (fee_rule_no)                            -- 정산서를 적용된 요금 규칙과 연결
         REFERENCES fee_rule(fee_rule_no)
-        ON DELETE RESTRICT,                                 -- 사용된 요금 규칙 삭제 제한
+        ON DELETE RESTRICT,                                  -- 사용된 요금 규칙 삭제 제한
 
     CONSTRAINT fk_bill_kiosk
-        FOREIGN KEY (kiosk_no)                              -- 정산서를 결제가 진행된 키오스크와 연결
+        FOREIGN KEY (kiosk_no)                               -- 정산서를 결제가 진행된 키오스크와 연결
         REFERENCES kiosk(kiosk_no)
-        ON DELETE RESTRICT                                  -- 정산 기록이 있으면 키오스크 삭제 제한
+        ON DELETE RESTRICT                                   -- 정산 기록이 있으면 키오스크 삭제 제한
 );
 
 
@@ -769,15 +651,37 @@ CREATE TABLE gate_pdm (
     critical_probability NUMERIC(6,5), -- 위험 확률
     expected_risk_level VARCHAR(10), -- 테스트 CSV의 실제 정답
     prediction_correct BOOLEAN,      -- 예측 정답 일치 여부
+    source_row_index INT,             -- 예측에 사용한 테스트 CSV 행 번호
+    sensor_values JSONB,              -- 모델 예측에 사용된 게이트 센서값(JSON)
     sensor_collected_at TIMESTAMPTZ, -- 센서 데이터 수집 시각
     predicted_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,   -- 모델 예측 시각
+    action_status VARCHAR(20) NOT NULL
+        DEFAULT 'NOT_REQUIRED'
+        CHECK (action_status IN (
+            'NOT_REQUIRED', 'ACTION_REQUIRED', 'COMPLETED'
+        )),                           -- 조치 상태: 불필요·조치 필요·조치 완료
+    action_note VARCHAR(500),         -- 관리자가 기록한 점검 및 조치 내용
+    action_by_member_no INT,          -- 조치를 담당하거나 완료한 관리자 번호
+    action_started_at TIMESTAMPTZ,    -- 관리자가 조치를 시작한 시각
+    action_completed_at TIMESTAMPTZ,  -- 관리자가 조치를 완료한 시각
 
     CONSTRAINT fk_gate_pdm_gate
         FOREIGN KEY (gate_no)
         REFERENCES gate(gate_no)
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_gate_pdm_action_member
+        FOREIGN KEY (action_by_member_no)
+        REFERENCES member(member_no)
+        ON DELETE SET NULL
 );
+
+-- 같은 게이트에서 조치되지 않은 위험 사건은 한 건만 유지한다.
+CREATE UNIQUE INDEX uq_gate_pdm_active_critical
+    ON gate_pdm(gate_no)
+    WHERE risk_level = '위험'
+      AND action_status = 'ACTION_REQUIRED';
 -- =====================================================
 -- CAMERA PDM
 -- 카메라 센서값을 XGBoost 모델로 분석한
@@ -794,36 +698,163 @@ CREATE TABLE camera_pdm (
     critical_probability NUMERIC(6,5), -- 위험 확률
     expected_risk_level VARCHAR(10), -- 테스트 CSV의 실제 정답
     prediction_correct BOOLEAN,      -- 모델 예측과 테스트 정답 일치 여부
+    source_row_index INT,             -- 예측에 사용한 테스트 CSV 행 번호
+    sensor_values JSONB,              -- 모델 예측에 사용된 카메라 센서값(JSON)
     sensor_collected_at TIMESTAMPTZ, -- 센서 데이터 수집 시각
     predicted_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,   -- 모델 예측 시각
+    action_status VARCHAR(20) NOT NULL
+        DEFAULT 'NOT_REQUIRED'
+        CHECK (action_status IN (
+            'NOT_REQUIRED', 'ACTION_REQUIRED', 'COMPLETED'
+        )),                           -- 조치 상태: 불필요·조치 필요·조치 완료
+    action_note VARCHAR(500),         -- 관리자가 기록한 점검 및 조치 내용
+    action_by_member_no INT,          -- 조치를 담당하거나 완료한 관리자 번호
+    action_started_at TIMESTAMPTZ,    -- 관리자가 조치를 시작한 시각
+    action_completed_at TIMESTAMPTZ,  -- 관리자가 조치를 완료한 시각
 
     CONSTRAINT fk_camera_pdm_camera
         FOREIGN KEY (camera_no)
         REFERENCES camera(camera_no)
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_camera_pdm_action_member
+        FOREIGN KEY (action_by_member_no)
+        REFERENCES member(member_no)
+        ON DELETE SET NULL
 );
 
+-- 같은 카메라에서 조치되지 않은 위험 사건은 한 건만 유지한다.
+CREATE UNIQUE INDEX uq_camera_pdm_active_critical
+    ON camera_pdm(camera_no)
+    WHERE risk_level = '위험'
+      AND action_status = 'ACTION_REQUIRED';
 
-ALTER TABLE robot_task
-ADD COLUMN IF NOT EXISTS phase_updated_at TIMESTAMPTZ;
+-- =====================================================
+-- ROBOT TASK
+-- 입차 대기면, 일반 주차면, 출차 대기면 사이에서
+-- 로봇이 차량을 이동하는 작업과 진행 상태를 관리한다.
+-- =====================================================
+CREATE TABLE robot_task (
+    task_no SERIAL PRIMARY KEY,                                -- 로봇 작업 내부 고유번호
+    car_log_no INT NOT NULL,                                   -- 이동 대상 차량의 입출차 기록번호
+    pickup_space_no INT NOT NULL,                              -- 차량을 들어 올릴 출발 주차면 번호
+    dropoff_space_no INT NOT NULL,                             -- 차량을 내려놓을 도착 주차면 번호
+    set_no INT,                                                -- 작업을 수행하는 로봇 세트 번호
+    task_type VARCHAR(20) NOT NULL,                            -- 입차·출차·재배치 등의 작업 종류
+    task_phase VARCHAR(30) NOT NULL DEFAULT 'WAITING',         -- 작업의 세부 진행 단계
+    task_status VARCHAR(20) NOT NULL DEFAULT 'WAITING',        -- 작업 전체 처리 상태
+    phase_updated_at TIMESTAMPTZ NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,                             -- 작업의 세부 진행 단계가 마지막으로 변경된 시각
+    priority INT NOT NULL DEFAULT 0,                           -- 작업 우선순위. 값이 높을수록 우선 처리
+    requested_at TIMESTAMPTZ NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,                             -- 로봇 작업 요청 시각
+    started_at TIMESTAMPTZ,                                    -- 로봇이 실제 작업을 시작한 시각
+    completed_at TIMESTAMPTZ,                                  -- 로봇 작업이 완료된 시각
+    failure_reason VARCHAR(500),                               -- 작업 실패 또는 중단 사유
 
-UPDATE robot_task
-SET phase_updated_at = COALESCE(
-    completed_at,
-    started_at,
-    requested_at,
-    CURRENT_TIMESTAMP
-)
-WHERE phase_updated_at IS NULL;
+    CONSTRAINT fk_task_car_log
+        FOREIGN KEY (car_log_no)                               -- 이동 대상 차량의 입출차 기록과 연결
+        REFERENCES car_log(car_log_no)
+        ON DELETE RESTRICT,                                    -- 작업이 남아 있으면 입출차 기록 삭제 제한
 
-ALTER TABLE robot_task
-ALTER COLUMN phase_updated_at
-SET DEFAULT CURRENT_TIMESTAMP;
+    CONSTRAINT fk_task_pickup_space
+        FOREIGN KEY (pickup_space_no)                          -- 차량을 가져올 출발 주차면과 연결
+        REFERENCES parking_space(space_no)
+        ON DELETE RESTRICT,                                    -- 작업이 남아 있으면 출발 주차면 삭제 제한
 
-ALTER TABLE robot_task
-ALTER COLUMN phase_updated_at
-SET NOT NULL;
+    CONSTRAINT fk_task_dropoff_space
+        FOREIGN KEY (dropoff_space_no)                         -- 차량을 내려놓을 도착 주차면과 연결
+        REFERENCES parking_space(space_no)
+        ON DELETE RESTRICT                                     -- 작업이 남아 있으면 도착 주차면 삭제 제한
+);
+
+-- =====================================================
+-- ROBOT LOG
+-- 로봇이 운행하거나 작업을 수행하는 동안 전송한
+-- 센서값, 배터리 상태, 안전 상태 등의 원시 데이터를 기록한다.
+-- =====================================================
+CREATE TABLE robot_log (
+    robot_log_no SERIAL PRIMARY KEY,                      	   -- 로봇 상태 로그 내부 고유번호
+    source_event_id UUID NOT NULL UNIQUE,                      -- 외부 로봇 시스템에서 생성한 이벤트 고유번호
+    robot_no INT NOT NULL,                                  -- 상태 데이터를 전송한 로봇 번호
+    task_no INT,                                            -- 상태 데이터와 관련된 로봇 작업번호
+    robot_status VARCHAR(20) NOT NULL,                         -- 로그 생성 당시 로봇 상태
+    task_phase VARCHAR(30),                                    -- 로그 생성 당시 작업 진행 단계
+    payload_state VARCHAR(20),                                 -- 차량 또는 적재물의 탑재 상태
+    drive_motor_temperature_c NUMERIC(6,2),                    -- 구동 모터 온도(섭씨)
+    drive_motor_current_a NUMERIC(8,3),                        -- 구동 모터 전류(A)
+    drive_vibration_mm_s NUMERIC(8,4),                         -- 구동부 진동 속도(mm/s)
+    battery_voltage_v NUMERIC(8,3),                            -- 배터리 전압(V)
+    battery_temperature_c NUMERIC(6,2),                        -- 배터리 온도(섭씨)
+    -- days_since_maintenance INT NOT NULL,                       -- 마지막 정비 이후 경과 일수
+    battery_level NUMERIC(5,2),                                -- 로그 생성 당시 배터리 잔량 또는 충전율
+    obstacle_detected BOOLEAN NOT NULL DEFAULT FALSE,          -- 장애물 감지 여부
+    safety_stop BOOLEAN NOT NULL DEFAULT FALSE,                -- 안전장치에 의한 긴급 정지 여부
+    alarm_code VARCHAR(50),                                    -- 로봇에서 발생한 경고·오류 코드
+    sampled_at TIMESTAMPTZ NOT NULL,                           -- 로봇이 상태 데이터를 측정한 시각
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 상태 로그가 DB에 저장된 시각
+
+    CONSTRAINT fk_robot_log_robot
+        FOREIGN KEY (robot_no)                                -- 상태 데이터를 전송한 로봇과 연결
+        REFERENCES robot(robot_no)
+        ON DELETE RESTRICT,                                   -- 로그가 남아 있으면 로봇 정보 삭제 제한
+
+    CONSTRAINT fk_robot_log_task
+        FOREIGN KEY (task_no)                                 -- 로그가 발생한 로봇 작업과 연결
+        REFERENCES robot_task(task_no)
+        ON DELETE SET NULL                                    -- 작업 삭제 후에도 로그는 유지하고 연결값만 NULL 처리
+);
+
+-- =====================================================
+-- ROBOT PDM
+-- PDM(Predictive Maintenance): 예지보전
+-- 로봇별 센서 CSV를 실제 예지보전 모델로 분석한 결과를 관리한다.
+-- =====================================================
+CREATE TABLE robot_pdm (
+    pdm_no SERIAL PRIMARY KEY,                                 -- 예지보전 분석 결과 내부 고유번호
+    robot_no INT NOT NULL,                                     -- 분석 대상 로봇 번호
+    risk_score NUMERIC(6,5) NOT NULL,                          -- 모델이 선택한 위험 등급의 확률
+    risk_level VARCHAR(10) NOT NULL,                           -- 정상·주의·위험 등의 최종 위험 등급
+    normal_probability NUMERIC(6,5),                           -- 정상 상태일 확률
+    warning_probability NUMERIC(6,5),                          -- 주의 상태일 확률
+    critical_probability NUMERIC(6,5),                         -- 위험 상태일 확률
+    expected_risk_level VARCHAR(10),                            -- 테스트 CSV에 기록된 실제 정답
+    prediction_correct BOOLEAN,                                -- 모델 예측과 테스트 정답 일치 여부
+    source_row_index INT,                                       -- 예측에 사용한 테스트 CSV 행 번호
+    sensor_values JSONB,                                        -- 모델 예측에 사용된 로봇 센서값(JSON)
+    sensor_collected_at TIMESTAMPTZ,                            -- 센서 데이터 수집 시각
+    predicted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 예지보전 모델이 분석한 시각
+    action_status VARCHAR(20) NOT NULL
+        DEFAULT 'NOT_REQUIRED'
+        CHECK (action_status IN (
+            'NOT_REQUIRED', 'ACTION_REQUIRED', 'COMPLETED'
+        )),                                                      -- 조치 상태: 불필요·조치 필요·조치 완료
+    action_note VARCHAR(500),                                   -- 관리자가 기록한 점검 및 조치 내용
+    action_by_member_no INT,                                    -- 조치를 담당하거나 완료한 관리자 번호
+    action_started_at TIMESTAMPTZ,                              -- 관리자가 조치를 시작한 시각
+    action_completed_at TIMESTAMPTZ,                            -- 관리자가 조치를 완료한 시각
+
+    CONSTRAINT fk_robot_pdm_robot
+        FOREIGN KEY (robot_no)                                 -- 분석 대상 로봇과 연결
+        REFERENCES robot(robot_no)
+        ON DELETE RESTRICT,                                    -- 분석 결과가 있으면 로봇 삭제 제한
+
+    CONSTRAINT fk_robot_pdm_action_member
+        FOREIGN KEY (action_by_member_no)                       -- 조치를 담당한 관리자와 연결
+        REFERENCES member(member_no)
+        ON DELETE SET NULL
+);
+
+-- 같은 로봇에서 조치되지 않은 위험 사건은 한 건만 유지한다.
+CREATE UNIQUE INDEX uq_robot_pdm_active_critical
+    ON robot_pdm(robot_no)
+    WHERE risk_level = '위험'
+      AND action_status = 'ACTION_REQUIRED';
+
+
+
+
 
 COMMIT;
 

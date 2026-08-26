@@ -26,13 +26,6 @@ export default [
     component: ResidentInquiryView
   },
 
-  // 자동 보관된 입주민 문의 상세 조회
-  {
-    path: "inquiries/archived/:trashNo/detail",
-    name: "ResidentArchivedInquiryDetail",
-    component: ResidentInquiryView
-  },
-
   // 입주민 문의 상세 조회
   {
     path: "inquiries/:inquiryNo/detail",

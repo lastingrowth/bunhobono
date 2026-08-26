@@ -140,6 +140,7 @@
                 data-label="관리"
               >
                 <button
+                  class="list-delete-text"
                   type="button"
                   @click.stop="removeNotice(notice)"
                 >

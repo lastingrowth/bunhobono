@@ -309,7 +309,8 @@ const emit = defineEmits([
   .header .logout-btn { flex-shrink: 0; padding: 6px 9px; font-size: 11px; white-space: nowrap; }
 }
 
-@media (max-width: 650px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .header { gap: 8px; padding-inline: 12px; }
   .header .logo { font-size: 15px; }
   .resident-header-actions { margin-left: auto; margin-right: 2px; }
@@ -353,9 +354,25 @@ const emit = defineEmits([
   .resident-mobile-notification small { font-size: 13px; line-height: 1.1; }
   .resident-header-clock,
   .header .user-role,
-  .header .user-name { display: none; }
-  .resident-header-clock,
-  .header > .user-info { display: none !important; }
+  .header .divider { display: none; }
+  .resident-header-clock { display: none !important; }
+  .header > .user-info {
+    display: flex !important;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 7px;
+    margin-left: 0;
+  }
+  .header .user-name {
+    display: inline-block;
+    max-width: 82px;
+    overflow: hidden;
+    color: #263f56;
+    font-size: 13px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .resident-header-actions .resident-menu-button {
     min-height: 38px;
     padding: 7px 9px;
@@ -364,7 +381,11 @@ const emit = defineEmits([
   .header .logout-btn {
     min-height: 38px;
     padding: 7px 10px;
+    border-radius: 8px;
+    color: #fff;
+    background: #20262c;
     font-size: 12px;
+    font-weight: 800;
   }
   .resident-dropdown-menu {
     right: 0;

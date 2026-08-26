@@ -1,5 +1,6 @@
 <template>
   <main class="pdm-page management-list-page facility-list-page">
+    <ManagementFeedbackToast :message="feedbackMessage" :type="feedbackType" />
     <header class="pdm-header facility-list-heading">
       <div>
         <h1 class="management-list-title">예지보전</h1>
@@ -107,7 +108,10 @@
       <article class="camera-panel">
         <header class="panel-header">
           <div><h2>{{ equipmentLabel }} 상태</h2><p>마지막 수신 {{ lastUpdatedText }}</p></div>
-          <button type="button" :disabled="loading" @click="refreshCurrent(true)">{{ loading ? '갱신 중' : '지금 갱신' }}</button>
+          <div class="panel-actions">
+            <button type="button" class="register-equipment-button" :disabled="loading" @click="openRegisterDialog">기기 등록</button>
+            <button type="button" :disabled="loading" @click="refreshCurrent(true)">{{ loading ? '갱신 중' : '지금 갱신' }}</button>
+          </div>
         </header>
 
         <div v-if="errorMessage" class="monitor-error">{{ errorMessage }}</div>
@@ -129,13 +133,15 @@
             </div>
             <strong>{{ camera.cameraName }}</strong>
             <p>{{ camera.parkingName || '주차장 미지정' }}</p>
-            <dl>
-              <div><dt>게이트</dt><dd>{{ camera.gateName || '-' }}</dd></div>
-              <div><dt>용도</dt><dd>{{ camera.cameraType === 'In' ? '입차' : '출차' }}</dd></div>
-              <div><dt>장비번호</dt><dd>#{{ camera.cameraNo }}</dd></div>
-              <div><dt>수신</dt><dd>{{ responseTime }}ms</dd></div>
+            <dl class="equipment-info">
+              <div class="equipment-info-row"><dt>게이트</dt><dd>{{ camera.gateName || '-' }}</dd></div>
+              <div class="equipment-info-row"><dt>용도</dt><dd>{{ camera.cameraType === 'In' ? '입차' : '출차' }}</dd></div>
+              <div class="equipment-chip-row">
+                <span class="equipment-chip">장비 #{{ camera.cameraNo }}</span>
+                <span class="equipment-chip">수신 {{ responseTime }}ms</span>
+              </div>
             </dl>
-            <div class="signal-line"><span></span><span></span><span></span><span></span><span></span></div>
+            <div class="signal-line"><span></span><span></span><span></span><span></span><span></span><button type="button" class="card-delete-button" aria-label="카메라 삭제" title="카메라 삭제" @click.stop="requestDelete('CAMERA', camera)">−</button></div>
           </article>
         </div>
         <div v-else-if="selectedEquipment === 'GATE'" class="camera-grid">
@@ -155,13 +161,15 @@
             </div>
             <strong>{{ gate.gateName }}</strong>
             <p>{{ gate.parkingName || '주차장 미지정' }}</p>
-            <dl>
-              <div><dt>분류</dt><dd>{{ gate.gateType === 'In' || gate.gateType === 'IN' ? '입차' : '출차' }}</dd></div>
-              <div><dt>개폐</dt><dd>{{ gate.gateStatus === 1 ? '열림' : '닫힘' }}</dd></div>
-              <div><dt>장비번호</dt><dd>#{{ gate.gateNo }}</dd></div>
-              <div><dt>수신</dt><dd>{{ responseTime }}ms</dd></div>
+            <dl class="equipment-info">
+              <div class="equipment-info-row"><dt>분류</dt><dd>{{ gate.gateType === 'In' || gate.gateType === 'IN' ? '입차' : '출차' }}</dd></div>
+              <div class="equipment-info-row"><dt>개폐</dt><dd>{{ gate.gateStatus === 1 ? '열림' : '닫힘' }}</dd></div>
+              <div class="equipment-chip-row">
+                <span class="equipment-chip">장비 #{{ gate.gateNo }}</span>
+                <span class="equipment-chip">수신 {{ responseTime }}ms</span>
+              </div>
             </dl>
-            <div class="signal-line"><span></span><span></span><span></span><span></span><span></span></div>
+            <div class="signal-line"><span></span><span></span><span></span><span></span><span></span><button type="button" class="card-delete-button" aria-label="게이트 삭제" title="게이트 삭제" @click.stop="requestDelete('GATE', gate)">−</button></div>
           </article>
         </div>
         <div v-else class="camera-grid">
@@ -177,17 +185,19 @@
           >
             <div class="camera-card-top">
               <span class="robot-icon" aria-hidden="true"><i></i></span>
-              <span class="status-badge"><i></i>{{ robotStatusText(robot.robotStatus) }}</span>
+              <span class="status-badge"><i></i>{{ statusText(robot.monitoringStatus) }}</span>
             </div>
             <strong>{{ robot.robotCode }}</strong>
             <p>SET {{ robot.setNo }} / {{ robot.setPosition }}</p>
-            <dl>
-              <div><dt>배터리</dt><dd>{{ formatBattery(robot.batteryLevel) }}</dd></div>
-              <div><dt>운전시간</dt><dd>{{ formatOperatingHours(robot.operatingHours) }}</dd></div>
-              <div><dt>장비번호</dt><dd>#{{ robot.robotNo }}</dd></div>
-              <div><dt>최근 통신</dt><dd>{{ formatHeartbeat(robot.lastHeartbeatAt) }}</dd></div>
+            <dl class="equipment-info">
+              <div class="equipment-info-row"><dt>예측등급</dt><dd>{{ robot.riskLevel }}</dd></div>
+              <div class="equipment-info-row"><dt>예측확률</dt><dd>{{ formatRiskScore(robot.riskScore) }}</dd></div>
+              <div class="equipment-chip-row">
+                <span class="equipment-chip">장비 #{{ robot.robotNo }}</span>
+                <span class="equipment-chip">분석 {{ formatHeartbeat(robot.predictedAt) }}</span>
+              </div>
             </dl>
-            <div class="signal-line"><span></span><span></span><span></span><span></span><span></span></div>
+            <div class="signal-line"><span></span><span></span><span></span><span></span><span></span><button type="button" class="card-delete-button" aria-label="주차로봇 삭제" title="주차로봇 삭제" @click.stop="requestDelete('ROBOT', robot)">−</button></div>
           </article>
         </div>
       </article>
@@ -210,6 +220,53 @@
         </ol>
       </aside>
     </section>
+
+    <dialog ref="registerDialog" class="equipment-register-dialog" @close="resetRegisterForm" @click="closeRegisterOnBackdrop">
+      <form class="equipment-register-form" @submit.prevent="submitEquipment">
+        <header class="dialog-header">
+          <div><h3>{{ equipmentLabel }} 등록</h3><p>새 {{ equipmentLabel }}의 기본 정보를 입력합니다.</p></div>
+          <button type="button" class="dialog-close-button" aria-label="등록 창 닫기" @click="closeRegisterDialog">×</button>
+        </header>
+
+        <div v-if="selectedEquipment === 'CAMERA'" class="equipment-register-fields">
+          <label><span>주차장</span><select v-model="cameraForm.parkingNo" required @change="cameraForm.gateNo = ''"><option disabled value="">주차장 선택</option><option v-for="parking in parkingStore.list" :key="parking.parkingNo" :value="parking.parkingNo">{{ parking.parkingName }}</option></select></label>
+          <label><span>게이트</span><select v-model="cameraForm.gateNo" required :disabled="!cameraForm.parkingNo"><option disabled value="">게이트 선택</option><option v-for="gate in cameraGateOptions" :key="gate.gateNo" :value="gate.gateNo">{{ gate.gateName }}</option></select></label>
+          <label><span>카메라 이름</span><input v-model.trim="cameraForm.cameraName" type="text" placeholder="예: 정문 입구 카메라" required /></label>
+          <label><span>카메라 종류</span><select v-model="cameraForm.cameraType" required><option value="In">입차 (In)</option><option value="Out">출차 (Out)</option></select></label>
+          <label><span>설치 날짜</span><input v-model="cameraForm.installDate" type="date" required /></label>
+        </div>
+
+        <div v-else-if="selectedEquipment === 'GATE'" class="equipment-register-fields">
+          <label><span>주차장</span><select v-model="gateForm.parkingNo" required><option disabled value="">주차장 선택</option><option v-for="parking in parkingStore.list" :key="parking.parkingNo" :value="parking.parkingNo">{{ parking.parkingName }}</option></select></label>
+          <label><span>게이트 코드</span><input v-model.trim="gateForm.gateCode" type="text" placeholder="예: B1-IN-1" required /></label>
+          <label><span>게이트 이름</span><input v-model.trim="gateForm.gateName" type="text" placeholder="예: B1 1번 입구" required /></label>
+          <label><span>게이트 분류</span><select v-model="gateForm.gateType" required><option value="In">입차 (In)</option><option value="Out">출차 (Out)</option></select></label>
+          <label><span>게이트 구역</span><input v-model.trim="gateForm.gateArea" type="text" placeholder="예: B1" required /></label>
+        </div>
+
+        <div v-else class="equipment-register-fields">
+          <label><span>로봇 코드</span><input v-model.trim="robotForm.robotCode" type="text" maxlength="20" placeholder="예: ROBOT-09" required /></label>
+          <label><span>세트 번호</span><input v-model.number="robotForm.setNo" type="number" min="1" step="1" required /></label>
+          <fieldset><legend>세트 위치</legend><div class="set-position-options"><label><input v-model="robotForm.setPosition" type="radio" value="A" /><span>A</span></label><label><input v-model="robotForm.setPosition" type="radio" value="B" /><span>B</span></label></div></fieldset>
+        </div>
+
+        <footer class="dialog-actions">
+          <button type="button" class="cancel-button" :disabled="registering" @click="closeRegisterDialog">취소</button>
+          <button type="submit" class="submit-button" :disabled="registering">{{ registering ? '등록 중' : '등록' }}</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <ManagementDeleteConfirm
+      :open="Boolean(deleteTarget)"
+      :title="`${deleteEquipmentLabel} 삭제`"
+      :item-name="deleteItemName"
+      message="선택한 장비를 삭제하시겠습니까?"
+      :caution="deleteCaution"
+      :deleting="deleting"
+      @cancel="cancelDelete"
+      @confirm="confirmDelete"
+    />
   </main>
 </template>
 
@@ -217,17 +274,29 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getCameraList } from '@/features/camera/cameraApi';
+import { useCameraStore } from '@/features/camera/cameraStore';
 import { getList as getGateList } from '@/features/gates/gateApi';
+import { useGateStore } from '@/features/gates/gateStore';
+import { useParkingsStore } from '@/features/parking/parkingsStore';
 import { getRobotList } from '@/features/robot/robotApi';
+import { useRobotStore } from '@/features/robot/robotStore';
+import ManagementDeleteConfirm from '@/shared/components/ManagementDeleteConfirm.vue';
+import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
 import {
   analyzeAllCameras,
   analyzeAllGates,
+  analyzeAllRobots,
   getLatestCameraPdm,
   getLatestGatePdm,
+  getLatestRobotPdm,
 } from './predictiveMaintenanceApi';
 
 const router = useRouter();
 const route = useRoute();
+const cameraStore = useCameraStore();
+const gateStore = useGateStore();
+const parkingStore = useParkingsStore();
+const robotStore = useRobotStore();
 const cameras = ref([]);
 const gates = ref([]);
 const robots = ref([]);
@@ -242,9 +311,23 @@ const currentTime = ref(new Date());
 const lastUpdatedAt = ref(null);
 const responseTime = ref(0);
 const events = ref([]);
+const registerDialog = ref(null);
+const registering = ref(false);
+const deleteTarget = ref(null);
+const deleting = ref(false);
+const feedbackMessage = ref('');
+const feedbackType = ref('success');
 let pollTimer;
 let clockTimer;
+let feedbackTimer;
 let eventSequence = 0;
+
+const createCameraForm = () => ({ parkingNo: '', gateNo: '', cameraName: '', cameraType: 'In', installDate: '' });
+const createGateForm = () => ({ parkingNo: '', gateCode: '', gateName: '', gateType: 'In', gateArea: '' });
+const createRobotForm = () => ({ robotCode: '', setNo: null, setPosition: 'A' });
+const cameraForm = ref(createCameraForm());
+const gateForm = ref(createGateForm());
+const robotForm = ref(createRobotForm());
 
 const equipmentOptions = [
   { value: 'STATS', label: '통계' },
@@ -265,31 +348,18 @@ const selectEquipment = (equipment) => {
 
 const normalizeStatus = (status) => ['NORMAL', 'FAULT', 'MAINTENANCE'].includes(status) ? status : 'UNKNOWN';
 const riskLevelToStatus = (riskLevel) => ({ 정상: 'NORMAL', 주의: 'MAINTENANCE', 위험: 'FAULT' }[riskLevel] || 'UNKNOWN');
-const robotStatusToMonitoringStatus = (status) => ({
-  STANDBY: 'NORMAL',
-  WORKING: 'NORMAL',
-  CHARGING: 'NORMAL',
-  LOW_BATTERY: 'MAINTENANCE',
-  WARNING: 'MAINTENANCE',
-  ERROR: 'FAULT',
-  OFFLINE: 'FAULT',
-}[status] || 'UNKNOWN');
-const robotStatusText = (status) => ({
-  STANDBY: '대기',
-  WORKING: '작업 중',
-  CHARGING: '충전 중',
-  LOW_BATTERY: '배터리 부족',
-  WARNING: '주의',
-  ERROR: '오류',
-  OFFLINE: '연결 끊김',
-}[status] || status || '상태 미확인');
 const statusText = (status) => ({ NORMAL: '정상', FAULT: '고장', MAINTENANCE: '점검 중', UNKNOWN: '상태 미확인' }[normalizeStatus(status)]);
 const statusClass = (status) => normalizeStatus(status).toLowerCase();
 const currentItems = computed(() => ({ CAMERA: cameras.value, GATE: gates.value, ROBOT: robots.value }[selectedEquipment.value] || []));
 const equipmentLabel = computed(() => ({ STATS: '통합 통계', CAMERA: '카메라', GATE: '게이트', ROBOT: '주차로봇' }[selectedEquipment.value]));
-const equipmentDescription = computed(() => selectedEquipment.value === 'STATS'
-  ? '카메라·게이트·주차로봇의 현재 예지보전 상태를 한눈에 확인합니다.'
-  : `${equipmentLabel.value} 장비의 작동 상태와 실시간 수신 기록을 확인합니다.`);
+const cameraGateOptions = computed(() => gateStore.list.filter((gate) => Number(gate.parkingNo) === Number(cameraForm.value.parkingNo)));
+const deleteEquipmentLabel = computed(() => ({ CAMERA: '카메라', GATE: '게이트', ROBOT: '주차로봇' }[deleteTarget.value?.type] || '장비'));
+const deleteItemName = computed(() => deleteTarget.value?.item?.cameraName || deleteTarget.value?.item?.gateName || deleteTarget.value?.item?.robotCode || '선택한 장비');
+const deleteCaution = computed(() => ({
+  CAMERA: '연결된 카메라 데이터가 있으면 삭제할 수 없습니다.',
+  GATE: '연결된 카메라·입출차 기록 또는 주차면이 있으면 삭제할 수 없습니다.',
+  ROBOT: '작업 중이거나 원시 로그가 있는 로봇은 삭제할 수 없습니다.',
+}[deleteTarget.value?.type] || '연결된 데이터가 있으면 삭제할 수 없습니다.'));
 const itemStatus = (item) => ({ CAMERA: item.cameraStatus, GATE: item.operatingStatus, ROBOT: item.monitoringStatus }[selectedEquipment.value]);
 const statusCounts = computed(() => currentItems.value.reduce((counts, item) => {
   const status = normalizeStatus(itemStatus(item));
@@ -390,7 +460,7 @@ const goGateDetail = (gateNo) => {
 };
 
 const goRobotDetail = (robotNo) => {
-  router.push(`/admin/robots/${robotNo}`);
+  router.push(`/admin/predictive-maintenance/robots/${robotNo}`);
 };
 
 const goEventDetail = (event) => {
@@ -400,6 +470,106 @@ const goEventDetail = (event) => {
 };
 
 const goAttentionDetail = (item) => goEventDetail({ equipmentType: item.type, equipmentNo: item.no });
+
+const showFeedback = (message, type = 'success') => {
+  feedbackMessage.value = message;
+  feedbackType.value = type;
+  window.clearTimeout(feedbackTimer);
+  feedbackTimer = window.setTimeout(() => { feedbackMessage.value = ''; }, 2500);
+};
+
+const resetRegisterForm = () => {
+  cameraForm.value = createCameraForm();
+  gateForm.value = createGateForm();
+  robotForm.value = createRobotForm();
+};
+
+const openRegisterDialog = async () => {
+  resetRegisterForm();
+  try {
+    if (selectedEquipment.value === 'CAMERA') {
+      await Promise.all([parkingStore.loadList(), gateStore.loadList()]);
+    } else if (selectedEquipment.value === 'GATE') {
+      await Promise.all([parkingStore.loadList(), gateStore.loadList()]);
+    }
+    registerDialog.value?.showModal();
+  } catch (error) {
+    console.error('장비 등록 준비 실패', error);
+    showFeedback('등록에 필요한 정보를 불러오지 못했습니다.', 'error');
+  }
+};
+
+const closeRegisterDialog = () => {
+  if (!registering.value) registerDialog.value?.close();
+};
+
+const closeRegisterOnBackdrop = (event) => {
+  if (event.target === registerDialog.value) closeRegisterDialog();
+};
+
+const submitEquipment = async () => {
+  if (registering.value) return;
+  registering.value = true;
+  const type = selectedEquipment.value;
+
+  try {
+    let result;
+    if (type === 'CAMERA') result = await cameraStore.signup({ ...cameraForm.value });
+    if (type === 'GATE') result = await gateStore.signup({ ...gateForm.value });
+    if (type === 'ROBOT') result = await robotStore.signup({ ...robotForm.value, setNo: Number(robotForm.value.setNo) });
+
+    const success = type === 'ROBOT' ? result === true : result?.success;
+    if (!success) {
+      showFeedback(result?.message || `${equipmentLabel.value} 등록에 실패했습니다.`, 'error');
+      return;
+    }
+
+    registerDialog.value?.close();
+    showFeedback(`${equipmentLabel.value}를 등록했습니다.`);
+    await refreshCurrent(false);
+  } catch (error) {
+    console.error('장비 등록 실패', error);
+    showFeedback(error.response?.data?.message || '장비 등록에 실패했습니다.', 'error');
+  } finally {
+    registering.value = false;
+  }
+};
+
+const requestDelete = (type, item) => {
+  deleteTarget.value = { type, item };
+};
+
+const cancelDelete = () => {
+  if (!deleting.value) deleteTarget.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!deleteTarget.value || deleting.value) return;
+  deleting.value = true;
+  const { type, item } = deleteTarget.value;
+
+  try {
+    let result;
+    if (type === 'CAMERA') result = await cameraStore.remove(item.cameraNo);
+    if (type === 'GATE') result = await gateStore.remove(item.gateNo);
+    if (type === 'ROBOT') result = await robotStore.remove(item.robotNo);
+
+    const success = type === 'ROBOT' ? result === true : result?.success;
+    if (!success) {
+      showFeedback(result?.message || `${deleteEquipmentLabel.value}를 삭제할 수 없습니다.`, 'error');
+      return;
+    }
+
+    showFeedback(`${deleteItemName.value} 장비를 삭제했습니다.`);
+    deleteTarget.value = null;
+    await refreshCurrent(false);
+  } catch (error) {
+    console.error('장비 삭제 실패', error);
+    showFeedback(error.response?.data?.message || '장비를 삭제하지 못했습니다.', 'error');
+  } finally {
+    deleting.value = false;
+  }
+};
 
 const refreshCameras = async (manual = false) => {
   if (loading.value) return;
@@ -529,28 +699,44 @@ const refreshGates = async (manual = false) => {
   }
 };
 
-const refreshRobots = async () => {
+const refreshRobots = async (manual = false) => {
   if (loading.value) return;
   loading.value = true;
   errorMessage.value = '';
   const startedAt = performance.now();
 
   try {
-    const response = await getRobotList();
-    const robotList = Array.isArray(response.data) ? response.data : [];
-    const nextRobots = robotList.map((robot) => ({
-      ...robot,
-      monitoringStatus: robotStatusToMonitoringStatus(robot.robotStatus),
-    }));
-    const previousByNo = new Map(robots.value.map((robot) => [robot.robotNo, robot.robotStatus]));
+    if (manual) {
+      await analyzeAllRobots();
+    }
+
+    const [robotResponse, pdmResponse] = await Promise.all([
+      getRobotList(),
+      getLatestRobotPdm(),
+    ]);
+    const robotList = Array.isArray(robotResponse.data) ? robotResponse.data : [];
+    const pdmList = Array.isArray(pdmResponse.data) ? pdmResponse.data : [];
+    const pdmByRobotNo = new Map(pdmList.map((pdm) => [Number(pdm.robotNo), pdm]));
+    const nextRobots = robotList.map((robot) => {
+      const pdm = pdmByRobotNo.get(Number(robot.robotNo));
+      return {
+        ...robot,
+        monitoringStatus: riskLevelToStatus(pdm?.riskLevel),
+        riskLevel: pdm?.riskLevel || '미확인',
+        riskScore: pdm?.riskScore ?? null,
+        predictedAt: pdm?.predictedAt || null,
+      };
+    });
+    const previousByNo = new Map(robots.value.map((robot) => [robot.robotNo, normalizeStatus(robot.monitoringStatus)]));
 
     nextRobots.forEach((robot) => {
       const previous = previousByNo.get(robot.robotNo);
-      if (previous && previous !== robot.robotStatus) {
+      const current = normalizeStatus(robot.monitoringStatus);
+      if (previous && previous !== current) {
         pushEvent(
-          robot.monitoringStatus === 'FAULT' ? 'fault' : 'change',
+          current === 'FAULT' ? 'fault' : 'change',
           `${robot.robotCode} 상태 변경`,
-          `${robotStatusText(previous)} → ${robotStatusText(robot.robotStatus)}`,
+          `${statusText(previous)} → ${statusText(current)}`,
           'ROBOT',
           robot.robotNo,
         );
@@ -560,7 +746,7 @@ const refreshRobots = async () => {
     robots.value = nextRobots;
     responseTime.value = Math.max(1, Math.round(performance.now() - startedAt));
     lastUpdatedAt.value = new Date();
-    pushEvent('receive', '상태 데이터 수신', `주차로봇 ${nextRobots.length}대 · 응답 ${responseTime.value}ms`);
+    pushEvent('receive', manual ? '수동 상태 갱신' : '상태 데이터 수신', `주차로봇 ${nextRobots.length}대 · 응답 ${responseTime.value}ms`);
   } catch (error) {
     console.error('주차로봇 상태 조회 실패', error);
     errorMessage.value = '주차로봇 상태를 불러오지 못했습니다.';
@@ -570,9 +756,8 @@ const refreshRobots = async () => {
   }
 };
 
-const formatBattery = (value) => value == null ? '-' : `${Number(value).toFixed(1)}%`;
-const formatOperatingHours = (value) => value == null ? '-' : `${Number(value).toFixed(1)}시간`;
 const formatHeartbeat = (value) => value ? new Date(value).toLocaleTimeString('ko-KR', { hour12: false }) : '-';
+const formatRiskScore = (value) => value == null ? '-' : `${(Number(value) * 100).toFixed(1)}%`;
 
 const refreshStatistics = async () => {
   if (loading.value) return;
@@ -581,11 +766,12 @@ const refreshStatistics = async () => {
   const startedAt = performance.now();
 
   try {
-    const [cameraResponse, cameraPdmResponse, gateResponse, gatePdmResponse, robotResponse] = await Promise.all([
-      getCameraList(), getLatestCameraPdm(), getGateList(), getLatestGatePdm(), getRobotList(),
+    const [cameraResponse, cameraPdmResponse, gateResponse, gatePdmResponse, robotResponse, robotPdmResponse] = await Promise.all([
+      getCameraList(), getLatestCameraPdm(), getGateList(), getLatestGatePdm(), getRobotList(), getLatestRobotPdm(),
     ]);
     const cameraPdmByNo = new Map((Array.isArray(cameraPdmResponse.data) ? cameraPdmResponse.data : []).map((item) => [Number(item.cameraNo), item]));
     const gatePdmByNo = new Map((Array.isArray(gatePdmResponse.data) ? gatePdmResponse.data : []).map((item) => [Number(item.gateNo), item]));
+    const robotPdmByNo = new Map((Array.isArray(robotPdmResponse.data) ? robotPdmResponse.data : []).map((item) => [Number(item.robotNo), item]));
 
     cameras.value = (Array.isArray(cameraResponse.data) ? cameraResponse.data : []).map((item) => ({
       ...item,
@@ -597,7 +783,7 @@ const refreshStatistics = async () => {
     }));
     robots.value = (Array.isArray(robotResponse.data) ? robotResponse.data : []).map((item) => ({
       ...item,
-      monitoringStatus: robotStatusToMonitoringStatus(item.robotStatus),
+      monitoringStatus: riskLevelToStatus(robotPdmByNo.get(Number(item.robotNo))?.riskLevel),
     }));
     responseTime.value = Math.max(1, Math.round(performance.now() - startedAt));
     lastUpdatedAt.value = new Date();
@@ -613,7 +799,7 @@ const refreshCurrent = (manual = false) => ({
   STATS: () => refreshStatistics(),
   CAMERA: () => refreshCameras(manual),
   GATE: () => refreshGates(manual),
-  ROBOT: () => refreshRobots(),
+  ROBOT: () => refreshRobots(manual),
 }[selectedEquipment.value]?.());
 
 onMounted(async () => {
@@ -625,6 +811,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.clearInterval(pollTimer);
   window.clearInterval(clockTimer);
+  window.clearTimeout(feedbackTimer);
 });
 </script>
 
@@ -1054,8 +1241,68 @@ onUnmounted(() => {
   bottom: 5px;
   background: #8b949c;
 }
-.camera-card dt { color: #9da6ad; }
-.camera-card dd { color: #e1e5e8; }
+.camera-card dl div {
+  min-width: 0;
+  align-items: center;
+}
+
+.camera-card .equipment-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.equipment-info-row {
+  display: grid !important;
+  grid-template-columns: max-content minmax(0, 1fr);
+  justify-content: initial !important;
+  align-items: center;
+  gap: 7px !important;
+}
+
+.equipment-info-row dd {
+  text-align: left;
+}
+
+.equipment-chip-row {
+  display: flex !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap;
+  gap: 6px !important;
+}
+
+.equipment-chip {
+  padding: 4px 7px;
+  border: 1px solid #69737b;
+  border-radius: 4px;
+  color: #e1e5e8;
+  background: #4a5259;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.camera-card dt {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border: 1px solid #69737b;
+  border-radius: 4px;
+  color: #d6dce0;
+  background: #4a5259;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.camera-card dd {
+  min-width: 0;
+  color: #e1e5e8;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
 
 .normal .status-badge { color: #b9dec7; background: #405b4b; }
 .fault .status-badge { color: #f2b8bc; background: #664147; }
@@ -1163,4 +1410,229 @@ onUnmounted(() => {
 .hourly-chart { min-width: 0; }.chart-heading { height: 25px; display: flex; justify-content: space-between; color: #aeb6bc; font-size: 10px; }.chart-heading div { display: flex; align-items: center; gap: 5px; color: #8f989f; font-size: 9px; }.chart-heading i { width: 7px; height: 7px; display: inline-block; }.chart-heading i.warning { background: #d8a653; }.chart-heading i.fault { margin-left: 7px; background: #d9747b; }.chart-body { height: 128px; padding: 9px 8px 0; display: grid; grid-template-columns: repeat(6,1fr); align-items: end; gap: 10px; border-left: 1px solid #505960; border-bottom: 1px solid #505960; background: repeating-linear-gradient(to top,transparent 0 31px,rgba(89,97,104,.38) 31px 32px); }.chart-column { height: 100%; display: grid; grid-template-rows: 1fr 19px; align-items: end; gap: 4px; }.chart-bars { height: 100%; display: flex; justify-content: center; align-items: end; gap: 3px; }.chart-bars i { width: min(14px,35%); min-height: 0; transition: height .3s ease; }.chart-bars i.warning { background: #d8a653; }.chart-bars i.fault { background: #d9747b; }.chart-column > span { color: #8f989f; text-align: center; font-size: 8px; }
 .stats-panel-header button { height: 30px; padding: 0 13px; border: 1px solid #69737b; color: #fff; background: #3a4147; font-size: 11px; font-weight: 800; cursor: pointer; }.attention-list { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; list-style: none; }.attention-list li { min-width: 0; padding: 11px 12px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border: 1px solid #596168; border-left: 3px solid #d8a653; background: #343a40; cursor: pointer; }.attention-list li.fault { border-left-color: #d9747b; }.attention-state { padding: 3px 6px; color: #f0d39c; background: #65543a; font-size: 9px; font-weight: 900; }.attention-list li.fault .attention-state { color: #f2b8bc; background: #664147; }.attention-list div { min-width: 0; display: grid; gap: 3px; }.attention-list strong { overflow: hidden; color: #f1f3f5; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }.attention-list small { color: #9da6ad; font-size: 9px; }.attention-list b { color: #aeb6bc; font-size: 9px; }.all-clear { min-height: 70px; display: grid; place-items: center; color: #9ed0b2; font-size: 12px; }
 @media(max-width:1000px){.stats-content-grid{grid-template-columns:1fr}.today-panel,.attention-panel{grid-column:auto}.today-layout{grid-template-columns:1fr}.attention-list{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.stats-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.attention-list{grid-template-columns:1fr}}@media(max-width:520px){.stats-summary-grid{grid-template-columns:1fr}.donut-area{flex-direction:column;gap:20px}.today-metrics{grid-template-columns:1fr}.chart-body{gap:4px}}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-header .register-equipment-button {
+  border-color: #69737b;
+  color: #f1f3f5;
+  background: #3a4147;
+}
+
+.pdm-page .camera-card .card-delete-button {
+  width: 18px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid #ff626b !important;
+  border-radius: 50% !important;
+  color: #ff626b !important;
+  -webkit-text-fill-color: #ff626b !important;
+  background: transparent !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 900;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.pdm-page .camera-card .signal-line {
+  height: 19px;
+}
+
+.pdm-page .camera-card .card-delete-button:hover {
+  border-color: #ff7b82 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: #d9535a !important;
+}
+
+.equipment-register-dialog {
+  width: min(92vw, 560px);
+  padding: 0;
+  border: 1px solid #596168;
+  border-radius: 8px;
+  color: #e5e8eb;
+  background: #2b3035;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .48);
+}
+
+.equipment-register-dialog::backdrop {
+  background: rgba(15, 18, 21, .72);
+}
+
+.equipment-register-form {
+  padding: 20px;
+}
+
+.equipment-register-form .dialog-header {
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #505960;
+}
+
+.equipment-register-form .dialog-header h3 {
+  margin: 0 0 4px;
+  color: #f1f3f5;
+  font-size: 18px;
+}
+
+.equipment-register-form .dialog-header p {
+  margin: 0;
+  color: #9da6ad;
+  font-size: 11px;
+}
+
+.equipment-register-form .dialog-close-button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #596168;
+  color: #d7dce0;
+  background: #343a40;
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.equipment-register-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.equipment-register-fields label,
+.equipment-register-fields fieldset {
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  border: 0;
+}
+
+.equipment-register-fields label > span,
+.equipment-register-fields legend {
+  color: #aeb6bc;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.equipment-register-fields :is(input, select) {
+  min-width: 0;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid #596168;
+  border-radius: 4px;
+  color: #eef1f3;
+  background: #343a40;
+}
+
+.set-position-options {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.set-position-options label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.set-position-options input {
+  width: 15px;
+  height: 15px;
+}
+
+.equipment-register-form .dialog-actions {
+  margin-top: 20px;
+  padding-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  border-top: 1px solid #505960;
+}
+
+.equipment-register-form .dialog-actions button {
+  min-width: 72px;
+  min-height: 32px;
+  border: 1px solid #69737b;
+  color: #f1f3f5;
+  background: #3a4147;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.equipment-register-form .dialog-actions .submit-button {
+  border-color: #5b88b2;
+  background: #334c63;
+}
+
+@media (max-width: 600px) {
+  .equipment-register-fields { grid-template-columns: 1fr; }
+  .panel-actions { gap: 4px; }
+  .panel-header .panel-actions button { padding: 6px 8px; font-size: 10px; }
+}
+
+/* 데스크톱 관제 화면에서 핵심 현황이 한 화면에 들어오도록 밀도를 높인다. */
+@media (min-width: 1001px) {
+  .pdm-page { padding-bottom: 12px; }
+
+  .pdm-header,
+  :global(.admin-layout .content) .pdm-page.facility-list-page > .pdm-header.facility-list-heading {
+    min-height: 0 !important;
+    margin-bottom: 8px !important;
+    align-items: center !important;
+  }
+
+  .pdm-header h1 { line-height: 28px; }
+  .pdm-header p { font-size: 12px; }
+  .header-monitor-tools { grid-template-columns: auto auto; align-items: center; gap: 8px; }
+  .equipment-tabs button { height: 29px; min-width: 70px; padding-inline: 10px; }
+  .live-clock { min-width: 150px; padding: 7px 10px; }
+  .live-clock strong { font-size: 17px; }
+  .live-clock small { font-size: 9px; }
+
+  .stats-dashboard { gap: 8px; }
+  .stats-summary-grid { gap: 8px; }
+  .stats-summary-card { min-height: 68px; padding: 10px 13px; }
+  .stats-summary-card strong { font-size: 26px; }
+  .stats-content-grid { gap: 8px; }
+  .stats-panel { padding: 12px; }
+  .stats-panel-header { min-height: 32px; margin-bottom: 9px; padding-bottom: 7px; }
+  .stats-panel-header h2 { font-size: 14px; }
+  .donut-area,
+  .equipment-bars { min-height: 150px; }
+  .status-donut { width: 118px; height: 118px; padding: 13px; }
+  .status-donut strong { font-size: 23px; }
+  .donut-legend { gap: 9px; }
+  .equipment-bars { gap: 12px; }
+  .today-layout { grid-template-columns: minmax(280px, .75fr) minmax(380px, 1.25fr); gap: 15px; }
+  .today-metrics > div { min-height: 54px; padding: 7px 10px; }
+  .today-metrics strong { font-size: 19px; }
+  .chart-body { height: 92px; }
+
+  .summary-grid { margin-bottom: 8px; }
+  .summary-card { padding: 10px 13px; }
+  .summary-card strong { font-size: 25px; }
+  .monitor-grid { gap: 8px; }
+  .camera-panel,
+  .event-panel { padding: 12px; }
+  .panel-header { margin-bottom: 8px; padding-bottom: 7px; }
+  .camera-card { padding: 9px 10px; }
+  .camera-card > strong { margin-top: 5px; }
+  .camera-card > p { margin-bottom: 5px; }
+  .equipment-chip { padding: 3px 6px; }
+  .event-list { max-height: 430px; }
+}
 </style>

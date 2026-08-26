@@ -78,7 +78,7 @@
         </header>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>분석시각</th><th>등급</th><th>정상</th><th>주의</th><th>위험</th></tr></thead>
+            <thead><tr><th>분석시각</th><th>등급</th><th>정상</th><th>주의</th><th>위험</th><th v-if="activeHistoryTab === 'saved'">조치 상태</th><th v-if="activeHistoryTab === 'saved'">관리</th></tr></thead>
             <tbody>
               <tr v-for="record in visibleHistory" :key="record.pdmNo || `${record.gateNo}-${record.predictedAt}`">
                 <td>{{ formatDateTime(record.predictedAt) }}</td>
@@ -86,13 +86,16 @@
                 <td>{{ formatPercent(record.normalProbability) }}</td>
                 <td>{{ formatPercent(record.warningProbability) }}</td>
                 <td>{{ formatPercent(record.criticalProbability) }}</td>
+                <td v-if="activeHistoryTab === 'saved'"><span class="action-status" :class="record.actionStatus?.toLowerCase()">{{ actionStatusLabel(record.actionStatus) }}</span></td>
+                <td v-if="activeHistoryTab === 'saved'" class="action-cell"><button v-if="record.actionStatus === 'ACTION_REQUIRED'" type="button" class="action-button" @click="openActionDialog(record)">조치 완료</button><div v-else-if="record.actionStatus === 'COMPLETED'" class="completed-action"><span>{{ formatDateTime(record.actionCompletedAt) }}</span><button type="button" class="action-view-button" @click="openActionDialog(record)">조치내용 보기</button></div><span v-else>-</span></td>
               </tr>
-              <tr v-if="visibleHistory.length === 0"><td colspan="5" class="empty">{{ emptyHistoryMessage }}</td></tr>
+              <tr v-if="visibleHistory.length === 0"><td :colspan="activeHistoryTab === 'saved' ? 7 : 5" class="empty">{{ emptyHistoryMessage }}</td></tr>
             </tbody>
           </table>
         </div>
       </section>
     </template>
+    <PdmActionDialog v-if="selectedAction" :record="selectedAction" equipment-type="GATE" :equipment-name="gate?.gateName || `게이트 #${gateNo}`" :loading="actionSubmitting" :read-only="selectedAction.actionStatus === 'COMPLETED'" @cancel="closeActionDialog" @submit="completeSelectedAction" />
   </main>
 </template>
 
@@ -100,8 +103,10 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getList as getGateList } from '@/features/gates/gateApi';
+import PdmActionDialog from './PdmActionDialog.vue';
 import {
   analyzeAllGates,
+  completeGatePdmAction,
   getLatestGatePdm,
   getRecentGatePdm,
   getSavedGatePdm,
@@ -116,6 +121,8 @@ const savedHistory = ref([]);
 const activeHistoryTab = ref('realtime');
 const loading = ref(false);
 const errorMessage = ref('');
+const selectedAction = ref(null);
+const actionSubmitting = ref(false);
 let timer;
 
 const gateNo = computed(() => Number(route.params.gateNo));
@@ -155,6 +162,24 @@ const changeHistoryTab = async (tab) => {
       errorMessage.value = '저장 이력을 불러오지 못했습니다.';
     }
   }
+};
+
+const actionStatusLabel = (status) => ({ NOT_REQUIRED: '조치 불필요', ACTION_REQUIRED: '조치 필요', COMPLETED: '조치 완료' }[status] || '-');
+const openActionDialog = (record) => { if (record?.pdmNo && ['ACTION_REQUIRED', 'COMPLETED'].includes(record.actionStatus)) selectedAction.value = record; };
+const closeActionDialog = () => { if (!actionSubmitting.value) selectedAction.value = null; };
+const completeSelectedAction = async (actionNote) => {
+  if (!selectedAction.value?.pdmNo || actionSubmitting.value) return;
+  actionSubmitting.value = true;
+  errorMessage.value = '';
+  try {
+    await completeGatePdmAction(selectedAction.value.pdmNo, actionNote);
+    selectedAction.value = null;
+    await loadSavedHistory();
+    await refresh();
+  } catch (error) {
+    console.error('게이트 예지보전 조치 완료 실패', error);
+    errorMessage.value = '조치 완료 처리에 실패했습니다.';
+  } finally { actionSubmitting.value = false; }
 };
 
 const refresh = async (manual = false) => {
@@ -236,6 +261,14 @@ table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: 
 th,td { box-sizing: border-box; height: 36px; padding: 3px 6px; border-bottom: 1px solid var(--admin-line); text-align: center; font-size: 11px; white-space: nowrap; }
 th { position: sticky; top: 0; z-index: 1; color: var(--admin-muted); background: var(--admin-surface-muted); }
 .risk-badge { display: inline-block; }
+.action-status { display: inline-block; padding: 3px 7px; border: 1px solid var(--admin-line); color: var(--admin-muted); }
+.action-status.action_required { border-color: #c45a60; color: #ffdadd; background: #66383c; }
+.action-status.completed { border-color: #4f8c6b; color: #d9f7e6; background: #315641; }
+.action-cell { white-space: normal; }
+.action-button { padding: 4px 9px; border: 1px solid #c45a60; color: #ffdadd; background: #66383c; font-size: 11px; font-weight: 700; cursor: pointer; }
+.action-view-button { padding: 3px 8px; border: 1px solid #5b88b2; color: #d8ecff; background: #334c63; font-size: 10px; font-weight: 700; cursor: pointer; }
+.completed-action { display: grid; gap: 2px; }
+.completed-action small { overflow: hidden; color: var(--admin-muted); text-overflow: ellipsis; white-space: nowrap; }
 .message,.empty { margin: 0; padding: 18px; color: var(--admin-muted); background: var(--admin-surface); }
 .message.error { color: #ff8c91; }.empty { height: 60px; text-align: center; }
 @media(max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.detail-layout{grid-template-columns:1fr}}

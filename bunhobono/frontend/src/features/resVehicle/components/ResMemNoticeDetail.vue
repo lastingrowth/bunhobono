@@ -88,5 +88,5 @@ const formatDateTime = (value) => {
 .detail-actions .delete { border-color: #db4b4b; color: #db4b4b; background: #fff; }
 .detail-actions .payment { border-color: #23a6d5; color: #fff; background: #23a6d5; }
 .missing-notice { padding: 80px 20px; color: #555; text-align: center; }
-@media(max-width:700px){.mem-notice-detail dl{grid-template-columns:1fr}.mem-notice-detail header{flex-direction:column}.detail-actions button{flex:1}}
+@media (any-pointer: coarse) and (max-width: 820px), (any-pointer: coarse) and (max-height: 820px){.mem-notice-detail dl{grid-template-columns:1fr}.mem-notice-detail header{flex-direction:column}.detail-actions button{flex:1}}
 </style>

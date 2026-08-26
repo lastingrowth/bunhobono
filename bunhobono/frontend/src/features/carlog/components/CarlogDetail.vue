@@ -57,8 +57,8 @@
         <td :class="{ 'short-text': isShortText(log.parkingTimeText) }">{{ log.parkingTimeText }}</td>
         <td :class="{ 'short-text': isShortText(log.inGateText) }">{{ log.inGateText }}</td>
         <td :class="{ 'short-text': isShortText(log.outGateText) }">{{ log.outGateText }}</td>
-        <td :class="{ 'short-text': isShortText(log.parkingName || '-') }">{{ log.parkingName || '-' }}</td>
-        <td class="manage-column"><button class="delete-btn" type="button" @click="requestDelete(log)">삭제</button></td>
+        <td :class="{ 'short-text': isShortText(log.parkingNameText) }">{{ log.parkingNameText }}</td>
+        <td class="manage-column"><button class="delete-btn list-delete-text" type="button" @click="requestDelete(log)">삭제</button></td>
       </tr>
 
       <tr v-if="logs.length === 0">
@@ -180,10 +180,10 @@ const {
 .carlog-table .kind-col { width: 8%; }
 .carlog-table .in-time-col,
 .carlog-table .out-time-col { width: 14%; }
-.carlog-table .parking-time-col { width: 9%; }
-.carlog-table .gate-col,
-.carlog-table .parking-col { width: 8%; }
-.carlog-table .manage-col { width: 7%; }
+.carlog-table .parking-time-col { width: 15%; }
+.carlog-table .gate-col { width: 8%; }
+.carlog-table .parking-col { width: 5%; }
+.carlog-table .manage-col { width: 4%; }
 
 .carlog-table th,
 .carlog-table td {
@@ -220,30 +220,30 @@ const {
 }
 
 .carlog-table .delete-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  min-width: 52px;
-  height: 22px !important;
+  display: inline;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
   min-height: 0 !important;
-  box-sizing: border-box;
-  padding: 2px 8px !important;
-  border: 1px solid #111827;
-  border-radius: 5px;
-  background: #fff;
-  color: #111827;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #ff626b !important;
+  -webkit-text-fill-color: #ff626b !important;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 800;
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .carlog-table .delete-btn:hover {
-  border-color: #111827;
-  background: #111827;
-  color: #fff;
+  border: 0 !important;
+  color: #ff8a90 !important;
+  -webkit-text-fill-color: #ff8a90 !important;
+  background: transparent !important;
+  text-decoration: underline;
 }
 
 @media (max-width: 1000px) {

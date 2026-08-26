@@ -6,6 +6,7 @@ import { useJwtStore } from '@/features/login/jwtStore'
 import { ocrRoutes } from './ocr'
 import { useHistoryStore } from '@/stores/historyStore'
 import { kioskRoutes } from './kiosk'
+import { isMobileDevice } from '@/shared/responsive/mobileDevice'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -42,9 +43,16 @@ console.log('🔥 ROUTES:', router.getRoutes())
 router.beforeEach((to, from, next) => {
 
   const jwtStore = useJwtStore()
+  const isMobileScreen = isMobileDevice()
 
   if (!jwtStore.token && localStorage.getItem('token')) {
     jwtStore.loadFromStorage()
+  }
+
+  // 모바일·태블릿 화면에서는 관리자 페이지에 접속하지 못하도록 막는다.
+  if (to.path.startsWith('/admin') && isMobileScreen) {
+    jwtStore.errorMessage = '관리자 페이지는 PC 환경에서만 이용할 수 있습니다.'
+    return next('/login')
   }
 
   const isLoginRequired = to.meta?.requireAuth

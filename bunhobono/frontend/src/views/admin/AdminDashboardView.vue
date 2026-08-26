@@ -205,7 +205,7 @@
                                             {{ log.parkingStateText }}
                                         </span>
                                     </td>
-                                    <td>{{ log.parkingName || '-' }}</td>
+                                    <td>{{ parkingFloorLabel(log) }}</td>
                                     <td>{{ formatCameraDataTime(log.outTime || log.inTime) }}</td>
                                 </tr>
                                 <tr v-if="recentCarlogs.length === 0">
@@ -1045,7 +1045,17 @@ const formatCameraDataTime = (value) => {
     }
 
     const date = new Date(value)
-    return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ko-KR')
+    if (Number.isNaN(date.getTime())) {
+        return value
+    }
+
+    const year = String(date.getFullYear()).slice(2)
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hour = String(date.getHours()).padStart(2, '0')
+    const minute = String(date.getMinutes()).padStart(2, '0')
+
+    return `${year}.${month}.${day} ${hour}:${minute}`
 }
 
 const cameraLabel = (cameraNo) => {
@@ -1061,6 +1071,22 @@ const cameraLabel = (cameraNo) => {
     }
 
     return labels[Number(cameraNo)] ?? `CAM ${cameraNo}`
+}
+
+// 관제 목록에서는 긴 주차장 명칭 대신 층만 표시해 영상 영역을 확보한다.
+const parkingFloorLabel = (log) => {
+    const parkingCode = String(log?.parkingCode ?? '').toUpperCase()
+
+    if (parkingCode === 'SURFACE' || parkingCode === '1F') return '1F'
+    if (parkingCode === 'B1' || parkingCode === 'B2') return parkingCode
+
+    const parkingName = String(log?.parkingName ?? '')
+
+    if (/지하\s*1\s*층|\bB1\b/i.test(parkingName)) return 'B1'
+    if (/지하\s*2\s*층|\bB2\b/i.test(parkingName)) return 'B2'
+    if (/지상|1\s*층/i.test(parkingName)) return '1F'
+
+    return parkingName || '-'
 }
 
 const formatConfidence = (value) => {

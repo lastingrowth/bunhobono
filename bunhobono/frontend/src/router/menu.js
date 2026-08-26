@@ -57,14 +57,6 @@ export const adminMenu = [
     path: '/admin/parkings'
   },
   {
-    title: '게이트',
-    path: '/admin/gates'
-  },
-  {
-    title: '카메라',
-    path: '/admin/cameras'
-  },
-  {
     title: '키오스크',
     path: '/admin/kiosk'
   },

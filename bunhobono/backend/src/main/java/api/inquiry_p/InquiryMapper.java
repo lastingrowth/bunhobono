@@ -49,6 +49,20 @@ public interface InquiryMapper {
             " AND status = 'WAITING' ")
     int countWaitingByRoot(int rootInquiryNo);
 
+    // 입주민이 직접 삭제할 문의 흐름 조회
+    @Select("SELECT inquiry_no " +
+            " FROM inquiry " +
+            " WHERE member_no = #{memberNo} " +
+            " AND (inquiry_no = #{rootInquiryNo} " +
+            " OR root_inquiry_no = #{rootInquiryNo}) " +
+            " ORDER BY CASE " +
+            " WHEN root_inquiry_no IS NULL THEN 1 " +
+            " ELSE 0 END, inquiry_no DESC")
+    List<Integer> findInquiryNosByRoot(
+            @Param("rootInquiryNo") int rootInquiryNo,
+            @Param("memberNo") int memberNo
+    );
+
     // 관리자 답변 등록
     @Update("UPDATE inquiry " +
             " SET answer_content = #{answerContent}, " +
@@ -84,46 +98,6 @@ public interface InquiryMapper {
     @Delete("DELETE FROM inquiry WHERE inquiry_no = #{inquiryNo}")
     int delete(int inquiryNo);
 
-    // 입주민 본인 지난 문의 목록 조회
-    @Select("""
-        SELECT
-            tb.trash_no,
-            (tb.data_json ->> 'inquiry_no')::int AS inquiry_no,
-            (tb.data_json ->> 'member_no')::int AS member_no,
-            NULLIF(
-                tb.data_json ->> 'root_inquiry_no',
-                ''
-            )::int AS root_inquiry_no,
-            tb.data_json ->> 'category' AS category,
-            tb.data_json ->> 'title' AS title,
-            tb.data_json ->> 'content' AS content,
-            tb.data_json ->> 'status' AS status,
-            tb.data_json ->> 'answer_content' AS answer_content,
-            NULLIF(
-                tb.data_json ->> 'answered_by',
-                ''
-            )::int AS answered_by,
-            NULLIF(
-                tb.data_json ->> 'answered_at',
-                ''
-            )::timestamp AS answered_at,
-            NULLIF(
-                tb.data_json ->> 'created_at',
-                ''
-            )::timestamp AS created_at
-        FROM trash_bin tb
-        WHERE tb.data_type = 'INQUIRY'
-          AND tb.delete_type = 'SCHEDULED'
-          AND (tb.data_json ->> 'member_no')::int = #{memberNo}
-        ORDER BY
-            NULLIF(
-                tb.data_json ->> 'answered_at',
-                ''
-            )::timestamp DESC,
-            tb.trash_no DESC
-        """)
-    List<InquiryDTO> archivedListByMemberNo(
-            @Param("memberNo") int memberNo
-    );
+
 
 }

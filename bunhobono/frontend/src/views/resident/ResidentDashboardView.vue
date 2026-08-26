@@ -638,6 +638,52 @@ onUnmounted(() => {
 .board-popup-hide { display: inline-flex; align-items: center; gap: 8px; color: #5e7182; font-size: 14px; cursor: pointer; }
 .board-popup-hide input { width: 17px; height: 17px; margin: 0; accent-color: #2f83d5; cursor: pointer; }
 .board-popup-detail { border: 1px solid #2f83d5; color: #fff; background: #2f83d5; }
+
+/* 모바일에서는 공지 팝업이 화면 전체를 덮지 않도록 작게 표시한다. */
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
+    .board-popup-dialog {
+        width: min(420px, calc(100vw - 64px));
+        max-width: calc(100vw - 64px);
+        max-height: 70dvh;
+        border-radius: 12px;
+    }
+
+    .board-popup-card,
+    .board-popup-poster-link {
+        width: 100%;
+    }
+
+    .board-popup-poster {
+        width: 100%;
+        max-width: 100%;
+        max-height: calc(70dvh - 58px);
+        object-fit: contain;
+    }
+
+    .board-popup-content {
+        padding: 8px 10px;
+    }
+
+    .board-popup-actions {
+        gap: 8px;
+    }
+
+    .board-popup-hide {
+        gap: 5px;
+        font-size: 12px;
+    }
+
+    .board-popup-hide input {
+        width: 15px;
+        height: 15px;
+    }
+
+    .board-popup-actions button {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+}
 .board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .board-navigation-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; margin-right: 10px; }
 .board-navigation-actions button { padding: 9px 14px; border: 1px solid transparent; border-radius: 9px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease; }
@@ -776,13 +822,15 @@ onUnmounted(() => {
 .log-direction { display: inline-flex; justify-content: center; min-width: 34px; font-size: 10px; }
 .log-direction.in { color: #176fd0; }.log-direction.out { color: #258b45; }
 .recent-log-empty { margin: 30px 0; color: #8799aa; text-align: center; }
-@media (max-width:600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .recent-log-summary-item { grid-template-columns: 1fr auto; gap: 8px; }
     .recent-log-times { grid-column: 1 / -1; }
     .recent-log-actions { grid-row: 1; grid-column: 2; flex-direction: column; align-items: flex-end; gap: 5px; }
 }
 
-@media (max-width:760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .resident-carlog-header .detail-actions { display:none!important; }
 }
 .parking-zones { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
@@ -829,7 +877,7 @@ onUnmounted(() => {
     .parking-zone{gap:2px}
 }
 @media (max-width:900px){.resident-board.resident-carlog-page{width:calc(100% - 36px)}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
-@media (max-width:600px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{width:calc(100% - 24px);margin:12px auto;padding:16px 12px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column;gap:14px}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%;min-height:44px}.resident-carlog-section{min-height:0}.resident-carlog-table-wrap{overflow:visible;padding:0}.resident-carlog-table,.resident-carlog-table tbody,.resident-carlog-table tr,.resident-carlog-table td{display:block;width:100%}.resident-carlog-table{min-width:0;border:0;box-shadow:none;background:transparent}.resident-carlog-table thead{display:none}.resident-carlog-table tbody{display:grid;gap:12px}.resident-carlog-table tbody tr{padding:14px;border:1px solid #d9e5ee;border-radius:12px;background:#fff}.resident-carlog-table tbody td{padding:7px 0;border:0;text-align:left;white-space:normal;overflow-wrap:anywhere}.resident-carlog-table tbody td::before{display:inline-block;min-width:70px;margin-right:8px;color:#71879a;font-size:12px;font-weight:800}.resident-carlog-table tbody td:nth-child(1)::before{content:"차량번호"}.resident-carlog-table tbody td:nth-child(2)::before{content:"주차장"}.resident-carlog-table tbody td:nth-child(3)::before{content:"입차시간"}.resident-carlog-table tbody td:nth-child(4)::before{content:"출차시간"}.resident-carlog-table tbody td:nth-child(5)::before{content:"상태"}.resident-carlog-table .resident-carlog-empty{padding:36px 10px!important;text-align:center}.resident-carlog-table .resident-carlog-empty::before{display:none}}
+@media (any-pointer: coarse) and (max-width: 820px), (any-pointer: coarse) and (max-height: 820px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{width:calc(100% - 24px);margin:12px auto;padding:16px 12px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column;gap:14px}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%;min-height:44px}.resident-carlog-section{min-height:0}.resident-carlog-table-wrap{overflow:visible;padding:0}.resident-carlog-table,.resident-carlog-table tbody,.resident-carlog-table tr,.resident-carlog-table td{display:block;width:100%}.resident-carlog-table{min-width:0;border:0;box-shadow:none;background:transparent}.resident-carlog-table thead{display:none}.resident-carlog-table tbody{display:grid;gap:12px}.resident-carlog-table tbody tr{padding:14px;border:1px solid #d9e5ee;border-radius:12px;background:#fff}.resident-carlog-table tbody td{padding:7px 0;border:0;text-align:left;white-space:normal;overflow-wrap:anywhere}.resident-carlog-table tbody td::before{display:inline-block;min-width:70px;margin-right:8px;color:#71879a;font-size:12px;font-weight:800}.resident-carlog-table tbody td:nth-child(1)::before{content:"차량번호"}.resident-carlog-table tbody td:nth-child(2)::before{content:"주차장"}.resident-carlog-table tbody td:nth-child(3)::before{content:"입차시간"}.resident-carlog-table tbody td:nth-child(4)::before{content:"출차시간"}.resident-carlog-table tbody td:nth-child(5)::before{content:"상태"}.resident-carlog-table .resident-carlog-empty{padding:36px 10px!important;text-align:center}.resident-carlog-table .resident-carlog-empty::before{display:none}}
 .welcome-title-row { display: flex; align-items: center; gap: 10px; }
 
 @media (max-width: 900px) {
@@ -919,7 +967,8 @@ onUnmounted(() => {
     .resident-board:not(.resident-carlog-page) .board-summary-card,
     .resident-board:not(.resident-carlog-page) .parking-card { border-top: 1px solid #dfe9f2; }
 }
-@media (max-width:600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .resident-board:not(.resident-carlog-page) { width: calc(100% - 24px); margin: 12px 0; padding: 22px; border-radius: 0; }
 }
 
@@ -986,7 +1035,8 @@ onUnmounted(() => {
 ) {
     border-color: transparent;
 }
-@media (max-width:600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
     .resident-board:not(.resident-carlog-page) .member-summary-card,
     .resident-board:not(.resident-carlog-page) .board-summary-card,
     .resident-board:not(.resident-carlog-page) .vehicle-summary-card,

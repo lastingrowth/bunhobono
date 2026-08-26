@@ -810,7 +810,8 @@ function openResidentBillPayment(billNo) {
   background: #2387d9;
 }
 
-@media (max-width: 600px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
     width: calc(100% - 24px);
   }
@@ -841,13 +842,14 @@ function openResidentBillPayment(billNo) {
 
 .resident-vehicle-header-actions { display: flex; align-items: center; gap: 8px; }
 
-@media (max-width: 760px) {
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) {
   .resident-vehicle-header-actions { display: none !important; }
   .resident-vehicle-header:is(.notification-mode,.list-mode) { display: none; }
   .resident-vehicle-member { display: none; }
 }
 
-@media (min-width: 761px) and (max-width: 900px) {
+@media (pointer: fine) and (min-width: 821px) and (max-width: 900px) {
   :global(.resident-layout .content > .resident-vehicle-management) {
     width: calc(100% - 36px);
   }

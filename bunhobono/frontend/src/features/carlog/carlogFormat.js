@@ -6,8 +6,9 @@ export function toCarLogView(log) {
         inTimeText: dateText(log.inTime),
         outTimeText: log.outTime ? dateText(log.outTime) : "주차중",
         parkingTimeText: parkingTimeText(log.inTime, log.outTime),
-        inGateText: gateText(log.inGateName),
-        outGateText: gateText(log.outGateName),
+        inGateText: gateText(log.inGateName, "IN"),
+        outGateText: gateText(log.outGateName, "OUT"),
+        parkingNameText: parkingNameText(log.parkingName, log.parkingCode),
     };
 }
 
@@ -25,15 +26,15 @@ function parkingStateText(value) {
 
 function carKindText(value) {
     if (value === "REGISTERED") {
-        return "등록차량";
+        return "등록";
     }
 
     if (value === "VISIT") {
-        return "방문차량";
+        return "방문";
     }
 
     if (value === "UNKNOWN") {
-        return "미등록차량";
+        return "미등록";
     }
 
     return "-";
@@ -80,18 +81,49 @@ function parkingTimeText(inTime, outTime) {
     return `${minutes}분`;
 }
 
-function gateText(value) {
+function gateText(value, direction) {
     if (!value) {
         return "-";
     }
 
-    if (value.endsWith("-IN")) {
-        return value.replace("-IN", " IN");
+    const normalized = String(value).trim().toUpperCase();
+
+    // 지상 정문(MAIN)은 구분자가 하이픈/공백이거나 한글명이어도 A로 통일한다.
+    if (normalized.includes("MAIN") || normalized.includes("정문")) {
+        return `1F-A-${direction}`;
     }
 
-    if (value.endsWith("-OUT")) {
-        return value.replace("-OUT", " OUT");
+    // 지상 후문(REAR)은 구분자가 하이픈/공백이거나 한글명이어도 B로 통일한다.
+    if (normalized.includes("REAR") || normalized.includes("후문")) {
+        return `1F-B-${direction}`;
     }
 
-    return value;
+    return normalized;
+}
+
+function parkingNameText(name, code) {
+    const normalizedCode = String(code ?? "").trim().toUpperCase();
+    const normalizedName = String(name ?? "").trim().toUpperCase();
+
+    if (normalizedCode === "SURFACE" || normalizedCode === "1F") {
+        return "1F";
+    }
+
+    if (normalizedCode === "B1" || normalizedCode === "B2") {
+        return normalizedCode;
+    }
+
+    if (/지하\s*1\s*층|\bB1\b/.test(normalizedName)) {
+        return "B1";
+    }
+
+    if (/지하\s*2\s*층|\bB2\b/.test(normalizedName)) {
+        return "B2";
+    }
+
+    if (/지상|1\s*층/.test(normalizedName)) {
+        return "1F";
+    }
+
+    return name || "-";
 }

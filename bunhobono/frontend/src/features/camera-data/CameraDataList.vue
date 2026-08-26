@@ -63,7 +63,6 @@
           <th>촬영 시각</th>
           <th>입출차 구분</th>
           <th>인식 신뢰도</th>
-          <th>상세보기</th>
           <th>관리</th>
         </tr>
       </thead>
@@ -77,17 +76,26 @@
           <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
           <td>{{ formatParkingName(d.parkingName) }}</td>
           <td>{{ d.vehicleCarNo ? '등록 차량' : '미등록 차량' }}</td>
-          <td>{{ d.carNo || '미인식' }}</td>
+          <td>
+            <router-link
+              :to="{
+                name: 'CameraDataDetail',
+                params: { cameraDataNo: d.cameraDataNo },
+                query: { ...route.query, page: currentPage }
+              }"
+            >
+              {{ d.carNo || '미인식' }}
+            </router-link>
+          </td>
           <td>{{ formatDate(d.captureTime) }}</td>
           <td>{{ d.movementTypeText }}</td>
           <td>{{ formatConfidence(d.confidenceScore) }}</td>
 
-          <td class="camera-data-action"><router-link :to="{ name: 'CameraDataDetail', params: { cameraDataNo: d.cameraDataNo }, query: { ...route.query, page: currentPage } }"><button>이미지보기</button></router-link></td>
-          <td class="camera-data-action"><button type="button" @click="requestDelete(d)">삭제</button></td>
+          <td class="camera-data-action"><button class="list-delete-text" type="button" @click="requestDelete(d)">삭제</button></td>
         </tr>
 
         <tr v-if="visibleCameraDataList.length === 0">
-          <td colspan="9">조회된 카메라 데이터가 없습니다.</td>
+          <td colspan="8">조회된 카메라 데이터가 없습니다.</td>
         </tr>
       </tbody>
     </table>
@@ -165,8 +173,14 @@ const setPage = async (page) => {
 
 const formatParkingName = (value) => {
   if (!value) return '-';
-  const match = String(value).match(/[A-Za-z]+/);
-  return match ? match[0].toUpperCase() : value;
+
+  const parkingName = String(value).trim();
+
+  if (/지하\s*1\s*층|\bB1\b/i.test(parkingName)) return 'B1';
+  if (/지하\s*2\s*층|\bB2\b/i.test(parkingName)) return 'B2';
+  if (/지상|\b1F\b|1\s*층/i.test(parkingName)) return '1F';
+
+  return parkingName;
 };
 
 const searchGo = async () => {
@@ -288,16 +302,6 @@ onMounted(async () => {
 .camera-data-action {
   height: 30px !important;
   line-height: 1;
-}
-
-.camera-data-action a {
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  vertical-align: middle;
-  text-decoration: none;
 }
 
 .camera-data-action button {

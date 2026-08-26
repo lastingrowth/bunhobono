@@ -4,6 +4,7 @@ export const getDataTypeText = (dataType) => {
         CAR_LOG: "입출차 기록",
         NOTICE: "알림",
         BILL: "정산 내역",
+        INQUIRY: "1:1 문의",
     };
 
     return dataTypeText[dataType] ?? dataType;

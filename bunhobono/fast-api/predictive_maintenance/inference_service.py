@@ -23,6 +23,9 @@ class PredictiveMaintenanceReplayService:
         self.timestamp_column = timestamp_column
         self._lock = threading.Lock()
         self._current_index = 0
+        # 위험으로 판정된 장비는 관리자가 조치를 완료할 때까지
+        # 동일한 CSV 행을 반복 반환한다.
+        self._held_rows: dict[object, tuple[int, pd.Series]] = {}
 
         for description, path in (("모델", model_path),
                                   ("메타데이터", metadata_path),
@@ -74,6 +77,10 @@ class PredictiveMaintenanceReplayService:
         self._equipment_positions = {
             equipment_id: 0 for equipment_id in equipment_ids
         }
+        self._equipment_ids_by_text = {
+            str(equipment_id).casefold(): equipment_id
+            for equipment_id in equipment_ids
+        }
 
     def _next_row(self) -> tuple[int, pd.Series]:
         with self._lock:
@@ -90,21 +97,82 @@ class PredictiveMaintenanceReplayService:
         return int(numeric) if numeric.is_integer() else numeric
 
     def predict_next(self) -> dict:
-        row_index, row = self._next_row()
-        return self._predict_row(row_index, row)
+        with self._lock:
+            index = self._current_index
+            row = self.test_data.iloc[index].copy()
+            self._current_index = (index + 1) % len(self.test_data)
+
+            equipment_id = row[self.equipment_id_column]
+            held_row = self._held_rows.get(equipment_id)
+            if held_row is not None:
+                index, row = held_row
+
+            return self._predict_and_hold(index, row, equipment_id)
 
     def predict_next_all(self) -> list[dict]:
-        rows = []
+        results = []
         with self._lock:
             for equipment_id, row_indexes in self._equipment_row_indexes.items():
+                held_row = self._held_rows.get(equipment_id)
+                if held_row is not None:
+                    row_index, row = held_row
+                    results.append(
+                        self._predict_and_hold(row_index, row, equipment_id)
+                    )
+                    continue
+
                 position = self._equipment_positions[equipment_id]
                 row_index = row_indexes[position]
                 self._equipment_positions[equipment_id] = (
                     position + 1
                 ) % len(row_indexes)
-                rows.append((row_index, self.test_data.iloc[row_index].copy()))
+                row = self.test_data.iloc[row_index].copy()
+                results.append(
+                    self._predict_and_hold(row_index, row, equipment_id)
+                )
 
-        return [self._predict_row(row_index, row) for row_index, row in rows]
+        return results
+
+    def _predict_and_hold(
+        self,
+        row_index: int,
+        row: pd.Series,
+        equipment_id,
+    ) -> dict:
+        result = self._predict_row(row_index, row)
+        action_required = result["risk_level"] == "위험"
+
+        if action_required:
+            self._held_rows.setdefault(
+                equipment_id,
+                (row_index, row.copy()),
+            )
+
+        result["action_required"] = action_required
+        result["held"] = equipment_id in self._held_rows
+        return result
+
+    def complete_action(self, equipment_no: str) -> dict:
+        """장비의 위험 행 고정을 해제하여 다음 CSV 행으로 진행시킨다."""
+        with self._lock:
+            equipment_id = self._equipment_ids_by_text.get(
+                str(equipment_no).casefold()
+            )
+            if equipment_id is None:
+                raise KeyError(
+                    f"{self.equipment_type} 장비를 찾을 수 없습니다: {equipment_no}"
+                )
+
+            held_row = self._held_rows.pop(equipment_id, None)
+
+        return {
+            "equipment_type": self.equipment_type,
+            "equipment_no": str(equipment_id),
+            "released": held_row is not None,
+            "released_row_index": (
+                int(held_row[0]) if held_row is not None else None
+            ),
+        }
 
     def _predict_row(self, row_index: int, row: pd.Series) -> dict:
         features = self.metadata["feature_columns"]

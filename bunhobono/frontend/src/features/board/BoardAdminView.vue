@@ -55,8 +55,8 @@
               <td>{{ item.createdBy || "-" }}</td>
               <td>{{ dateTimeText(item.createdAt) }}</td>
               <td class="action-cell">
-                <button type="button" @click="goEdit(item.boardNo)">수정</button>
-                <button class="danger-button" type="button" @click="remove(item)">삭제</button>
+                <button class="list-edit-text" type="button" @click="goEdit(item.boardNo)">수정</button>
+                <button class="danger-button list-delete-text" type="button" @click="remove(item)">삭제</button>
               </td>
             </tr>
             <tr v-if="store.list.length === 0">

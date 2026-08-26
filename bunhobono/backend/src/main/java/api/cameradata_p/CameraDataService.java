@@ -254,7 +254,68 @@ public class CameraDataService {
                     );
                 }
 
-                registered = processingData.getVehicleCarNo() != null;
+                registered =
+                        processingData.getVehicleCarNo() != null;
+
+// 정문·후문의 998·999 차량을 시스템 긴급차량으로 자동 등록
+                if (
+                        isSiteGate
+                                && isEntryGate
+                                && recognitionConfirmed
+                                && !registered
+                                && isEmergencyVehicleNumber(
+                                processingData.getCarNo()
+                        )
+                ) {
+                    int emergencyVehicleCarNo =
+                            vehicleService.registerEmergencyVisit(
+                                    null,
+                                    processingData.getCarNo()
+                            );
+
+                    CameraDataDTO matched =
+                            new CameraDataDTO();
+
+                    matched.setCameraDataNo(
+                            processingData.getCameraDataNo()
+                    );
+                    matched.setCarNo(
+                            processingData.getCarNo()
+                    );
+                    matched.setVehicleCarNo(
+                            emergencyVehicleCarNo
+                    );
+
+                    if (
+                            cameraDataMapper.applyMatchedCarNo(
+                                    matched
+                            ) != 1
+                    ) {
+                        throw new ResponseStatusException(
+                                HttpStatus.CONFLICT
+                        );
+                    }
+
+                    processingData =
+                            cameraDataMapper.detail(
+                                    processingData.getCameraDataNo()
+                            );
+
+                    if (processingData == null) {
+                        throw new ResponseStatusException(
+                                HttpStatus.CONFLICT
+                        );
+                    }
+
+                    dto.setVehicleCarNo(
+                            emergencyVehicleCarNo
+                    );
+                    dto.setCarNo(
+                            processingData.getCarNo()
+                    );
+
+                    registered = true;
+                }
 
                 int processed = 0;
 
@@ -797,6 +858,25 @@ public class CameraDataService {
         }
 
         return path;
+    }
+
+    // 998·999 긴급작업 차량 번호판 확인
+    private boolean isEmergencyVehicleNumber(
+            String carNo
+    ) {
+        if (carNo == null) {
+            return false;
+        }
+
+        String normalizedCarNo =
+                carNo.replaceAll(
+                        "\\s+",
+                        ""
+                );
+
+        return normalizedCarNo.matches(
+                "^(998|999)[가-힣]\\d{4}$"
+        );
     }
 
 

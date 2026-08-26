@@ -33,7 +33,7 @@
           <td>{{ vehicle.periodText || '-' }}</td>
           <td>{{ vehicle.endDateText || '-' }}</td>
           <td>{{ vehicle.remainingTimeText || '-' }}</td>
-          <td><button @click="requestDelete(vehicle)">삭제</button></td>
+          <td><button class="list-delete-text" type="button" @click="requestDelete(vehicle)">삭제</button></td>
         </tr>
 
         <tr v-if="sortedVehicles.length === 0">

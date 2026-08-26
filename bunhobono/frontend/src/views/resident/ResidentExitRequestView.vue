@@ -337,9 +337,9 @@ const showPreparingMessage = () => {
 .page-state p { margin: 10px 0 20px; }
 .page-state.error { color: #a34343; }
 .retry-button { min-height: 42px; padding: 0 18px; color: #fff; background: #2f83d5; }
-@media (min-width: 601px) and (max-height: 950px) { .exit-request-page { padding-top: 18px; padding-bottom: 36px; } }
+@media (pointer: fine) and (min-width: 821px) and (max-height: 950px) { .exit-request-page { padding-top: 18px; padding-bottom: 36px; } }
 /* 브라우저 125% 확대처럼 CSS 뷰포트 높이가 줄어든 데스크톱 화면 */
-@media (min-width: 601px) and (max-height: 760px) {
+@media (pointer: fine) and (min-width: 821px) and (max-height: 760px) {
   .exit-request-page { padding: 10px 16px 24px; }
   .exit-kiosk-card { padding: 18px 30px 22px; border-radius: 22px; }
   .exit-header { gap: 10px; padding-bottom: 9px; }
@@ -360,5 +360,6 @@ const showPreparingMessage = () => {
   .request-actions button { min-height: 38px; border-radius: 10px; font-size: 12px; }
 }
 @media (max-width: 900px) { .exit-kiosk-card { padding-right: clamp(22px, 5vw, 42px); padding-left: clamp(22px, 5vw, 42px); } }
-@media (max-width: 600px) { .exit-request-page { padding: 12px 0 36px; } .exit-kiosk-card { padding: 28px 18px 22px; border-radius: 24px; } .kiosk-welcome { padding-bottom: 28px; } .kiosk-menu-actions { grid-template-columns: 1fr; gap: 14px; } .kiosk-menu-button { min-height: 190px; padding: 24px; gap: 16px; } .kiosk-button-icon { width: 58px; height: 58px; border-radius: 17px; } .kiosk-button-icon svg { width: 35px; height: 35px; } .vehicle-choice-card { padding: 18px 46px 18px 15px; grid-template-columns: 56px minmax(0, 1fr); gap: 13px; } .choice-car-icon { width: 54px; height: 54px; border-radius: 15px; } .choice-car-icon svg { width: 33px; height: 33px; } .choice-car-copy strong { font-size: 20px; } .location-details { grid-template-columns: 1fr; } .request-actions { grid-template-columns: 1fr; } .status-flow { grid-template-columns: repeat(2, 1fr); gap: 20px 0; } .status-flow li:nth-child(2)::after { display: none; } }
+@media (any-pointer: coarse) and (max-width: 820px),
+       (any-pointer: coarse) and (max-height: 820px) { .exit-request-page { padding: 12px 0 36px; } .exit-kiosk-card { padding: 28px 18px 22px; border-radius: 24px; } .kiosk-welcome { padding-bottom: 28px; } .kiosk-menu-actions { grid-template-columns: 1fr; gap: 14px; } .kiosk-menu-button { min-height: 190px; padding: 24px; gap: 16px; } .kiosk-button-icon { width: 58px; height: 58px; border-radius: 17px; } .kiosk-button-icon svg { width: 35px; height: 35px; } .vehicle-choice-card { padding: 18px 46px 18px 15px; grid-template-columns: 56px minmax(0, 1fr); gap: 13px; } .choice-car-icon { width: 54px; height: 54px; border-radius: 15px; } .choice-car-icon svg { width: 33px; height: 33px; } .choice-car-copy strong { font-size: 20px; } .location-details { grid-template-columns: 1fr; } .request-actions { grid-template-columns: 1fr; } .status-flow { grid-template-columns: repeat(2, 1fr); gap: 20px 0; } .status-flow li:nth-child(2)::after { display: none; } }
 </style>

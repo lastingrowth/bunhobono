@@ -25,7 +25,7 @@
         <td>{{ log.carKindText }}</td>
         <td>{{ log.parkingName || '-' }}</td>
         <td>
-          <button type="button" @click="requestDelete(log)">삭제</button>
+          <button class="list-delete-text" type="button" @click="requestDelete(log)">삭제</button>
         </td>
       </tr>
     </tbody>
