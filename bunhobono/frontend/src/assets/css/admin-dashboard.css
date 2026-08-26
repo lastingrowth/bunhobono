@@ -1857,8 +1857,13 @@ body:has(.admin-dashboard),
 }
 
 .admin-layout:has(.admin-dashboard) .admin-control-right {
-  grid-template-rows: minmax(0, 0.27fr) minmax(0, 0.27fr) minmax(0, 0.46fr);
+  grid-template-rows:
+    minmax(0, 0.27fr)
+    minmax(0, 0.27fr)
+    minmax(0, 0.46fr);
 }
+
+
 
 .admin-layout:has(.admin-dashboard) .carlog-dashboard-block > .section-heading,
 .admin-layout:has(.admin-dashboard) .camera-dashboard-block > .section-heading {
@@ -1933,9 +1938,9 @@ body:has(.admin-dashboard),
 }
 
 .admin-layout:has(.admin-dashboard) .dashboard-bottom-strip {
-  min-height: 48px;
+  min-height: 0;
   margin: 0;
-  padding: 6px 10px;
+  padding: 3px 10px;
   gap: 6px;
 }
 

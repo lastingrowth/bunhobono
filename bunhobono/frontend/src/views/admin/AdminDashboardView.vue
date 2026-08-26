@@ -12,11 +12,73 @@
             {{ errorMessage }}
         </p>
 
+                <!-- 하단 차량 등록 및 회원 승인 -->
+        <div class="dashboard-top-strip dashboard-bottom-strip">
+            <form
+                class="quick-register-inline"
+                @submit.prevent="submitQuickVehicle">
+                <input
+                    v-model="quickVehicle.carNo"
+                    type="text"
+                    placeholder="차량번호" />
+
+                <select
+                    v-model="quickVehicle.vehicleType"
+                    @change="loadQuickRegisterMembers">
+                    <option value="normal">등록차량</option>
+                    <option value="visit">방문차량</option>
+                </select>
+
+                <select
+                    v-model="quickVehicle.role"
+                    @change="loadQuickRegisterMembers">
+                    <option value="RESIDENT">입주민</option>
+                    <option value="ADMIN">관리자</option>
+                </select>
+
+                <select v-model.number="quickVehicle.periodValue">
+                    <option
+                        v-for="option in quickPeriodOptions"
+                        :key="option.value"
+                        :value="option.value">
+                        {{ option.text }}
+                    </option>
+                </select>
+
+                <select v-model.number="quickVehicle.memberNo">
+                    <option :value="null">회원 선택</option>
+                    <option
+                        v-for="member in quickRegisterMembers"
+                        :key="member.memberNo"
+                        :value="member.memberNo">
+                        {{ memberLabel(member) }}
+                    </option>
+                </select>
+
+                <button type="submit">등록</button>
+            </form>
+
+            <div class="dashboard-alert-chips">
+                <button
+                    v-for="alert in dashboardAlerts"
+                    :key="alert.key"
+                    type="button"
+                    class="alert-chip"
+                    :class="{ 'has-count': Number(alert.count) > 0 }"
+                    @click="router.push(alert.path)">
+                    <span>{{ alert.title }}</span>
+                    <strong>{{ alert.count }}</strong>
+                </button>
+            </div>
+        </div>     
+
+
         <!-- 메인 영역 : 왼쪽은 영상, 오른쪽은 입출차 로그와 상세 정보 -->
         <div
             class="admin-control-layout"
             :style="monitoringHeight ? { '--monitoring-height': `${monitoringHeight}px` } : {}">
             <section class="admin-control-left">
+
             <!-- 주차장 모니터링 영역 -->
             <article ref="monitoringCardRef" class="dashboard-card monitoring-card">
 
@@ -158,9 +220,10 @@
             </article>
 
             </section>
-
+        
             <!-- 오른쪽 입출차 로그 + 선택 상세 영역 -->
             <section class="admin-control-right">
+        
                 <section class="dashboard-card carlog-dashboard-block">
                     <div class="section-heading">
                         <h3
@@ -469,65 +532,7 @@
             </section>
         </div>
 
-        <!-- 하단 차량 등록 및 회원 승인 -->
-        <div class="dashboard-top-strip dashboard-bottom-strip">
-            <form
-                class="quick-register-inline"
-                @submit.prevent="submitQuickVehicle">
-                <input
-                    v-model="quickVehicle.carNo"
-                    type="text"
-                    placeholder="차량번호" />
 
-                <select
-                    v-model="quickVehicle.vehicleType"
-                    @change="loadQuickRegisterMembers">
-                    <option value="normal">등록차량</option>
-                    <option value="visit">방문차량</option>
-                </select>
-
-                <select
-                    v-model="quickVehicle.role"
-                    @change="loadQuickRegisterMembers">
-                    <option value="RESIDENT">입주민</option>
-                    <option value="ADMIN">관리자</option>
-                </select>
-
-                <select v-model.number="quickVehicle.periodValue">
-                    <option
-                        v-for="option in quickPeriodOptions"
-                        :key="option.value"
-                        :value="option.value">
-                        {{ option.text }}
-                    </option>
-                </select>
-
-                <select v-model.number="quickVehicle.memberNo">
-                    <option :value="null">회원 선택</option>
-                    <option
-                        v-for="member in quickRegisterMembers"
-                        :key="member.memberNo"
-                        :value="member.memberNo">
-                        {{ memberLabel(member) }}
-                    </option>
-                </select>
-
-                <button type="submit">등록</button>
-            </form>
-
-            <div class="dashboard-alert-chips">
-                <button
-                    v-for="alert in dashboardAlerts"
-                    :key="alert.key"
-                    type="button"
-                    class="alert-chip"
-                    :class="{ 'has-count': Number(alert.count) > 0 }"
-                    @click="router.push(alert.path)">
-                    <span>{{ alert.title }}</span>
-                    <strong>{{ alert.count }}</strong>
-                </button>
-            </div>
-        </div>
 
         <!-- 주차장 카드를 클릭했을 때 크게 보여주는 dialog 화면 -->
         <dialog
@@ -706,6 +711,8 @@
                 </div>
             </div>
         </dialog>
+        <!-- B1 로봇 주차장 배치도 -->
+        <ParkingMapView />
 
     </section>
 </template>
@@ -717,6 +724,7 @@ import { storeToRefs } from 'pinia';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ManagementFeedbackToast from '@/shared/components/ManagementFeedbackToast.vue';
+import ParkingMapView from '@/features/parking-map/ParkingMapView.vue'
 
 
 const router = useRouter()
