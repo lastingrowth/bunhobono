@@ -17,10 +17,6 @@
         <dt>확인시간</dt>
         <dd>{{ formatDateTime(notification.readAt) }}</dd>
       </div>
-      <div>
-        <dt>관련 정보</dt>
-        <dd>{{ notification.referenceTable }} #{{ notification.referenceNo }}</dd>
-      </div>
     </dl>
 
     <section class="notice-message">

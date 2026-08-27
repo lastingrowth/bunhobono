@@ -146,10 +146,7 @@ textarea:focus {
   background: var(--mono-slate) !important;
 }
 
-.vehicle-status-group,
-.vehicle-status-group.visit-group,
 .member-summary-list,
-.vehicle-summary-row,
 .parking-zone,
 .warning-row,
 .selected-log-empty {
@@ -163,8 +160,6 @@ textarea:focus {
 
 .zone-donut-inner b,
 .zone-space-count strong,
-.vehicle-group-title span,
-.visit-group .vehicle-group-title span,
 .recent-log-item small.parking-movement-text {
   color: var(--mono-slate) !important;
 }
@@ -359,18 +354,39 @@ textarea:focus {
 
 .admin-layout .menu-item {
   color: #d9dde0;
+  transition: color 0.16s ease, background-color 0.16s ease;
 }
 
 .admin-layout .menu-item:hover {
+  color: #ffffff;
   background: #2b3035;
 }
 
 .admin-layout .menu-item.router-link-active {
-  border: 1px solid #596168;
+  border: 0;
   color: #ffffff;
-  background: linear-gradient(135deg, #3b4147, #30363b);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: transparent;
+  box-shadow: none;
   backdrop-filter: none;
+}
+
+.admin-layout .menu-item.router-link-active::before {
+  width: 3px;
+  height: 18px;
+  border: 0;
+  border-radius: 1px;
+  background: #ffc928;
+  transition: background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.admin-layout .menu-item.router-link-active:hover {
+  color: #ffffff;
+  background: #2b3035;
+}
+
+.admin-layout .menu-item.router-link-active:hover::before {
+  background: #ffdc62;
+  box-shadow: 0 0 8px rgba(255, 201, 40, 0.65);
 }
 
 .admin-layout .content,

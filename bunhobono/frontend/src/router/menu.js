@@ -12,16 +12,12 @@ export const adminMenu = [
     path: "/admin/camera-data"
   },
   {
-    title: '예지보전',
-    path: '/admin/predictive-maintenance'
-  },
-  {
-    title: '주차장 배치도',
-    path: '/admin/parking-map'
-  },
-  {
     title: '입출차 기록',
     path: '/admin/carlogs'
+  },
+  {
+    title: '예지보전',
+    path: '/admin/predictive-maintenance'
   },
   {
     title: '정산 관리',
@@ -35,7 +31,6 @@ export const adminMenu = [
     title: '차량 관리',
     path: '/admin/vehicles'
   },
-
   {
     title: '회원관리',
     path: '/admin/members'
@@ -49,10 +44,6 @@ export const adminMenu = [
     path: '/admin/inquiries'
   },
   {
-    title: '지난기록',
-    path: '/admin/trash'
-  },
-  {
     title: '주차장',
     path: '/admin/parkings'
   },
@@ -60,6 +51,10 @@ export const adminMenu = [
     title: '키오스크',
     path: '/admin/kiosk'
   },
+  {
+    title: '지난기록',
+    path: '/admin/trash'
+  }
 ];
 
 

@@ -3,28 +3,17 @@
     <ManagementFeedbackToast :message="feedbackMessage" :type="feedbackType" />
 
     <header class="page-heading facility-list-heading">
-      <div>
-        <h1 class="management-list-title">B1 로봇 주차장 배치도</h1>
-      </div>
       <div class="map-actions">
         <span class="live"><i></i> 작업 상태 빠른 갱신</span>
         <button type="button" :disabled="loading" @click="refreshMap">{{ loading ? '갱신 중' : '지금 갱신' }}</button>
-      </div>
+      </div> 
     </header>
-
-    <section class="map-summary">
-      <div><span>로봇 주차면</span><strong>{{ parkingSpaces.length }}</strong></div>
-      <div class="available"><span>빈자리</span><strong>{{ availableCount }}</strong></div>
-      <div class="reserved"><span>예약</span><strong>{{ reservedCount }}</strong></div>
-      <div class="occupied"><span>주차 중</span><strong>{{ occupiedCount }}</strong></div>
-      <div><span>사용률</span><strong>{{ usageRate }}%</strong></div>
-    </section>
 
     <div v-if="errorMessage" class="map-message error">{{ errorMessage }}</div>
     <div v-else-if="loading && !spaces.length" class="map-message">배치도를 불러오는 중입니다.</div>
 
     <section v-else class="garage-shell">
-      <div class="garage-title"><span>BONO APARTMENT</span><strong>BASEMENT 1 · ROBOT PARKING</strong><small>마지막 수신 {{ lastUpdatedText }}</small></div>
+      <div class="garage-title"><small>마지막 수신 {{ lastUpdatedText }}</small></div>
 
       <div ref="simulationStage" class="access-layout">
         <div class="robot-simulation-layer" aria-hidden="true">
@@ -164,6 +153,7 @@
       </footer>
     </section>
 
+
     <aside v-if="selectedSpace" ref="spaceDetailPanel" class="space-detail">
       <button type="button" aria-label="닫기" @click="selectedSpace = null">×</button>
       <span>{{ typeText(selectedSpace.spaceType) }}</span>
@@ -183,7 +173,13 @@
         <small v-else>미출차 시 10분 후 자동으로 다시 입차합니다.</small>
       </div>
     </aside>
-
+     <section class="map-summary">
+      <div><span>로봇 주차면</span><strong>{{ parkingSpaces.length }}</strong></div>
+      <div class="available"><span>빈자리</span><strong>{{ availableCount }}</strong></div>
+      <div class="reserved"><span>예약</span><strong>{{ reservedCount }}</strong></div>
+      <div class="occupied"><span>주차 중</span><strong>{{ occupiedCount }}</strong></div>
+      <div><span>사용률</span><strong>{{ usageRate }}%</strong></div>
+    </section>
   </main>
 </template>
 

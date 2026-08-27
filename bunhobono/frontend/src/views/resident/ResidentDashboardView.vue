@@ -160,7 +160,7 @@
                 <section
                     class="recent-log-card"
                 >
-                    <h2>나의 차량 최근 입출차</h2>
+                    <h2>입출차 기록</h2>
                     <div v-if="residentCarLogs.length" class="recent-log-summary-list">
                         <div
                             v-for="log in residentCarLogs.slice(0, 5)"
@@ -730,22 +730,25 @@ onUnmounted(() => {
 .member-summary-list div:nth-child(2) dd { color: var(--resident-accent); font-weight: 800; }
 .member-summary-list div:nth-child(3) dd { color: var(--resident-accent); font-weight: 700; }
 .member-status-badge { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 10px; border-radius: 999px; color: #287a4a; background: #e9f7ee; font-size: 13px; font-weight: 700; }
-.vehicle-status-groups { overflow: hidden; border: 0; border-radius: 11px; }
-.vehicle-status-group { display: grid; grid-template-columns: 110px 1fr; align-items: center; min-height: 52px; padding: 7px 11px; background: #f7faff; }
-.vehicle-status-group + .vehicle-status-group { border-top: 0; }
+.vehicle-status-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 12px; overflow: visible; border: 0; border-radius: 11px; }
+.vehicle-status-group { min-width: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #dce8f1; border-radius: 12px; background: #f7faff; }
+.vehicle-status-group + .vehicle-status-group { border-top: 1px solid #dce8f1; }
 .vehicle-status-group.visit-group { background: #f8fbf8; }
-.vehicle-group-title { display: grid; gap: 2px; padding-right: 11px; }
+.vehicle-group-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 2px 9px; border-bottom: 1px solid #dfe9f1; }
 .vehicle-group-title strong { color: #294761; font-size: 14px; }
 .vehicle-group-title span { color: var(--resident-accent); font-size: 12px; font-weight: 800; }
 .visit-group .vehicle-group-title span { color: var(--resident-accent); }
-.vehicle-slots { display: grid; grid-template-columns: 1fr; align-items: center; gap: 6px; min-width: 0; }
-.vehicle-summary-row { display: grid; grid-template-columns: minmax(120px,.8fr) minmax(0,1.6fr) minmax(90px,.7fr); align-items: center; gap: 12px; min-width: 0; padding: 8px 10px; border: 0; border-radius: 9px; background: #fff; box-shadow: none; }
+.vehicle-slots { display: grid; grid-template-columns: 1fr; align-content: start; gap: 8px; min-width: 0; }
+.vehicle-summary-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 9px 12px; min-width: 0; padding: 11px 12px; border: 1px solid #e3ecf3; border-radius: 9px; background: #fff; box-shadow: none; }
 .vehicle-info-section { display: grid; gap: 4px; min-width: 0; color: #405a70; font-size: 13px; font-weight: 650; line-height: 1.4; word-break: keep-all; }
-.vehicle-info-section + .vehicle-info-section { padding-left: 12px; border-left: 0; }
+.vehicle-info-section + .vehicle-info-section { padding-left: 0; border-left: 0; }
+.vehicle-summary-row .vehicle-info-section:nth-child(1) { grid-column: 1; grid-row: 1; }
+.vehicle-summary-row .vehicle-info-section:nth-child(2) { grid-column: 1 / -1; grid-row: 2; padding-top: 9px; border-top: 1px solid #e7eef4; }
+.vehicle-summary-row .vehicle-info-section:nth-child(3) { grid-column: 2; grid-row: 1; min-width: 72px; padding-left: 12px; border-left: 1px solid #e7eef4; }
 .vehicle-info-section small { color: #71879a; font-size: 11px; font-weight: 700; }
-.vehicle-info-section span { min-width: 0; }
-.vehicle-number-section strong { overflow: hidden; color: #243f58; font-size: 16px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
-.vehicle-parking-state { width: fit-content; max-width: 100%; overflow: hidden; color: #8a99a7; font-size: 10px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.vehicle-info-section span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.vehicle-number-section strong { color: #243f58; font-size: 16px; font-weight: 900; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+.vehicle-parking-state { width: fit-content; max-width: 100%; color: #8a99a7; font-size: 10px; font-weight: 750; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
 .vehicle-parking-state.parking { color: #198754; }
 .vehicle-parking-state.completed { color: #55758f; }
 .vehicle-period-label-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -837,7 +840,7 @@ onUnmounted(() => {
 .parking-zone { position: relative; display: grid; justify-items: center; gap: 4px; padding: 8px 6px 7px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .parking-zone::before { display: none; }
 .zone-heading { display: flex; align-items: center; justify-content: center; width: 100%; }
-.zone-heading > span { overflow: hidden; color: #202b36; font-size: 17px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.zone-heading > span { overflow: hidden; color: #7b8792; font-size: 17px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .zone-donut { --zone-color: #39e98a !important; display: grid; place-items: center; width: 86px; height: 86px; margin: 3px 0; border-radius: 50%; background: conic-gradient(var(--zone-color) 0 var(--usage-rate), #e7edf3 var(--usage-rate) 360deg); box-shadow: inset 0 0 0 1px rgba(37,61,85,.05); }
 .zone-donut-inner { display: grid; place-items: center; align-content: center; width: 61px; height: 61px; border-radius: 50%; background: #fff; box-shadow: 0 2px 7px rgba(48,78,108,.12); }
 .zone-donut-inner small { color: #73869a; font-size: 8px; line-height: 1.1; }
@@ -1035,6 +1038,76 @@ onUnmounted(() => {
 ) {
     border-color: transparent;
 }
+
+/* 홈 차량현황은 내 차량과 방문차량을 좌우의 독립 영역으로 구분한다. */
+.resident-board:not(.resident-carlog-page) .vehicle-status-groups {
+    background: transparent;
+}
+
+.resident-board:not(.resident-carlog-page) .vehicle-status-group {
+    border: 1px solid #bcdcf3;
+    border-top: 3px solid #42a5e8;
+    border-radius: 12px;
+    background: #eef8ff;
+    box-shadow: 0 5px 14px rgba(53, 132, 190, .08);
+}
+
+.resident-board:not(.resident-carlog-page) .vehicle-status-group.visit-group {
+    border-color: #bfe5cd;
+    border-top-color: #52b97b;
+    background: #effaf3;
+    box-shadow: 0 5px 14px rgba(58, 150, 94, .08);
+}
+
+.resident-board:not(.resident-carlog-page) .vehicle-summary-row {
+    border: 1px solid #cfe4f4;
+    border-radius: 9px;
+    background: #fbfdff;
+}
+
+.resident-board:not(.resident-carlog-page) .visit-group .vehicle-summary-row {
+    border-color: #d1e9d9;
+    background: #fcfffd;
+}
+
+.resident-board:not(.resident-carlog-page) .vehicle-status-group:not(.visit-group) .vehicle-group-title {
+    border-bottom-color: #c8e1f4;
+}
+
+.resident-board:not(.resident-carlog-page) .vehicle-status-group.visit-group .vehicle-group-title {
+    border-bottom-color: #cce6d5;
+}
+
+@media (max-width: 900px) {
+    .vehicle-status-groups {
+        grid-template-columns: 1fr;
+    }
+
+    .vehicle-status-group {
+        display: flex;
+    }
+
+    .vehicle-summary-row {
+        grid-template-columns: 1fr;
+    }
+
+    .vehicle-summary-row .vehicle-info-section:nth-child(1),
+    .vehicle-summary-row .vehicle-info-section:nth-child(2),
+    .vehicle-summary-row .vehicle-info-section:nth-child(3) {
+        grid-column: 1;
+        grid-row: auto;
+        min-width: 0;
+        padding-right: 0;
+        padding-left: 0;
+        border-left: 0;
+    }
+
+    .vehicle-summary-row .vehicle-info-section:nth-child(2),
+    .vehicle-summary-row .vehicle-info-section:nth-child(3) {
+        padding-top: 7px;
+        border-top: 1px solid #e7eef4;
+    }
+}
 @media (any-pointer: coarse) and (max-width: 820px),
        (any-pointer: coarse) and (max-height: 820px) {
     .resident-board:not(.resident-carlog-page) .member-summary-card,
@@ -1094,7 +1167,6 @@ onUnmounted(() => {
 .recent-log-item > span:not(.log-label),
 .recent-log-car small,
 .recent-log-times,
-.zone-heading > span,
 .zone-space-count,
 .visit-registration-remaining {
     color: #111 !important;

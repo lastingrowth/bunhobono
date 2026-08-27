@@ -9,7 +9,6 @@
       <table>
         <colgroup>
           <col class="col-index">
-          <col class="col-type">
           <col class="col-title">
           <col class="col-created">
           <col class="col-manage">
@@ -18,7 +17,6 @@
         <thead>
           <tr>
             <th>번호</th>
-            <th>구분</th>
             <th>제목</th>
             <th>발생시간</th>
             <th>관리</th>
@@ -46,11 +44,7 @@
                 {{ formatDateTime(notification.createdAt) }}
               </small>
             </td>
-            <td>
-              <span class="notification-type">
-                {{ notification.referenceTable || "-" }}
-              </span>
-            </td>
+            
             <td class="notification-title">
               <button type="button" @click="$emit('open-detail', notification)">
                 <span v-if="notification.readAt == null" class="unread-dot" aria-label="읽지 않은 알림"></span>
@@ -153,9 +147,8 @@ tr.unread { background: #f2fbfe; }
 .notification-type { display: inline-flex; padding: 4px 7px; border-radius: 6px; color: #087443; background: #d9f5e7; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .notification-index { color: #555; font-weight: 700; }
 .notification-mobile-summary { display: none; }
-.notification-title { overflow: hidden; font-weight: 700; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
-.notification-title button { width: 100%; padding: 0; display: flex; align-items: center; gap: 9px; overflow: hidden; border: 0; color: inherit; text-align: left; text-overflow: ellipsis; background: transparent; cursor: pointer; }
-.notification-title button { font-weight: 700; white-space: nowrap; }
+.notification-title { font-weight: 700; line-height: 1.45; text-align: left; white-space: normal; }
+.notification-title button { width: 100%; min-width: 0; padding: 0; display: flex; align-items: flex-start; gap: 9px; overflow: visible; border: 0; color: inherit; font-weight: 700; line-height: 1.45; text-align: left; white-space: normal; overflow-wrap: anywhere; word-break: keep-all; background: transparent; cursor: pointer; }
 .notification-title button:hover { color: var(--resident-accent); }
 .unread-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: var(--resident-accent); }
 .created-at { color: #555; white-space: nowrap; }
@@ -240,14 +233,16 @@ tr.unread { background: #f2fbfe; }
     align-items: center;
     gap: 7px;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
     border: 0;
     color: #243746;
     background: transparent;
     font-weight: 800;
     text-align: left;
     cursor: pointer;
+    white-space: normal;
     overflow-wrap: anywhere;
+    word-break: keep-all;
   }
   .notification-mobile-summary .notification-type {
     grid-column: 1;

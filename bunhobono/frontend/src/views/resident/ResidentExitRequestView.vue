@@ -85,6 +85,10 @@
             <h1>차량 선택</h1>
             <p>출차할 차량을 선택해 주세요.</p>
           </div>
+          <div class="exit-gate-buttons" aria-label="출구 선택">
+            <button type="button">출구 1</button>
+            <button type="button">출구 2</button>
+          </div>
         </header>
 
         <div v-if="loading" class="page-state">주차 차량을 확인하고 있습니다.</div>
@@ -443,6 +447,9 @@ onUnmounted(stopResidentExitPolling);
 .exit-header span { color: var(--resident-accent); font-size: 11px; font-weight: 900; letter-spacing: .18em; }
 .exit-header h1 { margin: 2px 0 3px; color: #20394d; font-size: 27px; }
 .exit-header p { margin: 0; color: #7890a2; font-size: 14px; }
+.exit-gate-buttons { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.exit-header .exit-gate-buttons button { min-width: 76px; height: 38px; padding: 0 14px; border: 1px solid #a9cee5; border-radius: 10px; color: #267caf; background: #f4faff; font-size: 13px; font-weight: 800; cursor: pointer; transition: color .16s ease, border-color .16s ease, background-color .16s ease; }
+.exit-header .exit-gate-buttons button:hover { border-color: #2689c4; color: #fff; background: #2689c4; }
 .back-button { width: 38px; height: 38px; border: 0; border-radius: 50%; color: #315f83; background: #e9f3fa; font-size: 20px; cursor: pointer; }
 .vehicle-selector { margin-top: 22px; }
 .vehicle-selector > span { display: block; margin-bottom: 9px; color: #5c7182; font-size: 12px; font-weight: 800; }
@@ -478,6 +485,8 @@ onUnmounted(stopResidentExitPolling);
   .exit-header h1 { margin: 0 0 2px; font-size: 22px; }
   .exit-header p { font-size: 12px; }
   .exit-header span { font-size: 9px; }
+  .exit-gate-buttons { gap: 5px; }
+  .exit-header .exit-gate-buttons button { min-width: 62px; height: 32px; padding: 0 9px; font-size: 11px; }
   .back-button { width: 32px; height: 32px; font-size: 17px; }
   .vehicle-display { margin: 10px 0; padding: 11px; border-radius: 14px; }
   .vehicle-display strong { margin: 1px 0; font-size: 31px; }
@@ -493,5 +502,5 @@ onUnmounted(stopResidentExitPolling);
 }
 @media (max-width: 900px) { .exit-kiosk-card { padding-right: clamp(22px, 5vw, 42px); padding-left: clamp(22px, 5vw, 42px); } }
 @media (any-pointer: coarse) and (max-width: 820px),
-       (any-pointer: coarse) and (max-height: 820px) { .exit-request-page { padding: 12px 0 36px; } .exit-kiosk-card { padding: 28px 18px 22px; border-radius: 24px; } .kiosk-welcome { padding-bottom: 28px; } .kiosk-menu-actions { grid-template-columns: 1fr; gap: 14px; } .kiosk-menu-button { min-height: 190px; padding: 24px; gap: 16px; } .kiosk-button-icon { width: 58px; height: 58px; border-radius: 17px; } .kiosk-button-icon svg { width: 35px; height: 35px; } .vehicle-choice-card { padding: 18px 46px 18px 15px; grid-template-columns: 56px minmax(0, 1fr); gap: 13px; } .choice-car-icon { width: 54px; height: 54px; border-radius: 15px; } .choice-car-icon svg { width: 33px; height: 33px; } .choice-car-copy strong { font-size: 20px; } .location-details { grid-template-columns: 1fr; } .request-actions { grid-template-columns: 1fr; } .status-flow { grid-template-columns: repeat(2, 1fr); gap: 20px 0; } .status-flow li:nth-child(2)::after { display: none; } }
+       (any-pointer: coarse) and (max-height: 820px) { .exit-request-page { padding: 12px 0 36px; } .exit-kiosk-card { padding: 28px 18px 22px; border-radius: 24px; } .kiosk-welcome { padding-bottom: 28px; } .kiosk-menu-actions { grid-template-columns: 1fr; gap: 14px; } .kiosk-menu-button { min-height: 190px; padding: 24px; gap: 16px; } .kiosk-button-icon { width: 58px; height: 58px; border-radius: 17px; } .kiosk-button-icon svg { width: 35px; height: 35px; } .exit-header { flex-wrap: wrap; } .exit-gate-buttons { width: 100%; justify-content: flex-end; } .vehicle-choice-card { padding: 18px 46px 18px 15px; grid-template-columns: 56px minmax(0, 1fr); gap: 13px; } .choice-car-icon { width: 54px; height: 54px; border-radius: 15px; } .choice-car-icon svg { width: 33px; height: 33px; } .choice-car-copy strong { font-size: 20px; } .location-details { grid-template-columns: 1fr; } .request-actions { grid-template-columns: 1fr; } .status-flow { grid-template-columns: repeat(2, 1fr); gap: 20px 0; } .status-flow li:nth-child(2)::after { display: none; } }
 </style>
