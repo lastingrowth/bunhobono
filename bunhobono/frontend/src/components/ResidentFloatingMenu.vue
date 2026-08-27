@@ -16,34 +16,11 @@
             차량관리
         </RouterLink>
 
-        <RouterLink to="/resident/vehicles?mode=notification"
-            :class="{
-                active: route.path === '/resident/vehicles'
-                && route.query.mode === 'notification'
-            }">
-            <span>차량알림</span>
-            <span
-                v-if="resVehicleStore.unreadNotificationCount > 0"
-                class="resident-menu-badge"
-            >
-                {{ resVehicleStore.unreadNotificationCount > 99
-                    ? '99+'
-                    : resVehicleStore.unreadNotificationCount }}
-            </span>
-        </RouterLink>
-
         <RouterLink to="/resident/carlogs"
             :class="{
                 active: route.path === '/resident/carlogs'
             }">
             입출차기록
-        </RouterLink>
-
-        <RouterLink to="/resident/parkings"
-            :class="{
-                active: route.path.startsWith('/resident/parkings')
-            }">
-            주차현황
         </RouterLink>
 
         <RouterLink to="/resident/boards"

@@ -1,5 +1,5 @@
 <template>
-  <div class="resident-vehicle-management">
+  <div class="resident-vehicle-management resident-standard-page">
     <ManagementFeedbackToast
       :message="feedbackMessage"
       :type="feedbackType"
@@ -7,7 +7,7 @@
 
     <div
       v-if="mode !== 'form'"
-      class="resident-vehicle-header"
+      class="resident-vehicle-header resident-standard-header"
       :class="{
         'notification-mode': mode === 'notification',
         'list-mode': mode === 'list'
@@ -16,22 +16,13 @@
       <h2>{{ mode.startsWith('notification') ? '알림' : '차량관리' }}</h2>
 
       <div class="resident-vehicle-header-actions">
-        <button
-          v-if="mode === 'list'"
-          type="button"
-          @click="openNotifications"
-        >
-          차량 알림
+        <button v-if="mode === 'list'" type="button" class="resident-notification-button" title="차량 알림" aria-label="차량 알림" @click="router.push({ path: '/resident/vehicles', query: { mode: 'notification' } })">
+          <img src="@/assets/images/mail.png" alt="" />
+          <span v-if="resVehicleStore.unreadNotificationCount > 0" class="notification-count">{{ resVehicleStore.unreadNotificationCount > 99 ? '99+' : resVehicleStore.unreadNotificationCount }}</span>
         </button>
 
 
-        <button
-          type="button"
-          class="back-to-list-button"
-          @click="goDashboard"
-        >
-          홈으로 돌아가기
-        </button>
+        <button type="button" class="resident-home-button" title="홈으로 돌아가기" aria-label="홈으로 돌아가기" @click="router.push('/resident/dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.2V20h13v-9.8"/><path d="M9.5 20v-6h5v6"/></svg></button>
       </div>
     </div>
 
@@ -618,6 +609,8 @@ function openResidentBillPayment(billNo) {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  box-sizing: border-box;
+  padding: 28px;
 }
 
 .resident-vehicle-management h2,

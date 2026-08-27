@@ -3,6 +3,19 @@
 
 import axios from "axios";
 
+// 아이패드·모바일에서 노트북의 LAN 주소로 접속할 때 환경변수의 localhost는
+// 접속 기기 자신을 가리킨다. 이 경우 Vite/Nginx의 동일 출처 /api를 사용한다.
+const configuredApiUrl = import.meta.env.VITE_API_URL || "/api";
+const browserHostname = window.location.hostname;
+const isLanClient = browserHostname !== "localhost"
+    && browserHostname !== "127.0.0.1";
+const configuredUsesLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/api\/?$/i
+    .test(configuredApiUrl);
+
+export const API_BASE_URL = isLanClient && configuredUsesLocalhost
+    ? "/api"
+    : configuredApiUrl;
+
 /*
 |--------------------------------------------------------------------------
 | 1. Axios 인스턴스 생성 (핵심)
@@ -29,7 +42,7 @@ const api = axios.create({
     |
     | 반드시 .env에 있어야 함
     */
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: API_BASE_URL,
 
     /*
     |--------------------------------------------------------------------------

@@ -1,11 +1,11 @@
 <template>
-  <main class="resident-board-list-page">
+  <main class="resident-board-list-page resident-standard-page">
     <template v-if="!isDetail">
-      <header class="page-header">
+      <header class="page-header resident-standard-header">
         <div>
           <h2>공지사항</h2>
         </div>
-        <button type="button" class="dashboard-return-button" @click="goDashboard">대시보드로 돌아가기</button>
+        <button type="button" class="resident-home-button" title="홈으로 돌아가기" aria-label="홈으로 돌아가기" @click="router.push('/resident/dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.2V20h13v-9.8"/><path d="M9.5 20v-6h5v6"/></svg></button>
       </header>
 
       <p v-if="store.loading" class="page-state">공지사항을 불러오는 중입니다.</p>
@@ -55,12 +55,12 @@
     </template>
 
     <template v-else>
-      <header class="page-header">
+      <header class="page-header resident-standard-header">
         <div>
           <h2>공지사항 상세</h2>
         </div>
         <div class="detail-navigation">
-          <button type="button" class="home-button" @click="goDashboard">홈으로 돌아가기</button>
+          <button type="button" class="resident-home-button" title="홈으로 돌아가기" aria-label="홈으로 돌아가기" @click="router.push('/resident/dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.2V20h13v-9.8"/><path d="M9.5 20v-6h5v6"/></svg></button>
           <button type="button" @click="goList">공지사항 전체 목록</button>
         </div>
       </header>

@@ -1,7 +1,8 @@
 <template>
-  <main class="resident-mypage">
-    <header class="mypage-title">
+  <main class="resident-mypage resident-standard-page">
+    <header class="mypage-title resident-standard-header">
         <h2>마이페이지</h2>
+        <button type="button" class="resident-home-button" title="홈으로 돌아가기" aria-label="홈으로 돌아가기" @click="router.push('/resident/dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.2V20h13v-9.8"/><path d="M9.5 20v-6h5v6"/></svg></button>
     </header>
 
     <section class="mypage-card">
@@ -11,14 +12,11 @@
             <!-- 비밀번호는 조회 응답과 마이페이지 화면에 표시하지 않는다. -->
             <table>
                 <tbody>
-                    <tr><th>가입유형</th><td>{{ store.member.role }}</td></tr>
                     <tr><th>이름</th><td>{{ store.member.memName }}</td></tr>
                     <tr><th>아이디</th><td>{{ store.member.loginId }}</td></tr>
                     <tr><th>연락처</th><td>{{ store.member.memPhone }}</td></tr>
-                    <tr><th>동</th><td>{{ store.member.dong }}</td></tr>
-                    <tr><th>호수</th><td>{{ store.member.ho }}</td></tr>
+                    <tr><th>동 · 호수</th><td>{{ store.member.dong }}동 {{ store.member.ho }}호</td></tr>
                     <tr><th>이메일</th><td>{{ store.member.email }}</td></tr>
-                    <tr><th>상태</th><td>{{ store.member.memStatus === 'ACTIVE' ? '거주' : store.member.memStatus }}</td></tr>
                 </tbody>
             </table>
         </div>
@@ -26,14 +24,6 @@
         <aside class="mypage-actions" aria-label="마이페이지 메뉴">
             <button type="button" class="modify-button" @click="goModify">내 정보 수정</button>
             <button type="button" class="withdraw-button" @click="openDeleteConfirm">회원 탈퇴</button>
-            <button type="button" class="home-button" @click="goHome">
-                <span class="home-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                        <path d="M3 11.2 12 4l9 7.2M5.5 10v9h13v-9M9.5 19v-5h5v5" />
-                    </svg>
-                </span>
-                홈으로
-            </button>
         </aside>
     </section>
 
@@ -248,19 +238,18 @@ onBeforeUnmount(stopChallengeTimer);
 </script>
 
 <style scoped>
-.resident-mypage { width: min(1120px, 100%); margin: 0 auto; padding: 28px 24px; box-sizing: border-box; }
+.resident-mypage { width: min(1120px, 100%); margin: 0 auto; padding: 28px; box-sizing: border-box; }
 .mypage-title { margin-bottom: 22px; text-align: center; }
-.mypage-title h2 { margin: 0; color: #203c58; font-size: 30px; }
-.mypage-card { padding: 34px; display: grid; grid-template-columns: 1fr; gap: 20px; border: 1px solid #cbddec; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 14px 34px rgba(50,91,126,.12); }
-.mypage-info h3 { margin: 0 0 20px; color: #203c58; font-size: 25px; }
+.mypage-title.resident-standard-header h2 { margin: 0; color: #111 !important; font-size: 27px; }
+.mypage-card { padding: 24px; display: grid; grid-template-columns: 1fr; gap: 14px; border: 1px solid #cbddec; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 14px 34px rgba(50,91,126,.12); }
+.mypage-info h3 { margin: 0 0 14px; color: #203c58; font-size: 22px; }
 .mypage-info table { width: 100%; border-collapse: collapse; border: 1px solid #cbd8e4; background: #fff; font-size: 17px; }
-.mypage-info th,.mypage-info td { height: 58px; padding: 8px 18px; border-bottom: 1px solid #dbe5ed; box-sizing: border-box; }
+.mypage-info th,.mypage-info td { height: 46px; padding: 6px 16px; border-bottom: 1px solid #dbe5ed; box-sizing: border-box; }
 .mypage-info tr:last-child th,.mypage-info tr:last-child td { border-bottom: 0; }
 .mypage-info th { width: 170px; border-right: 1px solid #dbe5ed; color: #38536d; background: #f5faff; font-weight: 700; text-align: center; }
 .mypage-info td { color: #243f58; font-weight: 500; text-align: left; }
-.mypage-info tr:nth-child(1) td,.mypage-info tr:nth-child(3) td { color: #287fd5; font-weight: 700; }
-.mypage-info tr:nth-child(4) td { color: #6478cf; font-weight: 700; }
-.mypage-info tr:last-child td { color: #2ca66a; font-weight: 800; }
+.mypage-info tr:nth-child(2) td { color: #287fd5; font-weight: 700; }
+.mypage-info tr:nth-child(3) td { color: #6478cf; font-weight: 700; }
 .mypage-actions { display: flex; flex-direction: row; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 .mypage-actions button { width: auto; min-height: 40px; padding: 8px 14px; border: 1px solid #a9c8df; border-radius: 8px; color: #203c58; background: #f4faff; box-shadow: none; font-size: 13px; font-weight: 700; cursor: pointer; }
 .mypage-actions .modify-button { min-height: 40px; color: #fff; background: #45bff2; border-color: #45bff2; }
@@ -293,7 +282,7 @@ onBeforeUnmount(stopChallengeTimer);
     .mypage-info tr { display: grid; width: 100%; grid-template-columns: 78px minmax(0,1fr); overflow: hidden; margin-bottom: 4px; border: 1px solid #d5e2ec; border-radius: 8px; background: #fff; }
     .mypage-info th,.mypage-info td { display: flex; width: auto; min-width: 0; height: auto; min-height: 37px; align-items: center; padding: 5px 8px; border: 0; font-size: 12px; overflow-wrap: anywhere; }
     .mypage-info th { width: auto; justify-content: center; border-right: 1px solid #dbe5ed; }
-    .mypage-actions { display: grid; min-width: 0; grid-template-columns:repeat(3,minmax(0,1fr)); gap: 5px; padding-top: 0; }
+    .mypage-actions { display: grid; min-width: 0; grid-template-columns:repeat(2,minmax(0,1fr)); gap: 5px; padding-top: 0; }
     .mypage-actions button,.mypage-actions .modify-button { width: 100%; min-width: 0; min-height: 40px; margin: 0; padding: 5px 3px; font-size: 12px; white-space: nowrap; }
     .mypage-actions .home-button { grid-column: auto; gap: 3px; }
     .mypage-actions .home-icon { display: none; }

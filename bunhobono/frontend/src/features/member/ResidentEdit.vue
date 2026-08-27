@@ -10,20 +10,12 @@
         <table>
         <tbody>
             <tr>
-                <th>가입유형</th>
-                <td>{{ member.role || "-" }}</td>
-            </tr>
-            <tr>
                 <th>이름</th>
                 <td>{{ member.memName || "-" }}</td>
             </tr>
             <tr>
-                <th>동</th>
-                <td>{{ member.dong || "-" }}</td>
-            </tr>
-            <tr>
-                <th>호수</th>
-                <td>{{ member.ho || "-" }}</td>
+                <th>동 · 호수</th>
+                <td>{{ member.dong ? `${member.dong}동` : "-" }} {{ member.ho ? `${member.ho}호` : "-" }}</td>
             </tr>
             <tr>
                 <th>연락처</th>
@@ -67,10 +59,6 @@
                         <input v-model.trim="challengeAnswer" type="text" maxlength="5" autocomplete="off" placeholder="보안문자 입력" :disabled="challengeRemainingSeconds === 0">
                     </div>
                 </td>
-            </tr>
-            <tr>
-                <th>상태</th>
-                <td>{{ member.memStatus === 'ACTIVE' ? '거주' : member.memStatus || '-' }}</td>
             </tr>
         </tbody>
         </table>
@@ -344,8 +332,7 @@ onBeforeUnmount(stopChallengeTimer);
 .edit-form-area tr:last-child th,.edit-form-area tr:last-child td { border-bottom: 0; }
 .edit-form-area th { width: 170px; border-right: 1px solid #dbe5ed; color: #38536d; background: #f5faff; text-align: center; }
 .edit-form-area td { color: #243f58; }
-.edit-form-area tr:nth-child(1) td,.edit-form-area tr:nth-child(2) td { color: #287fd5; font-weight: 700; }
-.edit-form-area tr:last-child td { color: #2ca66a; font-weight: 800; }
+.edit-form-area tr:nth-child(1) td,.edit-form-area tr:nth-child(4) td { color: #287fd5; font-weight: 700; }
 .edit-form-area input:focus { border-color: #45bff2; outline: 3px solid rgba(69,191,242,.16); }
 .edit-page-actions { display: flex; flex-direction: row; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 .edit-page-actions button { width: auto; min-height: 40px; padding: 8px 14px; border: 1px solid #a9c8df; border-radius: 8px; box-shadow: none; font-size: 13px; font-weight: 700; cursor: pointer; }

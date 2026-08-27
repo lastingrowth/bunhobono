@@ -1,9 +1,13 @@
 <template>
-  <main class="resident-inquiry-page">
-    <header class="page-header">
+  <main class="resident-inquiry-page resident-standard-page">
+    <header class="page-header resident-standard-header">
       <h2>{{ pageTitle }}</h2>
 
       <div class="header-actions">
+        <button type="button" class="resident-home-button" title="홈으로 돌아가기" aria-label="홈으로 돌아가기" @click="router.push('/resident/dashboard')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.2V20h13v-9.8"/><path d="M9.5 20v-6h5v6"/></svg>
+        </button>
+
         <button
           type="button"
           class="secondary"
@@ -581,8 +585,9 @@ button:disabled {
   }
 
   .page-header { align-items: stretch; flex-direction: column; gap: 12px; }
-  .header-actions { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .header-actions { width: 100%; display: grid; grid-template-columns: 42px repeat(2, minmax(0, 1fr)); }
   .header-actions button { width: 100%; min-height: 44px; }
+  .header-actions .resident-home-button { width: 42px; min-height: 42px; }
 
   .inquiry-row {
     grid-template-columns: 64px minmax(0, 1fr);

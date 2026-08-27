@@ -97,8 +97,14 @@ export const useBillingStore = defineStore('billing', () => {
         } catch (error) {
             console.error('주차요금 조회 실패', error)
 
-            errorMessage.value =
-                error.response?.data?.message || '현재 주차요금을 조회하지 못했습니다.'
+            const status = error.response?.status
+            const serverMessage = error.response?.data?.message
+            const failureDetail = status
+                ? `HTTP ${status}`
+                : '네트워크 오류'
+
+            errorMessage.value = serverMessage
+                || `현재 주차요금을 조회하지 못했습니다. (${failureDetail})`
 
             return {
                 success: false,

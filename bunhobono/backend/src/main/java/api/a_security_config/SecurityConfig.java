@@ -66,7 +66,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         //ip와 port 허용
         configuration.addAllowedOrigin("http://localhost:5173");
-        configuration.addAllowedOrigin("http://192.168.219.48:5173");
+        // 발표용 노트북의 IP가 바뀌어도 같은 Vite 개발 서버(:5173)에 접속한
+        // 아이패드·모바일의 POST 요청이 CORS 403으로 차단되지 않게 한다.
+        configuration.addAllowedOriginPattern("http://*:5173");
         //method 허용
         configuration.addAllowedMethod("*");
         //header 허용

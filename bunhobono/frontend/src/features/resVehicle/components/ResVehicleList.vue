@@ -6,11 +6,9 @@
     >
       <colgroup>
         <col class="vehicle-col-number">
-        <col class="vehicle-col-type">
-        <col class="vehicle-col-status">
+        <col class="vehicle-col-date">
         <col class="vehicle-col-date">
         <col class="vehicle-col-period">
-        <col class="vehicle-col-date">
         <col class="vehicle-col-remaining">
         <col v-if="showManage || showCancel || showExtend" class="vehicle-col-manage">
       </colgroup>
@@ -18,11 +16,9 @@
       <thead>
         <tr>
           <th>차량번호</th>
-          <th>차량종류</th>
-          <th>승인상태</th>
-          <th>승인일</th>
-          <th>등록기간</th>
+          <th>등록일</th>
           <th>만기일</th>
+          <th>등록기간</th>
           <th>남은기간</th>
           <th v-if="showManage || showCancel || showExtend">관리</th>
         </tr>
@@ -35,34 +31,27 @@
           class="vehicle-data-row"
         >
           <td><span class="vehicle-cell-one-line">{{ vehicle.carNo }}</span></td>
-          <td><span class="vehicle-cell-one-line">{{ vehicle.vehicleTypeText || vehicle.vehicleType }}</span></td>
           <td>
-            <span class="vehicle-cell-lines vehicle-cell-status-text">
-              <span>{{ splitStatusText(vehicle.vehicleStatusText || vehicle.vehicleStatus)[0] }}</span>
-              <span v-if="splitStatusText(vehicle.vehicleStatusText || vehicle.vehicleStatus)[1]">
-                {{ splitStatusText(vehicle.vehicleStatusText || vehicle.vehicleStatus)[1] }}
+            <span class="vehicle-cell-lines vehicle-cell-date">
+              <span v-if="showExtend">{{ formatKoreanDate(vehicle.approvedAt || vehicle.approvedAtText) }}</span>
+              <span v-else>{{ splitKoreanDateTime(vehicle.approvedAtText || vehicle.approvedAt)[0] }}</span>
+              <span v-if="!showExtend && splitKoreanDateTime(vehicle.approvedAtText || vehicle.approvedAt)[1]">
+                {{ splitKoreanDateTime(vehicle.approvedAtText || vehicle.approvedAt)[1] }}
               </span>
             </span>
           </td>
           <td>
-            <span class="vehicle-cell-lines">
-              <span>{{ splitDateTime(vehicle.approvedAtText)[0] }}</span>
-              <span v-if="splitDateTime(vehicle.approvedAtText)[1]">
-                {{ splitDateTime(vehicle.approvedAtText)[1] }}
+            <span class="vehicle-cell-lines vehicle-cell-date">
+              <span v-if="showExtend">{{ formatKoreanDate(vehicle.endDate || vehicle.endDateText) }}</span>
+              <span v-else>{{ splitKoreanDateTime(vehicle.endDateText || vehicle.realEndDate || vehicle.endDate)[0] }}</span>
+              <span v-if="!showExtend && splitKoreanDateTime(vehicle.endDateText || vehicle.realEndDate || vehicle.endDate)[1]">
+                {{ splitKoreanDateTime(vehicle.endDateText || vehicle.realEndDate || vehicle.endDate)[1] }}
               </span>
             </span>
           </td>
           <td>
             <span class="vehicle-cell-period-text">
               {{ vehicle.periodText || '-' }}
-            </span>
-          </td>
-          <td>
-            <span class="vehicle-cell-lines">
-              <span>{{ splitDateTime(vehicle.endDateText)[0] }}</span>
-              <span v-if="splitDateTime(vehicle.endDateText)[1]">
-                {{ splitDateTime(vehicle.endDateText)[1] }}
-              </span>
             </span>
           </td>
           <td>
@@ -81,8 +70,10 @@
             </template>
 
             <button
-              v-if="showExtend && canExtendNormalVehicle(vehicle)"
+              v-if="showExtend"
               type="button"
+              class="extend-action-button"
+              :disabled="!canExtendNormalVehicle(vehicle)"
               @click="$emit('extend-normal', vehicle)"
             >
               기간 연장
@@ -107,6 +98,7 @@
             <button
               v-if="showCancel && vehicle.inTime && !vehicle.outTime"
               type="button"
+              class="extend-action-button"
               @click="$emit('extend-visit-hours', vehicle)"
             >
               시간 연장
@@ -117,7 +109,7 @@
         </tr>
 
         <tr v-if="vehicles.length === 0">
-          <td :colspan="showManage || showCancel || showExtend ? 8 : 7" align="center">
+          <td :colspan="showManage || showCancel || showExtend ? 6 : 5" align="center">
             {{ emptyMessage }}
             <a
               v-if="emptyActionLabel"
@@ -166,6 +158,28 @@ defineEmits(["edit", "remove", "extend-normal", "edit-visit-time", "cancel-visit
 
 const normalizedText = (value) => String(value || "-").trim();
 
+// 본인 차량의 승인일과 만기일은 시간 없이 연·월·일만 표시합니다.
+const formatKoreanDate = (value) => {
+  if (!value) return "-";
+
+  const text = String(value).trim();
+  const matched = text.match(/^(\d{2,4})[.\-/]\s*(\d{1,2})[.\-/]\s*(\d{1,2})/);
+
+  if (matched) {
+    const year = matched[1].length === 2 ? `20${matched[1]}` : matched[1];
+    const month = matched[2].padStart(2, "0");
+    const day = matched[3].padStart(2, "0");
+    return `${year}년 ${month}월 ${day}일`;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}년 ${month}월 ${day}일`;
+};
+
 // 일반차량은 만기 전 14일 이내에서만 기간을 연장할 수 있습니다.
 const canExtendNormalVehicle = (vehicle) => {
   const endDate = new Date(vehicle.endDate);
@@ -181,16 +195,18 @@ const canExtendNormalVehicle = (vehicle) => {
     && remainingMilliseconds <= fourteenDays;
 };
 
-// 날짜와 시간을 항상 의미가 분리된 두 줄로 표시합니다.
-const splitDateTime = (value) => {
-  const parts = normalizedText(value).split(/\s+/);
-  const time = parts.at(-1);
+// 방문 차량 날짜는 연·월·일과 시간을 각각 한 줄씩 표시합니다.
+const splitKoreanDateTime = (value) => {
+  if (!value) return ["-", ""];
 
-  if (parts.length === 2 && /^\d{2}:\d{2}:\d{2}$/.test(time)) {
-    return [parts[0], time];
-  }
+  const text = String(value).trim();
+  const time = text.match(/(?:^|[T\s])(\d{1,2}:\d{2}(?::\d{2})?)/)?.[1] || "";
+  const date = formatKoreanDate(value);
 
-  return [parts.join(" "), ""];
+  // "입차 X"처럼 날짜가 아닌 상태 문구는 기존 문구를 유지합니다.
+  if (date === "-") return [text, ""];
+
+  return [date, time];
 };
 
 // 일수와 시간·분을 분리하되, 상태 문구는 한 줄 그대로 유지합니다.
@@ -208,20 +224,6 @@ const splitRemainingTime = (value) => {
   ];
 };
 
-// 만기 상태는 의미가 잘 보이도록 두 줄로 나눕니다.
-const splitStatusText = (value) => {
-  const text = normalizedText(value);
-
-  if (text === "미입차 만기") {
-    return ["미입차", "만기"];
-  }
-
-  if (text === "주차시간 만기") {
-    return ["주차시간", "만기"];
-  }
-
-  return [text, ""];
-};
 </script>
 
 <style scoped>
@@ -240,24 +242,20 @@ const splitStatusText = (value) => {
   min-width: 0;
 }
 
-.vehicle-col-number { width: 12%; }
-.vehicle-col-type { width: 10%; }
-.vehicle-col-status { width: 11%; }
-.vehicle-col-date { width: 12%; }
-.vehicle-col-period { width: 13%; }
-.vehicle-col-remaining { width: 16%; }
-.vehicle-col-manage { width: 14%; }
+.vehicle-col-number { width: 15%; }
+.vehicle-col-date { width: 17%; }
+.vehicle-col-period { width: 16%; }
+.vehicle-col-remaining { width: 18%; }
+.vehicle-col-manage { width: 17%; }
 
-.resident-vehicle-table--manage .vehicle-col-number { width: 11%; }
-.resident-vehicle-table--manage .vehicle-col-type { width: 12%; }
-.resident-vehicle-table--manage .vehicle-col-status { width: 10%; }
-.resident-vehicle-table--manage .vehicle-col-date { width: 12%; }
-.resident-vehicle-table--manage .vehicle-col-period { width: 12%; }
+.resident-vehicle-table--manage .vehicle-col-number { width: 14%; }
+.resident-vehicle-table--manage .vehicle-col-date { width: 15%; }
+.resident-vehicle-table--manage .vehicle-col-period { width: 14%; }
 .resident-vehicle-table--manage .vehicle-col-remaining { width: 15%; }
 
 .resident-vehicle-table th,
 .resident-vehicle-table td {
-  padding: 12px 8px;
+  padding: 8px 7px;
   text-align: center;
   font-size: clamp(13px, 0.95vw, 16px);
   line-height: 1.45;
@@ -269,7 +267,7 @@ const splitStatusText = (value) => {
 
 .resident-vehicle-table .vehicle-data-row,
 .resident-vehicle-table .vehicle-data-row td {
-  height: 88px;
+  height: 68px;
 }
 
 .vehicle-cell-one-line,
@@ -287,18 +285,17 @@ const splitStatusText = (value) => {
   line-height: 1.45;
 }
 
-.vehicle-cell-status-text {
-  align-items: center;
-  text-align: center;
-}
-
 .vehicle-cell-lines {
-  min-height: 48px;
+  min-height: 38px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
-  line-height: 1.35;
+  gap: 2px;
+  line-height: 1.3;
+}
+
+.vehicle-cell-date {
+  font-size: clamp(12px, 0.85vw, 14px);
 }
 
 .resident-vehicle-table td button {
@@ -314,6 +311,34 @@ const splitStatusText = (value) => {
 .resident-vehicle-table td button + button {
   margin-top: 6px;
   margin-left: 0;
+}
+
+.resident-vehicle-table td .extend-action-button {
+  width: auto;
+  min-height: 0;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  color: #1677d2;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 800;
+}
+
+.resident-vehicle-table td .extend-action-button:hover {
+  color: #0f5fae;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.resident-vehicle-table td .extend-action-button:disabled,
+.resident-vehicle-table td .extend-action-button:disabled:hover {
+  color: #a8b3bc;
+  background: transparent;
+  opacity: 1;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 .empty-action-link {
@@ -362,15 +387,14 @@ const splitStatusText = (value) => {
     font-weight: 800;
   }
   .resident-vehicle-table .vehicle-data-row td:nth-child(1)::before { content: "차량번호"; }
-  .resident-vehicle-table .vehicle-data-row td:nth-child(2)::before { content: "구분"; }
-  .resident-vehicle-table .vehicle-data-row td:nth-child(3)::before { content: "상태"; }
-  .resident-vehicle-table .vehicle-data-row td:nth-child(4)::before { content: "신청일"; }
-  .resident-vehicle-table .vehicle-data-row td:nth-child(5)::before { content: "기간"; }
-  .resident-vehicle-table .vehicle-data-row td:nth-child(6)::before { content: "만료일"; }
-  .resident-vehicle-table .vehicle-data-row td:nth-child(7)::before { content: "남은기간"; }
-  .resident-vehicle-table .vehicle-data-row td:nth-child(8)::before { content: "관리"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(2)::before { content: "등록일"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(3)::before { content: "만기일"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(4)::before { content: "등록기간"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(5)::before { content: "남은기간"; }
+  .resident-vehicle-table .vehicle-data-row td:nth-child(6)::before { content: "관리"; }
   .vehicle-cell-one-line,
   .vehicle-cell-lines { min-height: 0; display: inline-flex; white-space: normal; vertical-align: top; }
   .resident-vehicle-table .vehicle-data-row td:last-child button { width: 100%; min-height: 42px; margin-top: 5px; }
+  .resident-vehicle-table .vehicle-data-row td:last-child .extend-action-button { width: auto; min-height: 0; margin-top: 5px; }
 }
 </style>

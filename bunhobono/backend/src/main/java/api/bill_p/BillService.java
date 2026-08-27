@@ -35,6 +35,14 @@ public class BillService {
     // 일일 최대요금 계산에 사용하는 24시간의 분 단위 값
     private static final int MINUTES_PER_DAY = 1440;
 
+    // 발표 시연용: 3번 키오스크에서 지정 차량의 유료 정산 화면을 확인한다.
+    private static final int DEMO_KIOSK_NO = 3;
+    private static final Map<String, BigDecimal> DEMO_BILL_AMOUNTS = Map.of(
+            "1201", BigDecimal.valueOf(5_000),
+            "1202", BigDecimal.valueOf(10_000),
+            "1203", BigDecimal.valueOf(15_000)
+    );
+
     @Resource
     private BillMapper billMapper;
 
@@ -618,6 +626,22 @@ public class BillService {
 
         dto.setChargeMinutes(Math.toIntExact(chargeMinutes));
         dto.setBillAmount(calculateAmount(chargeMinutes, dto));
+        applyKioskDemoAmount(dto);
+    }
+
+    // 3번 키오스크의 발표용 차량 세 대에만 고정 테스트 요금을 적용한다.
+    private void applyKioskDemoAmount(BillDTO dto) {
+        if (!Objects.equals(dto.getKioskNo(), DEMO_KIOSK_NO)) {
+            return;
+        }
+
+        String carNo = dto.getSnapshotCarNo() == null ? "" : dto.getSnapshotCarNo().trim();
+
+        DEMO_BILL_AMOUNTS.forEach((lastFourDigits, amount) -> {
+            if (carNo.endsWith(lastFourDigits)) {
+                dto.setBillAmount(amount);
+            }
+        });
     }
 
     // 과금시간에 요금 부과 단위와 일일 최대요금을 적용한다.

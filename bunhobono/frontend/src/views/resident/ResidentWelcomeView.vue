@@ -5,6 +5,12 @@
   >
     <section class="exit-kiosk-card welcome-mode-card">
       <template v-if="step === 'menu'">
+        <div class="welcome-notification-action">
+          <button type="button" class="resident-notification-button" title="차량 알림" aria-label="차량 알림" @click="router.push({ path: '/resident/vehicles', query: { mode: 'notification' } })">
+            <img src="@/assets/images/mail.png" alt="" />
+            <span v-if="resVehicleStore.unreadNotificationCount > 0" class="notification-count">{{ resVehicleStore.unreadNotificationCount > 99 ? '99+' : resVehicleStore.unreadNotificationCount }}</span>
+          </button>
+        </div>
         <header class="kiosk-welcome">
           <div class="kiosk-brand"><i aria-hidden="true"></i>BONO SMART PARKING</div>
           <h1>반갑습니다, {{ welcomeName }}님</h1>
@@ -188,6 +194,20 @@
       </div>
       </template>
     </section>
+    <dialog ref="unreadNotificationDialog" class="unread-notification-dialog" @cancel.prevent="closeUnreadNotification">
+      <div class="unread-dialog-body">
+        <div class="unread-dialog-heading"><span></span><h2>새 알림</h2></div>
+        <p>확인하지 않은 새 알림이 <strong>{{ resVehicleStore.unreadNotificationCount }}건</strong> 있습니다.</p>
+        <label class="hide-today">
+          <input v-model="hideUnreadToday" type="checkbox" @change="changeUnreadHidden" />
+          <span>오늘은 더 이상 확인하지 않기</span>
+        </label>
+        <div class="unread-dialog-actions">
+          <button type="button" @click="closeUnreadNotification">나중에</button>
+          <button type="button" class="primary" @click="confirmUnreadNotification">알림 확인</button>
+        </div>
+      </div>
+    </dialog>
   </main>
 </template>
 
@@ -196,9 +216,13 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getMyVehicleLocations } from '@/shared/api/residentDashboardApi';
 import { useMemStore } from '@/features/member/memStore';
+import { useResVehicleStore } from '@/features/resVehicle/resVehicleStore';
 
 const router = useRouter();
 const memberStore = useMemStore();
+const resVehicleStore = useResVehicleStore();
+const unreadNotificationDialog = ref(null);
+const hideUnreadToday = ref(false);
 const welcomeName = computed(() => memberStore.member.memName || '입주민');
 
 const step = ref('menu');
@@ -271,13 +295,46 @@ const selectVehicle = (location) => {
 const returnDashboard = () => router.push('/resident/dashboard');
 const goVehicleRegistration = () => router.push('/resident/vehicles?mode=form');
 
-onMounted(() => memberStore.loadMypage());
+const unreadTodayKey = () => {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+const closeUnreadNotification = () => unreadNotificationDialog.value?.close();
+const openUnreadNotificationIfNeeded = () => {
+  if (resVehicleStore.unreadNotificationCount < 1) return;
+  if (localStorage.getItem('residentUnreadNotificationHidden') === unreadTodayKey()) return;
+  hideUnreadToday.value = false;
+  unreadNotificationDialog.value?.showModal();
+};
+const changeUnreadHidden = () => {
+  if (hideUnreadToday.value) {
+    localStorage.setItem('residentUnreadNotificationHidden', unreadTodayKey());
+    closeUnreadNotification();
+    return;
+  }
+  localStorage.removeItem('residentUnreadNotificationHidden');
+};
+const confirmUnreadNotification = () => {
+  closeUnreadNotification();
+  router.push({ path: '/resident/vehicles', query: { mode: 'notification' } });
+};
+
+onMounted(async () => {
+  await Promise.all([
+    memberStore.loadMypage(),
+    resVehicleStore.loadNotifications()
+  ]);
+  openUnreadNotificationIfNeeded();
+});
 
 </script>
 
 <style scoped>
 .exit-request-page { min-height: calc(100vh - 150px); padding: 54px 20px 80px; display: grid; place-items: start center; background: radial-gradient(circle at 50% 0%, #fff 0, #f3f8fc 40%, #e9f2f8 100%); }
 .exit-kiosk-card { width: min(880px, 100%); padding: 46px 52px 38px; border: 1px solid rgba(166, 192, 210, .6); border-radius: 30px; background: rgba(255, 255, 255, .94); box-shadow: 0 24px 70px rgba(41, 78, 104, .14); }
+.welcome-mode-card { position: relative; }
+.welcome-notification-action { position: absolute; top: 22px; right: 24px; z-index: 2; }
 .kiosk-welcome { padding: 10px 20px 42px; text-align: center; }
 .kiosk-brand { display: inline-flex; align-items: center; gap: 8px; color: #2580bd; font-size: 11px; font-weight: 900; letter-spacing: .16em; }
 .kiosk-brand i { width: 9px; height: 9px; border-radius: 50%; background: #30a5e8; box-shadow: 0 0 0 5px #e3f4fd; }
@@ -416,6 +473,19 @@ onMounted(() => memberStore.loadMypage());
         url('@/assets/images/back.jpg')
             center center / cover fixed no-repeat;
 }
+.unread-notification-dialog { width:min(430px,calc(100vw - 32px));padding:0;border:1px solid #cbd8e5;border-radius:8px;background:#fff;box-shadow:0 20px 55px rgba(20,48,74,.26); }
+.unread-notification-dialog::backdrop { background:rgba(19,35,51,.48); }
+.unread-dialog-body { padding:26px; }
+.unread-dialog-heading { display:flex;align-items:center;gap:10px; }
+.unread-dialog-heading>span { width:5px;height:24px;border-radius:2px;background:#2387d9; }
+.unread-dialog-heading h2 { margin:0;color:#18344e;font-size:21px; }
+.unread-dialog-body p { margin:22px 0 26px;color:#526b80;line-height:1.7; }
+.unread-dialog-body strong { color:#1876c5; }
+.hide-today { width:fit-content;margin:-8px 0 22px;display:flex;align-items:center;gap:8px;color:#60778a;font-size:13px;font-weight:700;cursor:pointer; }
+.hide-today input { width:16px;height:16px;margin:0;accent-color:#2387d9; }
+.unread-dialog-actions { display:flex;justify-content:flex-end;gap:8px; }
+.unread-dialog-actions button { min-width:86px;height:38px;border:1px solid #cad7e3;border-radius:6px;background:#fff;cursor:pointer; }
+.unread-dialog-actions .primary { border-color:#2387d9;color:#fff;background:#2387d9; }
 @media (any-pointer: coarse) and (max-width: 820px),
        (any-pointer: coarse) and (max-height: 820px) {
   .exit-request-page { padding: 20px 12px 50px; }

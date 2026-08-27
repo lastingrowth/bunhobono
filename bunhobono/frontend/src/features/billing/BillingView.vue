@@ -431,14 +431,11 @@
             </div>
 
             <div class="billing-detail">
-                <h2>차량정보 및 정산금액</h2>
+                <div class="billing-car-number-card">
+                    {{ billingStore.bill.carNo }}
+                </div>
 
                 <dl>
-                    <div>
-                        <dt>차량번호</dt>
-                        <dd>{{ billingStore.bill.carNo }}</dd>
-                    </div>
-
                     <div>
                         <dt>입차시각</dt>
                         <dd>{{ formatDateTime(billingStore.bill.inTime) }}</dd>
@@ -459,6 +456,13 @@
                         <dd>{{ formatAmount(billingStore.bill.billAmount) }}</dd>
                     </div>
                 </dl>
+
+                <p
+                    v-if="billingStore.errorMessage"
+                    class="billing-error billing-payment-error"
+                >
+                    {{ billingStore.errorMessage }}
+                </p>
 
                 <p
                     v-if="billingStore.bill.billStatus === 'PAID'"
@@ -507,6 +511,7 @@ import { onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBillingStore } from './billingStore'
 import { ANONYMOUS, loadTossPayments } from '@tosspayments/tosspayments-sdk'
+import { API_BASE_URL } from '@/shared/api/apiClient'
 
 const route = useRoute()
 const billingStore = useBillingStore()
@@ -776,7 +781,7 @@ const getCarImageUrl = (cameraDataNo) => {
         return ''
     }
 
-    return `${import.meta.env.VITE_API_URL}/camera-data/${cameraDataNo}/image`
+    return `${API_BASE_URL}/camera-data/${cameraDataNo}/image`
 }
 
 // 로봇 출차 작업 단계를 키오스크 안내 문구로 변환한다.
@@ -1021,6 +1026,109 @@ const formatAmount = (value) => {
     outline-offset: 4px;
 }
 
+/* 12.9형 iPad의 세로(1024px)·가로(1366px) 화면을 모두 채운다. */
+@media (pointer: coarse) and (min-width: 700px) and (max-width: 1400px) {
+    .billing-page {
+        min-height: 100dvh;
+        padding: 20px;
+    }
+
+    .billing-header,
+    .billing-step {
+        width: 100%;
+        max-width: none;
+    }
+
+    .billing-header {
+        margin-bottom: 18px;
+    }
+
+    .billing-header h1 {
+        font-size: clamp(42px, 4.2vw, 54px);
+        font-weight: 900;
+    }
+
+    .billing-type-step {
+        min-height: calc(100dvh - 134px);
+        padding: 28px;
+    }
+
+    .billing-type-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 24px;
+    }
+
+    .billing-type-button {
+        min-width: 0;
+        min-height: clamp(340px, 38dvh, 430px);
+        height: auto;
+        padding: 38px 28px;
+    }
+
+    .billing-type-button strong {
+        font-size: clamp(27px, 4vw, 42px);
+        white-space: nowrap;
+    }
+
+    .billing-type-button span {
+        font-size: clamp(15px, 2vw, 20px);
+        text-align: center;
+        word-break: keep-all;
+    }
+
+    /* 아이패드에서는 차량 화면을 이미지 위, 정산정보 아래 순서로 표시한다. */
+    .billing-detail-step {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(280px, 42%) minmax(0, 58%);
+        grid-template-areas:
+            "vehicle-image"
+            "billing-information";
+        gap: 18px;
+        height: calc(100dvh - 134px);
+        min-height: calc(100dvh - 134px);
+        padding: 22px;
+        overflow: hidden;
+    }
+
+    .billing-detail-step > .billing-selected-image {
+        grid-area: vehicle-image;
+    }
+
+    .billing-detail-step > .billing-detail {
+        grid-area: billing-information;
+        min-height: 0;
+    }
+
+    .billing-selected-image,
+    .billing-selected-image img {
+        width: 100%;
+        min-height: 0;
+        height: 100%;
+        max-height: none;
+    }
+
+    .billing-selected-image img {
+        object-fit: contain;
+    }
+
+    .billing-detail h2 {
+        margin-bottom: 8px;
+        text-align: center;
+        font-size: clamp(30px, 3.5vw, 42px);
+    }
+
+    .billing-detail dl > div {
+        padding: clamp(8px, 1.15dvh, 13px) 0;
+    }
+
+    .billing-detail-actions {
+        margin-top: auto;
+        padding-top: 14px;
+    }
+}
+
 /* 차량번호 입력 영역과 조회 결과를 좌우로 배치한다. */
 .billing-lookup-step {
     display: grid;
@@ -1180,6 +1288,14 @@ const formatAmount = (value) => {
     font-weight: 700;
 }
 
+.billing-payment-error {
+    padding: 12px 16px;
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    border-radius: 10px;
+    background: rgba(127, 29, 29, 0.28);
+    text-align: center;
+}
+
 .billing-car-list {
     display: grid;
     gap: 14px;
@@ -1253,6 +1369,27 @@ const formatAmount = (value) => {
 .billing-detail h2 {
     margin-bottom: 28px;
     text-align: left;
+}
+
+.billing-car-number-card {
+    width: 100%;
+    min-height: 78px;
+    margin: 0 0 18px;
+    padding: 14px 24px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(251, 191, 36, 0.62);
+    border-radius: 16px;
+    color: #fff3bf;
+    background:
+        linear-gradient(135deg, rgba(180, 125, 12, 0.34), rgba(251, 191, 36, 0.13));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        0 12px 30px rgba(2, 12, 27, 0.22);
+    font-size: clamp(34px, 4.5vw, 54px);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
 }
 
 .billing-detail dl {
@@ -1413,6 +1550,205 @@ const formatAmount = (value) => {
 
     .billing-car-card button {
         width: 100%;
+    }
+}
+
+/* iPad 세로 모드: 조회 결과를 위에, 차량번호 키패드를 아래에 배치한다. */
+@media (pointer: coarse) and (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
+    .billing-lookup-step {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(280px, 1fr) auto;
+        grid-template-areas:
+            "lookup-header"
+            "lookup-result"
+            "lookup-search";
+        height: calc(100dvh - 134px);
+        min-height: calc(100dvh - 134px);
+        overflow: hidden;
+        gap: 20px;
+    }
+
+    .billing-lookup-header {
+        grid-area: lookup-header;
+        grid-column: 1;
+    }
+
+    .billing-lookup-result {
+        grid-area: lookup-result;
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+        padding: 20px;
+        overflow: hidden;
+    }
+
+    .billing-lookup-result > h2 {
+        flex: 0 0 auto;
+        margin-bottom: 16px;
+        font-size: 34px;
+    }
+
+    .billing-lookup-empty {
+        min-height: 0;
+        flex: 1;
+        font-size: 24px;
+    }
+
+    .billing-car-list {
+        min-height: 0;
+        max-height: none;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .billing-lookup-search {
+        grid-area: lookup-search;
+        width: min(760px, 100%);
+        align-self: end;
+        justify-self: center;
+        padding-top: 12px;
+        border-top: 1px solid rgba(100, 116, 139, 0.65);
+        background: #091c39;
+    }
+
+    .billing-number-display {
+        min-height: 96px;
+        margin: 16px 0;
+    }
+
+    .billing-keypad button {
+        min-height: 72px;
+    }
+}
+
+/*
+ * 12.9형 iPad 최종 상세 레이아웃.
+ * 기본 상세 화면과 다른 반응형 규칙보다 뒤에서 선언해 좌우 2열 규칙이
+ * 다시 덮어쓰지 못하게 한다. 세로 1024px·가로 1366px 모두 적용한다.
+ */
+@media (any-pointer: coarse) and (min-width: 700px) and (max-width: 1400px) {
+    .billing-page {
+        width: 100%;
+        min-width: 0;
+        height: 100dvh;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 18px;
+        overflow: hidden;
+    }
+
+    .billing-header {
+        width: 100%;
+        max-width: none;
+        flex: 0 0 auto;
+        margin-right: auto;
+        margin-left: auto;
+    }
+
+    .billing-detail-step {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        min-height: 0;
+        height: auto;
+        flex: 1 1 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 43%) minmax(0, 57%);
+        grid-template-areas:
+            "vehicle-image"
+            "billing-information";
+        place-items: stretch;
+        gap: 16px;
+        margin: 0 auto;
+        padding: 20px;
+        overflow: hidden;
+    }
+
+    .billing-detail-step > .billing-selected-image {
+        grid-area: vehicle-image;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        height: 100%;
+        max-height: none;
+        display: grid;
+        place-items: center;
+        margin: 0 auto;
+        overflow: hidden;
+    }
+
+    .billing-detail-step > .billing-selected-image img {
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+        max-width: 100%;
+        max-height: 100%;
+        display: block;
+        margin: auto;
+        object-fit: contain;
+        object-position: 50% 50%;
+    }
+
+    .billing-detail-step > .billing-detail {
+        grid-area: billing-information;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        margin: 0 auto;
+    }
+
+    .billing-detail h2 {
+        margin: 0 0 6px;
+        text-align: center;
+        font-size: clamp(29px, 3.2vw, 40px);
+    }
+
+    .billing-car-number-card {
+        min-height: clamp(72px, 8.5dvh, 94px);
+        margin-bottom: 10px;
+        padding: 12px 22px;
+        font-size: clamp(40px, 5.2vw, 60px);
+    }
+
+    .billing-detail dl {
+        min-height: 0;
+        flex: 1 1 auto;
+        display: grid;
+        grid-template-rows: repeat(4, minmax(0, 1fr));
+    }
+
+    .billing-detail dl > div {
+        min-height: 0;
+        padding: clamp(8px, 1.15dvh, 14px) 8px;
+        grid-template-columns: minmax(120px, 28%) minmax(0, 1fr);
+        gap: 20px;
+    }
+
+    .billing-detail dt {
+        font-size: clamp(19px, 2vw, 24px);
+        font-weight: 700;
+    }
+
+    .billing-detail dd {
+        font-size: clamp(24px, 2.8vw, 34px);
+    }
+
+    .billing-amount dd {
+        font-size: clamp(42px, 5.2vw, 62px);
+    }
+
+    .billing-detail-actions {
+        margin-top: auto;
+        padding-top: 12px;
+    }
+
+    .billing-detail-actions button {
+        min-height: clamp(62px, 7dvh, 78px);
+        font-size: clamp(21px, 2.3vw, 28px);
     }
 }
 </style>

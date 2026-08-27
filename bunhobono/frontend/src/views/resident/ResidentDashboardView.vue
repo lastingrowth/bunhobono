@@ -7,7 +7,14 @@
         </div>
 
 
-        <article v-else class="resident-board" :class="{ 'resident-carlog-page': mode === 'carlogs' }">
+        <article
+          v-else
+          class="resident-board"
+          :class="{
+            'resident-carlog-page': mode === 'carlogs',
+            'resident-standard-page': mode === 'carlogs'
+          }"
+        >
             <template v-if="mode === 'dashboard'">
             <header class="board-header">
                 <div class="board-welcome">
@@ -15,26 +22,9 @@
                     <div class="welcome-title-row">
                       <h1>{{ dashboard.member.memName || "입주민" }}님 반갑습니다.</h1>
 
-                      <button
-                        type="button"
-                        class="notification-button"
-                        title="차량 알림"
-                        @click="openVehicleNotifications"
-                      >
-                        <img 
-                            src="@/assets/images/mail.png"
-                            alt="알림"
-                            class="notification-envelope"
-                        />
-
-                        <span
-                          v-if="resVehicleStore.unreadNotificationCount > 0"
-                          class="notification-badge"
-                        >
-                          {{ resVehicleStore.unreadNotificationCount > 99
-                            ? "99+"
-                            : resVehicleStore.unreadNotificationCount }}
-                        </span>
+                      <button type="button" class="resident-notification-button" title="차량 알림" aria-label="차량 알림" @click="router.push({ path: '/resident/vehicles', query: { mode: 'notification' } })">
+                        <img src="@/assets/images/mail.png" alt="" />
+                        <span v-if="resVehicleStore.unreadNotificationCount > 0" class="notification-count">{{ resVehicleStore.unreadNotificationCount > 99 ? '99+' : resVehicleStore.unreadNotificationCount }}</span>
                       </button>
                     </div>
                 </div>
@@ -101,7 +91,6 @@
                             <div class="vehicle-slots">
                                 <div v-for="vehicle in normalVehicles.slice(0, 2)" :key="vehicle.vehicleNo || vehicle.carNo" class="vehicle-summary-row">
                                     <div class="vehicle-info-section vehicle-number-section">
-                                        <small>차량번호</small>
                                         <strong>{{ vehicle.carNo || vehicle.vehicleCarNo || "차량번호 없음" }}</strong>
                                         <span
                                             class="vehicle-parking-state"
@@ -117,10 +106,6 @@
                                         </div>
                                         <span>{{ approvalPeriodText(vehicle) }}</span>
                                     </div>
-                                    <div class="vehicle-info-section">
-                                        <small>승인여부</small>
-                                        <span>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus || "-" }}</span>
-                                    </div>
                                 </div>
                                 <p v-if="normalVehicles.length === 0">등록된 내 차량이 없습니다.</p>
                             </div>
@@ -133,7 +118,6 @@
                             <div class="vehicle-slots">
                                 <div v-for="vehicle in visitVehicles.slice(0, 1)" :key="vehicle.vehicleNo || vehicle.carNo" class="vehicle-summary-row">
                                     <div class="vehicle-info-section vehicle-number-section">
-                                        <small>차량번호</small>
                                         <strong>{{ vehicle.carNo || vehicle.vehicleCarNo || "차량번호 없음" }}</strong>
                                         <span
                                             class="vehicle-parking-state"
@@ -143,10 +127,6 @@
                                     <div class="vehicle-info-section">
                                         <small>등록기간</small>
                                         <span>{{ approvalPeriodText(vehicle) }}</span>
-                                    </div>
-                                    <div class="vehicle-info-section">
-                                        <small>승인여부</small>
-                                        <span>{{ vehicle.vehicleStatusText || vehicle.vehicleStatus || "-" }}</span>
                                     </div>
                                 </div>
                                 <p v-if="visitVehicles.length === 0">등록된 방문차량이 없습니다.</p>
@@ -205,9 +185,9 @@
                                 '--zone-color': parkingColor(parking.usageRate),
                                 '--usage-rate': `${parking.usageRate * 3.6}deg`,
                             }"
-                        >
+                            >
                             <div class="zone-heading">
-                                <span>{{ parking.parkingName }}</span>
+                                <span>{{ parkingFloorName(parking.parkingName) }}</span>
                             </div>
                             <div
                                 class="zone-donut"
@@ -238,13 +218,13 @@
             </template>
 
             <section v-else-if="mode === 'carlogs'" class="resident-carlog-section">
-                <header class="resident-carlog-header detail-header">
+                <header class="resident-carlog-header detail-header resident-standard-header">
                     <div>
                         <h2>입출차내역</h2>
                         <p class="carlog-retention-guide">(입출차 기록 조회는 3개월 까지만 가능합니다.)</p>
                     </div>
                     <div class="detail-actions">
-                        <button type="button" @click="openDashboard">홈으로 돌아가기</button>
+                        <button type="button" class="resident-home-button" title="홈으로 돌아가기" aria-label="홈으로 돌아가기" @click="router.push('/resident/dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.2V20h13v-9.8"/><path d="M9.5 20v-6h5v6"/></svg></button>
                     </div>
                 </header>
 
@@ -324,38 +304,6 @@
             </article>
         </dialog>
 
-         <dialog
-            ref="unreadDialog"
-            class="unread-notification-dialog"
-            aria-labelledby="unread-notification-title"
-            @cancel.prevent="closeUnreadDialog"
-        >
-            <div class="unread-dialog-body">
-                <div class="unread-dialog-heading">
-                    <span class="unread-dialog-indicator"></span>
-                    <h2 id="unread-notification-title">새 알림</h2>
-                </div>
-
-                <p>
-                    확인하지 않은 새 알림이
-                    <strong>{{ resVehicleStore.unreadNotificationCount }}건</strong>
-                    있습니다.
-                </p>
-
-                <div class="unread-dialog-actions">
-                    <button type="button" @click="closeUnreadDialog">
-                        나중에
-                    </button>
-                    <button
-                        type="button"
-                        class="unread-dialog-primary"
-                        @click="confirmUnreadNotifications"
-                    >
-                        알림 확인
-                    </button>
-                </div>
-            </div>
-        </dialog>
     </section>
 </template>
 
@@ -366,9 +314,9 @@ import { storeToRefs } from "pinia";
 import { useResidentDashboardStore } from "@/stores/residentDashboard";
 import { usePagination } from "@/shared/pagination/usePagination";
 import Pagination from "@/shared/pagination/Pagination.vue";
-import { useResVehicleStore } from "@/features/resVehicle/resVehicleStore";
 import { useBoardStore } from "@/features/board/boardStore";
 import { vehicleExpiryText } from "@/features/vehicle/vehicleFormat";
+import { useResVehicleStore } from "@/features/resVehicle/resVehicleStore";
 
 const router = useRouter();
 
@@ -377,13 +325,10 @@ const openExitRequest = () => {
 };
 const route = useRoute();
 const dashboardStore = useResidentDashboardStore();
-const resVehicleStore = useResVehicleStore();
 const boardStore = useBoardStore();
+const resVehicleStore = useResVehicleStore();
 const mode = computed(() => route.name === "ResidentCarlogList" ? "carlogs" : "dashboard");
-let notificationTimer;
 let vehicleStatusTimer;
-let unreadAlertShown = false;
-const unreadDialog = ref(null);
 const boardPopupDialog = ref(null);
 const popupBoard = ref(null);
 const popupImageUrl = ref("");
@@ -498,6 +443,9 @@ const vehicleParkingStateClass = (vehicle) => ({
 });
 
 const parkingColor = () => "#39e98a";
+const parkingFloorName = (value) => String(value || "-")
+    .replace(/\bB1\b/gi, "지하 1층")
+    .replace(/\bB2\b/gi, "지하 2층");
 const parkedCarNumbers = (parking) => normalVehicles.value
     .filter((vehicle) => {
         return vehicle.parkingState === "PARKING"
@@ -566,54 +514,22 @@ const loadBoards = async () => {
     await boardStore.loadList();
 };
 
-const openVehicleNotifications = () => {
-    
-    router.push({
-        path: "/resident/vehicles",
-        query: { mode: "notification" }
-    });
-    
-};
-// 알림 모달만 닫기
-function closeUnreadDialog() {
-    unreadDialog.value?.close();
-}
-
-// 모달을 닫고 차량 알림 화면으로 이동
-function confirmUnreadNotifications() {
-    closeUnreadDialog();
-    openVehicleNotifications();
-}
-
-
 onMounted(async () => {
+    resVehicleStore.loadNotifications().catch(() => {});
     vehicleStatusTimer = window.setInterval(() => {
         vehicleStatusNow.value = Date.now();
     }, 1000);
 
     await Promise.all([
         loadDashboard(),
-        resVehicleStore.loadNotifications(),
         loadBoards().catch(() => [])
     ]);
 
     await showLatestBoardPopup();
 
-   if (
-    !unreadAlertShown
-    && resVehicleStore.unreadNotificationCount > 0
-) {
-    unreadAlertShown = true;
-    unreadDialog.value?.showModal();
-}
-
-    notificationTimer = window.setInterval(() => {
-        resVehicleStore.loadNotifications();
-    }, 30000);
 });
 
 onUnmounted(() => {
-    window.clearInterval(notificationTimer);
     window.clearInterval(vehicleStatusTimer);
 });
 </script>
@@ -623,7 +539,7 @@ onUnmounted(() => {
 :global(.content:has(.resident-board-page) > .resident-board-page) { width: 100%; max-width: none; margin: 0; }
 .resident-board-page { min-height: calc(100vh - var(--header-height)); display: grid; place-items: start center; padding: 0; background-image: linear-gradient(180deg,rgba(248,252,255,.44) 0%,rgba(250,253,255,.63) 45%,rgba(255,255,255,.81) 75%,rgba(255,255,255,.91) 100%),url("@/assets/images/back.jpg"); background-position: center; background-size: cover; background-repeat: no-repeat; background-attachment: fixed; }
 .resident-board { width: min(1500px, 100%); padding: 18px 28px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-.resident-board.resident-carlog-page { align-self: start; width: min(760px, calc(100% - 200px)); margin: 30px auto; padding: 24px; border: 0; border-radius: 0; background: rgba(255,255,255,.94); box-shadow: 0 14px 38px rgba(39,79,113,.14); }
+.resident-board.resident-carlog-page { align-self: start; width: min(760px, calc(100% - 200px)); margin: 30px auto; padding: 28px; border: 0; border-radius: 0; background: rgba(255,255,255,.94); box-shadow: 0 14px 38px rgba(39,79,113,.14); }
 .board-popup-dialog { width: fit-content; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); padding: 0; overflow: hidden; border: 0; border-radius: 14px; background: #fff; box-shadow: 0 24px 70px rgba(15,35,52,.4); }
 .board-popup-dialog::backdrop { background: rgba(13,25,36,.58); }
 .board-popup-card { position: relative; display: flex; width: fit-content; max-width: 100%; flex-direction: column; margin: 0; overflow: hidden; background: #fff; }
@@ -739,12 +655,11 @@ onUnmounted(() => {
 .vehicle-group-title span { color: var(--resident-accent); font-size: 12px; font-weight: 800; }
 .visit-group .vehicle-group-title span { color: var(--resident-accent); }
 .vehicle-slots { display: grid; grid-template-columns: 1fr; align-content: start; gap: 8px; min-width: 0; }
-.vehicle-summary-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 9px 12px; min-width: 0; padding: 11px 12px; border: 1px solid #e3ecf3; border-radius: 9px; background: #fff; box-shadow: none; }
+.vehicle-summary-row { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 9px 12px; min-width: 0; padding: 11px 12px; border: 1px solid #e3ecf3; border-radius: 9px; background: #fff; box-shadow: none; }
 .vehicle-info-section { display: grid; gap: 4px; min-width: 0; color: #405a70; font-size: 13px; font-weight: 650; line-height: 1.4; word-break: keep-all; }
 .vehicle-info-section + .vehicle-info-section { padding-left: 0; border-left: 0; }
 .vehicle-summary-row .vehicle-info-section:nth-child(1) { grid-column: 1; grid-row: 1; }
 .vehicle-summary-row .vehicle-info-section:nth-child(2) { grid-column: 1 / -1; grid-row: 2; padding-top: 9px; border-top: 1px solid #e7eef4; }
-.vehicle-summary-row .vehicle-info-section:nth-child(3) { grid-column: 2; grid-row: 1; min-width: 72px; padding-left: 12px; border-left: 1px solid #e7eef4; }
 .vehicle-info-section small { color: #71879a; font-size: 11px; font-weight: 700; }
 .vehicle-info-section span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .vehicle-number-section strong { color: #243f58; font-size: 16px; font-weight: 900; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
@@ -755,8 +670,6 @@ onUnmounted(() => {
 .vehicle-expiry-badge { flex: 0 0 auto; padding: 3px 7px; border: 1px solid #f1a43c; border-radius: 999px; color: #c96d00; background: #fff4df; font-size: 10px; font-weight: 900; line-height: 1.2; white-space: nowrap; }
 .vehicle-status-group:not(.visit-group) .vehicle-number-section strong { color: var(--resident-accent) !important; }
 .vehicle-status-group.visit-group .vehicle-number-section strong { color: var(--resident-accent) !important; }
-.vehicle-status-group:not(.visit-group) .vehicle-info-section:last-child span { color: var(--resident-accent); font-weight: 800; }
-.vehicle-status-group.visit-group .vehicle-info-section:last-child span { color: var(--resident-accent); font-weight: 800; }
 .vehicle-slots p { margin: 0; color: #8799aa; font-size: 12px; }
 .board-top-grid { display: grid; grid-template-columns: 29% 34% 1fr; gap: 14px; height: 256px; }
 .board-top-grid > * { min-width: 0; min-height: 0; }
@@ -852,10 +765,23 @@ onUnmounted(() => {
 .my-parked-cars i { color: #e33232; font-size: 13px; font-style: normal; font-weight: 900; line-height: 1; }
 .resident-carlog-section { min-height: 520px; }
 .carlog-retention-guide { margin: 7px 0 0; color: #708698; font-size: 12px; font-weight: 600; }
-.resident-carlog-table-wrap { overflow-x: auto; padding-bottom: 8px; }
-.resident-carlog-table { min-width: 720px; }
+.resident-carlog-table-wrap { width: 100%; overflow-x: hidden; padding-bottom: 0; }
+.resident-carlog-table { width: 100%; min-width: 0 !important; }
+.resident-carlog-table th:nth-child(3),
+.resident-carlog-table th:nth-child(4) { width: 165px; }
+.resident-carlog-table th,
+.resident-carlog-table td { box-sizing: border-box; padding-right: 10px; padding-left: 10px; }
 .carlog-state { display: inline-flex; padding: 3px 9px; border-radius: 999px; color: #687b8d; background: #edf1f4; font-size: 11px; font-weight: 700; }
-.carlog-state.parking { color: #287a4a; background: #e9f7ee; }
+.carlog-state.parking {
+    display: inline;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: #287a4a;
+    background: none !important;
+    box-shadow: none !important;
+    outline: 0;
+}
 .resident-carlog-empty { padding: 45px 12px !important; color: #8799aa; text-align: center; }
 .parking-empty,.board-state { color: #667d92; text-align: center; }.board-state { padding: 40px; border-radius: 18px; background: #fff; }.board-error { color: #b83e3e; }.board-state button { padding: 8px 14px; border: 1px solid #ccddeb; border-radius: 10px; background: #fff; cursor: pointer; }
 @media (max-height:760px) and (min-width:901px){
@@ -881,6 +807,9 @@ onUnmounted(() => {
 }
 @media (max-width:900px){.resident-board.resident-carlog-page{width:calc(100% - 36px)}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.parking-zones{min-height:120px}}
 @media (any-pointer: coarse) and (max-width: 820px), (any-pointer: coarse) and (max-height: 820px){.resident-board-page{padding:6px}.resident-board{padding:14px}.resident-board.resident-carlog-page{width:calc(100% - 24px);margin:12px auto;padding:16px 12px}.board-header{align-items:flex-start;flex-direction:column;gap:10px}.board-welcome{align-items:flex-start;flex-wrap:wrap}.welcome-actions{width:100%;margin-left:0}.board-date-time{align-self:stretch;justify-content:center}.board-info-grid,.board-bottom-grid{grid-template-columns:1fr}.member-summary-list{grid-template-columns:1fr}.vehicle-status-group{grid-template-columns:82px 1fr}.vehicle-summary-row{grid-template-columns:1fr;gap:5px}.vehicle-info-section+.vehicle-info-section{padding-top:5px;padding-left:0;border-top:0;border-left:0}.parking-zones{grid-template-columns:1fr 1fr;gap:14px}.parking-zone:nth-child(2){border-right:0}.resident-carlog-header{align-items:flex-start;flex-direction:column;gap:14px}.resident-carlog-header .detail-actions{width:100%}.resident-carlog-header button{width:100%;min-height:44px}.resident-carlog-section{min-height:0}.resident-carlog-table-wrap{overflow:visible;padding:0}.resident-carlog-table,.resident-carlog-table tbody,.resident-carlog-table tr,.resident-carlog-table td{display:block;width:100%}.resident-carlog-table{min-width:0;border:0;box-shadow:none;background:transparent}.resident-carlog-table thead{display:none}.resident-carlog-table tbody{display:grid;gap:12px}.resident-carlog-table tbody tr{padding:14px;border:1px solid #d9e5ee;border-radius:12px;background:#fff}.resident-carlog-table tbody td{padding:7px 0;border:0;text-align:left;white-space:normal;overflow-wrap:anywhere}.resident-carlog-table tbody td::before{display:inline-block;min-width:70px;margin-right:8px;color:#71879a;font-size:12px;font-weight:800}.resident-carlog-table tbody td:nth-child(1)::before{content:"차량번호"}.resident-carlog-table tbody td:nth-child(2)::before{content:"주차장"}.resident-carlog-table tbody td:nth-child(3)::before{content:"입차시간"}.resident-carlog-table tbody td:nth-child(4)::before{content:"출차시간"}.resident-carlog-table tbody td:nth-child(5)::before{content:"상태"}.resident-carlog-table .resident-carlog-empty{padding:36px 10px!important;text-align:center}.resident-carlog-table .resident-carlog-empty::before{display:none}}
+@media (any-pointer: coarse) and (max-width: 820px), (any-pointer: coarse) and (max-height: 820px) {
+    .resident-carlog-header .resident-home-button { width: 42px; min-height: 42px; }
+}
 .welcome-title-row { display: flex; align-items: center; gap: 10px; }
 
 @media (max-width: 900px) {
@@ -1039,6 +968,14 @@ onUnmounted(() => {
     border-color: transparent;
 }
 
+.resident-board:not(.resident-carlog-page) .recent-log-summary-list {
+    gap: 0;
+}
+
+.resident-board:not(.resident-carlog-page) .recent-log-summary-item + .recent-log-summary-item {
+    border-top: 1px solid #dfe7ee;
+}
+
 /* 홈 차량현황은 내 차량과 방문차량을 좌우의 독립 영역으로 구분한다. */
 .resident-board:not(.resident-carlog-page) .vehicle-status-groups {
     background: transparent;
@@ -1092,8 +1029,7 @@ onUnmounted(() => {
     }
 
     .vehicle-summary-row .vehicle-info-section:nth-child(1),
-    .vehicle-summary-row .vehicle-info-section:nth-child(2),
-    .vehicle-summary-row .vehicle-info-section:nth-child(3) {
+    .vehicle-summary-row .vehicle-info-section:nth-child(2) {
         grid-column: 1;
         grid-row: auto;
         min-width: 0;
@@ -1102,8 +1038,7 @@ onUnmounted(() => {
         border-left: 0;
     }
 
-    .vehicle-summary-row .vehicle-info-section:nth-child(2),
-    .vehicle-summary-row .vehicle-info-section:nth-child(3) {
+    .vehicle-summary-row .vehicle-info-section:nth-child(2) {
         padding-top: 7px;
         border-top: 1px solid #e7eef4;
     }
@@ -1148,6 +1083,8 @@ onUnmounted(() => {
 .unread-dialog-indicator { width: 5px; height: 24px; border-radius: 2px; background: #2387d9; }
 .unread-dialog-body p { margin: 22px 0 26px; color: #526b80; line-height: 1.7; }
 .unread-dialog-body strong { color: #1876c5; }
+.unread-dialog-hide-today { width: fit-content; margin: -8px 0 22px; display: flex; align-items: center; gap: 8px; color: #60778a; font-size: 13px; font-weight: 700; cursor: pointer; }
+.unread-dialog-hide-today input { width: 16px; height: 16px; margin: 0; accent-color: #2387d9; cursor: pointer; }
 .unread-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .unread-dialog-actions button { min-width: 86px; height: 38px; border: 1px solid #cad7e3; border-radius: 6px; background: #fff; cursor: pointer; }
 .unread-dialog-actions .unread-dialog-primary { border-color: #2387d9; color: #fff; background: #2387d9; }
@@ -1178,7 +1115,6 @@ onUnmounted(() => {
 .member-summary-list div:nth-child(3) dd,
 .vehicle-group-title > span,
 .vehicle-number-section strong,
-.vehicle-status-group .vehicle-info-section:last-child span,
 .recent-log-car strong {
     color: var(--resident-accent) !important;
 }

@@ -1,6 +1,6 @@
 <template>
-  <main class="resident-faq-page">
-    <header class="page-header">
+  <main class="resident-faq-page resident-standard-page">
+    <header class="page-header resident-standard-header">
       <div>
         <h2>1:1 문의</h2>
 
@@ -10,6 +10,8 @@
       </div>
 
       <div class="header-actions">
+        <button type="button" class="resident-home-button" title="홈으로 돌아가기" aria-label="홈으로 돌아가기" @click="router.push('/resident/dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.2V20h13v-9.8"/><path d="M9.5 20v-6h5v6"/></svg></button>
+
         <button
           type="button"
           class="secondary"
