@@ -107,7 +107,10 @@ LOW_LIGHT_BRIGHTNESS = 1.0
 SUNNY_CAMERA_NOS = set()
 SUNNY_CONTRAST = 1.0
 SUNNY_BRIGHTNESS = 0
-TOP_PADDED_CAMERA_NOS = {5, 6, 7, 8}
+# cctv4.mp4 has a white strip at the top of the source video.  The camera
+# mapping was expanded from 8 to 12 cameras, so keep this list aligned with
+# every camera that now reuses that source.
+TOP_PADDED_CAMERA_NOS = {3, 4, 9, 10, 11, 12}
 DISPLAY_TOP_CROP_RATIO = 0.08
 
 
