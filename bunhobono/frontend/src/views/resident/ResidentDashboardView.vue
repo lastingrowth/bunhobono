@@ -764,7 +764,7 @@ onUnmounted(() => {
 .my-parked-cars { display: grid; justify-items: center; gap: 2px; width: 100%; margin-top: 1px; }
 .my-parked-cars b { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; padding: 3px 4px; border-radius: 6px; color: #294761; background: #fff0f0; font-size: 9px; text-align: center; }
 .my-parked-cars i { color: #e33232; font-size: 13px; font-style: normal; font-weight: 900; line-height: 1; }
-.resident-carlog-section { min-height: 520px; }
+.resident-carlog-section { width: 100%; min-height: 0; height: auto; }
 .carlog-retention-guide { margin: 7px 0 0; color: #708698; font-size: 12px; font-weight: 600; }
 .resident-carlog-table-wrap { width: 100%; overflow-x: hidden; padding-bottom: 0; }
 .resident-carlog-table { width: 100%; min-width: 0 !important; }

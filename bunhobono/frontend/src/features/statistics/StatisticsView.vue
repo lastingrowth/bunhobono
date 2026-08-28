@@ -13,25 +13,6 @@
     </section>
 
     <section class="primary-grid">
-      <article class="panel capacity-panel">
-        <PanelTitle title="B1·B2 주차 사용률"><button @click="router.push('/admin/parking-map')">배치도 보기 →</button></PanelTitle>
-        <div class="floors">
-          <div v-for="floor in floors" :key="floor.parkingNo" class="floor">
-            <div class="floor-bar-heading"><div><h3>{{ floorName(floor) }}</h3><em :class="statusClass(floor.percent)">{{ statusText(floor.percent) }}</em></div><strong>{{ floor.percent }}<small>%</small></strong></div>
-            <div class="floor-bar-track" role="img" :aria-label="`${floorName(floor)} 사용률 ${floor.percent}%`"><i :style="{ width: `${floor.percent}%` }"></i></div>
-            <dl><div><dt>사용 중</dt><dd>{{ floor.used }}면</dd></div><div><dt>잔여</dt><dd>{{ floor.available }}면</dd></div><div><dt>전체</dt><dd>{{ floor.total }}면</dd></div></dl>
-          </div>
-          <p v-if="!floors.length" class="empty">B1·B2 주차장 데이터가 없습니다.</p>
-        </div>
-      </article>
-
-      <article class="panel mix-panel">
-        <PanelTitle title="현재 주차 차량 구성" />
-        <div class="mix-body"><div class="donut" :style="donutStyle"><div><span>현재 주차</span><strong>{{ stats.currentParkingTotal }}</strong><small>대</small></div></div><div class="mix-list"><div v-for="item in stats.currentParkingTypeStats" :key="item.key"><i :class="item.key"></i><span>{{ item.label }}</span><strong>{{ item.count }}대</strong><small>{{ item.percent }}%</small></div></div></div>
-      </article>
-    </section>
-
-    <section class="secondary-grid">
       <article class="panel chart-panel">
         <PanelTitle :title="trafficTitle">
           <div class="traffic-tools">
@@ -42,6 +23,25 @@
           </div>
         </PanelTitle>
         <div class="bar-chart"><div v-for="item in stats.entryCompareStats" :key="item.label" class="bar-item"><div><i class="resident" :style="barHeight(item.residentCount)"><b>{{ item.residentCount }}</b></i><i class="visitor" :style="barHeight(item.nonResidentCount)"><b>{{ item.nonResidentCount }}</b></i></div><span>{{ item.label }}</span></div></div>
+      </article>
+
+      <article class="panel mix-panel">
+        <PanelTitle title="현재 주차 현황" />
+        <div class="mix-body"><div class="donut" :style="donutStyle"><div><span>현재 주차</span><strong>{{ stats.currentParkingTotal }}</strong><small>대</small></div></div><div class="mix-list"><div v-for="item in stats.currentParkingTypeStats" :key="item.key"><i :class="item.key"></i><span>{{ item.label }}</span><strong>{{ item.count }}대</strong><small>{{ item.percent }}%</small></div></div></div>
+      </article>
+    </section>
+
+    <section class="secondary-grid">
+      <article class="panel capacity-panel">
+        <PanelTitle title="주차 사용률"><button @click="router.push('/admin/parking-map')">배치도 보기 →</button></PanelTitle>
+        <div class="floors">
+          <div v-for="floor in floors" :key="floor.parkingNo" class="floor">
+            <div class="floor-bar-heading"><div><h3>{{ floorName(floor) }}</h3><em :class="statusClass(floor.percent)">{{ statusText(floor.percent) }}</em></div><strong>{{ floor.percent }}<small>%</small></strong></div>
+            <div class="floor-bar-track" role="img" :aria-label="`${floorName(floor)} 사용률 ${floor.percent}%`"><i :style="{ width: `${floor.percent}%` }"></i></div>
+            <dl><div><dt>사용 중</dt><dd>{{ floor.used }}면</dd></div><div><dt>잔여</dt><dd>{{ floor.available }}면</dd></div><div><dt>전체</dt><dd>{{ floor.total }}면</dd></div></dl>
+          </div>
+          <p v-if="!floors.length" class="empty">B1·B2 주차장 데이터가 없습니다.</p>
+        </div>
       </article>
 
       <article class="panel billing-panel">
@@ -105,9 +105,9 @@ onMounted(async()=>{stats.changeEntryPeriod('weekly');await refresh();timer=wind
 .stats-dashboard{background:#24292e;color:#eef1f3}.stats-header>div:first-child>span,.panel-title span{color:#ffc928}.stats-header h1,.panel-title h2{color:#f4f6f7}.stats-header p{color:#9da6ad}.updated{border-color:#505960;background:#2b3035}.updated p{color:#9da6ad}.updated strong{color:#f4f6f7}.updated button,.panel-title button{border:1px solid #69737b;background:#343a40;color:#eef1f3}.updated button:hover,.panel-title button:hover{border-color:#ffc928;color:#ffc928;background:#3a4147}.error-message{border:1px solid #79484d;background:#4c3438;color:#f2a4aa}.summary-grid article,.panel{border-color:#505960;background:#2b3035;box-shadow:0 10px 28px rgba(0,0,0,.18)}.summary-grid article>b{border:1px solid #596168;background:#343a40!important;color:#dce1e4!important}.summary-grid span,.summary-grid p{color:#9da6ad}.summary-grid strong{color:#f5f6f7}.floor{border:1px solid #454e55;background:#30363b}.ring>div{background:#2b3035}.ring strong,.ring small,.floor-info h3,dd{color:#eef1f3}.floor-info em.free{background:#354c3d;color:#8fc7a6}.floor-info em.normal{background:#554a31;color:#f0d36f}.floor-info em.busy{background:#603c41;color:#f0a1a6}.track{background:#20262b}.track i{background:linear-gradient(90deg,#9b7b24,#ffc928)}dt{color:#8e989f}.donut>div{background:#2b3035}.donut span,.mix-list small{color:#929ca3}.donut strong,.donut small,.mix-list strong,.mix-list span{color:#eef1f3}.mix-list>div,.insights>div{border-color:#485158}.mix-list .resident,.legend .resident{background:#ffc928}.mix-list .visit,.legend .visitor{background:#78bd91}.mix-list .unknown{background:#ef969c}.legend{color:#aeb6bc}.bar-chart{border-color:#596168;background:repeating-linear-gradient(to bottom,#2b3035 0,#2b3035 48px,#41484e 49px)}.bar-item i.resident{background:linear-gradient(#ffe177,#ffc928)}.bar-item i.visitor{background:linear-gradient(#9bd4ae,#5ca778)}.bar-item b{color:#eef1f3}.bar-item>span{color:#aeb6bc}.revenue{border:1px solid #596168;background:linear-gradient(135deg,#20252a,#3a4147)}.revenue span{color:#aeb6bc}.bill-counts div{border:1px solid #485158;background:#30363b}.bill-counts span,.bill-counts strong{color:#eef1f3}.progress{background:#20262b}.progress i{background:#78bd91}.billing-panel>p{color:#9da6ad}.billing-panel>p strong{color:#eef1f3}.insights b{border:1px solid #665b36;background:#3b3b32;color:#ffc928}.insights p{color:#9da6ad}.insights strong{color:#eef1f3}.empty{color:#9da6ad}
 /* 층별 현황은 사각 카드·가로 막대 대신 독립된 원형 계기판으로 표현한다. */
 .capacity-panel .floors{gap:0;min-height:230px}.capacity-panel .floor{position:relative;display:grid;grid-template-columns:1fr 150px 1fr;align-items:center;gap:20px;padding:4px 28px;border:0;border-radius:0;background:transparent}.capacity-panel .floor+ .floor{border-left:1px solid #505960}.floor-name{text-align:right}.floor-name h3{margin:0 0 8px;color:#f5f6f7;font-size:30px}.floor-name em{display:inline-block;padding:5px 10px;border-radius:20px;font-size:11px;font-style:normal;font-weight:900}.floor-name em.free{background:#354c3d;color:#8fc7a6}.floor-name em.normal{background:#554a31;color:#f0d36f}.floor-name em.busy{background:#603c41;color:#f0a1a6}.capacity-panel .ring{width:150px;height:150px;box-shadow:0 0 0 1px #3e464c,0 12px 25px rgba(0,0,0,.22)}.capacity-panel .ring>div{display:flex;flex-direction:column;align-items:center;width:112px;height:112px}.capacity-panel .ring strong{margin-top:25px;font-size:34px}.capacity-panel .ring small{margin-top:0;color:#9da6ad;font-size:10px}.capacity-panel dl{display:grid;gap:8px}.capacity-panel dl div{display:grid;grid-template-columns:52px auto;align-items:baseline}.capacity-panel dt{font-size:10px}.capacity-panel dd{font-size:14px}@media(max-width:1350px){.capacity-panel .floor{grid-template-columns:1fr;justify-items:center;text-align:center}.floor-name{text-align:center}.capacity-panel dl{grid-template-columns:repeat(3,1fr)}.capacity-panel dl div{display:flex;align-items:center;flex-direction:column}.capacity-panel .floor+ .floor{border-left:1px solid #505960}}@media(max-width:650px){.capacity-panel .floors{grid-template-columns:1fr}.capacity-panel .floor{padding:20px}.capacity-panel .floor+ .floor{border-top:1px solid #505960;border-left:0}}
-/* 두 번째 줄: 차량 구성은 왼쪽, 층별 사용률은 오른쪽 */
-.primary-grid{grid-template-columns:.75fr 1.55fr}.mix-panel{grid-column:1;grid-row:1}.capacity-panel{grid-column:2;grid-row:1}
-@media(max-width:850px){.mix-panel,.capacity-panel{grid-column:auto;grid-row:auto}}
+/* 두 번째 줄: 차량 구성은 왼쪽, 최근 입차 추이는 오른쪽 */
+.primary-grid{grid-template-columns:.75fr 1.55fr}.mix-panel{grid-column:1;grid-row:1}.chart-panel{grid-column:2;grid-row:1}.capacity-panel{grid-column:1;grid-row:1}
+@media(max-width:850px){.mix-panel,.chart-panel,.capacity-panel{grid-column:auto;grid-row:auto}}
 /* B1과 B2를 두 줄짜리 가로 사용률 그래프로 표시한다. */
 .capacity-panel .floors{display:grid;grid-template-columns:1fr;gap:15px;min-height:0}.capacity-panel .floor{display:block;padding:18px 20px;border:1px solid #485158!important;border-radius:12px;background:#30363b}.capacity-panel .floor+.floor{border-left:1px solid #485158}.floor-bar-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.floor-bar-heading>div{display:flex;align-items:center;gap:10px}.floor-bar-heading h3{margin:0;color:#f5f6f7;font-size:21px}.floor-bar-heading em{padding:4px 9px;border-radius:20px;font-size:10px;font-style:normal;font-weight:900}.floor-bar-heading em.free{background:#354c3d;color:#8fc7a6}.floor-bar-heading em.normal{background:#554a31;color:#f0d36f}.floor-bar-heading em.busy{background:#603c41;color:#f0a1a6}.floor-bar-heading>strong{color:#ffc928;font-size:24px}.floor-bar-heading>strong small{margin-left:2px;color:#c7cdd1;font-size:12px}.floor-bar-track{height:17px;padding:3px;border:1px solid #505960;border-radius:12px;background:#20262b;overflow:hidden}.floor-bar-track i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#a88522 0%,#ffc928 75%,#ffe078 100%);box-shadow:0 0 10px rgba(255,201,40,.22);transition:width .35s ease}.capacity-panel dl{display:flex;justify-content:flex-end;gap:24px;margin-top:11px}.capacity-panel dl div{display:flex;align-items:baseline;flex-direction:row;gap:5px}.capacity-panel dt{font-size:10px}.capacity-panel dd{font-size:12px}@media(max-width:650px){.capacity-panel .floor{padding:15px}.capacity-panel dl{justify-content:space-between;gap:8px}.capacity-panel dl div{align-items:flex-start;flex-direction:column;gap:1px}}
 /* 상단 소개 영역을 제거한 압축형 대시보드 */
@@ -115,4 +115,265 @@ onMounted(async()=>{stats.changeEntryPeriod('weekly');await refresh();timer=wind
 .refresh-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:10px;height:28px;margin-bottom:7px;color:#9da6ad;font-size:10px}.refresh-toolbar span{display:flex;align-items:center;gap:6px}.refresh-toolbar span i{width:6px;height:6px;border-radius:50%;background:#78bd91;box-shadow:0 0 0 3px rgba(120,189,145,.12)}.refresh-toolbar button{padding:5px 10px;border:1px solid #596168;border-radius:6px;color:#e7eaec;background:#343a40;font-size:10px;font-weight:800;cursor:pointer}.refresh-toolbar button:hover{border-color:#ffc928;color:#ffc928}.refresh-toolbar button:disabled{opacity:.55;cursor:wait}
 .traffic-tools{display:flex;align-items:center;gap:12px}.period-switch{display:flex;gap:2px}.period-switch button{min-width:40px;padding:4px 7px;border:0;border-radius:5px;color:#9da6ad;background:transparent;font-size:10px;font-weight:800;cursor:pointer}.period-switch button:hover{color:#eef1f3}.period-switch button.active{color:#20252a;background:#ffc928}@media(max-width:600px){.chart-panel .panel-title{align-items:flex-start;flex-direction:column;gap:9px}.traffic-tools{width:100%;justify-content:space-between}}
 .capacity-panel{padding:16px;border:1px solid #505960;background:#2b3035;box-shadow:0 10px 28px rgba(0,0,0,.18)}.capacity-panel>.panel-title{padding:0}.capacity-panel .floor{padding:10px 4px;border:0!important;border-radius:0;background:transparent}.capacity-panel .floor+.floor{padding-top:16px;border-top:1px solid #485158!important;border-left:0!important}
+
+/* 패널 제목은 내용보다 먼저 튀지 않도록 저채도 회색으로 통일한다. */
+.stats-dashboard .panel-title h2 {
+  color: #c3c9ce;
+  font-weight: 750;
+  letter-spacing: -.025em;
+  text-shadow: none;
+}
+
+/* 관리자 메뉴 최상단 통계 대시보드: 1280 × 720 한 화면 배치 */
+@media (min-width: 1101px) and (max-width: 1400px) and (max-height: 800px) {
+  .stats-dashboard {
+    box-sizing: border-box;
+    height: calc(100dvh - var(--header-height));
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 22px minmax(64px, auto) minmax(0, 1.05fr) minmax(0, .95fr);
+    gap: 7px;
+    padding: 8px 12px;
+    overflow: hidden;
+  }
+
+  .refresh-toolbar {
+    height: 22px;
+    margin: 0;
+  }
+
+  .refresh-toolbar button {
+    padding: 3px 8px;
+  }
+
+  .error-message {
+    position: absolute;
+    z-index: 5;
+    top: 34px;
+    right: 12px;
+    left: 12px;
+    margin: 0;
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  .summary-grid {
+    min-height: 64px;
+    gap: 7px;
+    margin: 0;
+  }
+
+  .summary-grid article {
+    min-width: 0;
+    gap: 8px;
+    padding: 8px 9px;
+    border-radius: 10px;
+  }
+
+  .summary-grid article > b {
+    width: 29px;
+    height: 29px;
+    flex: 0 0 29px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+
+  .summary-grid span { font-size: 10px; }
+  .summary-grid strong { margin: 1px 0; font-size: 18px; line-height: 1.05; }
+  .summary-grid small { font-size: 10px; }
+  .summary-grid p { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+
+  .primary-grid,
+  .secondary-grid {
+    min-height: 0;
+    gap: 7px;
+    margin: 0;
+  }
+
+  .primary-grid {
+    grid-template-columns: minmax(250px, .72fr) minmax(0, 1.55fr);
+  }
+
+  .secondary-grid {
+    grid-template-columns: minmax(0, 1.3fr) minmax(210px, .75fr) minmax(190px, .65fr);
+  }
+
+  .panel {
+    min-width: 0;
+    min-height: 0;
+    padding: 9px 11px;
+    border-radius: 11px;
+    overflow: hidden;
+  }
+
+  .panel-title {
+    min-height: 23px;
+    margin-bottom: 5px;
+  }
+
+  .panel-title h2 {
+    margin-top: 1px;
+    font-size: 13px;
+  }
+
+  .panel-title button {
+    padding: 4px 7px;
+    border-radius: 5px;
+    font-size: 9px;
+  }
+
+  .mix-body {
+    height: calc(100% - 28px);
+    gap: 13px;
+  }
+
+  .donut {
+    flex-basis: 92px;
+    height: 92px;
+  }
+
+  .donut > div {
+    width: 64px;
+    height: 64px;
+  }
+
+  .donut span { font-size: 9px; }
+  .donut strong { font-size: 20px; }
+  .mix-list > div { padding: 3px 0; font-size: 10px; }
+
+  .capacity-panel {
+    padding: 9px 11px;
+  }
+
+  .capacity-panel .floors {
+    height: calc(100% - 28px);
+    gap: 4px;
+  }
+
+  .capacity-panel .floor,
+  .capacity-panel .floor + .floor {
+    box-sizing: border-box;
+    padding: 5px 4px;
+  }
+
+  .floor-bar-heading { margin-bottom: 3px; }
+  .floor-bar-heading h3 { font-size: 14px; }
+  .floor-bar-heading em { padding: 2px 6px; font-size: 8px; }
+  .floor-bar-heading > strong { font-size: 16px; }
+  .floor-bar-heading > strong small { font-size: 9px; }
+  .floor-bar-track { height: 9px; padding: 2px; }
+  .capacity-panel dl { gap: 14px; margin-top: 3px; }
+  .capacity-panel dt { font-size: 8px; }
+  .capacity-panel dd { font-size: 10px; }
+
+  .traffic-tools { gap: 6px; }
+  .legend { gap: 6px; font-size: 8px; }
+  .period-switch button { min-width: 31px; padding: 2px 4px; font-size: 8px; }
+  .bar-chart { height: calc(100% - 28px); min-height: 90px; gap: 5px; padding: 5px 3px 0; }
+  .bar-item > div { height: calc(100% - 19px); min-height: 62px; }
+  .bar-item i { width: 12px; }
+  .bar-item > span { margin: 4px 0; font-size: 8px; }
+
+  .revenue { padding: 7px 9px; border-radius: 8px; }
+  .revenue span { font-size: 9px; }
+  .revenue strong { margin-top: 2px; font-size: 17px; }
+  .bill-counts { gap: 5px; margin: 6px 0; }
+  .bill-counts div { padding: 5px; border-radius: 6px; }
+  .bill-counts span, .bill-counts strong { font-size: 9px; }
+  .billing-panel > p { margin: 5px 0 0; font-size: 9px; }
+
+  .insights > div { gap: 7px; padding: 5px 0; }
+  .insights b { width: 24px; height: 24px; border-radius: 6px; }
+  .insights p { font-size: 8px; }
+  .insights strong { margin-top: 1px; font-size: 10px; }
+
+  /* 층별 사용률은 패널 폭을 채우는 독립 카드로 표시한다. */
+  .capacity-panel .floors {
+    height: auto;
+    grid-template-rows: repeat(2, auto);
+    align-content: start;
+    gap: 6px;
+  }
+
+  .capacity-panel .floor,
+  .capacity-panel .floor + .floor {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    justify-items: stretch;
+    gap: 3px;
+    padding: 6px 9px !important;
+    border: 1px solid #485158 !important;
+    border-radius: 8px;
+    text-align: left;
+    background: #30363b;
+  }
+
+  .capacity-panel .floor + .floor {
+    border-top: 1px solid #485158 !important;
+  }
+
+  .capacity-panel .floor-bar-heading {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    gap: 7px;
+    margin: 0;
+    text-align: left;
+  }
+
+  .capacity-panel .floor-bar-heading > div {
+    gap: 7px;
+  }
+
+  .capacity-panel .floor-bar-heading h3 {
+    min-width: 25px;
+    font-size: 15px;
+    letter-spacing: .02em;
+  }
+
+  .capacity-panel .floor-bar-heading > strong {
+    display: flex;
+    align-items: baseline;
+    color: #ffc928;
+    font-size: 19px;
+  }
+
+  .capacity-panel .floor-bar-track {
+    width: 100%;
+    height: 10px;
+    box-sizing: border-box;
+  }
+
+  .capacity-panel dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+  }
+
+  .capacity-panel dl div {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    flex-direction: row;
+    gap: 4px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: #292f34;
+  }
+
+  .capacity-panel dt {
+    color: #99a2a9;
+    font-size: 8px;
+  }
+
+  .capacity-panel dd {
+    color: #eef1f3;
+    font-size: 10px;
+  }
+}
 </style>

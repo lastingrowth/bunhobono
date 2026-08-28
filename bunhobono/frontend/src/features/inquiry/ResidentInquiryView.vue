@@ -345,11 +345,36 @@ const loadPage = async () => {
 };
 
 const submitInquiry = async () => {
-  await store.addInquiry({
-    category: form.category,
-    title: form.title,
-    content: form.content
-  });
+  const validCategories = ["PARKING", "VISIT", "PAYMENT", "ETC"];
+
+  if (!validCategories.includes(form.category)) {
+    await alertDialog({
+      theme: "resident",
+      type: "warning",
+      title: "문의 분류 확인",
+      message: "올바른 문의 분류를 선택해 주세요."
+    });
+    return;
+  }
+
+  try {
+    await store.addInquiry({
+      category: form.category,
+      title: form.title,
+      content: form.content
+    });
+  } catch (error) {
+    const errorMessage = store.errorMessage || "문의사항을 등록하지 못했습니다.";
+    store.errorMessage = "";
+
+    await alertDialog({
+      theme: "resident",
+      type: "error",
+      title: "문의 등록 실패",
+      message: errorMessage
+    });
+    return;
+  }
 
   goList();
 };
