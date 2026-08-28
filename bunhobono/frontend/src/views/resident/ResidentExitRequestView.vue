@@ -62,7 +62,7 @@
             <li :class="{ active: residentExitStep >= 3 }">차량 이동</li>
             <li :class="{ active: residentExitStep >= 4 }">출차 준비 완료</li>
           </ol>
-          <button type="button" class="status-home-button" @click="step = 'menu'">처음 화면</button>
+          <button type="button" class="status-home-button" @click="returnWelcome">처음 화면</button>
         </section>
 
         <section v-else class="status-preparing">
@@ -75,7 +75,7 @@
             <li>차량 이동</li>
             <li>출차 준비 완료</li>
           </ol>
-          <button type="button" class="status-home-button" @click="step = 'menu'">처음 화면</button>
+          <button type="button" class="status-home-button" @click="returnWelcome">처음 화면</button>
         </section>
       </template>
 
@@ -122,7 +122,7 @@
         <div v-else class="page-state">
           <strong>현재 주차 중인 차량이 없습니다.</strong>
           <p>차량이 주차된 후 출차를 신청할 수 있습니다.</p>
-          <button type="button" class="retry-button" @click="step = 'menu'">처음 화면</button>
+          <button type="button" class="retry-button" @click="returnWelcome">처음 화면</button>
         </div>
       </template>
 
@@ -338,6 +338,7 @@ const selectVehicle = async (location) => {
 };
 
 const returnDashboard = () => router.push('/resident/dashboard');
+const returnWelcome = () => router.push('/resident');
 
 // 로봇 출차 작업의 반복 조회를 중지한다.
 const stopResidentExitPolling = () => {

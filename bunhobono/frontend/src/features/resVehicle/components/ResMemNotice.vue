@@ -56,6 +56,7 @@
               <button
                 type="button"
                 class="delete-notification-button"
+                :disabled="deleteConfirmOpen"
                 @click="openDeleteDialog(notification)"
               >
                 삭제
@@ -64,7 +65,7 @@
           </tr>
 
           <tr v-if="notifications.length === 0">
-            <td colspan="5" class="empty-message">
+            <td colspan="4" class="empty-message">
               도착한 알림이 없습니다.
             </td>
           </tr>
@@ -72,21 +73,12 @@
       </table>
     </div>
 
-    <dialog ref="deleteDialog" class="delete-dialog" @cancel.prevent="closeDeleteDialog">
-      <div class="delete-dialog-content">
-        <h4>알림 삭제</h4>
-        <p>선택한 알림을 삭제하시겠습니까?</p>
-        <div class="delete-dialog-actions">
-          <button type="button" @click="closeDeleteDialog">취소</button>
-          <button type="button" class="delete-confirm-button" @click="confirmDelete">삭제</button>
-        </div>
-      </div>
-    </dialog>
   </div>
 </template>
 
 <script setup>
 import { ref } from "vue";
+import { useDialog } from "@/shared/alert/useDialog";
 
 defineProps({
   notifications: {
@@ -96,25 +88,24 @@ defineProps({
 });
 
 const emit = defineEmits(["open-detail", "delete"]);
-const deleteDialog = ref(null);
-const selectedMemNoticeNo = ref(null);
+const { confirmDialog } = useDialog();
+const deleteConfirmOpen = ref(false);
 
-const openDeleteDialog = (notification) => {
-  selectedMemNoticeNo.value = notification.memNoticeNo;
-  deleteDialog.value?.showModal();
-};
-
-const closeDeleteDialog = () => {
-  deleteDialog.value?.close();
-  selectedMemNoticeNo.value = null;
-};
-
-const confirmDelete = () => {
-  const memNoticeNo = selectedMemNoticeNo.value;
-  closeDeleteDialog();
-
-  if (memNoticeNo !== null) {
-    emit("delete", memNoticeNo);
+const openDeleteDialog = async (notification) => {
+  if (deleteConfirmOpen.value) return;
+  deleteConfirmOpen.value = true;
+  try {
+    const confirmed = await confirmDialog({
+      theme: "resident",
+      type: "warning",
+      title: "알림 삭제",
+      message: "선택한 알림을 삭제하시겠습니까?",
+      confirmText: "삭제",
+      cancelText: "취소"
+    });
+    if (confirmed) emit("delete", notification.memNoticeNo);
+  } finally {
+    deleteConfirmOpen.value = false;
   }
 };
 
@@ -155,14 +146,6 @@ tr.unread { background: #f2fbfe; }
 .notification-manage { text-align: center; }
 .delete-notification-button { width: 50px; padding: 7px 5px; white-space: nowrap; }
 .empty-message { padding: 28px; color: #555; text-align: center; }
-.delete-dialog { width: min(360px,calc(100vw - 32px)); margin: auto; padding: 0; border: 1px solid #ccd8e3; border-radius: 8px; background: #fff; }
-.delete-dialog::backdrop { background: rgba(24,39,54,.45); }
-.delete-dialog-content { padding: 24px; }
-.delete-dialog-content h4 { margin: 0; color: #111; font-size: 19px; }
-.delete-dialog-content p { margin: 20px 0 24px; color: #555; }
-.delete-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.delete-dialog-actions button { min-width: 72px; height: 38px; border: 1px solid #ccd7e1; border-radius: 6px; background: #fff; cursor: pointer; }
-.delete-dialog-actions .delete-confirm-button { border-color: #db4b4b; color: #fff; background: #db4b4b; }
 @media (any-pointer: coarse) and (max-width: 820px),
        (any-pointer: coarse) and (max-height: 820px) {
   .member-notification {

@@ -2,7 +2,10 @@
   <div class="resident-vehicle-table-wrap">
     <table
       class="resident-vehicle-table"
-      :class="{ 'resident-vehicle-table--manage': showManage }"
+      :class="{
+        'resident-vehicle-table--manage': showManage,
+        'resident-vehicle-table--resident': !showManage && (showCancel || showExtend)
+      }"
     >
       <colgroup>
         <col class="vehicle-col-number">
@@ -82,6 +85,7 @@
             <button
               v-if="showCancel && !vehicle.inTime"
               type="button"
+              class="visit-manage-button"
               @click="$emit('edit-visit-time', vehicle)"
             >
              수정
@@ -90,6 +94,7 @@
             <button
               v-if="showCancel && !vehicle.inTime"
               type="button"
+              class="visit-manage-button"
               @click="$emit('cancel-visit', vehicle)"
             >
              취소
@@ -253,6 +258,13 @@ const splitRemainingTime = (value) => {
 .resident-vehicle-table--manage .vehicle-col-period { width: 14%; }
 .resident-vehicle-table--manage .vehicle-col-remaining { width: 15%; }
 
+/* 본인/방문 차량은 동일한 열 비율을 사용한다. 합계 100%. */
+.resident-vehicle-table--resident .vehicle-col-number { width: 15%; }
+.resident-vehicle-table--resident .vehicle-col-date { width: 20%; }
+.resident-vehicle-table--resident .vehicle-col-period { width: 15%; }
+.resident-vehicle-table--resident .vehicle-col-remaining { width: 18%; }
+.resident-vehicle-table--resident .vehicle-col-manage { width: 12%; }
+
 .resident-vehicle-table th,
 .resident-vehicle-table td {
   padding: 8px 7px;
@@ -311,6 +323,20 @@ const splitRemainingTime = (value) => {
 .resident-vehicle-table td button + button {
   margin-top: 6px;
   margin-left: 0;
+}
+
+.resident-vehicle-table td .visit-manage-button {
+  display: block;
+  width: 56px;
+  min-height: 28px;
+  margin: 0 auto;
+  padding: 3px 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.resident-vehicle-table td .visit-manage-button + .visit-manage-button {
+  margin: 4px auto 0;
 }
 
 .resident-vehicle-table td .extend-action-button {
