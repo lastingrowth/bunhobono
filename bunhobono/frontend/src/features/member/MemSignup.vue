@@ -379,24 +379,8 @@ const validateSignupFields = async () => {
         });
         return false;
     }
-    if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
-        await alertDialog({
-            theme: dialogTheme.value,
-            type: "warning",
-            title: "연락처 형식 확인",
-            message: "연락처를 정확히 입력하세요."
-        });
-        return false;
-    }
-    if (needsAvailableUnit.value && (!member.value.dong || !member.value.ho)) {
-        await alertDialog({
-            theme: dialogTheme.value,
-            type: "warning",
-            title: "동·호수 확인",
-            message: "동과 호수를 선택해주세요."
-        });
-        return false;
-    }
+
+    // 아이디 형식을 확인한 직후 중복확인 여부를 검사한다.
     if (!loginIdPattern.test(member.value.loginId)) {
         await alertDialog({
             theme: dialogTheme.value,
@@ -417,6 +401,7 @@ const validateSignupFields = async () => {
         return false;
     }
 
+    // 비밀번호와 비밀번호 확인을 연속해서 검사한다.
     if (!passwordPattern.test(member.value.loginPwd)) {
         await alertDialog({
             theme: dialogTheme.value,
@@ -437,6 +422,17 @@ const validateSignupFields = async () => {
         return false;
     }
 
+    if (needsAvailableUnit.value && (!member.value.dong || !member.value.ho)) {
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "warning",
+            title: "동·호수 확인",
+            message: "동과 호수를 선택해주세요."
+        });
+        return false;
+    }
+
+    // 연락처 형식을 확인한 직후 전화번호 인증 여부를 검사한다.
     if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
         await alertDialog({
             theme: dialogTheme.value,
@@ -447,12 +443,12 @@ const validateSignupFields = async () => {
         return false;
     }
 
-    if (!emailIdPattern.test(emailParts.id) || !emailParts.domain) {
+    if (phoneCodeSent.value && !phoneAuthCode.value.trim()) {
         await alertDialog({
             theme: dialogTheme.value,
             type: "warning",
-            title: "이메일 형식 확인",
-            message: "이메일 주소를 정확히 입력하세요."
+            title: "연락처 인증번호 확인",
+            message: "연락처 인증번호를 입력해주세요."
         });
         return false;
     }
@@ -463,6 +459,17 @@ const validateSignupFields = async () => {
             type: "warning",
             title: "전화번호 인증 확인",
             message: "전화번호 인증을 완료해 주세요."
+        });
+        return false;
+    }
+
+    // 이메일 형식을 확인한 직후 이메일 인증 여부를 검사한다.
+    if (!emailIdPattern.test(emailParts.id) || !emailParts.domain) {
+        await alertDialog({
+            theme: dialogTheme.value,
+            type: "warning",
+            title: "이메일 형식 확인",
+            message: "이메일 주소를 정확히 입력하세요."
         });
         return false;
     }
