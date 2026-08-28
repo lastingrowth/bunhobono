@@ -249,13 +249,13 @@ const confirmArchive = async () => {
   )
 }
 
-// 화면 진입 시 목록을 바로 조회하고 이후 10초마다 조용히 갱신한다.
+// 화면 진입 시 목록을 바로 조회하고 이후 1분마다 조용히 갱신한다.
 onMounted(async () => {
   await billingStore.loadAdminBillingList()
 
   billingListTimer = window.setInterval(() => {
     billingStore.loadAdminBillingList(false)
-  }, 10000)
+  }, 60000)
 })
 
 // 관리자 정산 화면을 벗어나면 자동 갱신과 결과 안내 타이머를 중지한다.
