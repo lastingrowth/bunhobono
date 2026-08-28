@@ -1799,7 +1799,7 @@ WITH test_car (
         ON test_car.cam_note = inserted_camera.cam_note
     JOIN gate
         ON gate.gate_code = test_car.gate_code
-    RETURNING car_log_no, snapshot_car_no
+    RETURNING car_log_no, snapshot_car_no, in_time
 ), selected_rule AS (
     SELECT fee_rule_no
     FROM fee_rule
@@ -1819,7 +1819,8 @@ INSERT INTO bill (
     kiosk_no,
     charge_minutes,
     bill_amount,
-    bill_status
+    bill_status,
+    issued_at
 )
 SELECT
     inserted_log.car_log_no,
@@ -1829,93 +1830,10 @@ SELECT
     NULL,
     0,
     0,
-    'UNPAID'
-FROM inserted_log
-CROSS JOIN selected_rule
-WHERE inserted_log.snapshot_car_no <> '299가1203';
-
--- 1203 방문차량의 미결제 고지서를 미리 생성한다.
--- 더미 실행 직후 res1 알림 화면과 입주민 결제 페이지를 확인할 수 있다.
-WITH target_log AS (
-    SELECT car_log_no, snapshot_car_no
-    FROM car_log
-    WHERE snapshot_car_no = '299가1203'
-    ORDER BY car_log_no DESC
-    LIMIT 1
-), selected_rule AS (
-    SELECT fee_rule_no, unit_minutes, unit_fee, daily_max_fee
-    FROM fee_rule
-    WHERE effective_from <= CURRENT_TIMESTAMP
-      AND (
-          effective_to IS NULL
-          OR effective_to > CURRENT_TIMESTAMP
-      )
-    ORDER BY effective_from DESC, fee_rule_no DESC
-    LIMIT 1
-)
-
-INSERT INTO bill (
-    car_log_no,
-    snapshot_car_log_no,
-    snapshot_car_no,
-    fee_rule_no,
-    kiosk_no,
-    charge_minutes,
-    bill_amount,
-    bill_status,
-    payment_order_id
-)
-SELECT
-    target_log.car_log_no,
-    target_log.car_log_no,
-    target_log.snapshot_car_no,
-    selected_rule.fee_rule_no,
-    NULL,
-    120,
-    CASE
-        WHEN selected_rule.daily_max_fee IS NULL THEN
-            CEIL(120.0 / selected_rule.unit_minutes) * selected_rule.unit_fee
-        ELSE LEAST(
-            CEIL(120.0 / selected_rule.unit_minutes) * selected_rule.unit_fee,
-            selected_rule.daily_max_fee
-        )
-    END,
     'UNPAID',
-    'BILL-DUMMY-' || MD5(
-        RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT
-    )
-FROM target_log
+    inserted_log.in_time
+FROM inserted_log
 CROSS JOIN selected_rule;
-
-INSERT INTO mem_notice (
-    recipient_member_no,
-    reference_table,
-    reference_no,
-    notice_type,
-    title,
-    message
-)
-SELECT
-    member.member_no,
-    'bill',
-    bill.bill_no,
-    'VISIT_PARKING_FEE_ISSUED',
-    '방문차량 주차요금 발생',
-    '등록하신 방문차량 299가1203에 주차요금 '
-        || TO_CHAR(bill.bill_amount, 'FM999,999,999,990')
-        || '원이 부과되었습니다.'
-FROM bill
-JOIN car_log
-    ON car_log.car_log_no = bill.car_log_no
-JOIN vehicle_car
-    ON vehicle_car.vehicle_car_no = car_log.vehicle_car_no
-JOIN member
-    ON member.member_no = vehicle_car.member_no
-WHERE car_log.snapshot_car_no = '299가1203'
-  AND member.login_id = 'res1'
-ON CONFLICT ON CONSTRAINT uq_mem_notice_reference
-DO NOTHING;
-
 
 -- 관리자 정산 목록에서 직접 지난 기록 이동을 확인할 수 있도록
 -- B2 출차와 결제가 모두 완료된 정산서 1건을 생성한다.

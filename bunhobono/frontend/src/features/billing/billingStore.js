@@ -178,10 +178,13 @@ export const useBillingStore = defineStore('billing', () => {
     }
 
     // 정산서 번호로 관리자 정산 상세정보 조회
-    const loadAdminBillingDetail = async (billNo) => {
-        loading.value = true
+    const loadAdminBillingDetail = async (billNo, showLoading = true) => {
+        if (showLoading) {
+            loading.value = true
+            adminBillingDetail.value = null
+        }
+
         errorMessage.value = ''
-        adminBillingDetail.value = null
 
         try {
             const response = await getAdminBillingDetail(billNo)
@@ -204,7 +207,9 @@ export const useBillingStore = defineStore('billing', () => {
                 message: errorMessage.value
             }
         } finally {
-            loading.value = false
+            if (showLoading) {
+                loading.value = false
+            }
         }
     }
 
