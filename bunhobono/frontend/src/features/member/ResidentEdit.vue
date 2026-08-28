@@ -30,6 +30,49 @@
                 </td>
             </tr>
             <tr>
+                <th>이메일</th>
+                <td>
+                    <div class="email-edit-fields">
+                        <div class="email-input-action">
+                            <input
+                                v-model.trim="member.email"
+                                class="email-input"
+                                type="email"
+                                maxlength="254"
+                                autocomplete="email"
+                                placeholder="이메일을 입력하세요"
+                                @input="resetEmailVerification"
+                            >
+                            <button
+                                type="button"
+                                class="email-auth-button"
+                                :disabled="!emailChanged || emailSending || emailVerified"
+                                @click="sendEmailAuthCode"
+                            >
+                                {{ emailSending ? "발송 중" : emailVerified ? "인증 완료" : emailCodeSent ? "재발송" : "인증번호 발송" }}
+                            </button>
+                        </div>
+                        <span v-if="emailChanged && emailVerified" class="email-auth-success">이메일 인증이 완료되었습니다.</span>
+                        <div v-if="emailChanged && emailCodeSent && !emailVerified" class="email-code-row">
+                            <div class="email-code-input-wrap">
+                                <input
+                                    v-model="emailAuthCode"
+                                    type="text"
+                                    inputmode="numeric"
+                                    maxlength="6"
+                                    placeholder="인증번호 6자리"
+                                    @input="handleEmailCodeInput"
+                                >
+                                <span :class="{ expired: emailAuthRemainingSeconds === 0 }">{{ emailAuthTimerText }}</span>
+                            </div>
+                            <button type="button" :disabled="emailVerifying || emailAuthRemainingSeconds === 0" @click="verifyEmailAuthCode">
+                                {{ emailVerifying ? "확인 중" : "인증 확인" }}
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
                 <th>아이디</th>
                 <td>{{ member.loginId || "-" }}</td>
             </tr>
@@ -100,6 +143,14 @@ const challengeAnswer = ref("");
 const challengeRemainingSeconds = ref(0);
 let challengeTimer = null;
 const phoneParts = reactive({ first: "", middle: "", last: "" });
+const originalEmail = ref("");
+const emailAuthCode = ref("");
+const emailCodeSent = ref(false);
+const emailVerified = ref(false);
+const emailSending = ref(false);
+const emailVerifying = ref(false);
+const emailAuthRemainingSeconds = ref(0);
+let emailAuthTimer = null;
 
 // 새 비밀번호의 형식을 회원가입 규칙과 동일하게 검사한다.
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,20}$/;
@@ -108,6 +159,12 @@ const challengeTimeLabel = computed(() => {
     if (challengeRemainingSeconds.value <= 0) return "만료됨";
     const minutes = Math.floor(challengeRemainingSeconds.value / 60);
     const seconds = challengeRemainingSeconds.value % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+});
+const emailChanged = computed(() => (member.email || "").trim().toLowerCase() !== originalEmail.value.trim().toLowerCase());
+const emailAuthTimerText = computed(() => {
+    const minutes = Math.floor(emailAuthRemainingSeconds.value / 60);
+    const seconds = emailAuthRemainingSeconds.value % 60;
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 });
 
@@ -139,6 +196,7 @@ const member = reactive({
     dong: "",
     ho: "",
     memPhone: "",
+    email: "",
     loginId: "",
     loginPwd: "",
     memStatus: "",
@@ -148,8 +206,76 @@ onMounted(async () => {
     await store.loadMypage(loginId);
     Object.assign(member, store.member);
     member.loginPwd = "";
+    originalEmail.value = member.email || "";
     setPhoneParts(member.memPhone);
 });
+
+const stopEmailAuthTimer = () => {
+    if (emailAuthTimer !== null) {
+        clearInterval(emailAuthTimer);
+        emailAuthTimer = null;
+    }
+};
+
+const startEmailAuthTimer = () => {
+    stopEmailAuthTimer();
+    const expiresAt = Date.now() + 3 * 60 * 1000;
+    emailAuthRemainingSeconds.value = 180;
+    emailAuthTimer = window.setInterval(() => {
+        emailAuthRemainingSeconds.value = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+        if (emailAuthRemainingSeconds.value === 0) stopEmailAuthTimer();
+    }, 1000);
+};
+
+const resetEmailVerification = () => {
+    emailAuthCode.value = "";
+    emailCodeSent.value = false;
+    emailVerified.value = false;
+    emailAuthRemainingSeconds.value = 0;
+    stopEmailAuthTimer();
+};
+
+const handleEmailCodeInput = (event) => {
+    emailAuthCode.value = event.target.value.replace(/\D/g, "").slice(0, 6);
+    event.target.value = emailAuthCode.value;
+};
+
+const sendEmailAuthCode = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email || "")) {
+        await alertDialog({ theme: "resident", type: "warning", title: "이메일 형식 확인", message: "이메일 주소를 정확히 입력하세요." });
+        return;
+    }
+    emailSending.value = true;
+    try {
+        await store.sendEmailCode(member.email.trim());
+        emailCodeSent.value = true;
+        emailAuthCode.value = "";
+        startEmailAuthTimer();
+        await alertDialog({ theme: "resident", type: "success", title: "인증번호 발송", message: "이메일로 인증번호를 발송했습니다." });
+    } catch (error) {
+        await alertDialog({ theme: "resident", type: "error", title: "인증번호 발송 실패", message: error.response?.data?.message || "이메일 인증번호를 발송하지 못했습니다." });
+    } finally {
+        emailSending.value = false;
+    }
+};
+
+const verifyEmailAuthCode = async () => {
+    if (!/^\d{6}$/.test(emailAuthCode.value)) {
+        await alertDialog({ theme: "resident", type: "warning", title: "인증번호 확인", message: "인증번호 6자리를 입력해 주세요." });
+        return;
+    }
+    emailVerifying.value = true;
+    try {
+        await store.verifyEmailCode(member.email.trim(), emailAuthCode.value);
+        emailVerified.value = true;
+        stopEmailAuthTimer();
+        await alertDialog({ theme: "resident", type: "success", title: "이메일 인증 완료", message: "이메일이 인증되었습니다." });
+    } catch (error) {
+        await alertDialog({ theme: "resident", type: "error", title: "인증번호 확인 실패", message: error.response?.data?.message || "인증번호를 확인하지 못했습니다." });
+    } finally {
+        emailVerifying.value = false;
+    }
+};
 
 // 저장된 연락처를 수정 화면의 세 칸으로 나누어 표시한다.
 const setPhoneParts = (phone) => {
@@ -222,6 +348,25 @@ const update = async () => {
     }
     member.memPhone = `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`;
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email || "")) {
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "이메일 확인",
+            message: "이메일 주소를 정확히 입력하세요."
+        });
+        return;
+    }
+    if (emailChanged.value && !emailVerified.value) {
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "이메일 인증 필요",
+            message: "변경할 이메일의 인증을 완료해 주세요."
+        });
+        return;
+    }
+
     // 비밀번호 변경 시 회원가입과 동일한 새 비밀번호 형식인지 확인한다.
     if (showPasswordField.value && !passwordPattern.test(member.loginPwd)) {
         await alertDialog({
@@ -236,6 +381,7 @@ const update = async () => {
     if (!showPasswordField.value) {
         await store.editResident({
             memPhone: member.memPhone,
+            email: member.email,
             loginPwd: null
         });
 
@@ -290,7 +436,7 @@ const update = async () => {
     }
 
     try {
-        await store.editResident({ memPhone: member.memPhone, loginPwd: null });
+        await store.editResident({ memPhone: member.memPhone, email: member.email, loginPwd: null });
         await store.updateResidentPassword({
             currentPassword: currentPassword.value,
             newPassword: member.loginPwd,
@@ -318,7 +464,10 @@ const update = async () => {
     }
 };
 
-onBeforeUnmount(stopChallengeTimer);
+onBeforeUnmount(() => {
+    stopChallengeTimer();
+    stopEmailAuthTimer();
+});
 </script>
 
 <style scoped>
@@ -332,8 +481,19 @@ onBeforeUnmount(stopChallengeTimer);
 .edit-form-area tr:last-child th,.edit-form-area tr:last-child td { border-bottom: 0; }
 .edit-form-area th { width: 170px; border-right: 1px solid #dbe5ed; color: #38536d; background: #f5faff; text-align: center; }
 .edit-form-area td { color: #243f58; }
-.edit-form-area tr:nth-child(1) td,.edit-form-area tr:nth-child(4) td { color: #287fd5; font-weight: 700; }
+.edit-form-area tr:nth-child(1) td,.edit-form-area tr:nth-child(5) td { color: #287fd5; font-weight: 700; }
 .edit-form-area input:focus { border-color: #45bff2; outline: 3px solid rgba(69,191,242,.16); }
+.email-input { width: min(420px, 100%); min-height: 40px; padding: 0 12px; border: 1px solid #cbd8e4; border-radius: 7px; box-sizing: border-box; color: #243f58; background: #fff; }
+.email-edit-fields { width: min(620px, 100%); display: grid; gap: 8px; }
+.email-input-action,.email-code-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.email-input-action .email-input { width: 100%; }
+.email-auth-button,.email-code-row button { min-height: 40px; padding: 0 13px; border: 1px solid #9fcbe6; border-radius: 7px; color: #176da8; background: #edf8fe; font-weight: 700; cursor: pointer; }
+.email-auth-button:disabled,.email-code-row button:disabled { color: #91a2af; border-color: #d7e0e6; background: #f3f5f7; cursor: not-allowed; }
+.email-auth-success { color: #24865a; font-size: 13px; font-weight: 700; }
+.email-code-input-wrap { position: relative; }
+.email-code-input-wrap input { width: 100%; min-height: 40px; padding: 0 62px 0 12px; border: 1px solid #cbd8e4; border-radius: 7px; box-sizing: border-box; }
+.email-code-input-wrap span { position: absolute; top: 50%; right: 11px; color: #287fd5; font-size: 12px; transform: translateY(-50%); }
+.email-code-input-wrap span.expired { color: #dc2626; }
 .edit-page-actions { display: flex; flex-direction: row; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 .edit-page-actions button { width: auto; min-height: 40px; padding: 8px 14px; border: 1px solid #a9c8df; border-radius: 8px; box-shadow: none; font-size: 13px; font-weight: 700; cursor: pointer; }
 .edit-page-actions .save-button { min-height: 40px; border-color: #45bff2; color: #fff; background: #45bff2; }

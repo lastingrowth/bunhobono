@@ -372,6 +372,9 @@ public interface MemberMapper {
             "WHERE m.login_id = #{loginId}")
     MemberDTO residentMypage(String loginId);
 
+    @Select("SELECT email FROM member WHERE login_id = #{loginId}")
+    String findResidentEmail(String loginId);
+
     // member_no로 회원과 등록 차량을 연결해 본인 차량과 최신 주차 상태를 조회한다.
     @Select("""
         SELECT
@@ -436,6 +439,9 @@ public interface MemberMapper {
         <script>
         UPDATE member
         SET mem_phone = #{memPhone}
+            <if test="email != null and email != ''">
+                , email = #{email}
+            </if>
             <if test="loginPwd != null and loginPwd != ''">
                 , login_pwd = #{loginPwd}
             </if>
@@ -473,4 +479,3 @@ public interface MemberMapper {
     int residentDelete(String loginId);
 
 }
-

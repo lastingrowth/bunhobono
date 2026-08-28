@@ -77,7 +77,6 @@
             <th>번호</th>
             <th>분류</th>
             <th>질문</th>
-            <th>답변</th>
             <th>등록일</th>
             <th>수정일</th>
             <th>관리</th>
@@ -87,23 +86,24 @@
         <tbody>
           <tr v-for="(faq, index) in store.faqs" :key="faq.faqNo">
             <td>{{ index + 1 }}</td>
-            <td>
-              <span class="category-badge">
-                {{ categoryText(faq.category) }}
-              </span>
+            <td>{{ categoryText(faq.category) }}</td>
+            <td class="question-cell">
+              <button
+                type="button"
+                class="question-edit-link list-edit-text"
+                :title="`${faq.question} 수정`"
+                @click="openEditForm(faq)"
+              >
+                {{ faq.question }}
+              </button>
             </td>
-            <td class="question-cell">{{ faq.question }}</td>
-            <td class="answer-cell">{{ faq.answer }}</td>
             <td>{{ dateText(faq.createdAt) }}</td>
             <td>{{ dateText(faq.updatedAt) }}</td>
             <td>
               <div class="row-actions">
-                <button type="button" class="edit-button" @click="openEditForm(faq)">
-                  수정
-                </button>
                 <button
                   type="button"
-                  class="delete-button"
+                  class="list-delete-text"
                   :disabled="store.saving"
                   @click="remove(faq)"
                 >
@@ -114,7 +114,7 @@
           </tr>
 
           <tr v-if="store.faqs.length === 0">
-            <td colspan="7" class="empty-cell">
+            <td colspan="6" class="empty-cell">
               등록된 자주하는 질문이 없습니다.
             </td>
           </tr>
@@ -292,8 +292,9 @@ onMounted(() => {
 .page-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
 .page-header h2,.faq-form h3 { margin: 0; }
 .header-actions,.row-actions,.form-actions { display: flex; gap: 8px; }
+.row-actions { justify-content: center; }
 
-.primary-button,.secondary-button,.edit-button,.delete-button {
+.primary-button,.secondary-button {
   min-height: 38px;
   padding: 8px 15px;
   border: 1px solid #c9d5df;
@@ -304,8 +305,6 @@ onMounted(() => {
 }
 
 .primary-button { border-color: #168bd2; color: #fff; background: #168bd2; }
-.edit-button { color: #176fba; background: #e8f3fc; }
-.delete-button { border-color: #efc7c7; color: #b43b3b; background: #fff1f1; }
 
 .faq-form {
   display: grid;
@@ -332,26 +331,50 @@ onMounted(() => {
 .faq-form textarea { resize: vertical; }
 .form-actions { justify-content: flex-end; }
 .table-wrap { width: 100%; overflow-x: auto; }
-table { width: 100%; min-width: 1050px; border-collapse: collapse; background: #fff; }
+table { width: 100%; min-width: 850px; border-collapse: collapse; background: #fff; }
 th,td { padding: 11px 10px; border: 1px solid #dce5ec; text-align: center; }
 th { background: #f2f6f9; }
 
-.question-cell,.answer-cell {
+/* 관리자 전역 테이블의 왼쪽 정렬보다 FAQ 표 중앙 정렬을 우선한다. */
+.admin-faq-page .management-list-table table th,
+.admin-faq-page .management-list-table table td {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+.question-cell {
   max-width: 280px;
   overflow: hidden;
-  text-align: left;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.category-badge {
-  display: inline-flex;
-  padding: 4px 9px;
-  border-radius: 999px;
-  color: #176fba;
-  background: #e8f3fc;
-  font-size: 12px;
-  font-weight: 800;
+.admin-faq-page button.question-edit-link.list-edit-text {
+  display: block !important;
+  width: 100% !important;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: #ffc928 !important;
+  -webkit-text-fill-color: #ffc928 !important;
+  background: transparent !important;
+  font: inherit;
+  font-weight: 750;
+  text-align: center !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-faq-page button.question-edit-link.list-edit-text:hover,
+.admin-faq-page button.question-edit-link.list-edit-text:focus-visible {
+  color: #ffe078 !important;
+  -webkit-text-fill-color: #ffe078 !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .empty-cell,.page-state { padding: 36px; text-align: center; }
