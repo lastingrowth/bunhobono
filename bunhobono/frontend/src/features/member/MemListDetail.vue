@@ -41,10 +41,12 @@
 import { useRoute, useRouter } from 'vue-router';
 import { useMemStore } from './memStore';
 import { computed, onMounted } from 'vue';
+import { useDialog } from '@/shared/alert/useDialog';
 
 const route = useRoute();
 const router = useRouter();
 const store = useMemStore();
+const { alertDialog } = useDialog();
 const memberNo = route.params.memberNo;
 
 const canEditMember = computed(() =>
@@ -89,7 +91,12 @@ async function approveMember() {
     const memberName = store.member.memName;
     await store.approveMembers([Number(memberNo)]);
     await store.loadMember(memberNo);
-    alert(`${memberName}님이 승인되셨습니다.`);
+    await alertDialog({
+        theme: 'admin',
+        type: 'success',
+        title: '회원 승인 완료',
+        message: `${memberName}님이 승인되었습니다.`
+    });
     router.push('/admin/members');
 }
 
