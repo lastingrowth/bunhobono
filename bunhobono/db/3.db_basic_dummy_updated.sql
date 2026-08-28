@@ -1383,15 +1383,11 @@ VALUES
     ('PARKING', '입주민 차량은 어떻게 등록하나요?', '입주민 차량은 관리실에서 등록할 수 있습니다. 등록이 필요한 경우 관리실에 문의해 주세요.'),
     ('PARKING', '내 차량의 현재 주차 위치는 어디에서 확인하나요?', '입주민 메인 화면의 차량 현황에서 현재 주차 상태와 주차 위치를 확인할 수 있습니다.'),
     ('PARKING', '차량 입출차 내역은 어디에서 확인하나요?', '입주민 화면의 메뉴에서 입출차 내역을 선택하면 내 차량의 최근 입차와 출차 기록을 확인할 수 있습니다.'),
-    ('PARKING', '지하 1층에 주차한 차량은 어떻게 출차 신청하나요?', '입주민 출차 신청 화면에서 현재 지하 1층 로봇 주차장에 주차 중인 본인 차량을 선택해 신청할 수 있습니다. 신청 후 출차 현황에서 로봇 배정, 차량 이동과 출차 준비 완료 상태를 확인해 주세요.'),
-    ('VISIT', '방문차량은 어떻게 등록하나요?', '입주민 차량관리에서 방문차량 신청을 선택한 뒤 차량번호와 방문 시작 시각을 입력하고 1시간부터 24시간까지 이용시간을 선택해 주세요. 방문 시작은 현재 시각으로부터 최소 1시간 이후여야 합니다.'),
+    ('VISIT', '방문차량은 어떻게 등록하나요?', '입주민 화면의 차량 관리에서 방문차량 신청을 선택한 뒤 차량번호, 방문 시작 시간, 방문 시간을 입력해 주세요. 방문 시작은 현재 시간으로부터 1시간 이후로 선택해야 합니다.'),
     ('VISIT', '등록한 방문차량을 취소할 수 있나요?', '아직 입차하지 않은 방문차량만 등록을 취소할 수 있습니다. 차량 관리의 방문차량 목록에서 등록 취소를 선택해 주세요.'),
-    ('VISIT', '이번 달 방문차량 기본 이용시간은 얼마인가요?', '세대별로 매월 방문차량 이용시간 150시간이 기본 제공됩니다. 방문차량을 신청하거나 이용시간을 연장하면 선택한 시간만큼 차감되며, 결제 완료한 추가시간은 해당 월 이용한도에 합산됩니다.'),
-    ('VISIT', '남은 방문차량 이용시간은 어디에서 확인하나요?', '입주민 메인 화면 또는 차량관리 화면에서 이번 달 남은 방문차량 이용시간을 확인할 수 있습니다.'),
-    ('VISIT', '방문차량 이용시간을 변경하거나 연장할 수 있나요?', '아직 입차하지 않은 방문차량은 차량관리에서 방문 시작 시각과 이용시간을 변경할 수 있습니다. 현재 입차 중인 방문차량은 1시간부터 24시간까지 연장할 수 있으며 남은 월 이용시간이 부족하면 추가시간을 먼저 구매해야 합니다.'),
+    ('VISIT', '방문차량 등록 가능 횟수는 어디에서 확인하나요?', '입주민 메인 화면의 차량 현황에서 이번 달에 남아 있는 방문차량 등록 횟수를 확인할 수 있습니다.'),
     ('VISIT', '방문차량의 주차 시간이 초과되면 어떻게 확인하나요?', '방문차량의 주차 시간이 초과되면 차량 알림에서 관련 내용을 확인할 수 있습니다.'),
-    ('PAYMENT', '방문차량 이용시간을 추가로 구매할 수 있나요?', '차량관리의 방문차량 추가시간 구매 화면에서 2시간 5,000원, 10시간 24,000원 또는 30시간 66,000원 상품을 선택해 카드로 결제할 수 있습니다. 결제 완료한 시간은 해당 월 방문차량 이용한도에 합산됩니다.'),
-    ('PAYMENT', '방문차량 주차요금은 어떻게 결제하나요?', '등록한 방문차량에 주차요금이 발생하면 차량 알림에서 내용을 확인하고 연결된 정산 화면에서 결제할 수 있습니다. 실제 금액과 무료시간은 해당 정산 화면의 최신 정보를 확인해 주세요.'),
+    ('PAYMENT', '방문차량 추가 등록 횟수를 충전할 수 있나요?', '방문차량 추가 등록 횟수 충전 기능은 현재 준비 중입니다. 추가 등록이 필요한 경우 관리실에 문의해 주세요.'),
     ('ETC', '차량 알림은 어디에서 확인하나요?', '입주민 화면의 메뉴 또는 화면 오른쪽의 차량 알림 버튼을 이용하면 차량 관련 알림을 확인할 수 있습니다.'),
     ('ETC', '자주하는 질문에서 해결하지 못한 내용은 어떻게 문의하나요?', '1:1 문의 화면에서 문의하기 버튼을 선택해 문의를 등록해 주세요. 등록한 문의와 관리자 답변은 내 문의에서 확인할 수 있습니다.');
 
@@ -1412,6 +1408,11 @@ VALUES
     (9,  3, 5,  8,    '빠른 답변 감사드립니다.'),                                                      -- 게시글 3의 8번 댓글에 대한 답글(3단계)
     (10, 3, 9,  NULL, '아이들과 함께 참여해도 괜찮은가요?');                                             -- 게시글 3의 최상위 댓글(1단계)
 
+SELECT setval(
+    pg_get_serial_sequence('board_comment', 'comment_no'),
+    COALESCE((SELECT MAX(comment_no) FROM board_comment), 0) + 1,
+    false
+);
 -- =====================================================
 -- FEE RULE DUMMY
 -- 방문차량의 무료시간 종료 후와 미등록차량의 입차 직후부터 적용할
@@ -1439,13 +1440,13 @@ VALUES (
 	30,						  -- 결제 후 30분 동안 출차 허용
 	TRUE,					  -- 자동 정산 기본 규칙
     CURRENT_TIMESTAMP,
-	CURRENT_TIMESTAMP - INTERVAL '30 days',
+	CURRENT_TIMESTAMP,
 	NULL
 );
 
 -- =====================================================
 -- KIOSK BILLING AND B1 RESIDENT EXIT TEST DUMMY
--- B2 입차 시 정산서 생성 후 키오스크에서 차량 조회·금액 갱신·결제 완료,
+-- B2 키오스크에서 차량 조회, 정산서 생성, 결제 완료,
 -- 관리자 정산 목록의 출차 가능 상태 변경을 확인한다.
 -- B1 키오스크에서는 입주민 차량의 로봇 출차 작업 생성을 확인한다.
 -- 같은 파일을 다시 실행할 수 있도록 기존 테스트 데이터만 먼저 삭제한다.
@@ -1798,12 +1799,11 @@ WITH test_car (
         ON test_car.cam_note = inserted_camera.cam_note
     JOIN gate
         ON gate.gate_code = test_car.gate_code
-    RETURNING car_log_no, snapshot_car_no, in_time
+    RETURNING car_log_no, snapshot_car_no
 ), selected_rule AS (
     SELECT fee_rule_no
     FROM fee_rule
-    WHERE is_default = TRUE
-      AND effective_from <= CURRENT_TIMESTAMP
+    WHERE effective_from <= CURRENT_TIMESTAMP
       AND (
           effective_to IS NULL
           OR effective_to > CURRENT_TIMESTAMP
@@ -1819,8 +1819,7 @@ INSERT INTO bill (
     kiosk_no,
     charge_minutes,
     bill_amount,
-    bill_status,
-    issued_at
+    bill_status
 )
 SELECT
     inserted_log.car_log_no,
@@ -1830,16 +1829,15 @@ SELECT
     NULL,
     0,
     0,
-    'UNPAID',
-    inserted_log.in_time
+    'UNPAID'
 FROM inserted_log
-CROSS JOIN selected_rule;
+CROSS JOIN selected_rule
+WHERE inserted_log.snapshot_car_no <> '299가1203';
 
--- 1203 방문차량은 입차 때 생성된 정산서를 키오스크에서 조회한 상태로 갱신한다.
--- 더미 실행 직후 res1 알림 화면과 입주민 결제 페이지를 확인할 수 있도록
--- 현재 과금액, B2 키오스크와 결제 주문번호를 같은 정산서에 저장한다.
+-- 1203 방문차량의 미결제 고지서를 미리 생성한다.
+-- 더미 실행 직후 res1 알림 화면과 입주민 결제 페이지를 확인할 수 있다.
 WITH target_log AS (
-    SELECT car_log_no
+    SELECT car_log_no, snapshot_car_no
     FROM car_log
     WHERE snapshot_car_no = '299가1203'
     ORDER BY car_log_no DESC
@@ -1847,27 +1845,34 @@ WITH target_log AS (
 ), selected_rule AS (
     SELECT fee_rule_no, unit_minutes, unit_fee, daily_max_fee
     FROM fee_rule
-    WHERE is_default = TRUE
-      AND effective_from <= CURRENT_TIMESTAMP
+    WHERE effective_from <= CURRENT_TIMESTAMP
       AND (
           effective_to IS NULL
           OR effective_to > CURRENT_TIMESTAMP
       )
     ORDER BY effective_from DESC, fee_rule_no DESC
     LIMIT 1
-), selected_kiosk AS (
-    SELECT kiosk.kiosk_no
-    FROM kiosk
-    JOIN parking
-        ON parking.parking_no = kiosk.parking_no
-    WHERE parking.parking_code = 'B2'
-    ORDER BY kiosk.kiosk_no
-    LIMIT 1
 )
-UPDATE bill
-SET kiosk_no = selected_kiosk.kiosk_no,
-    charge_minutes = 120,
-    bill_amount = CASE
+
+INSERT INTO bill (
+    car_log_no,
+    snapshot_car_log_no,
+    snapshot_car_no,
+    fee_rule_no,
+    kiosk_no,
+    charge_minutes,
+    bill_amount,
+    bill_status,
+    payment_order_id
+)
+SELECT
+    target_log.car_log_no,
+    target_log.car_log_no,
+    target_log.snapshot_car_no,
+    selected_rule.fee_rule_no,
+    NULL,
+    120,
+    CASE
         WHEN selected_rule.daily_max_fee IS NULL THEN
             CEIL(120.0 / selected_rule.unit_minutes) * selected_rule.unit_fee
         ELSE LEAST(
@@ -1875,12 +1880,12 @@ SET kiosk_no = selected_kiosk.kiosk_no,
             selected_rule.daily_max_fee
         )
     END,
-    payment_order_id = 'BILL-DUMMY-' || MD5(
+    'UNPAID',
+    'BILL-DUMMY-' || MD5(
         RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT
     )
-FROM target_log, selected_rule, selected_kiosk
-WHERE bill.car_log_no = target_log.car_log_no
-  AND bill.bill_status = 'UNPAID';
+FROM target_log
+CROSS JOIN selected_rule;
 
 INSERT INTO mem_notice (
     recipient_member_no,
@@ -1971,12 +1976,11 @@ WITH inserted_camera AS (
         ON in_gate.gate_code = 'B2-IN-1'
     JOIN gate out_gate
         ON out_gate.gate_code = 'B2-OUT-1'
-    RETURNING car_log_no, snapshot_car_no, in_time, out_time
+    RETURNING car_log_no, snapshot_car_no, out_time
 ), selected_rule AS (
     SELECT fee_rule_no
     FROM fee_rule
-    WHERE is_default = TRUE
-      AND effective_from <= CURRENT_TIMESTAMP
+    WHERE effective_from <= CURRENT_TIMESTAMP
       AND (
           effective_to IS NULL
           OR effective_to > CURRENT_TIMESTAMP
@@ -2011,7 +2015,7 @@ SELECT
     'BILLING-TRASH-TEST-299GA1205',
     'BILLING-TRASH-TEST-KEY-299GA1205',
     '카드',
-    inserted_log.in_time,
+    inserted_log.out_time - INTERVAL '10 minutes',
     inserted_log.out_time - INTERVAL '5 minutes'
 FROM inserted_log
 CROSS JOIN selected_rule;
@@ -2034,8 +2038,8 @@ CROSS JOIN selected_rule;
 -- 299가1204: 미등록차량, 무료시간 없음, 입차 직후부터 과금 확인용
 -- 299가1205: B2 출차·결제 완료 차량, 관리자 직접 지난 기록 이동 확인용
 --
--- 실행 직후 B2 입차 차량마다 입차시각 기준 미결제 정산서가 생성된다.
--- B2 키오스크에서 차량을 선택하면 기존 정산서가 주차시간에 맞춰 갱신된다.
+-- 실행 직후 B2 입차 차량의 미결제 정산서가 함께 생성된다.
+-- B2 키오스크에서 차량을 선택하면 주차시간에 맞춰 정산금액이 갱신된다.
 -- 결제를 완료하면 정산완료 및 30분간 출차 가능으로 바뀐다.
 -- =====================================================
 
