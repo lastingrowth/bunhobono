@@ -4,6 +4,7 @@
       <div
         v-if="open"
         class="management-confirm-backdrop"
+        :class="{ 'management-confirm-resident': theme === 'resident' }"
         @click.self="$emit('cancel')"
       >
         <section
@@ -47,6 +48,7 @@
 
 <script setup>
 defineProps({
+  theme: { type: String, default: "admin" },
   open: { type: Boolean, default: false },
   icon: { type: String, default: "!" },
   title: { type: String, default: "확인" },
@@ -79,6 +81,18 @@ defineEmits(["cancel", "confirm"]);
 .management-confirm-actions .cancel:hover { border-color: #858d93; background: #474f54; }
 .management-confirm-actions .confirm:hover { border-color: #a1a7ab; background: #656d73; }
 .management-confirm-actions button:disabled { cursor: wait; opacity: .6; }
+/* Teleport로 레이아웃 밖에 렌더링되므로 테마를 확인창에 직접 지정한다. */
+.management-confirm-resident { background: rgba(19,35,51,.48); }
+.management-confirm-resident .management-confirm { border-color: #cbd8e5; color: #18344e; background: #fff; box-shadow: 0 20px 55px rgba(20,48,74,.26); }
+.management-confirm-resident .management-confirm-icon { border-color: #b7d5ed; color: #2387d9; background: #edf7ff; }
+.management-confirm-resident h2,
+.management-confirm-resident p strong { color: #18344e; }
+.management-confirm-resident p { color: #526b80; }
+.management-confirm-resident small { color: #60778a; }
+.management-confirm-resident .cancel { border-color: #cad7e3; color: #526b80; background: #fff; }
+.management-confirm-resident .confirm { border-color: #2387d9; color: #fff; background: #2387d9; }
+.management-confirm-resident .cancel:hover { border-color: #9dbbd4; background: #f1f7fc; }
+.management-confirm-resident .confirm:hover { border-color: #1875bf; background: #1875bf; }
 .management-confirm-enter-active,.management-confirm-leave-active { transition: opacity .16s ease; }
 .management-confirm-enter-active .management-confirm,.management-confirm-leave-active .management-confirm { transition: transform .16s ease; }
 .management-confirm-enter-from,.management-confirm-leave-to { opacity: 0; }

@@ -11,6 +11,15 @@
   --mono-white: #ffffff;
 }
 
+/* Safari의 상단 안전 영역을 포함해 모든 관리자 화면의 바깥 배경을
+   관제 화면과 같은 색으로 채워 페이지 위에 흰 띠가 드러나지 않게 한다. */
+html:has(.admin-layout),
+body:has(.admin-layout),
+#app:has(.admin-layout) {
+  margin: 0;
+  background: #24292e !important;
+}
+
 body,
 .content,
 .resident-board-page,

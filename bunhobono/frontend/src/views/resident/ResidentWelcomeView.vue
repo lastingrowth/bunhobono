@@ -57,7 +57,9 @@
 
       <template v-else-if="step === 'status'">
         <header class="exit-header">
-          <button type="button" class="back-button" @click="step = 'menu'">←</button>
+          <button type="button" class="back-button" aria-label="뒤로가기" @click="step = 'menu'">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7" /></svg>
+          </button>
           <div>
             <span>ROBOT PARKING</span>
             <h1>출차 현황</h1>
@@ -81,7 +83,9 @@
 
       <template v-else-if="step === 'select'">
         <header class="exit-header">
-          <button type="button" class="back-button" @click="step = 'menu'">←</button>
+          <button type="button" class="back-button" aria-label="뒤로가기" @click="step = 'menu'">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7" /></svg>
+          </button>
           <div>
             <span>ROBOT PARKING</span>
             <h1>차량 선택</h1>
@@ -126,7 +130,9 @@
 
       <template v-else>
       <header class="exit-header">
-        <button type="button" class="back-button" @click="step = 'select'">←</button>
+        <button type="button" class="back-button" aria-label="뒤로가기" @click="step = 'select'">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7" /></svg>
+        </button>
         <div>
           <span>ROBOT PARKING</span>
           <h1>출차 신청</h1>
@@ -331,7 +337,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.exit-request-page { min-height: calc(100vh - 150px); padding: 54px 20px 80px; display: grid; place-items: start center; background: radial-gradient(circle at 50% 0%, #fff 0, #f3f8fc 40%, #e9f2f8 100%); }
+.exit-request-page { min-height: calc(100vh - 150px); padding: 54px 20px 80px; display: grid; place-items: start center; background: transparent; }
 .exit-kiosk-card { width: min(880px, 100%); padding: 46px 52px 38px; border: 1px solid rgba(166, 192, 210, .6); border-radius: 30px; background: rgba(255, 255, 255, .94); box-shadow: 0 24px 70px rgba(41, 78, 104, .14); }
 .welcome-mode-card { position: relative; }
 .welcome-notification-action { position: absolute; top: 22px; right: 24px; z-index: 2; }
@@ -390,7 +396,9 @@ onMounted(async () => {
 .exit-header span { color: #2d82c7; font-size: 11px; font-weight: 900; letter-spacing: .18em; }
 .exit-header h1 { margin: 4px 0 6px; color: #20394d; font-size: 30px; }
 .exit-header p { margin: 0; color: #7890a2; }
-.back-button { width: 42px; height: 42px; border: 0; border-radius: 50%; color: #315f83; background: #e9f3fa; font-size: 20px; cursor: pointer; }
+.back-button { flex: 0 0 auto; width: 42px; height: 42px; padding: 0; display: grid; place-items: center; border: 1px solid #d8e4ec; border-radius: 50%; color: #315f83; background: #f7fafc; cursor: pointer; transition: border-color .18s ease, color .18s ease, background .18s ease; }
+.back-button svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.back-button:hover { border-color: #a9c8da; color: #1676b5; background: #edf7fc; }
 .vehicle-selector { margin-top: 22px; }
 .vehicle-selector > span { display: block; margin-bottom: 9px; color: #5c7182; font-size: 12px; font-weight: 800; }
 .vehicle-selector > div { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -407,10 +415,12 @@ onMounted(async () => {
 .location-details .space-code { color: #1676c3; font-size: 20px; }
 .eligibility-message { margin: 18px 0 0; padding: 14px 16px; border-radius: 12px; color: #2e6e51; background: #ecf8f1; font-size: 13px; }
 .eligibility-message.error { color: #a34343; background: #fff0f0; }
-.request-actions { margin-top: 24px; display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+.request-actions { margin-top: 24px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .request-actions button, .retry-button { min-height: 50px; border: 0; border-radius: 13px; font-weight: 900; cursor: pointer; }
-.cancel-button { color: #526b7e; background: #edf2f6; }
-.request-button { color: #fff; background: #2383cf; }
+.exit-request-page .request-actions .cancel-button { border: 1px solid #d2dde5; color: #526b7e; background: transparent; }
+.exit-request-page .request-actions .request-button { border: 1px solid #b8d9ef; color: #176da8; background: #dceffc; }
+.exit-request-page .request-actions .cancel-button:hover { border-color: #b8c8d4; color: #405d72; background: rgba(82, 107, 126, .06); }
+.exit-request-page .request-actions .request-button:hover { border-color: #83bde3; color: #0f6098; background: #c9e7fa; }
 .request-button:disabled { cursor: not-allowed; opacity: .45; }
 .page-state { padding: 70px 20px; color: #657d8f; text-align: center; }
 .page-state p { margin: 10px 0 20px; }
@@ -462,16 +472,7 @@ onMounted(async () => {
     display: grid;
     place-items: center;
     padding: 24px;
-    background:
-        linear-gradient(
-            180deg,
-            rgba(248, 252, 255, 0.44) 0%,
-            rgba(250, 253, 255, 0.63) 45%,
-            rgba(255, 255, 255, 0.81) 75%,
-            rgba(255, 255, 255, 0.91) 100%
-        ),
-        url('@/assets/images/back.jpg')
-            center center / cover fixed no-repeat;
+    background: transparent;
 }
 .unread-notification-dialog { width:min(430px,calc(100vw - 32px));padding:0;border:1px solid #cbd8e5;border-radius:8px;background:#fff;box-shadow:0 20px 55px rgba(20,48,74,.26); }
 .unread-notification-dialog::backdrop { background:rgba(19,35,51,.48); }

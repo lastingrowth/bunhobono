@@ -113,6 +113,7 @@
     />
 
     <ManagementConfirm
+      theme="resident"
       :open="cancelConfirmOpen"
       title="방문차량 등록 취소"
       :item-name="cancelTarget?.carNo || ''"
@@ -240,10 +241,12 @@ import ResMemNoticeDetail from "./components/ResMemNoticeDetail.vue";
 import ResNormalVehicleExtendForm from "./components/ResNormalVehicleExtendForm.vue";
 import ManagementConfirm from "@/shared/components/ManagementConfirm.vue";
 import ManagementFeedbackToast from "@/shared/components/ManagementFeedbackToast.vue";
+import { useDialog } from "@/shared/alert/useDialog";
 
 const resVehicleStore = useResVehicleStore();
 const route = useRoute();
 const router = useRouter();
+const { alertDialog } = useDialog();
 
 let refreshTimer;
 let feedbackTimer;
@@ -448,7 +451,12 @@ async function submitVisitVehicle(data) {
         editingVisitVehicle.value.vehicleCarNo,
         data
       );
-      showFeedback(`${editingVisitVehicle.value.carNo} 방문시간을 변경했습니다.`);
+      await alertDialog({
+        theme: "resident",
+        type: "success",
+        title: "방문시간 변경 완료",
+        message: `${editingVisitVehicle.value.carNo} 방문시간을 변경했습니다.`
+      });
     } else {
       await resVehicleStore.addVisitVehicle(data);
     }
@@ -456,6 +464,16 @@ async function submitVisitVehicle(data) {
   } catch (error) {
     if (error.response?.status === 402) {
       paymentRequiredOpen.value = true;
+      return;
+    }
+
+    if (mode.value === "edit-time") {
+      await alertDialog({
+        theme: "resident",
+        type: "error",
+        title: "방문시간 변경 실패",
+        message: error.response?.data?.message || "방문시간을 변경하지 못했습니다."
+      });
       return;
     }
 

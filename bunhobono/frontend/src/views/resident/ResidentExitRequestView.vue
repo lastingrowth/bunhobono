@@ -40,7 +40,9 @@
 
       <template v-else-if="step === 'status'">
         <header class="exit-header">
-          <button type="button" class="back-button" @click="step = 'menu'">←</button>
+          <button type="button" class="back-button" aria-label="뒤로가기" @click="step = 'menu'">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7" /></svg>
+          </button>
           <div>
             <span>ROBOT PARKING</span>
             <h1>출차 현황</h1>
@@ -60,7 +62,7 @@
             <li :class="{ active: residentExitStep >= 3 }">차량 이동</li>
             <li :class="{ active: residentExitStep >= 4 }">출차 준비 완료</li>
           </ol>
-          <button type="button" class="status-home-button" @click="step = 'menu'">처음 화면</button>
+          <button type="button" class="status-home-button" @click="returnWelcome">처음 화면</button>
         </section>
 
         <section v-else class="status-preparing">
@@ -73,13 +75,15 @@
             <li>차량 이동</li>
             <li>출차 준비 완료</li>
           </ol>
-          <button type="button" class="status-home-button" @click="step = 'menu'">처음 화면</button>
+          <button type="button" class="status-home-button" @click="returnWelcome">처음 화면</button>
         </section>
       </template>
 
       <template v-else-if="step === 'select'">
         <header class="exit-header">
-          <button type="button" class="back-button" @click="step = 'menu'">←</button>
+          <button type="button" class="back-button" aria-label="뒤로가기" @click="step = 'menu'">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7" /></svg>
+          </button>
           <div>
             <span>ROBOT PARKING</span>
             <h1>차량 선택</h1>
@@ -118,13 +122,15 @@
         <div v-else class="page-state">
           <strong>현재 주차 중인 차량이 없습니다.</strong>
           <p>차량이 주차된 후 출차를 신청할 수 있습니다.</p>
-          <button type="button" class="retry-button" @click="step = 'menu'">처음 화면</button>
+          <button type="button" class="retry-button" @click="returnWelcome">처음 화면</button>
         </div>
       </template>
 
       <template v-else>
       <header class="exit-header">
-        <button type="button" class="back-button" @click="step = 'select'">←</button>
+        <button type="button" class="back-button" aria-label="뒤로가기" @click="step = 'select'">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7" /></svg>
+        </button>
         <div>
           <span>ROBOT PARKING</span>
           <h1>출차 신청</h1>
@@ -244,15 +250,27 @@ const residentExitStep = computed(() => {
     MOVING_TO_DROPOFF: 3,
     DROPOFF_POSITIONING: 3,
     LOWERING: 3,
+    TRAFFIC_WAIT_RETURN: 3,
+    RETURNING_HOME: 3,
   }[task.taskPhase] ?? 1;
 });
+
+const exitZoneText = (spaceCode) => {
+  if (!spaceCode) return '출차 대기 위치';
+
+  const match = spaceCode.match(/^B(\d+)-OUT(\d+)-(\d+)$/);
+
+  return match
+    ? `지하 ${match[1]}층 ${match[2]}번 출차존 ${Number(match[3])}번 대기 위치`
+    : spaceCode;
+};
 
 // 로봇 작업상태를 입주민 화면용 문구로 표시한다.
 const residentExitStatusText = computed(() => {
   const task = billingStore.residentExitTask;
 
   if (!task) return '출차 신청 내역이 없습니다.';
-  if (task.taskStatus === 'COMPLETED') return '차량이 출차 대기위치에 도착했습니다.';
+  if (task.taskStatus === 'COMPLETED') return `차량이 ${exitZoneText(task.dropoffSpaceCode)}에 도착했습니다.`;
   if (task.taskStatus === 'FAILED') return task.failureReason || '차량 출차 작업에 실패했습니다.';
 
   return {
@@ -320,6 +338,7 @@ const selectVehicle = async (location) => {
 };
 
 const returnDashboard = () => router.push('/resident/dashboard');
+const returnWelcome = () => router.push('/resident');
 
 // 로봇 출차 작업의 반복 조회를 중지한다.
 const stopResidentExitPolling = () => {
@@ -395,7 +414,7 @@ onUnmounted(stopResidentExitPolling);
 </script>
 
 <style scoped>
-.exit-request-page { width: 100%; min-height: 0; padding: clamp(24px, 5vw, 54px) 20px clamp(48px, 7vw, 80px); display: flex; align-items: flex-start; justify-content: center; overflow: visible; background: radial-gradient(circle at 50% 0%, #fff 0, #f3f8fc 40%, #e9f2f8 100%); }
+.exit-request-page { width: 100%; min-height: calc(100dvh - var(--header-height)); padding: clamp(24px, 5vw, 54px) 20px clamp(48px, 7vw, 80px); display: flex; align-items: center; justify-content: center; box-sizing: border-box; overflow: visible; background: transparent; }
 .exit-kiosk-card { width: min(880px, 100%); min-width: 0; padding: 30px 42px 32px; border: 1px solid rgba(166, 192, 210, .6); border-radius: 30px; background: rgba(255, 255, 255, .94); box-shadow: 0 24px 70px rgba(41, 78, 104, .14); }
 .kiosk-welcome { padding: 10px 20px 42px; text-align: center; }
 .kiosk-brand { display: inline-flex; align-items: center; gap: 8px; color: #2580bd; font-size: 11px; font-weight: 900; letter-spacing: .16em; }
@@ -449,7 +468,9 @@ onUnmounted(stopResidentExitPolling);
 .exit-header span { color: var(--resident-accent); font-size: 11px; font-weight: 900; letter-spacing: .18em; }
 .exit-header h1 { margin: 2px 0 3px; color: #20394d; font-size: 27px; }
 .exit-header p { margin: 0; color: #7890a2; font-size: 14px; }
-.back-button { width: 38px; height: 38px; border: 0; border-radius: 50%; color: #315f83; background: #e9f3fa; font-size: 20px; cursor: pointer; }
+.back-button { flex: 0 0 auto; width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border: 1px solid #d8e4ec; border-radius: 50%; color: #315f83; background: #f7fafc; cursor: pointer; transition: border-color .18s ease, color .18s ease, background .18s ease; }
+.back-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.back-button:hover { border-color: #a9c8da; color: #1676b5; background: #edf7fc; }
 .vehicle-selector { margin-top: 22px; }
 .vehicle-selector > span { display: block; margin-bottom: 9px; color: #5c7182; font-size: 12px; font-weight: 800; }
 .vehicle-selector > div { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -466,10 +487,12 @@ onUnmounted(stopResidentExitPolling);
 .location-details .space-code { color: var(--resident-accent); font-size: 20px; }
 .eligibility-message { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; color: #2e6e51; background: #ecf8f1; font-size: 13px; }
 .eligibility-message.error { color: #a34343; background: #fff0f0; }
-.request-actions { margin-top: 14px; display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+.request-actions { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .request-actions button, .retry-button { min-height: 46px; border: 0; border-radius: 13px; font-weight: 900; cursor: pointer; }
-.cancel-button { color: #526b7e; background: #edf2f6; }
-.request-button { color: #fff; background: #2383cf; }
+.exit-request-page .request-actions .cancel-button { border: 1px solid #d2dde5; color: #526b7e; background: transparent; }
+.exit-request-page .request-actions .request-button { border: 1px solid #b8d9ef; color: #176da8; background: #dceffc; }
+.exit-request-page .request-actions .cancel-button:hover { border-color: #b8c8d4; color: #405d72; background: rgba(82, 107, 126, .06); }
+.exit-request-page .request-actions .request-button:hover { border-color: #83bde3; color: #0f6098; background: #c9e7fa; }
 .request-button:disabled { cursor: not-allowed; opacity: .45; }
 .page-state { padding: 70px 20px; color: #657d8f; text-align: center; }
 .page-state p { margin: 10px 0 20px; }
