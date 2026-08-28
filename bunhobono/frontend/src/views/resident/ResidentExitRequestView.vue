@@ -244,15 +244,27 @@ const residentExitStep = computed(() => {
     MOVING_TO_DROPOFF: 3,
     DROPOFF_POSITIONING: 3,
     LOWERING: 3,
+    TRAFFIC_WAIT_RETURN: 3,
+    RETURNING_HOME: 3,
   }[task.taskPhase] ?? 1;
 });
+
+const exitZoneText = (spaceCode) => {
+  if (!spaceCode) return '출차 대기 위치';
+
+  const match = spaceCode.match(/^B(\d+)-OUT(\d+)-(\d+)$/);
+
+  return match
+    ? `지하 ${match[1]}층 ${match[2]}번 출차존 ${Number(match[3])}번 대기 위치`
+    : spaceCode;
+};
 
 // 로봇 작업상태를 입주민 화면용 문구로 표시한다.
 const residentExitStatusText = computed(() => {
   const task = billingStore.residentExitTask;
 
   if (!task) return '출차 신청 내역이 없습니다.';
-  if (task.taskStatus === 'COMPLETED') return '차량이 출차 대기위치에 도착했습니다.';
+  if (task.taskStatus === 'COMPLETED') return `차량이 ${exitZoneText(task.dropoffSpaceCode)}에 도착했습니다.`;
   if (task.taskStatus === 'FAILED') return task.failureReason || '차량 출차 작업에 실패했습니다.';
 
   return {
