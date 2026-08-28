@@ -191,7 +191,7 @@ const quickMenus = {
     resident: [
         { label: "공지사항", path: "/resident/boards" },
         { label: "1:1 문의", path: "/resident/inquiries" },
-        { label: "요금납부", action: "none" },
+        { label: "AI 챗봇", action: "aiChat" },
         { label: "마이페이지", path: "/resident/mypage" }
     ]
 };
