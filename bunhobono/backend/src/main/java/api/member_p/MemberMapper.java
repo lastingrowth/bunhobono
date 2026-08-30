@@ -375,6 +375,10 @@ public interface MemberMapper {
     @Select("SELECT email FROM member WHERE login_id = #{loginId}")
     String findResidentEmail(String loginId);
 
+    // 연락처 변경 시 기존 연락처와 비교할 현재 전화번호를 조회한다.
+    @Select("SELECT mem_phone FROM member WHERE login_id = #{loginId}")
+    String findResidentPhone(String loginId);
+
     // member_no로 회원과 등록 차량을 연결해 본인 차량과 최신 주차 상태를 조회한다.
     @Select("""
         SELECT
