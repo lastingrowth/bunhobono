@@ -16,6 +16,13 @@
             @click="selectEquipment(equipment.value)"
           >
             {{ equipment.label }}
+            <span
+              v-if="equipment.value !== 'STATS' && equipmentFaultCounts[equipment.value] > 0"
+              class="equipment-tab-alert"
+              :aria-label="`${equipment.label} 미조치 고장 ${equipmentFaultCounts[equipment.value]}대`"
+            >
+              {{ equipmentFaultCounts[equipment.value] }}
+            </span>
           </button>
         </nav>
 
@@ -367,6 +374,11 @@ const statusCounts = computed(() => currentItems.value.reduce((counts, item) => 
   return counts;
 }, { NORMAL: 0, FAULT: 0, MAINTENANCE: 0 }));
 const normalRate = computed(() => currentItems.value.length ? Math.round(statusCounts.value.NORMAL / currentItems.value.length * 100) : 0);
+const equipmentFaultCounts = computed(() => ({
+  CAMERA: cameras.value.filter((item) => item.cameraStatus === 'FAULT' && item.actionStatus !== 'COMPLETED').length,
+  GATE: gates.value.filter((item) => item.operatingStatus === 'FAULT' && item.actionStatus !== 'COMPLETED').length,
+  ROBOT: robots.value.filter((item) => item.monitoringStatus === 'FAULT' && item.actionStatus !== 'COMPLETED').length,
+}));
 const allMonitoringItems = computed(() => [
   ...cameras.value.map((item) => ({ type: 'CAMERA', typeLabel: '카메라', no: item.cameraNo, name: item.cameraName, status: normalizeStatus(item.cameraStatus) })),
   ...gates.value.map((item) => ({ type: 'GATE', typeLabel: '게이트', no: item.gateNo, name: item.gateName, status: normalizeStatus(item.operatingStatus) })),
@@ -598,6 +610,7 @@ const refreshCameras = async (manual = false) => {
         riskLevel: pdm?.riskLevel || '미확인',
         riskScore: pdm?.riskScore ?? null,
         predictedAt: pdm?.predictedAt || null,
+        actionStatus: pdm?.actionStatus || null,
       };
     });
     const previousByNo = new Map(cameras.value.map((camera) => [camera.cameraNo, normalizeStatus(camera.cameraStatus)]));
@@ -656,6 +669,7 @@ const refreshGates = async (manual = false) => {
         riskLevel: pdm?.riskLevel || '미확인',
         riskScore: pdm?.riskScore ?? null,
         predictedAt: pdm?.predictedAt || null,
+        actionStatus: pdm?.actionStatus || null,
       };
     });
     const previousByNo = new Map(gates.value.map((gate) => [gate.gateNo, {
@@ -725,6 +739,7 @@ const refreshRobots = async (manual = false) => {
         riskLevel: pdm?.riskLevel || '미확인',
         riskScore: pdm?.riskScore ?? null,
         predictedAt: pdm?.predictedAt || null,
+        actionStatus: pdm?.actionStatus || null,
       };
     });
     const previousByNo = new Map(robots.value.map((robot) => [robot.robotNo, normalizeStatus(robot.monitoringStatus)]));
@@ -776,14 +791,17 @@ const refreshStatistics = async () => {
     cameras.value = (Array.isArray(cameraResponse.data) ? cameraResponse.data : []).map((item) => ({
       ...item,
       cameraStatus: riskLevelToStatus(cameraPdmByNo.get(Number(item.cameraNo))?.riskLevel),
+      actionStatus: cameraPdmByNo.get(Number(item.cameraNo))?.actionStatus || null,
     }));
     gates.value = (Array.isArray(gateResponse.data) ? gateResponse.data : []).map((item) => ({
       ...item,
       operatingStatus: riskLevelToStatus(gatePdmByNo.get(Number(item.gateNo))?.riskLevel),
+      actionStatus: gatePdmByNo.get(Number(item.gateNo))?.actionStatus || null,
     }));
     robots.value = (Array.isArray(robotResponse.data) ? robotResponse.data : []).map((item) => ({
       ...item,
       monitoringStatus: riskLevelToStatus(robotPdmByNo.get(Number(item.robotNo))?.riskLevel),
+      actionStatus: robotPdmByNo.get(Number(item.robotNo))?.actionStatus || null,
     }));
     responseTime.value = Math.max(1, Math.round(performance.now() - startedAt));
     lastUpdatedAt.value = new Date();
@@ -1127,6 +1145,20 @@ onUnmounted(() => {
 .equipment-tabs button:last-child { border-right: 0; }
 .equipment-tabs button:hover { color: #fff; background: #3a4147; }
 .equipment-tabs button.active { color: #171b1f; background: #ffc928; }
+
+.pdm-page .equipment-tabs button .equipment-tab-alert {
+  margin-left: 6px;
+  color: #ff7479 !important;
+  -webkit-text-fill-color: #ff7479 !important;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.pdm-page .equipment-tabs button.active .equipment-tab-alert {
+  color: #d9535a !important;
+  -webkit-text-fill-color: #d9535a !important;
+}
 
 .summary-card {
   border-top-color: #69737b;
