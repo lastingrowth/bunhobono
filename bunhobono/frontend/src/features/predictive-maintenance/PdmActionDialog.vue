@@ -139,10 +139,10 @@ header { padding: 14px 16px; display: flex; justify-content: space-between; alig
 header span { color: var(--admin-muted, #a7b1bb); font-size: 9px; font-weight: 800; letter-spacing: .12em; }
 h2 { margin: 4px 0 0; font-size: 18px; }
 .close-button { width: 30px; height: 30px; padding: 0; border: 1px solid var(--admin-line, #46515c); color: var(--admin-muted, #a7b1bb); background: var(--admin-surface-muted, #2a3540); font-size: 20px; cursor: pointer; }
-dl { margin: 0; padding: 12px 16px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+dl { margin: 0; padding: 12px 16px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
 dl div { min-width: 0; padding: 8px; border: 1px solid var(--admin-line, #46515c); background: var(--admin-surface-muted, #2a3540); }
 dt { color: var(--admin-muted, #a7b1bb); font-size: 9px; }
-dd { margin: 4px 0 0; overflow: hidden; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+dd { margin: 4px 0 0; overflow: visible; font-size: 11px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; white-space: normal; }
 .sensor-section { margin: 0 16px 12px; }
 .sensor-section > strong { display: block; margin-bottom: 6px; color: var(--admin-muted, #a7b1bb); font-size: 11px; }
 .sensor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
