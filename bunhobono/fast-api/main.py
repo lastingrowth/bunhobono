@@ -13,9 +13,18 @@ from fastapi.responses import StreamingResponse
 
 from plate_ocr import PlateOCR
 from plate_preprocess_standard_v2 import make_candidates
-from predictive_maintenance.camera.camera_inference import router as camera_pdm_router
-from predictive_maintenance.gate.gate_inference import router as gate_pdm_router
-from predictive_maintenance.robot.robot_inference import router as robot_pdm_router
+from predictive_maintenance.camera.camera_inference import (
+    router as camera_pdm_router,
+    service as camera_pdm_service,
+)
+from predictive_maintenance.gate.gate_inference import (
+    router as gate_pdm_router,
+    service as gate_pdm_service,
+)
+from predictive_maintenance.robot.robot_inference import (
+    router as robot_pdm_router,
+    service as robot_pdm_service,
+)
 from ocr_selector import select_best_ocr
 from test_stream import TEST_STREAMS, TestStreamWorker
 from yolo_detect import PlateDetector
@@ -342,9 +351,13 @@ def reset_demo():
     for worker in workers:
         worker.reset_demo()
 
+    camera_pdm_service.reset_demo()
+    gate_pdm_service.reset_demo()
+    robot_pdm_service.reset_demo()
+
     return {
         "success": True,
-        "message": "시연 상태가 초기화되었습니다."
+        "message": "시연 상태와 예지보전 CSV가 초기화되었습니다."
     }
 
 @app.post("/detect-test")

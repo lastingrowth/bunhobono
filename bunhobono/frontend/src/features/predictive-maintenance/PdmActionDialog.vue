@@ -15,6 +15,7 @@
           <div><dt>위험 발생</dt><dd>{{ formatDateTime(record?.predictedAt) }}</dd></div>
           <div><dt>위험 확률</dt><dd>{{ formatPercent(record?.criticalProbability) }}</dd></div>
           <div v-if="readOnly"><dt>조치 완료</dt><dd>{{ formatDateTime(record?.actionCompletedAt) }}</dd></div>
+          <div v-if="readOnly"><dt>처리 관리자</dt><dd>{{ record?.actionByMemberName || '관리자 정보 없음' }}</dd></div>
         </dl>
 
         <section v-if="abnormalSensors.length" class="sensor-section">

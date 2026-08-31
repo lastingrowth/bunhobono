@@ -124,6 +124,16 @@ onMounted(async()=>{stats.changeEntryPeriod('weekly');await refresh();timer=wind
   text-shadow: none;
 }
 
+/* 통계 화면의 최외곽 영역과 갱신 도구줄을 관리자 헤더 바로 아래에 붙인다. */
+:global(.admin-layout.admin-statistics-layout .content) {
+  padding-top: 0 !important;
+  background: #24292e !important;
+}
+
+.stats-dashboard {
+  padding-top: 0;
+}
+
 /* 관리자 메뉴 최상단 통계 대시보드: 1280 × 720 한 화면 배치 */
 @media (min-width: 1101px) and (max-width: 1400px) and (max-height: 800px) {
   .stats-dashboard {
@@ -375,5 +385,12 @@ onMounted(async()=>{stats.changeEntryPeriod('weekly');await refresh();timer=wind
     color: #eef1f3;
     font-size: 10px;
   }
+}
+
+.stats-dashboard {
+  padding-top: 6px !important;
+  border: 0;
+  background: #24292e;
+  box-shadow: none;
 }
 </style>

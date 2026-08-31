@@ -174,6 +174,14 @@ class PredictiveMaintenanceReplayService:
             ),
         }
 
+    def reset_demo(self) -> None:
+        """CSV 재생 위치와 위험 행 고정 상태를 처음으로 되돌린다."""
+        with self._lock:
+            self._current_index = 0
+            for equipment_id in self._equipment_positions:
+                self._equipment_positions[equipment_id] = 0
+            self._held_rows.clear()
+
     def _predict_row(self, row_index: int, row: pd.Series) -> dict:
         features = self.metadata["feature_columns"]
         input_data = pd.DataFrame(

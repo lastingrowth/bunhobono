@@ -150,11 +150,41 @@ export const useStatisticsStore = defineStore('statistics', () => {
     })
 
     // 현재 주차중인 입출차 로그
-    // parkingState가 PARKING이거나, 출차 시간이 없는 로그를 현재 주차중으로 본다.
+    // 미출차 로그에는 실제 주차면과 연결되지 않은 과거 자료가 남을 수 있으므로,
+    // 주차장 API가 계산한 실제 점유 대수만큼만 주차장별 최신 로그를 사용한다.
     const currentParkingLogs = computed(() => {
-        return carlogStore.carLogs.filter((log) => {
+        const openLogs = carlogStore.carLogs.filter((log) => {
             return log.parkingState === 'PARKING'
                 || (log.inTime && !log.outTime)
+        })
+
+        return parkingStore.list.flatMap((parking) => {
+            const total = Number(parking.parkingSpaces ?? 0)
+            const available = Number(parking.availableSpaces ?? total)
+            const occupied = Math.max(total - available, 0)
+
+            if (occupied === 0) {
+                return []
+            }
+
+            return openLogs
+                .filter((log) => {
+                    return Number(log.parkingNo) === Number(parking.parkingNo)
+                        || String(log.parkingCode ?? '').toUpperCase()
+                            === String(parking.parkingCode ?? '').toUpperCase()
+                })
+                // 로봇 주차장은 실제 주차면에 연결된 로그를 우선한다.
+                .sort((left, right) => {
+                    const leftHasSpace = Boolean(left.spaceNo || left.spaceCode)
+                    const rightHasSpace = Boolean(right.spaceNo || right.spaceCode)
+
+                    if (leftHasSpace !== rightHasSpace) {
+                        return Number(rightHasSpace) - Number(leftHasSpace)
+                    }
+
+                    return new Date(right.inTime ?? 0) - new Date(left.inTime ?? 0)
+                })
+                .slice(0, occupied)
         })
     })
 
@@ -245,7 +275,12 @@ export const useStatisticsStore = defineStore('statistics', () => {
 
     // 현재 주차 현황 전체 수
     const currentParkingTotal = computed(() => {
-        return currentParkingLogs.value.length
+        return parkingStore.list.reduce((sum, parking) => {
+            const total = Number(parking.parkingSpaces ?? 0)
+            const available = Number(parking.availableSpaces ?? total)
+
+            return sum + Math.max(total - available, 0)
+        }, 0)
     })
 
     // 지난 기록 통계 포함: 최근 7개 완료일의 시간대별 평균을 계산한다.

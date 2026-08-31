@@ -88,8 +88,8 @@
                 <td>{{ formatPercent(record.criticalProbability) }}</td>
                 <td v-if="activeHistoryTab === 'saved'"><span class="action-status" :class="record.actionStatus?.toLowerCase()">{{ actionStatusLabel(record.actionStatus) }}</span></td>
                 <td v-if="activeHistoryTab === 'saved'" class="action-cell">
-                  <button v-if="record.actionStatus === 'ACTION_REQUIRED'" type="button" class="action-button" @click="openActionDialog(record)">조치 완료</button>
-                  <div v-else-if="record.actionStatus === 'COMPLETED'" class="completed-action"><span>{{ formatDateTime(record.actionCompletedAt) }}</span><button type="button" class="action-view-button" @click="openActionDialog(record)">조치내용 보기</button></div>
+                  <button v-if="record.actionStatus === 'ACTION_REQUIRED'" type="button" class="action-button" @click="openActionDialog(record)">조치 등록</button>
+                  <div v-else-if="record.actionStatus === 'COMPLETED'" class="completed-action"><button type="button" class="action-view-button" @click="openActionDialog(record)">조치내용 보기</button></div>
                   <span v-else>-</span>
                 </td>
               </tr>

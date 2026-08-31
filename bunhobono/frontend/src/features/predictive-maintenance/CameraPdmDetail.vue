@@ -95,7 +95,7 @@
                 <td>{{ formatPercent(record.warningProbability) }}</td>
                 <td>{{ formatPercent(record.criticalProbability) }}</td>
                 <td v-if="activeHistoryTab === 'saved'"><span class="action-status" :class="record.actionStatus?.toLowerCase()">{{ actionStatusLabel(record.actionStatus) }}</span></td>
-                <td v-if="activeHistoryTab === 'saved'" class="action-cell"><button v-if="record.actionStatus === 'ACTION_REQUIRED'" type="button" class="action-button" @click="openActionDialog(record)">조치 완료</button><div v-else-if="record.actionStatus === 'COMPLETED'" class="completed-action"><span>{{ formatDateTime(record.actionCompletedAt) }}</span><button type="button" class="action-view-button" @click="openActionDialog(record)">조치내용 보기</button></div><span v-else>-</span></td>
+                <td v-if="activeHistoryTab === 'saved'" class="action-cell"><button v-if="record.actionStatus === 'ACTION_REQUIRED'" type="button" class="action-button" @click="openActionDialog(record)">조치 등록</button><div v-else-if="record.actionStatus === 'COMPLETED'" class="completed-action"><button type="button" class="action-view-button" @click="openActionDialog(record)">조치내용 보기</button></div><span v-else>-</span></td>
               </tr>
               <tr v-if="visibleHistory.length === 0"><td :colspan="activeHistoryTab === 'saved' ? 7 : 5" class="empty">{{ emptyHistoryMessage }}</td></tr>
             </tbody>
@@ -473,8 +473,10 @@ onUnmounted(() => window.clearInterval(timer));
 }
 
 .table-wrap {
+  height: 216px;
   max-height: 216px;
   overflow: auto;
+  overflow-anchor: none;
 }
 
 table {
@@ -531,14 +533,21 @@ th {
   background: #66383c;
 }
 
-.action-status { display: inline-block; padding: 3px 7px; border: 1px solid var(--admin-line); color: var(--admin-muted); }
+.action-status,.action-button,.action-view-button { box-sizing: border-box; min-width: 68px; height: 24px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; border-radius: 3px; font-size: 10px; font-weight: 700; line-height: 1; }
+.action-status { border: 1px solid var(--admin-line); color: var(--admin-muted); }
 .action-status.action_required { border-color: #c45a60; color: #ffdadd; background: #66383c; }
 .action-status.completed { border-color: #4f8c6b; color: #d9f7e6; background: #315641; }
 .action-cell { white-space: normal; }
-.action-button { padding: 4px 9px; border: 1px solid #c45a60; color: #ffdadd; background: #66383c; font-size: 11px; font-weight: 700; cursor: pointer; }
-.action-view-button { padding: 3px 8px; border: 1px solid #5b88b2; color: #d8ecff; background: #334c63; font-size: 10px; font-weight: 700; cursor: pointer; }
-.completed-action { display: grid; gap: 2px; }
+.action-button { border: 1px solid #c45a60; color: #ffdadd; background: #66383c; cursor: pointer; }
+.action-view-button { border: 1px solid #5b88b2; color: #d8ecff; background: #334c63; cursor: pointer; }
+.completed-action { display: grid; justify-items: center; gap: 2px; }
 .completed-action small { overflow: hidden; color: var(--admin-muted); text-overflow: ellipsis; white-space: nowrap; }
+
+.history-panel table th,
+.history-panel table td {
+  text-align: center !important;
+  vertical-align: middle;
+}
 
 .message,
 .empty {

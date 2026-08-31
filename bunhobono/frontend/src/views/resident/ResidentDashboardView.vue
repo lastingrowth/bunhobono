@@ -729,7 +729,7 @@ onUnmounted(() => {
 .recent-log-summary-list { display: grid; gap: 7px; }
 .recent-log-summary-item { display: grid; grid-template-columns: minmax(125px,.75fr) minmax(270px,1.8fr) auto; align-items: center; gap: 14px; min-width: 0; padding: 11px 13px; border-radius: 10px; background: #f7faff; }
 .recent-log-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
-.exit-request-button { min-width: 70px; height: 28px; padding: 0 10px; border: 1px solid #b9d2e9; border-radius: 7px; color: #5f7f9d; background: #edf5fc; font-size: 10px; font-weight: 800; }
+.exit-request-button { display: inline-flex; align-items: center; justify-content: center; min-width: 70px; height: 28px; padding: 0 10px; border: 1px solid #b9d2e9; border-radius: 7px; color: #5f7f9d; background: #edf5fc; font-size: 10px; font-weight: 800; line-height: 1; text-align: center; }
 .exit-request-button:disabled { cursor: not-allowed; opacity: .72; }
 .recent-log-car { display: grid; gap: 2px; min-width: 0; }
 .recent-log-car strong { overflow: hidden; color: var(--resident-accent); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }

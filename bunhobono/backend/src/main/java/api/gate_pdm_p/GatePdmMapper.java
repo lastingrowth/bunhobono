@@ -22,6 +22,7 @@ public interface GatePdmMapper {
                     "critical_probability, expected_risk_level, " +
                     "prediction_correct, source_row_index, sensor_values, sensor_collected_at, " +
                     "predicted_at, action_status, action_note, action_by_member_no, " +
+                    "(SELECT m.mem_name FROM member m WHERE m.member_no = gate_pdm.action_by_member_no) AS action_by_member_name, " +
                     "action_started_at, action_completed_at " +
                     "FROM gate_pdm " +
                     "ORDER BY predicted_at DESC, pdm_no DESC"
@@ -39,6 +40,7 @@ public interface GatePdmMapper {
                     "critical_probability, expected_risk_level, " +
                     "prediction_correct, source_row_index, sensor_values, sensor_collected_at, " +
                     "predicted_at, action_status, action_note, action_by_member_no, " +
+                    "(SELECT m.mem_name FROM member m WHERE m.member_no = gate_pdm.action_by_member_no) AS action_by_member_name, " +
                     "action_started_at, action_completed_at " +
                     "FROM gate_pdm " +
                     "WHERE pdm_no = #{pdmNo}"
@@ -72,6 +74,7 @@ public interface GatePdmMapper {
                critical_probability, expected_risk_level,
                prediction_correct, source_row_index, sensor_values, sensor_collected_at,
                predicted_at, action_status, action_note, action_by_member_no,
+               (SELECT m.mem_name FROM member m WHERE m.member_no = gate_pdm.action_by_member_no) AS action_by_member_name,
                action_started_at, action_completed_at
         FROM gate_pdm
         WHERE gate_no = #{gateNo}

@@ -41,6 +41,7 @@ public class CameraPdmDTO {
     private String actionStatus;
     private String actionNote;
     private Integer actionByMemberNo;
+    private String actionByMemberName;
     private OffsetDateTime actionStartedAt;
     private OffsetDateTime actionCompletedAt;
 }

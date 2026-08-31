@@ -19,7 +19,7 @@
             <span
               v-if="equipment.value !== 'STATS' && equipmentFaultCounts[equipment.value] > 0"
               class="equipment-tab-alert"
-              :aria-label="`${equipment.label} 미조치 고장 ${equipmentFaultCounts[equipment.value]}대`"
+              :aria-label="`${equipment.label} 미조치 위험 ${equipmentFaultCounts[equipment.value]}대`"
             >
               {{ equipmentFaultCounts[equipment.value] }}
             </span>
@@ -27,9 +27,10 @@
         </nav>
 
         <div class="live-clock">
-          <span><i></i> 실시간 연결</span>
+          <div class="live-clock-meta">
+            <span><i></i> 실시간 연결</span>
+          </div>
           <strong>{{ clockText }}</strong>
-          <small>5초마다 자동 갱신</small>
         </div>
       </div>
     </header>
@@ -68,7 +69,7 @@
 
         <article class="stats-panel today-panel">
           <header class="stats-panel-header">
-            <div><h2>오늘 기록 통계</h2><p>알파 시연용 데이터 · 백엔드 통계 미연동</p></div>
+            <div><h2>오늘 기록 통계</h2><p>오늘 분석은 5초 주기 환산 · 저장/감지 기록 DB 연동</p></div>
             <span class="today-date">{{ todayDateText }}</span>
           </header>
           <div class="today-layout">
@@ -103,11 +104,11 @@
       <article class="summary-card normal">
         <span>정상</span><strong>{{ statusCounts.NORMAL }}</strong><small>{{ normalRate }}% 정상 작동</small>
       </article>
-      <article class="summary-card fault">
-        <span>고장</span><strong>{{ statusCounts.FAULT }}</strong><small>즉시 확인 필요</small>
-      </article>
       <article class="summary-card maintenance">
-        <span>점검 중</span><strong>{{ statusCounts.MAINTENANCE }}</strong><small>유지보수 대상</small>
+        <span>주의</span><strong>{{ statusCounts.MAINTENANCE }}</strong><small>상태 확인 권장</small>
+      </article>
+      <article class="summary-card fault">
+        <span>위험</span><strong>{{ statusCounts.FAULT }}</strong><small>즉시 확인 필요</small>
       </article>
     </section>
 
@@ -138,15 +139,13 @@
               <span class="camera-icon" aria-hidden="true"><i></i></span>
               <span class="status-badge"><i></i>{{ statusText(camera.cameraStatus) }}</span>
             </div>
-            <strong>{{ camera.cameraName }}</strong>
-            <p>{{ camera.parkingName || '주차장 미지정' }}</p>
+            <div class="equipment-title-row">
+              <strong>{{ camera.cameraName }}</strong>
+              <p>{{ camera.parkingName || '주차장 미지정' }}</p>
+            </div>
             <dl class="equipment-info">
-              <div class="equipment-info-row"><dt>게이트</dt><dd>{{ camera.gateName || '-' }}</dd></div>
+              <div class="equipment-info-row"><dt>게이트</dt><dd>{{ compactCameraGateName(camera) }}</dd></div>
               <div class="equipment-info-row"><dt>용도</dt><dd>{{ camera.cameraType === 'In' ? '입차' : '출차' }}</dd></div>
-              <div class="equipment-chip-row">
-                <span class="equipment-chip">장비 #{{ camera.cameraNo }}</span>
-                <span class="equipment-chip">수신 {{ responseTime }}ms</span>
-              </div>
             </dl>
             <div class="signal-line"><span></span><span></span><span></span><span></span><span></span><button type="button" class="card-delete-button" aria-label="카메라 삭제" title="카메라 삭제" @click.stop="requestDelete('CAMERA', camera)">−</button></div>
           </article>
@@ -166,15 +165,13 @@
               <span class="gate-icon" :class="{ open: gate.gateStatus === 1 }" aria-hidden="true"><i></i></span>
               <span class="status-badge"><i></i>{{ statusText(gate.operatingStatus) }}</span>
             </div>
-            <strong>{{ gate.gateName }}</strong>
-            <p>{{ gate.parkingName || '주차장 미지정' }}</p>
+            <div class="equipment-title-row">
+              <strong>{{ gate.gateName }}</strong>
+              <p>{{ gate.parkingName || '주차장 미지정' }}</p>
+            </div>
             <dl class="equipment-info">
               <div class="equipment-info-row"><dt>분류</dt><dd>{{ gate.gateType === 'In' || gate.gateType === 'IN' ? '입차' : '출차' }}</dd></div>
               <div class="equipment-info-row"><dt>개폐</dt><dd>{{ gate.gateStatus === 1 ? '열림' : '닫힘' }}</dd></div>
-              <div class="equipment-chip-row">
-                <span class="equipment-chip">장비 #{{ gate.gateNo }}</span>
-                <span class="equipment-chip">수신 {{ responseTime }}ms</span>
-              </div>
             </dl>
             <div class="signal-line"><span></span><span></span><span></span><span></span><span></span><button type="button" class="card-delete-button" aria-label="게이트 삭제" title="게이트 삭제" @click.stop="requestDelete('GATE', gate)">−</button></div>
           </article>
@@ -194,15 +191,13 @@
               <span class="robot-icon" aria-hidden="true"><i></i></span>
               <span class="status-badge"><i></i>{{ statusText(robot.monitoringStatus) }}</span>
             </div>
-            <strong>{{ robot.robotCode }}</strong>
-            <p>SET {{ robot.setNo }} / {{ robot.setPosition }}</p>
+            <div class="equipment-title-row">
+              <strong>{{ robot.robotCode }}</strong>
+              <p>SET {{ robot.setNo }} / {{ robot.setPosition }}</p>
+            </div>
             <dl class="equipment-info">
               <div class="equipment-info-row"><dt>예측등급</dt><dd>{{ robot.riskLevel }}</dd></div>
               <div class="equipment-info-row"><dt>예측확률</dt><dd>{{ formatRiskScore(robot.riskScore) }}</dd></div>
-              <div class="equipment-chip-row">
-                <span class="equipment-chip">장비 #{{ robot.robotNo }}</span>
-                <span class="equipment-chip">분석 {{ formatHeartbeat(robot.predictedAt) }}</span>
-              </div>
             </dl>
             <div class="signal-line"><span></span><span></span><span></span><span></span><span></span><button type="button" class="card-delete-button" aria-label="주차로봇 삭제" title="주차로봇 삭제" @click.stop="requestDelete('ROBOT', robot)">−</button></div>
           </article>
@@ -296,6 +291,9 @@ import {
   getLatestCameraPdm,
   getLatestGatePdm,
   getLatestRobotPdm,
+  getSavedCameraPdm,
+  getSavedGatePdm,
+  getSavedRobotPdm,
 } from './predictiveMaintenanceApi';
 
 const router = useRouter();
@@ -307,6 +305,7 @@ const robotStore = useRobotStore();
 const cameras = ref([]);
 const gates = ref([]);
 const robots = ref([]);
+const savedPdmRecords = ref([]);
 const selectedEquipment = ref(
   ['STATS', 'CAMERA', 'GATE', 'ROBOT'].includes(route.query.equipment)
     ? route.query.equipment
@@ -355,8 +354,14 @@ const selectEquipment = (equipment) => {
 
 const normalizeStatus = (status) => ['NORMAL', 'FAULT', 'MAINTENANCE'].includes(status) ? status : 'UNKNOWN';
 const riskLevelToStatus = (riskLevel) => ({ 정상: 'NORMAL', 주의: 'MAINTENANCE', 위험: 'FAULT' }[riskLevel] || 'UNKNOWN');
-const statusText = (status) => ({ NORMAL: '정상', FAULT: '고장', MAINTENANCE: '점검 중', UNKNOWN: '상태 미확인' }[normalizeStatus(status)]);
+const statusText = (status) => ({ NORMAL: '정상', FAULT: '위험', MAINTENANCE: '주의', UNKNOWN: '상태 미확인' }[normalizeStatus(status)]);
 const statusClass = (status) => normalizeStatus(status).toLowerCase();
+const compactCameraGateName = (camera) => {
+  const gateName = camera?.gateName || '-';
+  return String(camera?.cameraName || '').toUpperCase().includes('GROUND')
+    ? gateName.replace(/^GROUND-/i, '')
+    : gateName;
+};
 const currentItems = computed(() => ({ CAMERA: cameras.value, GATE: gates.value, ROBOT: robots.value }[selectedEquipment.value] || []));
 const equipmentLabel = computed(() => ({ STATS: '통합 통계', CAMERA: '카메라', GATE: '게이트', ROBOT: '주차로봇' }[selectedEquipment.value]));
 const cameraGateOptions = computed(() => gateStore.list.filter((gate) => Number(gate.parkingNo) === Number(cameraForm.value.parkingNo)));
@@ -419,16 +424,29 @@ const attentionItems = computed(() => allMonitoringItems.value
   .sort((a, b) => (a.status === 'FAULT' ? 0 : 1) - (b.status === 'FAULT' ? 0 : 1))
   .slice(0, 6));
 const todayDateText = computed(() => currentTime.value.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }));
-const todayHourlyData = computed(() => {
-  const day = currentTime.value.getDate();
-  const currentSlot = Math.min(5, Math.floor(currentTime.value.getHours() / 4));
-  const labels = ['00시', '04시', '08시', '12시', '16시', '20시'];
-  const data = labels.map((label, index) => {
-    if (index > currentSlot) return { label, warning: 0, fault: 0 };
-    const warning = (day * (index + 2) + index * 3) % 5;
-    const fault = (day + index * 2) % 3;
-    return { label, warning, fault };
+const todayPdmRecords = computed(() => {
+  const today = currentTime.value;
+
+  return savedPdmRecords.value.filter((record) => {
+    if (!record?.predictedAt) return false;
+
+    const predictedAt = new Date(record.predictedAt);
+    return predictedAt.getFullYear() === today.getFullYear()
+      && predictedAt.getMonth() === today.getMonth()
+      && predictedAt.getDate() === today.getDate();
   });
+});
+const todayHourlyData = computed(() => {
+  const labels = ['00시', '04시', '08시', '12시', '16시', '20시'];
+  const data = labels.map((label) => ({ label, warning: 0, fault: 0 }));
+
+  todayPdmRecords.value.forEach((record) => {
+    const slot = Math.min(5, Math.floor(new Date(record.predictedAt).getHours() / 4));
+
+    if (record.riskLevel === '주의') data[slot].warning += 1;
+    if (record.riskLevel === '위험') data[slot].fault += 1;
+  });
+
   const maxValue = Math.max(1, ...data.flatMap((point) => [point.warning, point.fault]));
   return data.map((point) => ({
     ...point,
@@ -437,12 +455,16 @@ const todayHourlyData = computed(() => {
   }));
 });
 const todayDemoStats = computed(() => {
-  const minutes = currentTime.value.getHours() * 60 + currentTime.value.getMinutes();
+  const startOfToday = new Date(currentTime.value);
+  startOfToday.setHours(0, 0, 0, 0);
+  const elapsedFiveSecondIntervals = Math.floor(
+    (currentTime.value.getTime() - startOfToday.getTime()) / 5000,
+  );
   const warning = todayHourlyData.value.reduce((sum, point) => sum + point.warning, 0);
   const fault = todayHourlyData.value.reduce((sum, point) => sum + point.fault, 0);
   return {
-    analysis: overallCounts.value.TOTAL * Math.max(1, Math.floor(minutes / 5)),
-    saved: overallCounts.value.TOTAL * (currentTime.value.getHours() + 1) + warning + fault,
+    analysis: overallCounts.value.TOTAL * elapsedFiveSecondIntervals,
+    saved: todayPdmRecords.value.length,
     warning,
     fault,
   };
@@ -781,8 +803,12 @@ const refreshStatistics = async () => {
   const startedAt = performance.now();
 
   try {
-    const [cameraResponse, cameraPdmResponse, gateResponse, gatePdmResponse, robotResponse, robotPdmResponse] = await Promise.all([
+    const [
+      cameraResponse, cameraPdmResponse, gateResponse, gatePdmResponse, robotResponse, robotPdmResponse,
+      savedCameraResponse, savedGateResponse, savedRobotResponse,
+    ] = await Promise.all([
       getCameraList(), getLatestCameraPdm(), getGateList(), getLatestGatePdm(), getRobotList(), getLatestRobotPdm(),
+      getSavedCameraPdm(), getSavedGatePdm(), getSavedRobotPdm(),
     ]);
     const cameraPdmByNo = new Map((Array.isArray(cameraPdmResponse.data) ? cameraPdmResponse.data : []).map((item) => [Number(item.cameraNo), item]));
     const gatePdmByNo = new Map((Array.isArray(gatePdmResponse.data) ? gatePdmResponse.data : []).map((item) => [Number(item.gateNo), item]));
@@ -803,6 +829,11 @@ const refreshStatistics = async () => {
       monitoringStatus: riskLevelToStatus(robotPdmByNo.get(Number(item.robotNo))?.riskLevel),
       actionStatus: robotPdmByNo.get(Number(item.robotNo))?.actionStatus || null,
     }));
+    savedPdmRecords.value = [
+      ...(Array.isArray(savedCameraResponse.data) ? savedCameraResponse.data : []),
+      ...(Array.isArray(savedGateResponse.data) ? savedGateResponse.data : []),
+      ...(Array.isArray(savedRobotResponse.data) ? savedRobotResponse.data : []),
+    ];
     responseTime.value = Math.max(1, Math.round(performance.now() - startedAt));
     lastUpdatedAt.value = new Date();
   } catch (error) {
@@ -821,7 +852,12 @@ const refreshCurrent = (manual = false) => ({
 }[selectedEquipment.value]?.());
 
 onMounted(async () => {
-  await refreshCurrent();
+  // 탭 배지는 세 장비의 최신 상태를 함께 사용하므로, 새로고침 직후에도
+  // 미조치 위험 건수가 사라지지 않도록 전체 스냅샷을 먼저 구성한다.
+  await refreshStatistics();
+  if (selectedEquipment.value !== 'STATS') {
+    await refreshCurrent();
+  }
   pollTimer = window.setInterval(refreshCurrent, 5000);
   clockTimer = window.setInterval(() => { currentTime.value = new Date(); }, 1000);
 });
@@ -875,8 +911,11 @@ onUnmounted(() => {
 }
 
 .live-clock {
-  min-width: 176px;
-  padding: 12px 16px;
+  box-sizing: border-box;
+  width: 160px;
+  min-width: 160px;
+  height: 52px;
+  padding: 8px 14px;
   border: 1px solid #cfd5dc;
   border-radius: 8px;
   background: #fff;
@@ -888,8 +927,12 @@ onUnmounted(() => {
 }
 
 .live-clock strong {
+  width: 100%;
   color: #202833;
   font-size: 21px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .live-clock small {
@@ -1117,6 +1160,12 @@ onUnmounted(() => {
 .live-clock strong { color: #ffffff; }
 .live-clock small { color: #9da6ad; }
 
+.live-clock {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
 .header-monitor-tools {
   display: grid;
   justify-items: end;
@@ -1155,6 +1204,16 @@ onUnmounted(() => {
   line-height: 1;
 }
 
+.live-clock-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .pdm-page .equipment-tabs button.active .equipment-tab-alert {
   color: #d9535a !important;
   -webkit-text-fill-color: #d9535a !important;
@@ -1164,9 +1223,34 @@ onUnmounted(() => {
   border-top-color: #69737b;
 }
 
+.summary-card.normal { border-top-color: #76ad8d; }
+.summary-card.maintenance { border-top-color: #d8a653; }
+.summary-card.fault { border-top-color: #d9747b; }
+
 .summary-card span,
 .summary-card small {
   color: #aeb6bc;
+}
+
+/* 장비별 요약 카드는 통계 요약 카드의 타이포그래피와 간격을 그대로 따른다. */
+.summary-card {
+  min-height: 92px;
+  padding: 16px 18px;
+  gap: 4px 12px;
+}
+
+.summary-card span {
+  font-size: 12px;
+}
+
+.summary-card strong {
+  font-size: 31px;
+  line-height: 1;
+}
+
+.summary-card small {
+  font-size: 10px;
+  line-height: normal;
 }
 
 .summary-card strong { color: #f1f3f5; }
@@ -1208,8 +1292,8 @@ onUnmounted(() => {
 .camera-icon::after { border-left-color: #69737b; }
 .camera-icon i { background: #d2d7db; }
 .gate-icon {
-  width: 34px;
-  height: 28px;
+  width: 32px;
+  height: 25px;
   position: relative;
   display: inline-block;
 }
@@ -1217,7 +1301,7 @@ onUnmounted(() => {
 .gate-icon::before {
   content: '';
   width: 7px;
-  height: 25px;
+  height: 22px;
   position: absolute;
   left: 2px;
   bottom: 0;
@@ -1226,11 +1310,11 @@ onUnmounted(() => {
 }
 
 .gate-icon i {
-  width: 25px;
+  width: 23px;
   height: 5px;
   position: absolute;
   left: 7px;
-  top: 6px;
+  top: 5px;
   border-radius: 1px;
   background: repeating-linear-gradient(90deg, #d9747b 0 6px, #e1e5e8 6px 12px);
   transform: rotate(0deg);
@@ -1242,8 +1326,9 @@ onUnmounted(() => {
   transform: rotate(-55deg);
 }
 .robot-icon {
-  width: 34px;
-  height: 28px;
+  box-sizing: border-box;
+  width: 32px;
+  height: 25px;
   position: relative;
   display: inline-block;
   border: 2px solid #69737b;
@@ -1257,20 +1342,20 @@ onUnmounted(() => {
   width: 5px;
   height: 5px;
   position: absolute;
-  top: 7px;
+  top: 6px;
   border-radius: 50%;
   background: #d2d7db;
 }
 
-.robot-icon::before { left: 7px; }
-.robot-icon::after { right: 7px; }
+.robot-icon::before { left: 6px; }
+.robot-icon::after { right: 6px; }
 
 .robot-icon i {
-  width: 18px;
+  width: 16px;
   height: 3px;
   position: absolute;
   left: 6px;
-  bottom: 5px;
+  bottom: 4px;
   background: #8b949c;
 }
 .camera-card dl div {
@@ -1280,8 +1365,8 @@ onUnmounted(() => {
 
 .camera-card .equipment-info {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .equipment-info-row {
@@ -1293,7 +1378,11 @@ onUnmounted(() => {
 }
 
 .equipment-info-row dd {
+  min-width: 0;
+  overflow: hidden;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .equipment-chip-row {
@@ -1336,6 +1425,15 @@ onUnmounted(() => {
   text-align: right;
 }
 
+.camera-card .equipment-info-row {
+  grid-template-columns: max-content max-content;
+  justify-content: start !important;
+}
+
+.camera-card .equipment-info-row dd {
+  text-align: left;
+}
+
 .normal .status-badge { color: #b9dec7; background: #405b4b; }
 .fault .status-badge { color: #f2b8bc; background: #664147; }
 .maintenance .status-badge { color: #f0d39c; background: #65543a; }
@@ -1370,7 +1468,31 @@ onUnmounted(() => {
 
 /* 카메라 12대를 한눈에 볼 수 있도록 카드 밀도를 높인다. */
 .monitor-grid {
-  grid-template-columns: minmax(0, 1fr) 290px;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  align-items: start;
+}
+
+.camera-panel,
+.event-panel {
+  align-self: start;
+}
+
+.camera-panel {
+  height: auto;
+}
+
+.event-panel {
+  height: 0;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.event-panel .event-list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .camera-grid {
@@ -1390,6 +1512,38 @@ onUnmounted(() => {
 
 .camera-card > p {
   margin: 2px 0 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equipment-title-row {
+  min-width: 0;
+  margin: 6px 0 5px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.equipment-title-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #f1f3f5;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equipment-title-row p {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #9da6ad;
+  font-size: 11px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .camera-card dl {
@@ -1403,7 +1557,7 @@ onUnmounted(() => {
 
 @media (max-width: 1350px) {
   .camera-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1419,7 +1573,7 @@ onUnmounted(() => {
   .header-monitor-tools { width: 100%; justify-items: stretch; }
   .equipment-tabs { width: 100%; }
   .equipment-tabs button { flex: 1; min-width: 0; }
-  .live-clock { justify-items: start; }
+  .live-clock { justify-items: end; }
   .camera-grid { grid-template-columns: 1fr; }
 }
 .camera-card[role="button"] { cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
@@ -1477,6 +1631,7 @@ onUnmounted(() => {
 
 .pdm-page .camera-card .signal-line {
   height: 19px;
+  margin-top: 5px;
 }
 
 .pdm-page .camera-card .card-delete-button:hover {
@@ -1617,6 +1772,18 @@ onUnmounted(() => {
 }
 
 /* 데스크톱 관제 화면에서 핵심 현황이 한 화면에 들어오도록 밀도를 높인다. */
+:global(.admin-layout .content:has(.pdm-page)) {
+  padding: 10px 24px 24px;
+  background: #24292e;
+}
+
+.pdm-page {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 @media (min-width: 1001px) {
   .pdm-page { padding-bottom: 12px; }
 
@@ -1631,14 +1798,22 @@ onUnmounted(() => {
   .pdm-header p { font-size: 12px; }
   .header-monitor-tools { grid-template-columns: auto auto; align-items: center; gap: 8px; }
   .equipment-tabs button { height: 29px; min-width: 70px; padding-inline: 10px; }
-  .live-clock { min-width: 150px; padding: 7px 10px; }
+  .live-clock { width: 160px; min-width: 160px; height: 48px; padding: 5px 10px; gap: 0; justify-items: stretch; }
+  .live-clock-meta { gap: 8px; }
   .live-clock strong { font-size: 17px; }
   .live-clock small { font-size: 9px; }
 
   .stats-dashboard { gap: 8px; }
-  .stats-summary-grid { gap: 8px; }
-  .stats-summary-card { min-height: 68px; padding: 10px 13px; }
-  .stats-summary-card strong { font-size: 26px; }
+  .stats-summary-grid,
+  .summary-grid {
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .stats-summary-card,
+  .summary-card { min-height: 68px; padding: 10px 13px; gap: 4px 12px; }
+  .stats-summary-card strong,
+  .summary-card strong { font-size: 26px; }
   .stats-content-grid { gap: 8px; }
   .stats-panel { padding: 12px; }
   .stats-panel-header { min-height: 32px; margin-bottom: 9px; padding-bottom: 7px; }
@@ -1655,16 +1830,21 @@ onUnmounted(() => {
   .chart-body { height: 92px; }
 
   .summary-grid { margin-bottom: 8px; }
-  .summary-card { padding: 10px 13px; }
-  .summary-card strong { font-size: 25px; }
   .monitor-grid { gap: 8px; }
   .camera-panel,
   .event-panel { padding: 12px; }
   .panel-header { margin-bottom: 8px; padding-bottom: 7px; }
-  .camera-card { padding: 9px 10px; }
+  .camera-grid { grid-auto-rows: 112px; }
+  .camera-card { height: 100%; padding: 9px 10px; }
   .camera-card > strong { margin-top: 5px; }
   .camera-card > p { margin-bottom: 5px; }
   .equipment-chip { padding: 3px 6px; }
   .event-list { max-height: 430px; }
+}
+
+@media (max-width: 760px) {
+  :global(.admin-layout .content:has(.pdm-page)) {
+    padding: 10px 12px 16px;
+  }
 }
 </style>

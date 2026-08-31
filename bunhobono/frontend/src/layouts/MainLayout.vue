@@ -2,6 +2,7 @@
     <div class="layout"
     :class="{
         'admin-layout': route.path.startsWith('/admin'),
+        'admin-statistics-layout': route.path === '/admin/statistics',
         'resident-layout': isResidentRoute,
         'resident-menu-visible': showResidentFloatingMenu,
         'resident-welcome-layout': route.name === 'ResidentWelcome',
