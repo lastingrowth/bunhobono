@@ -1,5 +1,15 @@
 import api from '@/shared/api/apiClient';
 
+export const PDM_ACTION_COMPLETED_EVENT = 'pdm-action-completed';
+
+const completePdmAction = async (url, actionNote) => {
+  const response = await api.patch(url, { actionNote });
+  window.dispatchEvent(new CustomEvent(PDM_ACTION_COMPLETED_EVENT, {
+    detail: response.data,
+  }));
+  return response;
+};
+
 export const getSavedCameraPdm = () => api.get('/camera-pdm');
 
 export const getLatestCameraPdm = () => api.get('/camera-pdm/latest');
@@ -10,7 +20,7 @@ export const getRecentCameraPdm = (cameraNo) =>
 export const analyzeAllCameras = () => api.post('/camera-pdm/analyze-all');
 
 export const completeCameraPdmAction = (pdmNo, actionNote) =>
-  api.patch(`/camera-pdm/${pdmNo}/complete-action`, { actionNote });
+  completePdmAction(`/camera-pdm/${pdmNo}/complete-action`, actionNote);
 
 export const getSavedGatePdm = () => api.get('/gate-pdm');
 
@@ -22,7 +32,7 @@ export const getRecentGatePdm = (gateNo) =>
 export const analyzeAllGates = () => api.post('/gate-pdm/analyze-all');
 
 export const completeGatePdmAction = (pdmNo, actionNote) =>
-  api.patch(`/gate-pdm/${pdmNo}/complete-action`, { actionNote });
+  completePdmAction(`/gate-pdm/${pdmNo}/complete-action`, actionNote);
 
 export const getSavedRobotPdm = () => api.get('/robot-pdm');
 
@@ -34,4 +44,4 @@ export const getRecentRobotPdm = (robotNo) =>
 export const analyzeAllRobots = () => api.post('/robot-pdm/analyze-all');
 
 export const completeRobotPdmAction = (pdmNo, actionNote) =>
-  api.patch(`/robot-pdm/${pdmNo}/complete-action`, { actionNote });
+  completePdmAction(`/robot-pdm/${pdmNo}/complete-action`, actionNote);

@@ -65,9 +65,9 @@ public class PdmActionAuthorizationService {
             return "센서값은 관리자 페이지에서 확인할 수 있습니다.";
         }
 
-        return "센서값: " + sensorValues.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.joining(", "));
+        return "센서값\n" + sensorValues.entrySet().stream()
+                .map(entry -> "- " + entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining("\n"));
     }
 
     // 로그인한 사용자의 회원번호를 조치 담당자 번호로 반환한다.

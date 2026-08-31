@@ -459,6 +459,24 @@ textarea {
   font-weight: 500;
 }
 
+.menu-alert-count {
+  min-width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 118, 118, 0.5);
+  border-radius: 999px;
+  color: #ff7676;
+  background: rgba(193, 38, 45, 0.24);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .sidebar.collapsed .menu-item {
   padding: 10px;
   justify-content: center;
