@@ -200,6 +200,11 @@ textarea {
 
 @media (any-pointer: coarse) and (max-width: 820px),
        (any-pointer: coarse) and (max-height: 820px) {
+  /* 모바일에서는 플로팅 메뉴를 숨기므로 해당 메뉴용 44px 상단 여백도 제거한다. */
+  .resident-layout.resident-menu-visible .container {
+    padding-top: var(--header-height);
+  }
+
   .resident-layout:not(.resident-welcome-layout) .content {
     padding-bottom: calc(94px + env(safe-area-inset-bottom));
   }

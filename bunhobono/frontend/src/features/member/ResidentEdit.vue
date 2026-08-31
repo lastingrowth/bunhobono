@@ -20,12 +20,44 @@
             <tr>
                 <th>연락처</th>
                 <td>
-                    <div class="phone-fields">
-                        <input type="text" inputmode="numeric" maxlength="3" :value="phoneParts.first" @input="handlePhoneInput($event, 'first', 3)">
-                        <span>-</span>
-                        <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.middle" @input="handlePhoneInput($event, 'middle', 4)">
-                        <span>-</span>
-                        <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.last" @input="handlePhoneInput($event, 'last', 4)">
+                    <div class="phone-edit-fields">
+                        <div class="phone-input-action">
+                            <div class="phone-fields">
+                                <input type="text" inputmode="numeric" maxlength="3" :value="phoneParts.first" @input="handlePhoneInput($event, 'first', 3)">
+                                <span>-</span>
+                                <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.middle" @input="handlePhoneInput($event, 'middle', 4)">
+                                <span>-</span>
+                                <input type="text" inputmode="numeric" maxlength="4" :value="phoneParts.last" @input="handlePhoneInput($event, 'last', 4)">
+                            </div>
+                            <button
+                                type="button"
+                                class="phone-auth-button"
+                                :disabled="!phoneChanged || phoneSending || phoneVerified"
+                                @click="sendPhoneAuthCode"
+                            >
+                                {{ phoneSending ? "발송 중" : phoneVerified ? "인증 완료" : phoneCodeSent ? "재발송" : "인증번호 발송" }}
+                            </button>
+                        </div>
+                        <span v-if="phoneChanged && phoneCodeSent && !phoneVerified" class="phone-auth-guide">
+                            3분 내에 인증번호를 입력해 주세요.
+                        </span>
+                        <span v-if="phoneChanged && phoneVerified" class="phone-auth-success">전화번호 인증이 완료되었습니다.</span>
+                        <div v-if="phoneChanged && phoneCodeSent && !phoneVerified" class="phone-code-row">
+                            <div class="phone-code-input-wrap">
+                                <input
+                                    v-model="phoneAuthCode"
+                                    type="text"
+                                    inputmode="numeric"
+                                    maxlength="6"
+                                    placeholder="인증번호 6자리"
+                                    @input="handlePhoneCodeInput"
+                                >
+                                <span :class="{ expired: phoneAuthRemainingSeconds === 0 }">{{ phoneAuthTimerText }}</span>
+                            </div>
+                            <button type="button" :disabled="phoneVerifying || phoneAuthRemainingSeconds === 0" @click="verifyPhoneAuthCode">
+                                {{ phoneVerifying ? "확인 중" : "인증 확인" }}
+                            </button>
+                        </div>
                     </div>
                 </td>
             </tr>
@@ -52,6 +84,12 @@
                                 {{ emailSending ? "발송 중" : emailVerified ? "인증 완료" : emailCodeSent ? "재발송" : "인증번호 발송" }}
                             </button>
                         </div>
+                        <span
+                            v-if="emailChanged && emailCodeSent && !emailVerified"
+                            class="email-auth-guide"
+                        >
+                            3분 내에 인증번호를 입력해 주세요.
+                        </span>
                         <span v-if="emailChanged && emailVerified" class="email-auth-success">이메일 인증이 완료되었습니다.</span>
                         <div v-if="emailChanged && emailCodeSent && !emailVerified" class="email-code-row">
                             <div class="email-code-input-wrap">
@@ -143,6 +181,14 @@ const challengeAnswer = ref("");
 const challengeRemainingSeconds = ref(0);
 let challengeTimer = null;
 const phoneParts = reactive({ first: "", middle: "", last: "" });
+const originalPhone = ref("");
+const phoneAuthCode = ref("");
+const phoneCodeSent = ref(false);
+const phoneVerified = ref(false);
+const phoneSending = ref(false);
+const phoneVerifying = ref(false);
+const phoneAuthRemainingSeconds = ref(0);
+let phoneAuthTimer = null;
 const originalEmail = ref("");
 const emailAuthCode = ref("");
 const emailCodeSent = ref(false);
@@ -162,6 +208,13 @@ const challengeTimeLabel = computed(() => {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 });
 const emailChanged = computed(() => (member.email || "").trim().toLowerCase() !== originalEmail.value.trim().toLowerCase());
+const currentPhone = computed(() => `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`);
+const phoneChanged = computed(() => currentPhone.value.replace(/\D/g, "") !== originalPhone.value.replace(/\D/g, ""));
+const phoneAuthTimerText = computed(() => {
+    const minutes = Math.floor(phoneAuthRemainingSeconds.value / 60);
+    const seconds = phoneAuthRemainingSeconds.value % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+});
 const emailAuthTimerText = computed(() => {
     const minutes = Math.floor(emailAuthRemainingSeconds.value / 60);
     const seconds = emailAuthRemainingSeconds.value % 60;
@@ -206,9 +259,77 @@ onMounted(async () => {
     await store.loadMypage(loginId);
     Object.assign(member, store.member);
     member.loginPwd = "";
+    originalPhone.value = member.memPhone || "";
     originalEmail.value = member.email || "";
     setPhoneParts(member.memPhone);
 });
+
+const stopPhoneAuthTimer = () => {
+    if (phoneAuthTimer !== null) {
+        clearInterval(phoneAuthTimer);
+        phoneAuthTimer = null;
+    }
+};
+
+const startPhoneAuthTimer = () => {
+    stopPhoneAuthTimer();
+    const expiresAt = Date.now() + 3 * 60 * 1000;
+    phoneAuthRemainingSeconds.value = 180;
+    phoneAuthTimer = window.setInterval(() => {
+        phoneAuthRemainingSeconds.value = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+        if (phoneAuthRemainingSeconds.value === 0) stopPhoneAuthTimer();
+    }, 1000);
+};
+
+const resetPhoneVerification = () => {
+    phoneAuthCode.value = "";
+    phoneCodeSent.value = false;
+    phoneVerified.value = false;
+    phoneAuthRemainingSeconds.value = 0;
+    stopPhoneAuthTimer();
+};
+
+const handlePhoneCodeInput = (event) => {
+    phoneAuthCode.value = event.target.value.replace(/\D/g, "").slice(0, 6);
+    event.target.value = phoneAuthCode.value;
+};
+
+const sendPhoneAuthCode = async () => {
+    if (phoneParts.first.length !== 3 || phoneParts.middle.length !== 4 || phoneParts.last.length !== 4) {
+        await alertDialog({ theme: "resident", type: "warning", title: "연락처 확인", message: "연락처를 정확히 입력하세요." });
+        return;
+    }
+    phoneSending.value = true;
+    try {
+        await store.sendPhoneCode(currentPhone.value);
+        phoneCodeSent.value = true;
+        phoneAuthCode.value = "";
+        startPhoneAuthTimer();
+        await alertDialog({ theme: "resident", type: "success", title: "인증번호 발송", message: "연락처로 인증번호를 발송했습니다." });
+    } catch (error) {
+        await alertDialog({ theme: "resident", type: "error", title: "인증번호 발송 실패", message: error.response?.data?.message || "연락처 인증번호를 발송하지 못했습니다." });
+    } finally {
+        phoneSending.value = false;
+    }
+};
+
+const verifyPhoneAuthCode = async () => {
+    if (!/^\d{6}$/.test(phoneAuthCode.value)) {
+        await alertDialog({ theme: "resident", type: "warning", title: "인증번호 확인", message: "인증번호 6자리를 입력해 주세요." });
+        return;
+    }
+    phoneVerifying.value = true;
+    try {
+        await store.verifyPhoneCode(currentPhone.value, phoneAuthCode.value);
+        phoneVerified.value = true;
+        stopPhoneAuthTimer();
+        await alertDialog({ theme: "resident", type: "success", title: "전화번호 인증 완료", message: "전화번호가 인증되었습니다." });
+    } catch (error) {
+        await alertDialog({ theme: "resident", type: "error", title: "인증번호 확인 실패", message: error.response?.data?.message || "인증번호를 확인하지 못했습니다." });
+    } finally {
+        phoneVerifying.value = false;
+    }
+};
 
 const stopEmailAuthTimer = () => {
     if (emailAuthTimer !== null) {
@@ -290,6 +411,7 @@ const handlePhoneInput = (event, part, maxLength) => {
     const numericValue = event.target.value.replace(/\D/g, "").slice(0, maxLength);
     event.target.value = numericValue;
     phoneParts[part] = numericValue;
+    resetPhoneVerification();
 };
 
 // 허용되지 않은 문자를 제거하고 새 비밀번호를 최대 20자로 제한한다.
@@ -347,6 +469,15 @@ const update = async () => {
         return;
     }
     member.memPhone = `${phoneParts.first}-${phoneParts.middle}-${phoneParts.last}`;
+    if (phoneChanged.value && !phoneVerified.value) {
+        await alertDialog({
+            theme: "resident",
+            type: "warning",
+            title: "전화번호 인증 필요",
+            message: "변경할 전화번호의 인증을 완료해 주세요."
+        });
+        return;
+    }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email || "")) {
         await alertDialog({
@@ -466,6 +597,7 @@ const update = async () => {
 
 onBeforeUnmount(() => {
     stopChallengeTimer();
+    stopPhoneAuthTimer();
     stopEmailAuthTimer();
 });
 </script>
@@ -484,16 +616,17 @@ onBeforeUnmount(() => {
 .edit-form-area tr:nth-child(1) td,.edit-form-area tr:nth-child(5) td { color: #287fd5; font-weight: 700; }
 .edit-form-area input:focus { border-color: #45bff2; outline: 3px solid rgba(69,191,242,.16); }
 .email-input { width: min(420px, 100%); min-height: 40px; padding: 0 12px; border: 1px solid #cbd8e4; border-radius: 7px; box-sizing: border-box; color: #243f58; background: #fff; }
-.email-edit-fields { width: min(620px, 100%); display: grid; gap: 8px; }
-.email-input-action,.email-code-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.phone-edit-fields,.email-edit-fields { width: min(620px, 100%); display: grid; gap: 8px; }
+.phone-input-action,.phone-code-row,.email-input-action,.email-code-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .email-input-action .email-input { width: 100%; }
-.email-auth-button,.email-code-row button { min-height: 40px; padding: 0 13px; border: 1px solid #9fcbe6; border-radius: 7px; color: #176da8; background: #edf8fe; font-weight: 700; cursor: pointer; }
-.email-auth-button:disabled,.email-code-row button:disabled { color: #91a2af; border-color: #d7e0e6; background: #f3f5f7; cursor: not-allowed; }
-.email-auth-success { color: #24865a; font-size: 13px; font-weight: 700; }
-.email-code-input-wrap { position: relative; }
-.email-code-input-wrap input { width: 100%; min-height: 40px; padding: 0 62px 0 12px; border: 1px solid #cbd8e4; border-radius: 7px; box-sizing: border-box; }
-.email-code-input-wrap span { position: absolute; top: 50%; right: 11px; color: #287fd5; font-size: 12px; transform: translateY(-50%); }
-.email-code-input-wrap span.expired { color: #dc2626; }
+.phone-auth-button,.phone-code-row button,.email-auth-button,.email-code-row button { min-height: 40px; padding: 0 13px; border: 1px solid #9fcbe6; border-radius: 7px; color: #176da8; background: #edf8fe; font-weight: 700; cursor: pointer; }
+.phone-auth-button:disabled,.phone-code-row button:disabled,.email-auth-button:disabled,.email-code-row button:disabled { color: #91a2af; border-color: #d7e0e6; background: #f3f5f7; cursor: not-allowed; }
+.phone-auth-guide,.email-auth-guide { color: #5f7488; font-size: 13px; }
+.phone-auth-success,.email-auth-success { color: #24865a; font-size: 13px; font-weight: 700; }
+.phone-code-input-wrap,.email-code-input-wrap { position: relative; }
+.phone-code-input-wrap input,.email-code-input-wrap input { width: 100%; min-height: 40px; padding: 0 62px 0 12px; border: 1px solid #cbd8e4; border-radius: 7px; box-sizing: border-box; }
+.phone-code-input-wrap span,.email-code-input-wrap span { position: absolute; top: 50%; right: 11px; color: #287fd5; font-size: 12px; transform: translateY(-50%); }
+.phone-code-input-wrap span.expired,.email-code-input-wrap span.expired { color: #dc2626; }
 .edit-page-actions { display: flex; flex-direction: row; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 .edit-page-actions button { width: auto; min-height: 40px; padding: 8px 14px; border: 1px solid #a9c8df; border-radius: 8px; box-shadow: none; font-size: 13px; font-weight: 700; cursor: pointer; }
 .edit-page-actions .save-button { min-height: 40px; border-color: #45bff2; color: #fff; background: #45bff2; }
@@ -533,6 +666,7 @@ onBeforeUnmount(() => {
     .edit-page-actions .back-button { grid-column: 1 / -1; }
     .phone-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.25fr) auto minmax(0, 1.25fr); gap: 4px; }
     .phone-fields input { width: 100%; min-width: 0; min-height: 44px; padding: 0 4px; font-size: 16px; }
+    .phone-input-action,.phone-code-row { grid-template-columns: 1fr; }
     .password-change-fields { width: 100%; margin-top: 6px; gap: 10px; }
     .password-change-fields input { min-height: 46px; font-size: 16px; }
     .captcha-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; }

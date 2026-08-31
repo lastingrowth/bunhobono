@@ -35,14 +35,6 @@ public class BillService {
     // 일일 최대요금 계산에 사용하는 24시간의 분 단위 값
     private static final int MINUTES_PER_DAY = 1440;
 
-    // 발표 시연용: 3번 키오스크에서 지정 차량의 유료 정산 화면을 확인한다.
-    private static final int DEMO_KIOSK_NO = 3;
-    private static final Map<String, BigDecimal> DEMO_BILL_AMOUNTS = Map.of(
-            "1201", BigDecimal.valueOf(5_000),
-            "1202", BigDecimal.valueOf(10_000),
-            "1203", BigDecimal.valueOf(15_000)
-    );
-
     @Resource
     private BillMapper billMapper;
 
@@ -251,12 +243,6 @@ public class BillService {
 
         calculateBill(dto);
 
-        // 최신 계산금액이 0원이면 별도 결제 없이 완료한다.
-        if (dto.getBillAmount().compareTo(BigDecimal.ZERO) == 0) {
-            dto.setBillStatus("PAID");
-            dto.setPaidAt(LocalDateTime.now());
-        }
-
         if (billMapper.update(dto) != 1) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
@@ -342,17 +328,26 @@ public class BillService {
     }
 
     // 지난 기록으로 이동하지 않은 비입주민 정산 목록 조회
+    @Transactional
     public List<BillDTO> findAdminBillingList() {
         List<BillDTO> list = billMapper.list(new BillDTO());
 
         for (BillDTO dto : list) {
+            if ("UNPAID".equalsIgnoreCase(dto.getBillStatus()) && dto.getCarLogNo() != null) {
+                BillDTO bill = findCurrentUnpaidBill(dto.getCarLogNo());
+
+                if (bill != null && Objects.equals(bill.getBillNo(), dto.getBillNo())) {
+                    dto.setChargeMinutes(bill.getChargeMinutes());
+                    dto.setBillAmount(bill.getBillAmount());
+                }
+            }
             setExitAllowed(dto);
         }
-
         return list;
     }
 
     // 정산서 번호로 관리자 정산 상세정보 조회
+    @Transactional
     public BillDTO findAdminBillingDetail(int billNo) {
         if (billNo <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -364,6 +359,16 @@ public class BillService {
 
         if (dto == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        // 현재 연결된 미결제 정산서는 현재시각 기준으로 다시 계산한다.
+        if ("UNPAID".equalsIgnoreCase(dto.getBillStatus()) && dto.getCarLogNo() != null) {
+            BillDTO bill = findCurrentUnpaidBill(dto.getCarLogNo());
+
+            // 다른 정산서가 반환되는 비정상 상태에서는 기존 상세정보를 유지한다.
+            if (bill != null && Objects.equals(bill.getBillNo(), dto.getBillNo())) {
+                dto = bill;
+            }
         }
 
         setExitAllowed(dto);
@@ -458,12 +463,6 @@ public class BillService {
         dto.setChargeMinutes(bill.getChargeMinutes());
         dto.setBillAmount(bill.getBillAmount());
         dto.setBillStatus("UNPAID");
-
-        // 재계산된 금액이 0원이면 별도 결제 없이 완료한다.
-        if (bill.getBillAmount().compareTo(BigDecimal.ZERO) == 0) {
-            dto.setBillStatus("PAID");
-            dto.setPaidAt(now);
-        }
 
         if (billMapper.update(dto) != 1) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
@@ -626,22 +625,6 @@ public class BillService {
 
         dto.setChargeMinutes(Math.toIntExact(chargeMinutes));
         dto.setBillAmount(calculateAmount(chargeMinutes, dto));
-        applyKioskDemoAmount(dto);
-    }
-
-    // 3번 키오스크의 발표용 차량 세 대에만 고정 테스트 요금을 적용한다.
-    private void applyKioskDemoAmount(BillDTO dto) {
-        if (!Objects.equals(dto.getKioskNo(), DEMO_KIOSK_NO)) {
-            return;
-        }
-
-        String carNo = dto.getSnapshotCarNo() == null ? "" : dto.getSnapshotCarNo().trim();
-
-        DEMO_BILL_AMOUNTS.forEach((lastFourDigits, amount) -> {
-            if (carNo.endsWith(lastFourDigits)) {
-                dto.setBillAmount(amount);
-            }
-        });
     }
 
     // 과금시간에 요금 부과 단위와 일일 최대요금을 적용한다.

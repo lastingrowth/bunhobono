@@ -199,7 +199,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDialog } from '@/shared/alert/useDialog'
 import { useBillingStore } from './billingStore'
@@ -222,6 +222,9 @@ const feeRuleNoDraft = ref(null)
 
 // 활성 요금 규칙을 판별하는 기준시각
 const currentTime = ref(Date.now())
+
+// 정산 상세 자동조회 타이머
+let billingDetailTimer = null
 
 const detail = computed(() => {
   return billingStore.adminBillingDetail
@@ -403,12 +406,27 @@ const goList = () => {
 
 // 정산 상세정보와 선택 가능한 요금 규칙 목록을 조회한다.
 onMounted(async () => {
+  const billNo = Number(route.params.billNo)
+
   await Promise.all([
-    billingStore.loadAdminBillingDetail(
-      Number(route.params.billNo)
-    ),
+    billingStore.loadAdminBillingDetail(billNo),
     feeRuleStore.loadFeeRuleList()
   ])
+
+  // 수정 중이 아닌 미결제 정산서를 1분마다 다시 조회한다.
+  billingDetailTimer = window.setInterval(() => {
+    if (!isEditing.value && detail.value?.billStatus === 'UNPAID') {
+      billingStore.loadAdminBillingDetail(billNo, false)
+    }
+  }, 60000)
+})
+
+// 상세 화면을 벗어나면 자동조회 타이머를 중지한다.
+onUnmounted(() => {
+  if (billingDetailTimer !== null) {
+    window.clearInterval(billingDetailTimer)
+    billingDetailTimer = null
+  }
 })
 
 </script>

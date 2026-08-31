@@ -34,12 +34,31 @@
         v-if="bill.billStatus !== 'PAID'"
         type="button"
         class="pay-button"
-        :disabled="paymentLoading"
+        :disabled="paymentLoading || Number(bill.billAmount) <= 0"
         @click="requestPayment"
       >
-        {{ paymentLoading ? "결제창 여는 중" : "결제하기" }}
+        {{
+          paymentLoading
+            ? "결제창 여는 중"
+            : Number(bill.billAmount) <= 0
+              ? "0원 정산 대기"
+              : "결제하기"
+        }}
       </button>
-      <p v-else class="paid-message">이미 결제가 완료된 고지서입니다.</p>
+
+      <p
+        v-if="bill.billStatus === 'UNPAID' && Number(bill.billAmount) <= 0"
+        class="free-billing-guide"
+      >
+        출차 전 키오스크에서 0원 정산을 완료해주세요.
+      </p>
+
+      <p
+        v-if="bill.billStatus === 'PAID'"
+        class="paid-message"
+      >
+        이미 결제가 완료된 고지서입니다.
+      </p>
     </article>
   </section>
 </template>
@@ -126,6 +145,8 @@ const formatChargeTime = (value) => {
 .bill-card .payment-status.unpaid { color: #b55315; background: #fff0dc; }
 .bill-card .pay-button { width: 100%; min-height: 50px; margin-top: 20px; border-color: #20a4d2; color: #fff; background: linear-gradient(135deg, #2ab0db, #189acb); box-shadow: 0 9px 20px rgba(32, 164, 210, .2); }
 .bill-card .pay-button:hover { border-color: #168fbd; color: #fff; background: linear-gradient(135deg, #20a4d2, #1188b7); }
+.bill-card .pay-button:disabled { border-color: #cbd5dc; color: #71818c; background: #e8eef2; box-shadow: none; cursor: not-allowed; }
+.free-billing-guide { margin: 14px 0 0; color: #647985; text-align: center; font-weight: 700; }
 .page-state { padding: 60px; text-align: center; }.page-state.error { color: #c33; }
 .paid-message { margin: 24px 0 0; color: #087443; text-align: center; font-weight: 800; }
 @media (any-pointer: coarse) and (max-width: 820px), (any-pointer: coarse) and (max-height: 820px){.resident-bill-page{width:calc(100% - 24px)}.bill-card{padding:20px}.bill-card .bill-summary{grid-template-columns:1fr}.bill-card .amount{grid-column:auto}.resident-bill-page header{align-items:flex-start;flex-direction:column;gap:12px}}
