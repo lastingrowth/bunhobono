@@ -447,8 +447,20 @@ public class MemberService {
 
     // 마이페이지에서 연락처와 인증된 이메일을 수정하고 새 비밀번호가 있으면 암호화해 저장한다.
     public void residentMypageEdit(MemberDTO dto){
+        String currentPhone = mapper.findResidentPhone(dto.getLoginId());
+        String requestedPhone = dto.getMemPhone() == null ? "" : dto.getMemPhone().trim();
         String currentEmail = mapper.findResidentEmail(dto.getLoginId());
         String requestedEmail = dto.getEmail() == null ? "" : dto.getEmail().trim();
+
+        if (requestedPhone.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "연락처를 입력해 주세요.");
+        }
+
+        String currentPhoneDigits = currentPhone == null ? "" : currentPhone.replaceAll("\\D", "");
+        String requestedPhoneDigits = requestedPhone.replaceAll("\\D", "");
+        if (!currentPhoneDigits.equals(requestedPhoneDigits)) {
+            verificationService.consumeSignupPhoneVerification(requestedPhone);
+        }
 
         if (requestedEmail.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이메일을 입력해 주세요.");
@@ -457,6 +469,7 @@ public class MemberService {
         if (currentEmail == null || !currentEmail.trim().equalsIgnoreCase(requestedEmail)) {
             verificationService.consumeSignupEmailVerification(requestedEmail);
         }
+        dto.setMemPhone(requestedPhone);
         dto.setEmail(requestedEmail);
 
         // 새 비밀번호를 입력한 경우에만 암호화하고, 빈 값이면 기존 비밀번호를 유지한다.
