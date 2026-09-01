@@ -72,7 +72,7 @@
             class="status"
             :class="item.status.toLowerCase()"
           >
-            {{ statusText(item.status) }}
+            <span>답변</span><span class="status-result">{{ item.status === "ANSWERED" ? "완료" : "대기" }}</span>
           </span>
 
           <time>{{ dateText(item.createdAt) }}</time>
@@ -145,7 +145,7 @@
           class="status"
           :class="store.inquiry.status.toLowerCase()"
         >
-          {{ statusText(store.inquiry.status) }}
+          {{ store.inquiry.status === "ANSWERED" ? "답변 완료" : "답변 대기" }}
         </span>
       </div>
 
@@ -307,11 +307,6 @@ const categoryText = (category) => {
 
   return categories[category] ?? category;
 };
-
-const statusText = (status) =>
-  status === "ANSWERED"
-    ? "답변 완료"
-    : "답변 대기";
 
 const dateText = (value) => {
   if (!value) {
@@ -532,6 +527,11 @@ button:disabled {
 
 .status {
   font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-result::before {
+  content: " ";
 }
 
 .status.waiting {
@@ -624,6 +624,8 @@ button:disabled {
     grid-column: 2;
   }
   .inquiry-row .title { white-space: normal; overflow-wrap: anywhere; }
+  .status > span { display: block; }
+  .status-result::before { content: none; }
   .inquiry-form { padding: 16px 12px; }
   .inquiry-form input,
   .inquiry-form select,
