@@ -1,0 +1,14 @@
+package api.parking_space_p;
+import org.junit.jupiter.api.*; import org.springframework.test.util.ReflectionTestUtils; import java.util.List;
+import static org.assertj.core.api.Assertions.*; import static org.mockito.Mockito.*;
+class ParkingSpaceServiceTest {
+ @Test @DisplayName("UT-BE-PARKINGSPACE-001 주차면 목록을 조회한다") void list(){ ParkingSpaceMapper m=mock(ParkingSpaceMapper.class); ParkingSpaceService s=service(m); List<ParkingSpaceDTO>x=List.of(new ParkingSpaceDTO()); when(m.list("B1")).thenReturn(x); assertThat(s.list("B1")).isSameAs(x); }
+ @Test @DisplayName("UT-BE-PARKINGSPACE-002 빈 대기면을 조회한다") void waiting(){ ParkingSpaceMapper m=mock(ParkingSpaceMapper.class); ParkingSpaceService s=service(m); ParkingSpaceDTO x=new ParkingSpaceDTO(); when(m.findEmptyWaitingSpace(1,"ENTRY_WAIT")).thenReturn(x); assertThat(s.findEmptyWaitingSpace(1,"ENTRY_WAIT")).isSameAs(x); }
+ @Test @DisplayName("UT-BE-PARKINGSPACE-003 빈 주차면을 조회한다") void empty(){ ParkingSpaceMapper m=mock(ParkingSpaceMapper.class); ParkingSpaceService s=service(m); ParkingSpaceDTO x=new ParkingSpaceDTO(); when(m.findEmptyParkingSpace(2,1)).thenReturn(x); assertThat(s.findEmptyParkingSpace(2,1)).isSameAs(x); }
+ @Test @DisplayName("UT-BE-PARKINGSPACE-004 차량기록의 현재 위치를 조회한다") void byLog(){ ParkingSpaceMapper m=mock(ParkingSpaceMapper.class); ParkingSpaceService s=service(m); ParkingSpaceDTO x=new ParkingSpaceDTO(); when(m.findByCarLogNo(10)).thenReturn(x); assertThat(s.findByCarLogNo(10)).isSameAs(x); }
+ @Test @DisplayName("UT-BE-PARKINGSPACE-005 시간 초과 출차대기 차량을 조회한다") void timedOut(){ ParkingSpaceMapper m=mock(ParkingSpaceMapper.class); ParkingSpaceService s=service(m); List<Integer>x=List.of(10); when(m.findTimedOutExitWaitCarLogNos()).thenReturn(x); assertThat(s.findTimedOutExitWaitCarLogNos()).isSameAs(x); }
+ @Test @DisplayName("UT-BE-PARKINGSPACE-006 주차면에 차량을 배정한다") void assign(){ ParkingSpaceMapper m=mock(ParkingSpaceMapper.class); ParkingSpaceService s=service(m); when(m.assignCarLog(3L,10)).thenReturn(1); assertThat(s.assignCarLog(3L,10)).isEqualTo(1); verify(m).assignCarLog(3L,10); }
+ @Test @DisplayName("UT-BE-PARKINGSPACE-007 주차면에서 차량을 해제한다") void release(){ ParkingSpaceMapper m=mock(ParkingSpaceMapper.class); ParkingSpaceService s=service(m); when(m.releaseCarLog(3L,10)).thenReturn(1); assertThat(s.releaseCarLog(3L,10)).isEqualTo(1); verify(m).releaseCarLog(3L,10); }
+ @Test @DisplayName("UT-BE-PARKINGSPACE-008 입주민 차량 위치를 조회한다") void mine(){ ParkingSpaceMapper m=mock(ParkingSpaceMapper.class); ParkingSpaceService s=service(m); List<ParkingSpaceDTO>x=List.of(new ParkingSpaceDTO()); when(m.myVehicleLocations("user")).thenReturn(x); assertThat(s.myVehicleLocations("user")).isSameAs(x); }
+ private ParkingSpaceService service(ParkingSpaceMapper m){ ParkingSpaceService s=new ParkingSpaceService(); ReflectionTestUtils.setField(s,"parkingSpaceMapper",m); return s; }
+}

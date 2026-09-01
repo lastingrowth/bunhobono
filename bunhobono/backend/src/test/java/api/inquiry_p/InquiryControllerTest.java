@@ -1,0 +1,12 @@
+package api.inquiry_p;
+import org.junit.jupiter.api.*; import org.junit.jupiter.api.extension.ExtendWith; import org.mockito.*; import org.mockito.junit.jupiter.MockitoExtension; import org.springframework.security.core.Authentication; import java.util.List; import static org.assertj.core.api.Assertions.*; import static org.mockito.Mockito.*;
+@ExtendWith(MockitoExtension.class) class InquiryControllerTest { @Mock InquiryService service; @Mock Authentication auth; @InjectMocks InquiryController controller; @BeforeEach void login(){ lenient().when(auth.getName()).thenReturn("user"); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-001 입주민 문의를 등록한다") void insert(){ InquiryDTO d=new InquiryDTO(); when(service.insert(d,"user")).thenReturn(1); assertThat(controller.insert(auth,d)).isEqualTo(1); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-002 입주민 문의 목록을 조회한다") void memberList(){ List<InquiryDTO>x=List.of(); when(service.listByMember("user")).thenReturn(x); assertThat(controller.listByMember(auth)).isSameAs(x); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-003 입주민 문의 상세를 조회한다") void memberDetail(){ InquiryDTO x=new InquiryDTO(); when(service.detailByMember(1,"user")).thenReturn(x); assertThat(controller.detailByMember(auth,1)).isSameAs(x); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-004 입주민이 재문의한다") void reInquiry(){ InquiryDTO d=new InquiryDTO(); when(service.reInquiry(1,d,"user")).thenReturn(1); assertThat(controller.reInquiry(auth,1,d)).isEqualTo(1); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-005 관리자가 상태별 문의 목록을 조회한다") void adminList(){ List<InquiryDTO>x=List.of(); when(service.listByStatus("WAITING","user")).thenReturn(x); assertThat(controller.listByStatus(auth,"WAITING")).isSameAs(x); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-006 관리자가 문의 상세를 조회한다") void adminDetail(){ InquiryDTO x=new InquiryDTO(); when(service.detailByAdmin(1,"user")).thenReturn(x); assertThat(controller.detailByAdmin(auth,1)).isSameAs(x); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-007 관리자가 문의에 답변한다") void answer(){ InquiryDTO d=new InquiryDTO(); when(service.answer(1,d,"user")).thenReturn(1); assertThat(controller.answer(auth,1,d)).isEqualTo(1); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-008 관리자가 문의를 삭제한다") void adminDelete(){ when(service.deleteByAdmin(1,"user")).thenReturn(1); assertThat(controller.deleteByAdmin(auth,1)).isEqualTo(1); }
+ @Test @DisplayName("UT-BE-INQUIRY-CTRL-009 입주민이 본인 문의를 삭제한다") void memberDelete(){ when(service.deleteByMember(1,"user")).thenReturn(1); assertThat(controller.deleteByMember(auth,1)).isEqualTo(1); } }

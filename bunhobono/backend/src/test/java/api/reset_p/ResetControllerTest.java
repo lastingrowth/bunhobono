@@ -1,0 +1,2 @@
+package api.reset_p; import org.junit.jupiter.api.*; import java.util.Map; import static org.assertj.core.api.Assertions.*; import static org.mockito.Mockito.*;
+class ResetControllerTest { @Test @DisplayName("UT-BE-RESET-CTRL-001 시연 데이터를 초기화하고 성공 응답을 반환한다") void reset(){ ResetService s=mock(ResetService.class); ResetController controller=new ResetController(s); var response=controller.resetDemo(); verify(s).resetDemo(); assertThat(response.getStatusCode().value()).isEqualTo(200); assertThat(response.getBody()).containsEntry("success",true); } }

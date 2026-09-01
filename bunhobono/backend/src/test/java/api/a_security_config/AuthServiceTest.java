@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,5 +36,16 @@ class AuthServiceTest {
         // Assert
         assertSame(expected, actual);
         verify(authMapper).findByLoginId("resident01");
+    }
+
+    @Test
+    @DisplayName("UT-BE-ASECURITY-010 | 존재하지 않는 로그인 ID 조회 결과를 null로 반환한다")
+    void getUserInfo_returnsNullWhenMemberDoesNotExist() {
+        AuthMapper authMapper = mock(AuthMapper.class);
+        AuthService authService = new AuthService();
+        authService.authMapper = authMapper;
+        when(authMapper.findByLoginId("missing")).thenReturn(null);
+        assertNull(authService.getUserInfo("missing"));
+        verify(authMapper).findByLoginId("missing");
     }
 }
