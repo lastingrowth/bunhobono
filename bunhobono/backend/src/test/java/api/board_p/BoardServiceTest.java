@@ -22,6 +22,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -422,6 +423,35 @@ class BoardServiceTest {
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
     }
+
+    @Test @DisplayName("UT-BE-BOARD-017 | 이미지가 등록되지 않은 공지의 이미지 조회를 거부한다")
+    void image_rejectsBoardWithoutImage() { when(mapper.detail(1)).thenReturn(new BoardDTO()); assertStatus(HttpStatus.NOT_FOUND, () -> boardService.image(1,false)); }
+
+    @Test @DisplayName("UT-BE-BOARD-018 | 업로드 폴더 밖의 이미지 경로를 거부한다")
+    void image_rejectsUnsafePath() { BoardDTO board=new BoardDTO(); board.setImagePath(temporaryDirectory.getParent().resolve("outside.png").toString()); when(mapper.detail(1)).thenReturn(board); assertStatus(HttpStatus.BAD_REQUEST, () -> boardService.image(1,false)); }
+
+    @Test @DisplayName("UT-BE-BOARD-019 | 이미지 제거 요청은 기존 파일 정보를 비우고 파일을 삭제한다")
+    void update_removesExistingImage() throws Exception { Path old=temporaryDirectory.resolve("old.png"); Files.writeString(old,"image"); BoardDTO before=validBoard(); before.setImagePath(old.toString()); before.setImageName("old.png"); before.setImageType("image/png"); before.setHasImage(true); BoardDTO request=validBoard(); request.setRemoveImage(true); BoardDTO saved=validBoard(); when(mapper.detail(1)).thenReturn(before,saved); when(mapper.update(request)).thenReturn(1); boardService.update(1,request,null); assertFalse(Files.exists(old)); assertNull(request.getImagePath()); assertFalse(request.getHasImage()); }
+
+    @Test @DisplayName("UT-BE-BOARD-020 | 공지 수정 대상이 사라지면 찾을 수 없음으로 처리한다")
+    void update_rejectsFailedMapperUpdate() { when(mapper.detail(1)).thenReturn(validBoard()); when(mapper.update(any())).thenReturn(0); assertStatus(HttpStatus.NOT_FOUND, () -> boardService.update(1,validBoard(),null)); }
+
+    @Test @DisplayName("UT-BE-BOARD-021 | 공지 삭제 실패를 찾을 수 없음으로 처리한다")
+    void delete_rejectsFailedMapperDelete() { when(mapper.detail(1)).thenReturn(new BoardDTO()); when(mapper.delete(1)).thenReturn(0); assertStatus(HttpStatus.NOT_FOUND, () -> boardService.delete(1)); verify(mapper).deleteCommentsByBoardNo(1); }
+
+    @Test @DisplayName("UT-BE-BOARD-022 | 저장된 댓글 작성자 이름을 반환한다")
+    void commentWriterName_returnsSavedName() { when(mapper.findCommentWriterName("user")).thenReturn("김입주"); assertEquals("김입주",boardService.commentWriterName("user")); }
+
+    @Test @DisplayName("UT-BE-BOARD-023 | 다른 공지의 댓글을 부모로 지정한 대댓글을 거부한다")
+    void createComment_rejectsParentFromOtherBoard() { when(mapper.detail(1)).thenReturn(new BoardDTO()); BoardDTO parent=comment(2,null); parent.setBoardNo(9); when(mapper.findComment(2)).thenReturn(parent); BoardDTO request=comment(0,2); request.setCommentContent("답글"); assertStatus(HttpStatus.BAD_REQUEST, () -> boardService.createComment(1,request,"user")); verify(mapper,never()).insertComment(any(Integer.class),any(),any()); }
+
+    @Test @DisplayName("UT-BE-BOARD-024 | 빈 댓글 등록과 수정 요청을 거부한다")
+    void commentWrites_rejectBlankContent() { when(mapper.detail(1)).thenReturn(new BoardDTO()); BoardDTO blank=new BoardDTO(); blank.setCommentContent(" "); assertStatus(HttpStatus.BAD_REQUEST, () -> boardService.createComment(1,blank,"user")); assertStatus(HttpStatus.BAD_REQUEST, () -> boardService.updateComment(1,2,blank,"user")); }
+
+    @Test @DisplayName("UT-BE-BOARD-025 | 관리자 댓글 트리 삭제를 매퍼에 위임한다")
+    void deleteComment_delegatesAdminFlag() { when(mapper.deleteCommentTree(1,2,"admin",true)).thenReturn(2); boardService.deleteComment(1,2,"admin",true); verify(mapper).deleteCommentTree(1,2,"admin",true); }
+
+    private void assertStatus(HttpStatus status, Runnable action) { ResponseStatusException exception=assertThrows(ResponseStatusException.class,action::run); assertEquals(status,exception.getStatusCode()); }
 
     private static BoardDTO validBoard() {
         BoardDTO board = new BoardDTO();

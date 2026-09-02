@@ -36,6 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -457,6 +460,48 @@ class BillServiceTest {
         verify(trashService).moveBill(1, "SCHEDULED");
         verify(trashService, never()).moveBill(2, "SCHEDULED");
     }
+
+    @Test @DisplayName("UT-BE-BILL-018 | 존재하지 않는 키오스크의 정산서 검색을 거부한다")
+    void findParkingBills_rejectsMissingKiosk() { assertStatus(HttpStatus.NOT_FOUND, () -> billService.findParkingBills("1234", 9)); verify(kioskService).findByKioskNo(9); verifyNoMoreInteractions(billMapper); }
+
+    @Test @DisplayName("UT-BE-BILL-019 | 현재 주차 정산서가 없으면 찾을 수 없음으로 처리한다")
+    void findParkingBills_rejectsMissingCurrentBill() { KioskDTO k=new KioskDTO(); k.setParkingNo(1); when(kioskService.findByKioskNo(1)).thenReturn(k); when(billMapper.list(any())).thenReturn(List.of()); assertStatus(HttpStatus.NOT_FOUND, () -> billService.findParkingBills("1234",1)); }
+
+    @Test @DisplayName("UT-BE-BILL-020 | 무료 미결제 정산서를 계산해 결제완료로 저장한다")
+    void createOrRefreshBill_completesFreeBill() { KioskDTO k=new KioskDTO(); k.setParkingNo(1); when(kioskService.findByKioskNo(1)).thenReturn(k); BillDTO b=calculableBill(); b.setParkingNo(1); b.setSnapshotCarNo("12가1234"); b.setSnapshotCarLogNo(10); when(billMapper.list(any())).thenReturn(List.of(b)); when(billMapper.update(b)).thenReturn(1); when(billMapper.detail(b)).thenReturn(b); assertSame(b,billService.createOrRefreshBill("12가1234",1)); assertEquals("PAID",b.getBillStatus()); verify(billMapper).update(b); }
+
+    @Test @DisplayName("UT-BE-BILL-021 | 입주민 정산서 요청의 번호와 로그인 ID를 검증한다")
+    void findResidentBill_rejectsInvalidIdentity() { assertStatus(HttpStatus.BAD_REQUEST, () -> billService.findResidentBill(0,"user")); assertStatus(HttpStatus.UNAUTHORIZED, () -> billService.findResidentBill(1," ")); }
+
+    @Test @DisplayName("UT-BE-BILL-022 | 입주민 소유의 미결제 정산서를 다시 계산해 저장한다")
+    void findResidentBill_refreshesUnpaidBill() { BillDTO b=calculableBill(); b.setMemberNo(3); b.setCarKind("VISIT"); MemberDTO m=new MemberDTO(); m.setMemberNo(3); when(billMapper.detail(any())).thenReturn(b); when(memberService.residentMypage("user")).thenReturn(m); when(billMapper.update(b)).thenReturn(1); assertSame(b,billService.findResidentBill(1,"user")); verify(billMapper).update(b); }
+
+    @Test @DisplayName("UT-BE-BILL-023 | 필수 결제 승인정보가 없으면 요청을 거부한다")
+    void confirmPayment_rejectsIncompleteRequest() { assertStatus(HttpStatus.BAD_REQUEST, () -> billService.confirmPayment(null)); assertStatus(HttpStatus.BAD_REQUEST, () -> billService.confirmPayment(new BillDTO())); verifyNoInteractions(billMapper); }
+
+    @Test @DisplayName("UT-BE-BILL-024 | 저장된 결제 주문이 없으면 찾을 수 없음으로 처리한다")
+    void confirmPayment_rejectsMissingOrder() { BillDTO request=paymentRequest("key","order","1000"); when(billMapper.detail(request)).thenReturn(null); assertStatus(HttpStatus.NOT_FOUND, () -> billService.confirmPayment(request)); }
+
+    @Test @DisplayName("UT-BE-BILL-025 | 결제된 주문에 다른 결제키가 들어오면 충돌로 처리한다")
+    void confirmPayment_rejectsDifferentKeyForPaidBill() { BillDTO request=paymentRequest("new","order","1000"); BillDTO saved=paymentRequest("old","order","1000"); saved.setBillStatus("PAID"); when(billMapper.detail(request)).thenReturn(saved); assertStatus(HttpStatus.CONFLICT, () -> billService.confirmPayment(request)); }
+
+    @Test @DisplayName("UT-BE-BILL-026 | 관리자 정산 상세 번호가 0 이하면 거부한다")
+    void findAdminBillingDetail_rejectsInvalidNumber() { assertStatus(HttpStatus.BAD_REQUEST, () -> billService.findAdminBillingDetail(0)); verifyNoInteractions(billMapper); }
+
+    @Test @DisplayName("UT-BE-BILL-027 | 잘못된 입출차 번호와 미결제 정산서 부재는 null을 반환한다")
+    void findCurrentUnpaidBill_returnsNull() { assertNull(billService.findCurrentUnpaidBill(0)); when(billMapper.list(any())).thenReturn(List.of()); assertNull(billService.findCurrentUnpaidBill(10)); }
+
+    @Test @DisplayName("UT-BE-BILL-028 | 관리자 변경 요금규칙과 무료시간으로 미결제 정산서를 갱신한다")
+    void updateAdminBilling_updatesCalculatedValues() { BillDTO saved=calculableBill(); saved.setBillNo(1); saved.setCarLogNo(10); when(billMapper.detail(any())).thenReturn(saved); when(billMapper.list(any())).thenReturn(List.of()); FeeRuleDTO rule=new FeeRuleDTO(); rule.setFeeRuleNo(2); rule.setEffectiveFrom(LocalDateTime.now().minusDays(1)); rule.setUnitMinutes(10); rule.setUnitFee(BigDecimal.valueOf(1000)); when(feeRuleService.detail(2)).thenReturn(rule); when(carLogMapper.updateFreeTime(any())).thenReturn(1); when(billMapper.update(any())).thenReturn(1); BillDTO request=new BillDTO(); request.setFreeTime(30); request.setFeeRuleNo(2); assertSame(saved,billService.updateAdminBilling(1,request)); verify(carLogMapper).updateFreeTime(argThat(c -> c.getCarLogNo()==10 && c.getFreeTime()==30)); assertEquals("UNPAID",request.getBillStatus()); }
+
+    @Test @DisplayName("UT-BE-BILL-029 | 출차 허용 확인의 필수값과 미결제 상태를 거부한다")
+    void isExitAllowed_rejectsInvalidOrUnpaid() { assertFalse(billService.isExitAllowed(0,LocalDateTime.now())); assertFalse(billService.isExitAllowed(1,null)); BillDTO unpaid=new BillDTO(); unpaid.setBillStatus("UNPAID"); when(billMapper.list(any())).thenReturn(List.of(unpaid)); assertFalse(billService.isExitAllowed(1,LocalDateTime.now())); }
+
+    @Test @DisplayName("UT-BE-BILL-030 | 잘못된 번호와 미완료 정산서의 지난 기록 이동을 거부한다")
+    void moveAdminBillingToTrash_rejectsInvalidMove() { assertStatus(HttpStatus.BAD_REQUEST, () -> billService.moveAdminBillingToTrash(0)); doThrow(new IllegalArgumentException()).when(trashService).moveBill(2,"MANUAL"); assertStatus(HttpStatus.CONFLICT, () -> billService.moveAdminBillingToTrash(2)); }
+
+    private BillDTO calculableBill() { BillDTO b=new BillDTO(); b.setBillNo(1); b.setCarLogNo(10); b.setBillStatus("UNPAID"); b.setInTime(LocalDateTime.now().plusMinutes(1)); b.setFreeTime(0); b.setUnitMinutes(10); b.setUnitFee(BigDecimal.valueOf(1000)); return b; }
+    private void assertStatus(HttpStatus status, Runnable action) { ResponseStatusException e=assertThrows(ResponseStatusException.class,action::run); assertEquals(status,e.getStatusCode()); }
 
     private static Stream<Arguments> invalidParkingBillSearchInputs() {
         return Stream.of(

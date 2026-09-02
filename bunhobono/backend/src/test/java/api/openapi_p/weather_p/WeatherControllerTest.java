@@ -1,0 +1,2 @@
+package api.openapi_p.weather_p; import org.junit.jupiter.api.*; import org.junit.jupiter.api.extension.ExtendWith; import org.mockito.*; import org.mockito.junit.jupiter.MockitoExtension; import static org.assertj.core.api.Assertions.*; import static org.mockito.Mockito.*;
+@ExtendWith(MockitoExtension.class) class WeatherControllerTest { @Mock WeatherService service; @InjectMocks WeatherController controller; @Test @DisplayName("UT-BE-WEATHER-CTRL-001 현재 날씨 JSON을 반환한다") void today(){ when(service.today()).thenReturn("{}"); assertThat(controller.today()).isEqualTo("{}"); } }
