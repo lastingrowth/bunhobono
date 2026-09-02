@@ -52,42 +52,42 @@ TEST_STREAMS = [
     },
     {
         "videoName": "cctv5",
-        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "source": str(VIDEO_DIR / "cctv2-b1.mp4"),
         "cameras": [{"cameraNo": 5, "name": "B1-IN-1"}],
     },
     {
         "videoName": "cctv6",
-        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "source": str(VIDEO_DIR / "cctv2-b1.mp4"),
         "cameras": [{"cameraNo": 6, "name": "B1-OUT-1"}],
     },
     {
         "videoName": "cctv7",
-        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "source": str(VIDEO_DIR / "cctv4-b1.mp4"),
         "cameras": [{"cameraNo": 7, "name": "B1-IN-2"}],
     },
     {
         "videoName": "cctv8",
-        "source": str(VIDEO_DIR / "cctv2.mp4"),
+        "source": str(VIDEO_DIR / "cctv4-b1.mp4"),
         "cameras": [{"cameraNo": 8, "name": "B1-OUT-2"}],
     },
     {
         "videoName": "cctv9",
-        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "source": str(VIDEO_DIR / "cctv2-b2.mp4"),
         "cameras": [{"cameraNo": 9, "name": "B2-IN-1"}],
     },
     {
         "videoName": "cctv10",
-        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "source": str(VIDEO_DIR / "cctv2-b2.mp4"),
         "cameras": [{"cameraNo": 10, "name": "B2-OUT-1"}],
     },
     {
         "videoName": "cctv11",
-        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "source": str(VIDEO_DIR / "cctv4-b2.mp4"),
         "cameras": [{"cameraNo": 11, "name": "B2-IN-2"}],
     },
     {
         "videoName": "cctv12",
-        "source": str(VIDEO_DIR / "cctv4.mp4"),
+        "source": str(VIDEO_DIR / "cctv4-b2.mp4"),
         "cameras": [{"cameraNo": 12, "name": "B2-OUT-2"}],
     },
 ]
@@ -107,10 +107,9 @@ LOW_LIGHT_BRIGHTNESS = 1.0
 SUNNY_CAMERA_NOS = set()
 SUNNY_CONTRAST = 1.0
 SUNNY_BRIGHTNESS = 0
-# cctv4.mp4 has a white strip at the top of the source video.  The camera
-# mapping was expanded from 8 to 12 cameras, so keep this list aligned with
-# every camera that now reuses that source.
-TOP_PADDED_CAMERA_NOS = {3, 4, 9, 10, 11, 12}
+# cctv4 계열 영상은 원본 상단에 흰 여백이 포함되어 있다.
+# OCR에는 원본 프레임을 사용하고 브라우저 출력에서만 해당 영역을 자른다.
+TOP_PADDED_CAMERA_NOS = {3, 4, 7, 8, 11, 12}
 DISPLAY_TOP_CROP_RATIO = 0.08
 
 
@@ -252,21 +251,16 @@ class TestStreamWorker:
             return self.thread
 
     def add_viewer(self):
-        should_restart = False
-
         with self.viewer_lock:
             self.viewer_count += 1
-            should_restart = self.video_finished
             if (
                 self.viewer_count == 1
                 and not self.demo_reset_paused
+                and not self.video_finished
             ):
                 self.pause_event.clear()
                 self.auto_paused = False
                 self.pause_reason = None
-
-        if should_restart:
-            self.start()
 
     def remove_viewer(self):
         with self.viewer_lock:
@@ -389,8 +383,10 @@ class TestStreamWorker:
                 break
 
             self.video_finished = True
+            self.auto_paused = True
+            self.pause_reason = "VIDEO_FINISHED"
             self.pause_event.set()
-            print(f"[{self.camera_name}] playback finished")
+            print(f"[{self.camera_name}] 영상 종료: 마지막 프레임에서 일시정지")
             break
 
     def run_video_once(self):
@@ -435,7 +431,7 @@ class TestStreamWorker:
                 success, frame = cap.read()
 
                 if not success:
-                    print(f"[{self.camera_name}] 영상 종료 후 반복")
+                    print(f"[{self.camera_name}] 영상 재생 완료")
                     break
 
                 frame = self.apply_camera_environment(frame)

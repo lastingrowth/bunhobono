@@ -92,14 +92,13 @@
 
                         <div class="parking-video-box">
                             <img
-                                v-if="hasStreamSession(panel.cameraNo) && !isCameraFinished(panel.cameraNo)"
+                                v-if="hasStreamSession(panel.cameraNo)"
                                 class="parking-stream"
                                 :src="getStreamUrl(panel.cameraNo)"
                                 :alt="`${panel.panelName} ${panel.modeText} CCTV`" />
 
                             <div v-else class="parking-video-placeholder">
-                                <strong v-if="isCameraFinished(panel.cameraNo)">영상 재생이 끝났습니다</strong>
-                                <strong v-else>{{ panel.modeText }}</strong>
+                                <strong>{{ panel.modeText }}</strong>
 
                                 <span
                                     v-if="panel.gate"
@@ -113,14 +112,14 @@
                                 </span>
 
                                 <small>
-                                    CCTV {{ panel.cameraNo }} · {{ isCameraFinished(panel.cameraNo) ? 'END OF VIDEO' : '재생 대기' }}
+                                    CCTV {{ panel.cameraNo }} · 재생 대기
                                 </small>
                             </div>
 
                             <div class="cctv-overlay">
                                 <div class="cctv-overlay-top">
                                     <span class="cctv-live" :class="{ paused: !isCameraPlaying(panel.cameraNo) }">
-                                        <i></i>{{ isCameraPlaying(panel.cameraNo) ? 'REC' : (isCameraFinished(panel.cameraNo) ? 'ENDED' : 'STANDBY') }}
+                                        <i></i>{{ isCameraPlaying(panel.cameraNo) ? 'REC' : (isCameraFinished(panel.cameraNo) ? 'PAUSED' : 'STANDBY') }}
                                     </span>
                                     <div class="cctv-camera-mode-group">
                                         <button
@@ -211,7 +210,7 @@
                                 type="button"
                                 class="camera-play-button"
                                 @click.stop="toggleStream(panel)">
-                                {{ isCameraPlaying(panel.cameraNo) ? '일시정지' : (isCameraFinished(panel.cameraNo) ? '다시 재생' : '재생') }}
+                                {{ isCameraPlaying(panel.cameraNo) ? '일시정지' : (isCameraFinished(panel.cameraNo) ? '처음부터 재생' : '재생') }}
                             </button>
 
                         </div>
@@ -584,20 +583,16 @@
 
                 <div class="parking-dialog-video">
                     <img
-                        v-if="isCameraPlaying(selectedParkingPanel.cameraNo)"
+                        v-if="hasStreamSession(selectedParkingPanel.cameraNo)"
                         class="parking-stream"
                         :src="getStreamUrl(selectedParkingPanel.cameraNo)"
                         :alt="`${selectedParkingPanel.panelName} ${selectedParkingPanel.modeText} CCTV`" />
 
                     <div v-else class="parking-video-placeholder">
-                        <strong>
-                            {{ isCameraFinished(selectedParkingPanel.cameraNo)
-                                ? '영상 재생이 끝났습니다'
-                                : selectedParkingPanel.modeText }}
-                        </strong>
+                        <strong>{{ selectedParkingPanel.modeText }}</strong>
                         <small>
                             CCTV {{ selectedParkingPanel.cameraNo }} ·
-                            {{ isCameraFinished(selectedParkingPanel.cameraNo) ? 'END OF VIDEO' : '재생 대기' }}
+                            재생 대기
                         </small>
 
                         <span
@@ -615,7 +610,7 @@
                     <div class="cctv-overlay dialog-overlay" aria-hidden="true">
                         <div class="cctv-overlay-top">
                             <span class="cctv-live" :class="{ paused: !isCameraPlaying(selectedParkingPanel.cameraNo) }">
-                                <i></i>{{ isCameraPlaying(selectedParkingPanel.cameraNo) ? 'REC' : (isCameraFinished(selectedParkingPanel.cameraNo) ? 'ENDED' : 'STANDBY') }}
+                                <i></i>{{ isCameraPlaying(selectedParkingPanel.cameraNo) ? 'REC' : (isCameraFinished(selectedParkingPanel.cameraNo) ? 'PAUSED' : 'STANDBY') }}
                             </span>
                             <span>CAM {{ String(selectedParkingPanel.cameraNo).padStart(2, '0') }}</span>
                         </div>
@@ -705,7 +700,7 @@
                         @click="toggleStream(selectedParkingPanel)">
                         {{ isCameraPlaying(selectedParkingPanel.cameraNo)
                             ? '일시정지'
-                            : (isCameraFinished(selectedParkingPanel.cameraNo) ? '다시 재생' : '재생') }}
+                            : (isCameraFinished(selectedParkingPanel.cameraNo) ? '처음부터 재생' : '재생') }}
                     </button>
 
                 </div>
