@@ -55,8 +55,34 @@ class MemberServiceTest {
 
  @Test @DisplayName("UT-BE-MEMBER-029 마이페이지 회원의 비밀번호를 숨기고 미존재 시 null을 반환한다") void mypage(){ MemberDTO d=new MemberDTO(); d.setLoginPwd("secret"); when(mapper.residentMypage("user")).thenReturn(d); assertThat(service.residentMypage("user").getLoginPwd()).isNull(); when(mapper.residentMypage("none")).thenReturn(null); assertThat(service.residentMypage("none")).isNull(); }
  @Test @DisplayName("UT-BE-MEMBER-030 대시보드에 회원·차량·입출차를 집계한다") void dashboard(){ MemberDTO d=new MemberDTO(); List<MemberDTO.ResidentVehicle> v=List.of(new MemberDTO.ResidentVehicle()); List<MemberDTO.ResidentCarLog> l=List.of(new MemberDTO.ResidentCarLog()); when(mapper.residentMypage("user")).thenReturn(d); when(mapper.residentVehicles("user")).thenReturn(v); when(mapper.residentCarLogs("user")).thenReturn(l); MemberDTO.ResidentDashboard result=service.residentDashboard("user"); assertThat(result.getMember()).isSameAs(d); assertThat(result.getVehicles()).isSameAs(v); assertThat(result.getRecentCarLogs()).isSameAs(l); }
- @Test @DisplayName("UT-BE-MEMBER-031 마이페이지의 변경 이메일을 인증하고 새 비밀번호를 암호화한다") void editMypage(){ MemberDTO d=new MemberDTO(); d.setLoginId("user"); d.setEmail(" new@a.com "); d.setLoginPwd("new"); when(mapper.findResidentEmail("user")).thenReturn("old@a.com"); when(passwordEncoder.encode("new")).thenReturn("enc"); service.residentMypageEdit(d); assertThat(d.getEmail()).isEqualTo("new@a.com"); assertThat(d.getLoginPwd()).isEqualTo("enc"); verify(verificationService).consumeSignupEmailVerification("new@a.com"); }
- @Test @DisplayName("UT-BE-MEMBER-032 같은 이메일과 빈 비밀번호는 재인증·암호화하지 않으며 빈 이메일은 거부한다") void editMypageBoundaries(){ MemberDTO same=new MemberDTO(); same.setLoginId("user"); same.setEmail(" USER@A.COM "); same.setLoginPwd(" "); when(mapper.findResidentEmail("user")).thenReturn("user@a.com"); service.residentMypageEdit(same); assertThat(same.getLoginPwd()).isNull(); verifyNoInteractions(passwordEncoder,verificationService); MemberDTO blank=new MemberDTO(); blank.setLoginId("user"); blank.setEmail(" "); assertThatThrownBy(()->service.residentMypageEdit(blank)).isInstanceOf(ResponseStatusException.class); }
+ @Test @DisplayName("UT-BE-MEMBER-031 마이페이지의 변경 이메일을 인증하고 새 비밀번호를 암호화한다")
+ void editMypage(){
+   MemberDTO d=new MemberDTO(); d.setLoginId("user"); d.setEmail(" new@a.com "); d.setLoginPwd("new"); d.setMemPhone("010-0000-0000");
+   when(mapper.findResidentPhone("user")).thenReturn("01000000000");
+   when(mapper.findResidentEmail("user")).thenReturn("old@a.com"); when(passwordEncoder.encode("new")).thenReturn("enc");
+   service.residentMypageEdit(d);
+   assertThat(d.getEmail()).isEqualTo("new@a.com"); assertThat(d.getLoginPwd()).isEqualTo("enc");
+   verify(verificationService).consumeSignupEmailVerification("new@a.com");
+   verify(verificationService,never()).consumeSignupPhoneVerification(any()); verify(mapper).residentMypageEdit(d);
+ }
+ @Test @DisplayName("UT-BE-MEMBER-032 같은 이메일과 빈 비밀번호는 재인증·암호화하지 않으며 빈 이메일은 거부한다")
+ void editMypageBoundaries(){
+   MemberDTO same=new MemberDTO(); same.setLoginId("user"); same.setEmail(" USER@A.COM "); same.setLoginPwd(" "); same.setMemPhone("010-0000-0000");
+   when(mapper.findResidentPhone("user")).thenReturn("01000000000"); when(mapper.findResidentEmail("user")).thenReturn("user@a.com");
+   service.residentMypageEdit(same);
+   assertThat(same.getLoginPwd()).isNull(); verifyNoInteractions(passwordEncoder,verificationService);
+   MemberDTO blank=new MemberDTO(); blank.setLoginId("user"); blank.setEmail(" "); blank.setMemPhone("01000000000");
+   assertThatThrownBy(()->service.residentMypageEdit(blank)).isInstanceOf(ResponseStatusException.class).hasMessageContaining("이메일");
+ }
+
+ @Test @DisplayName("UT-BE-MEMBER-040 변경된 연락처는 전화 인증 후 공백을 제거해 저장한다")
+ void changedPhoneRequiresVerification(){
+   MemberDTO d=new MemberDTO(); d.setLoginId("user"); d.setMemPhone(" 010-1111-2222 "); d.setEmail("user@a.com");
+   when(mapper.findResidentPhone("user")).thenReturn("01000000000"); when(mapper.findResidentEmail("user")).thenReturn("user@a.com");
+   service.residentMypageEdit(d);
+   verify(verificationService).consumeSignupPhoneVerification("010-1111-2222");
+   assertThat(d.getMemPhone()).isEqualTo("010-1111-2222"); verify(mapper).residentMypageEdit(d);
+ }
 
  @Test @DisplayName("UT-BE-MEMBER-033 PNG 보안문자와 식별자·만료시간을 발급한다") void issueCaptcha(){ Map<String,String> r=service.issueSecurityChallenge(); assertThat(r.get("challengeId")).isNotBlank(); assertThat(r.get("imageData")).startsWith("data:image/png;base64,"); assertThat(r.get("expiresIn")).isEqualTo("180"); }
  @Test @DisplayName("UT-BE-MEMBER-034 탈퇴 사전 확인은 보안문자와 현재 비밀번호를 검증한다") void verifyWithdrawal() throws Exception { Challenge c=challenge(); stubCurrent(); service.verifyResidentWithdrawal("user","current",c.id,c.answer); verify(mapper).findResPw("user"); }
